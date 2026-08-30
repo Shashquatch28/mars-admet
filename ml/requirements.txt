@@ -25,5 +25,3 @@ wandb>=0.16
 
 # --- M4: novelty track ---
 mmpdb>=3.1
-
--e ../contracts

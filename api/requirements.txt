@@ -8,7 +8,6 @@ boto3>=1.34
 python-multipart>=0.0.9
 passlib[bcrypt]>=1.7
 itsdangerous>=2.1
--e ../contracts
 
 # Auth = server-side Redis sessions (Module 13), NOT JWT — no python-jose.
 # Opaque session tokens (secrets.token_urlsafe) stored as session:{token}->user_id in Redis.
