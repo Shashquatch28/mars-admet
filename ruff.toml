@@ -1,0 +1,12 @@
+# Repo-wide lint config (M0). Pragmatic ruleset — real bugs + import hygiene,
+# not stylistic churn. CI runs `ruff check contracts api ml`.
+
+target-version = "py311"
+line-length = 100
+
+[lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = [
+    "E501",   # line length is enforced by formatter, not the linter
+    "UP042",  # keep `class X(str, Enum)` — switching to StrEnum changes str()/serialization semantics on the locked contract enums
+]

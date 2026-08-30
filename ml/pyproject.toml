@@ -1,0 +1,9 @@
+# ml/ is run as scripts, not installed as a package, but this gives pytest/ruff a
+# rootdir and puts ml/ on sys.path so `import tracking.*` / `import utils.*`
+# resolve the same way in tests as they do when scripts run from this directory.
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+# Lint config is repo-wide in /ruff.toml.

@@ -1,0 +1,11 @@
+torch>=2.2
+transformers>=4.40
+rdkit>=2023.9.5
+scikit-learn>=1.4
+xgboost>=2.0
+pandas>=2.2
+numpy>=1.26
+PyTDC>=0.4.1
+wandb>=0.16
+mmpdb>=3.1
+-e ../contracts

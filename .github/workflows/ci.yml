@@ -1,0 +1,78 @@
+name: CI
+
+# M0 CI/CD skeleton (blueprint Module 10):
+#   - lint + test on PR
+#   - build the API image
+#   - smoke-test a known-molecule /predict to catch silent regressions
+#     (ties into Module 11's reproducibility discipline)
+# Deploy-on-merge is intentionally NOT wired here yet — that is M3 (Module 10),
+# once the API + frontend are real and Render/Vercel targets exist.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install contracts + API + tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ./contracts
+          pip install -r api/requirements.txt
+          pip install pytest ruff httpx
+
+      - name: Lint (ruff)
+        run: ruff check contracts api ml
+
+      - name: Test contracts
+        run: pytest contracts/tests -q
+
+      - name: Test API
+        run: pytest api/tests -q
+
+  smoke-predict:
+    runs-on: ubuntu-latest
+    needs: lint-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ./contracts
+          pip install -r api/requirements.txt
+
+      - name: Boot API and smoke-test /predict on a known molecule
+        working-directory: api
+        run: |
+          uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/health && break
+            sleep 1
+          done
+          resp=$(curl -sf -X POST http://127.0.0.1:8000/predict \
+            -H 'Content-Type: application/json' \
+            -d '{"smiles": "CCO", "endpoints": null}')
+          echo "$resp"
+          echo "$resp" | python -c "import sys, json; d = json.load(sys.stdin); assert len(d['predictions']) == 14, d; assert d['model_version'], d; print('smoke OK:', len(d['predictions']), 'predictions,', 'model_version=' + d['model_version'])"
+
+  build-api-image:
+    runs-on: ubuntu-latest
+    needs: lint-test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -f api/Dockerfile -t mars-api:ci .

@@ -1,0 +1,84 @@
+# Mirrors production topology (Neon Postgres / Upstash Redis / Cloudflare R2)
+# with local equivalents so `docker compose up` gives a full working stack.
+# Copy .env.example -> .env before `docker compose up api` (the api service reads it).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mars_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mars
+      POSTGRES_PASSWORD: mars_dev_password
+      POSTGRES_DB: mars_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - mars_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mars -d mars_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: mars_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: mars_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: mars_minio
+      MINIO_ROOT_PASSWORD: mars_minio_password
+    ports:
+      - "9000:9000"   # S3-compatible API (stands in for R2)
+      - "9001:9001"   # web console
+    volumes:
+      - mars_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: mars_api
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://mars:mars_dev_password@postgres:5432/mars_dev
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT_URL: http://minio:9000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api/app:/app/app
+      - ./contracts:/contracts
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  mars_postgres_data:
+  mars_minio_data:

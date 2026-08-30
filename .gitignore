@@ -1,1 +1,79 @@
 documentation/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ML data and generated artifacts
+# NOTE: a bare `data/` here would also ignore ml/data/ which holds pipeline
+# SOURCE CODE (acquire.py, standardize.py, ...). Scope to the actual data dirs.
+/data/
+!/data/.gitkeep
+
+ml/runs/
+!ml/runs/.gitkeep
+
+ml/artifacts/
+!ml/artifacts/.gitkeep
+
+ml/data/raw/*
+ml/data/processed/*
+!ml/data/raw/.gitkeep
+!ml/data/processed/.gitkeep
+
+# W&B local files
+wandb/
+
+# Throwaway smoke/debug scripts — never commit (keeps noise out of the repo and
+# stops accidental junk W&B runs from being "reproducible" per Module 11 §5)
+/test_*.py
+/scratch_*.py
+
+# Model artifacts
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.pkl
+*.joblib
+
+# Logs
+*.log
+logs/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
