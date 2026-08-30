@@ -1,0 +1,969 @@
+{
+  "acquisition": {
+    "acq_env_lockfile": {
+      "path": "ml/data/requirements-acquire.lock.txt",
+      "sha256": "418ffe5afb0e2540c9c8ccf4aedb37dccad1901f9eab893e26823323c97e3d2b"
+    },
+    "acq_id": "20260830T181633Z",
+    "acquired_at_utc": "2026-08-30T18:17:50.792502Z",
+    "machine": "x86_64",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "pytdc_version": "1.1.15",
+    "python_version": "3.12.3 (main, Mar 23 2026, 19:04:32) [GCC 13.3.0]",
+    "repo_git_dirty": null,
+    "repo_git_sha": "daddcf7cddff04d9c19d949b7a3dfec9b39fec9e",
+    "tdc_benchmark_group_dataset_names": [
+      "ames",
+      "bbb_martins",
+      "bioavailability_ma",
+      "caco2_wang",
+      "clearance_hepatocyte_az",
+      "clearance_microsome_az",
+      "cyp2c9_substrate_carbonmangels",
+      "cyp2c9_veith",
+      "cyp2d6_substrate_carbonmangels",
+      "cyp2d6_veith",
+      "cyp3a4_substrate_carbonmangels",
+      "cyp3a4_veith",
+      "dili",
+      "half_life_obach",
+      "herg",
+      "hia_hou",
+      "ld50_zhu",
+      "lipophilicity_astrazeneca",
+      "pgp_broccatelli",
+      "ppbr_az",
+      "solubility_aqsoldb",
+      "vdss_lombardo"
+    ],
+    "tdc_source": "TDC single_pred (ADME/Tox) + benchmark_group.admet_group; downloads are Harvard Dataverse-backed"
+  },
+  "conventions": {
+    "id_column": "Drug_ID",
+    "label_column": "Y",
+    "raw_is_immutable": true,
+    "smiles_column": "Drug",
+    "snapshot_digest_scheme": "mars-canonical-rows-v1 (order-independent; see ml/data/snapshot.py)",
+    "standardization": "NOT applied here \u2014 raw SMILES/labels exactly as TDC delivered"
+  },
+  "datasets": {
+    "ames_mutagenicity": {
+      "acquired_at_utc": "2026-08-30T18:17:47.638493Z",
+      "approx_n_blueprint": 7255,
+      "benchmark_group_name": "ames",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 69441,
+          "n_rows": 1457,
+          "path": "raw/AMES/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "d87e29ad1f188d6ee4fcdd5c3c3aa4ba15e4fec657553353d0d951ad8df02d3f",
+          "snapshot_sha256": "f3546d3ebc0f488782e68aa7a319c294b80894d20d7c6d099da7326f9233b319"
+        },
+        "train_val": {
+          "bytes": 245590,
+          "n_rows": 5821,
+          "path": "raw/AMES/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "8b3add847978ec60685541e07696c837f116b7cb245d44f86eb8f4f69da8e44d",
+          "snapshot_sha256": "6e79ba44a96babe24cd41f06797c94ea9a94b340c831af36fbc4db65bc1a8c0b"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "ames_mutagenicity",
+      "endpoint_key": "ames_mutagenicity",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/tox/#ames-mutagenicity",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 7278,
+      "notes": "",
+      "raw_files": [
+        {
+          "bytes": 315016,
+          "n_rows": 7278,
+          "path": "raw/AMES/20260830T181633Z/AMES.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "a17d2d6b9aa17f1cfaa1e3e4137788b2ef2700404042e285102f18543ca954b5"
+        },
+        {
+          "bytes": 344128,
+          "n_rows": null,
+          "path": "raw/AMES/20260830T181633Z/tdc_download/ames.tab",
+          "role": "tdc_delivered:ames.tab",
+          "sha256": "825c2b4c31c9cec81aa32eb394fd24e6b32ee4959905d4272e56483ecb6f3e16"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "1d20ccdb251e4c2aa5bb15da573e013697192a1475d2a71bb351d15fdb6bb3ad",
+      "task": "classification",
+      "tdc_loader": "Tox",
+      "tdc_name": "AMES",
+      "variant": "primary"
+    },
+    "bbb_permeability": {
+      "acquired_at_utc": "2026-08-30T18:17:11.751552Z",
+      "approx_n_blueprint": 1975,
+      "benchmark_group_name": "bbb_martins",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 22353,
+          "n_rows": 406,
+          "path": "raw/BBB_Martins/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "82d4fa96f671a8382e9d8e6de3dde8385b9f337854c83e6fde2e69a7be93754f",
+          "snapshot_sha256": "af244247df19eee724522cb1e5d363cab46c1f9701e78e4cdd6a3695081d56c2"
+        },
+        "train_val": {
+          "bytes": 107016,
+          "n_rows": 1624,
+          "path": "raw/BBB_Martins/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "5035139072311f4cb0a1a54cffe11bc727004886ace4629b98f6db20c431e4af",
+          "snapshot_sha256": "13045180e93697ab5157680bf90ef227d3f695b08f3424bab95af989b189f67e"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "bbb_permeability",
+      "endpoint_key": "bbb_permeability",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/adme/#bbb-blood-brain-barrier-martins-et-al",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 2030,
+      "notes": "PharmaBench augmentation dropped (Module 1 \u00a77, CC BY-NC-ND). TDC-only.",
+      "raw_files": [
+        {
+          "bytes": 129354,
+          "n_rows": 2030,
+          "path": "raw/BBB_Martins/20260830T181633Z/BBB_Martins.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "43bb6e5a60bef9ca12fdf9ca50059b1e8f75bcc06e1857dfd5ced7aafca532b4"
+        },
+        {
+          "bytes": 137899,
+          "n_rows": null,
+          "path": "raw/BBB_Martins/20260830T181633Z/tdc_download/bbb_martins.tab",
+          "role": "tdc_delivered:bbb_martins.tab",
+          "sha256": "eb32676c7bf6e2bcd98b7625186bbb2ba4e4644c1d1468dfa18b6be665bd5e98"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "4f7bedbfd56b199167613668390450ece072f1b8ac7e409da97bef6bbd70907c",
+      "task": "classification",
+      "tdc_loader": "ADME",
+      "tdc_name": "BBB_Martins",
+      "variant": "primary"
+    },
+    "caco2_permeability": {
+      "acquired_at_utc": "2026-08-30T18:17:02.877933Z",
+      "approx_n_blueprint": 906,
+      "benchmark_group_name": "caco2_wang",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 17277,
+          "n_rows": 182,
+          "path": "raw/Caco2_Wang/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "4e2f0ecb9216545e6adf3567e7d817838471cc629125487b52affc464ea1090a",
+          "snapshot_sha256": "bee8af8158bc100d0fe8ff125aa6453c1689843f37d4b276d44f0238f7df6023"
+        },
+        "train_val": {
+          "bytes": 61681,
+          "n_rows": 728,
+          "path": "raw/Caco2_Wang/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "6670e12aa2ce24404bd3e18c9998f39e76704bd127420def39814687ca5e7e3b",
+          "snapshot_sha256": "f2d2d1a7720afc831e0c4abd024fb5daf1337fba089339530724543d56602833"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "caco2_permeability",
+      "endpoint_key": "caco2_permeability",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/adme/#caco-2-cell-effective-permeability-wang-et-al",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 910,
+      "notes": "",
+      "raw_files": [
+        {
+          "bytes": 78916,
+          "n_rows": 910,
+          "path": "raw/Caco2_Wang/20260830T181633Z/Caco2_Wang.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "59b851ecd9b2801302fc71fa692e26c442030cab92c801a32afed68d80b07305"
+        },
+        {
+          "bytes": 82501,
+          "n_rows": null,
+          "path": "raw/Caco2_Wang/20260830T181633Z/tdc_download/caco2_wang.tab",
+          "role": "tdc_delivered:caco2_wang.tab",
+          "sha256": "447d9f1af487c06b080145a2361dbe45af5b27afc83e1a975dd29b9ea535d6ab"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "b016af763204955d9f2632f6b01eac1bc1469e316812cb60704f885ed10f5d02",
+      "task": "regression",
+      "tdc_loader": "ADME",
+      "tdc_name": "Caco2_Wang",
+      "variant": "primary"
+    },
+    "clearance_microsomal": {
+      "acquired_at_utc": "2026-08-30T18:17:36.039410Z",
+      "approx_n_blueprint": 1102,
+      "benchmark_group_name": "clearance_microsome_az",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 15515,
+          "n_rows": 221,
+          "path": "raw/Clearance_Microsome_AZ/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "832c4479f007ea7b11a41301d20e55e226aa5f52ebbaa1ca7783854f64e4fdf5",
+          "snapshot_sha256": "e2d963274d61f52799414a44f77aca478a03289c3dd8e7de2fe13aa8378ba593"
+        },
+        "train_val": {
+          "bytes": 61761,
+          "n_rows": 881,
+          "path": "raw/Clearance_Microsome_AZ/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "736ffa13d70b38d68ab0b956200292084dcbd5e970e8d72a62eb715d8763b660",
+          "snapshot_sha256": "6646b999e1d875d7dfaaa5811420fd98710e4ad9635bb79e03274281777de966"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "clearance_microsomal",
+      "endpoint_key": "clearance_microsomal",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/adme/#clearance-astrazeneca",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 1102,
+      "notes": "PharmaBench HLMC augmentation dropped (Module 1 \u00a77). TDC-only.",
+      "raw_files": [
+        {
+          "bytes": 77261,
+          "n_rows": 1102,
+          "path": "raw/Clearance_Microsome_AZ/20260830T181633Z/Clearance_Microsome_AZ.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "7a0a19472ce6c93eb5400fcc02befc10b8a45d9ed8b0f08e3a44210038295cdb"
+        },
+        {
+          "bytes": 81661,
+          "n_rows": null,
+          "path": "raw/Clearance_Microsome_AZ/20260830T181633Z/tdc_download/clearance_microsome_az.tab",
+          "role": "tdc_delivered:clearance_microsome_az.tab",
+          "sha256": "4c9047dc1860cc05d5bdc09aa9cfef86a40740605c2ff06990b1fceb6085db9d"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "b89ccefd0504d05471a63ce44201e6c4fea97401f902217b28ab6ea23854c54c",
+      "task": "regression",
+      "tdc_loader": "ADME",
+      "tdc_name": "Clearance_Microsome_AZ",
+      "variant": "primary"
+    },
+    "cyp2c9_inhibition": {
+      "acquired_at_utc": "2026-08-30T18:17:32.792449Z",
+      "approx_n_blueprint": 12092,
+      "benchmark_group_name": "cyp2c9_veith",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 139376,
+          "n_rows": 2419,
+          "path": "raw/CYP2C9_Veith/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "e62409b62d6adc69c25eb47d83bfb88379878d70656e0191a8f555ef733e2519",
+          "snapshot_sha256": "d5cb7544dd8927f221e82cd3e6599d2ac1d07a8350f7db214558810a2cd2592c"
+        },
+        "train_val": {
+          "bytes": 576176,
+          "n_rows": 9673,
+          "path": "raw/CYP2C9_Veith/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "f7d1cb85adac9b1c4bca33936c7ecde2d0e3c127258846786ca7bf6418ddb1a4",
+          "snapshot_sha256": "d80ea47b3eb5c3270d02a2f8da8634fdeaa43cc30abd46b21e52261aa36cab97"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "cyp2c9_inhibition",
+      "endpoint_key": "cyp2c9_inhibition",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/adme/#cyp-p450-2c9-inhibition-veith-et-al",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 12092,
+      "notes": "Stereochemistry-sensitive endpoint (blueprint Module 3): EDA must log stereo-defined ratio.",
+      "raw_files": [
+        {
+          "bytes": 715537,
+          "n_rows": 12092,
+          "path": "raw/CYP2C9_Veith/20260830T181633Z/CYP2C9_Veith.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "7a9e96c1f1040d00c435ca75a3cf808ade045d3b06fd2f7aafc735cc876e8735"
+        },
+        {
+          "bytes": 739721,
+          "n_rows": null,
+          "path": "raw/CYP2C9_Veith/20260830T181633Z/tdc_download/cyp2c9_veith.tab",
+          "role": "tdc_delivered:cyp2c9_veith.tab",
+          "sha256": "272bfd9de9899dd978993e23ccfb2a56680912ef6c8d89c0a9eac7f36c1c55c9"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "4e88221e570f927a59fa77533849ee4a1ff04dcf407286cd10ddb1595c8fe512",
+      "task": "classification",
+      "tdc_loader": "ADME",
+      "tdc_name": "CYP2C9_Veith",
+      "variant": "primary"
+    },
+    "cyp2d6_inhibition": {
+      "acquired_at_utc": "2026-08-30T18:17:26.822347Z",
+      "approx_n_blueprint": 13130,
+      "benchmark_group_name": "cyp2d6_veith",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 143144,
+          "n_rows": 2626,
+          "path": "raw/CYP2D6_Veith/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "8e8f9ec13df932e38b6467051a1ac496d498bd87ef9d893fde3490757e676c16",
+          "snapshot_sha256": "0bf917406420be7e02fdd5ce469bbe0a69de5f26184f9fe93f1e373bfc8e62e4"
+        },
+        "train_val": {
+          "bytes": 630120,
+          "n_rows": 10504,
+          "path": "raw/CYP2D6_Veith/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "e9e65ba87e09d23aa49fa068bdbb6a16dc686d7916d15f1028569bf6fc3bc5c8",
+          "snapshot_sha256": "f9f8069e76b03ba9009bbf7256a570c4a8a9061f639bf2b67ca2f2386bc5d92b"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "cyp2d6_inhibition",
+      "endpoint_key": "cyp2d6_inhibition",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/adme/#cyp-p450-2d6-inhibition-veith-et-al",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 13130,
+      "notes": "",
+      "raw_files": [
+        {
+          "bytes": 773249,
+          "n_rows": 13130,
+          "path": "raw/CYP2D6_Veith/20260830T181633Z/CYP2D6_Veith.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "0db6dcb8a30d2961fd533cc69e910df1fde7b694d87a869f929e8bc725ca39c1"
+        },
+        {
+          "bytes": 799509,
+          "n_rows": null,
+          "path": "raw/CYP2D6_Veith/20260830T181633Z/tdc_download/cyp2d6_veith.tab",
+          "role": "tdc_delivered:cyp2d6_veith.tab",
+          "sha256": "1b50a2f02a6d9c02d29fd9e3684d661f64bfe8afb1fea09e5ffb3d54174c411b"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "3aaa7087af6c0cd8ca87d6790336b281c393eda06e56effbded63554ed530e27",
+      "task": "classification",
+      "tdc_loader": "ADME",
+      "tdc_name": "CYP2D6_Veith",
+      "variant": "primary"
+    },
+    "cyp3a4_inhibition": {
+      "acquired_at_utc": "2026-08-30T18:17:20.612642Z",
+      "approx_n_blueprint": 12328,
+      "benchmark_group_name": "cyp3a4_veith",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 148130,
+          "n_rows": 2467,
+          "path": "raw/CYP3A4_Veith/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "5b7d31656dd28ad48e2a1c9ee9b59cce39b6dfa268f5f285f939629a339ec9bc",
+          "snapshot_sha256": "86c363f519e51d0e1fa00ca19a183f1f594d636fa029e3dc3a0f5618e0b4cb98"
+        },
+        "train_val": {
+          "bytes": 573412,
+          "n_rows": 9861,
+          "path": "raw/CYP3A4_Veith/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "df6944a7a01cf8ba0a56b87214ea9e25ac40a8f8a64d92da454f12fbc50d179f",
+          "snapshot_sha256": "f6413779d15d819062958a312c3b41dc93b2db30e7e5daccfb050728bd359f30"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "cyp3a4_inhibition",
+      "endpoint_key": "cyp3a4_inhibition",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/adme/#cyp-p450-3a4-inhibition-veith-et-al",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 12328,
+      "notes": "",
+      "raw_files": [
+        {
+          "bytes": 721527,
+          "n_rows": 12328,
+          "path": "raw/CYP3A4_Veith/20260830T181633Z/CYP3A4_Veith.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "471c1f8c3462ec4109f05d53b956c8404c4d25f64880800a47eb4f8ce109ae87"
+        },
+        {
+          "bytes": 746183,
+          "n_rows": null,
+          "path": "raw/CYP3A4_Veith/20260830T181633Z/tdc_download/cyp3a4_veith.tab",
+          "role": "tdc_delivered:cyp3a4_veith.tab",
+          "sha256": "4c85a4cea9ffadd36fdd188f96b866d1d8db5d333a6d423172cf4363a585565a"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "ce1a8df21cb93b829679ba5e7080e4156d9951446b9149058b724b5f30cceba3",
+      "task": "classification",
+      "tdc_loader": "ADME",
+      "tdc_name": "CYP3A4_Veith",
+      "variant": "primary"
+    },
+    "dili_liver_injury": {
+      "acquired_at_utc": "2026-08-30T18:17:50.611399Z",
+      "approx_n_blueprint": 475,
+      "benchmark_group_name": "dili",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 5726,
+          "n_rows": 96,
+          "path": "raw/DILI/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "eb4cacff67a3f25d1d5e6a4c15ada68239af630ec19979097c4c832b185478e8",
+          "snapshot_sha256": "f3da602fc12aaec92ead7d819335f5bd8ed951a16a8c2fdf02bc490441bcde6b"
+        },
+        "train_val": {
+          "bytes": 20016,
+          "n_rows": 379,
+          "path": "raw/DILI/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "0a5c221e3a62b204a990586be505ae1373884b7ef10e983bea1821901755c908",
+          "snapshot_sha256": "ae732d99ae338e9333a688173ce4466348a218ca418bf959a48b969dab38bbe9"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "dili_liver_injury",
+      "endpoint_key": "dili_liver_injury",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/tox/#dili-drug-induced-liver-injury",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 475,
+      "notes": "DILIst augmentation (Module 1 \u00a76, FDA/NCTR, public domain 17 U.S.C. \u00a7105) is NOT a TDC dataset \u2014 acquisition deferred to Run 2 with its own provenance.",
+      "raw_files": [
+        {
+          "bytes": 25727,
+          "n_rows": 475,
+          "path": "raw/DILI/20260830T181633Z/DILI.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "f977be424b9e509dc721e24106dd51cfb5a63ad8df0104ae51d9ab51cef7be09"
+        },
+        {
+          "bytes": 26677,
+          "n_rows": null,
+          "path": "raw/DILI/20260830T181633Z/tdc_download/dili.tab",
+          "role": "tdc_delivered:dili.tab",
+          "sha256": "d3961647ff6df9711b6aa4b9fe59d6cbeb40f9d23dd6e9d51d6656e6e6df5ed8"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "47347250091d5e115c22b1ff1d7fe4a0b608b7c85c99d9819c7d6862a8a8af97",
+      "task": "classification",
+      "tdc_loader": "Tox",
+      "tdc_name": "DILI",
+      "variant": "primary"
+    },
+    "herg_cardiotoxicity": {
+      "acquired_at_utc": "2026-08-30T18:17:40.423624Z",
+      "approx_n_blueprint": 13445,
+      "benchmark_group_name": null,
+      "benchmark_split": null,
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "herg_cardiotoxicity",
+      "endpoint_key": "herg_cardiotoxicity",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": false,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/tox/#herg-blockers-karim-et-al",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 13445,
+      "notes": "Blueprint Module 2 primary hERG dataset. NOT in TDC's ADMET Benchmark Group -> no official fixed split; Run 2 generates a deterministic Murcko scaffold split replicating TDC methodology. Not leaderboard-comparable against the 655-compound benchmark 'hERG'. See documentation/FUTURE_SCOPE.md.",
+      "raw_files": [
+        {
+          "bytes": 858182,
+          "n_rows": 13445,
+          "path": "raw/hERG_Karim/20260830T181633Z/hERG_Karim.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "cb99a0d6a38d7938043f0f5f840a258e3c072db911708b4c232c95e1a4a33239"
+        },
+        {
+          "bytes": 885072,
+          "n_rows": null,
+          "path": "raw/hERG_Karim/20260830T181633Z/tdc_download/herg_karim.tab",
+          "role": "tdc_delivered:herg_karim.tab",
+          "sha256": "b47cbff0d65bbb5c6ade5ecd4c5bab20158c6cbf631a68f355efbe7e5fafc099"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "dfd70f76ff6bd995777f9f0cb206685876fbc7ab048a820ec5f652969e61535d",
+      "task": "classification",
+      "tdc_loader": "Tox",
+      "tdc_name": "hERG_Karim",
+      "variant": "primary"
+    },
+    "herg_cardiotoxicity__benchmark": {
+      "acquired_at_utc": "2026-08-30T18:17:43.691155Z",
+      "approx_n_blueprint": 655,
+      "benchmark_group_name": "herg",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 9147,
+          "n_rows": 132,
+          "path": "raw/hERG/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "14277bd932dce885e2f7a8d706effb455816f983e05b230f4f1c9590eb6c4248",
+          "snapshot_sha256": "e8078131d57f9edf793b5a70b539586a309ee0cb73de8e2a63424530d7be8ee5"
+        },
+        "train_val": {
+          "bytes": 38458,
+          "n_rows": 523,
+          "path": "raw/hERG/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "22fc4c4b6079f72b392cf2ae675d99c6927a6351377ee50c4f9f98c586a3f206",
+          "snapshot_sha256": "d4e08040e0f2447f93dd076fb1ff2e1775ccd9e34e347c7d943fafe45949b998"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "herg_cardiotoxicity__benchmark",
+      "endpoint_key": "herg_cardiotoxicity",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/benchmark/admet_group/21herg/",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 655,
+      "notes": "TDC ADMET Benchmark Group hERG (Wang et al.). Acquired for comparison; endpoint->dataset choice deferred to Run 2 EDA (decision 2026-08-30).",
+      "raw_files": [
+        {
+          "bytes": 47590,
+          "n_rows": 655,
+          "path": "raw/hERG/20260830T181633Z/hERG.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "f2b00c05f12763c9da91d46246800e30925a626d5038e15eec366d633bdffe54"
+        },
+        {
+          "bytes": 50174,
+          "n_rows": null,
+          "path": "raw/hERG/20260830T181633Z/tdc_download/herg.tab",
+          "role": "tdc_delivered:herg.tab",
+          "sha256": "dfce97b6a89b710d20c93cf211f005fbee0d8445a60ca7df584cac430798a379"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "9280a5d5029ac7682b4590b9dc671e05f9061d6c8776d9e81c12615611482da4",
+      "task": "classification",
+      "tdc_loader": "Tox",
+      "tdc_name": "hERG",
+      "variant": "benchmark_alt"
+    },
+    "hia_absorption": {
+      "acquired_at_utc": "2026-08-30T18:17:05.888315Z",
+      "approx_n_blueprint": 578,
+      "benchmark_group_name": "hia_hou",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 8149,
+          "n_rows": 117,
+          "path": "raw/HIA_Hou/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "da702497c3c0a50dbdff77471517562a8813859f53f069ac5bb43126aa534351",
+          "snapshot_sha256": "b80f2f9fbb8dcda1ec4ca61e7201d17d67bb5639d4d214ffcfb10358abbebf4c"
+        },
+        "train_val": {
+          "bytes": 29694,
+          "n_rows": 461,
+          "path": "raw/HIA_Hou/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "87f35dc1767174efa245ee71644229b5073a8490988527a3fe6d2f1e7522c7db",
+          "snapshot_sha256": "a24c0a270591d718f64a822e097278f9ce656732242eb1d5e9efb6661e98809e"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "hia_absorption",
+      "endpoint_key": "hia_absorption",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/adme/#hia-human-intestinal-absorption-hou-et-al",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 578,
+      "notes": "",
+      "raw_files": [
+        {
+          "bytes": 37828,
+          "n_rows": 578,
+          "path": "raw/HIA_Hou/20260830T181633Z/HIA_Hou.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "61797ef2fa5d6f63b48e79d22dcb5c3ead66721c4abac4177fa063a742134a83"
+        },
+        {
+          "bytes": 40140,
+          "n_rows": null,
+          "path": "raw/HIA_Hou/20260830T181633Z/tdc_download/hia_hou.tab",
+          "role": "tdc_delivered:hia_hou.tab",
+          "sha256": "9040c5985fd366acf736bca1587902af28450976410fe99db82027e5d9c713b4"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "8cd1a2d974b1bcd47db50542ae72a65d51665ecc2c40519eadda09089ea8c950",
+      "task": "classification",
+      "tdc_loader": "ADME",
+      "tdc_name": "HIA_Hou",
+      "variant": "primary"
+    },
+    "lipophilicity_logp": {
+      "acquired_at_utc": "2026-08-30T18:16:59.793177Z",
+      "approx_n_blueprint": 4200,
+      "benchmark_group_name": "lipophilicity_astrazeneca",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 57467,
+          "n_rows": 840,
+          "path": "raw/Lipophilicity_AstraZeneca/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "69f3870c9b6f2cec79a992a31d59d2e940962f7e2c4b27dabaed1fe1e767e2d8",
+          "snapshot_sha256": "8edcb6f26f9709df3ac174865a04e4d1a309d2de3f4f498c00b7ae4f8b8207f4"
+        },
+        "train_val": {
+          "bytes": 223630,
+          "n_rows": 3360,
+          "path": "raw/Lipophilicity_AstraZeneca/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "a54636f85cf31eb4c914ea15e2c3a15364b0b8b51986262ea229203637e08f31",
+          "snapshot_sha256": "7f920c9ecb6fa87492dfded45e6db77c31235b0667c80e1d9d8223c8677a2a8e"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "lipophilicity_logp",
+      "endpoint_key": "lipophilicity_logp",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/adme/#lipophilicity-astrazeneca",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 4200,
+      "notes": "AstraZeneca 2016 disclosure; TDC redistribution is CC BY 4.0 (Module 1 \u00a77).",
+      "raw_files": [
+        {
+          "bytes": 281082,
+          "n_rows": 4200,
+          "path": "raw/Lipophilicity_AstraZeneca/20260830T181633Z/Lipophilicity_AstraZeneca.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "a36f6ec8884e083f8dce06ec17e1885ce900ba75fef975f9c451b2a49bd5e170"
+        },
+        {
+          "bytes": 297882,
+          "n_rows": null,
+          "path": "raw/Lipophilicity_AstraZeneca/20260830T181633Z/tdc_download/lipophilicity_astrazeneca.tab",
+          "role": "tdc_delivered:lipophilicity_astrazeneca.tab",
+          "sha256": "14add1edb356e62f78256ff964c0cbba03c007be3ff48d6d4c18679f307f1d4c"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "81a1fdd397fbd4bb5d550483c06658ce44121499924c054f0ff4e1049d701a85",
+      "task": "regression",
+      "tdc_loader": "ADME",
+      "tdc_name": "Lipophilicity_AstraZeneca",
+      "variant": "primary"
+    },
+    "pgp_inhibition": {
+      "acquired_at_utc": "2026-08-30T18:17:08.872961Z",
+      "approx_n_blueprint": 1212,
+      "benchmark_group_name": "pgp_broccatelli",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 22937,
+          "n_rows": 245,
+          "path": "raw/Pgp_Broccatelli/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "959e448d2b8927d65ede864838c2eee5b2075d4c01ca544aeec4c90d663b4ccb",
+          "snapshot_sha256": "187b97a2a4e6253e8e58cc50d64366332e85615c875655149052f524309ff2a3"
+        },
+        "train_val": {
+          "bytes": 98234,
+          "n_rows": 973,
+          "path": "raw/Pgp_Broccatelli/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "4a9183cf40c01881c6cfdeee7b68fed6dbe31348081099a323b9b76351a1dae0",
+          "snapshot_sha256": "40905fe4cb705dcb11d31b9013480bd3d1fa2d318e626872dd9abeaf03abe5ef"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "pgp_inhibition",
+      "endpoint_key": "pgp_inhibition",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/adme/#pgp-p-glycoprotein-inhibition-broccatelli-et-al",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 1218,
+      "notes": "",
+      "raw_files": [
+        {
+          "bytes": 121156,
+          "n_rows": 1218,
+          "path": "raw/Pgp_Broccatelli/20260830T181633Z/Pgp_Broccatelli.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "7121678633e0f2bc6bffbca5494568b4fe62a9026954c1780a90cbd78a0056e9"
+        },
+        {
+          "bytes": 125532,
+          "n_rows": null,
+          "path": "raw/Pgp_Broccatelli/20260830T181633Z/tdc_download/pgp_broccatelli.tab",
+          "role": "tdc_delivered:pgp_broccatelli.tab",
+          "sha256": "4fddc785a4f7109a92c60781fad9070a3917309cac5a78ac8e37bba17c54c9c0"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "f4884462e0b4eb836fb5503e652c645fbfc1841d6dc61ba3b5ef9eccb3bbfa4f",
+      "task": "classification",
+      "tdc_loader": "ADME",
+      "tdc_name": "Pgp_Broccatelli",
+      "variant": "primary"
+    },
+    "ppb_binding": {
+      "acquired_at_utc": "2026-08-30T18:17:15.565127Z",
+      "approx_n_blueprint": 1797,
+      "benchmark_group_name": "ppbr_az",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 41047,
+          "n_rows": 559,
+          "path": "raw/PPBR_AZ/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "c3a0acbca0053a0d7aa8b6ed01e9873abeddde88fa1340c1edfb63d9cf728f42",
+          "snapshot_sha256": "6f7463b016a56f7e83cb26d3dde9c1d928356a6a20c0fa2aae6b85ab7438c38b"
+        },
+        "train_val": {
+          "bytes": 161449,
+          "n_rows": 2231,
+          "path": "raw/PPBR_AZ/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "edc4416f46b0e463b3c5f26b10e0ac2ba013db53813ac9546c4780bbb5f81720",
+          "snapshot_sha256": "195b1df09a4d6ca516d4fa0e569493ef962314fab43f37d2be6c742332c3359f"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "ppb_binding",
+      "endpoint_key": "ppb_binding",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/adme/#ppbr-plasma-protein-binding-rate-astrazeneca",
+      "n_matches_blueprint_within_5pct": false,
+      "n_rows": 1614,
+      "notes": "",
+      "raw_files": [
+        {
+          "bytes": 116468,
+          "n_rows": 1614,
+          "path": "raw/PPBR_AZ/20260830T181633Z/PPBR_AZ.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "826e1a55caf3f85259c4988526cf3fdf26941dc8acadda83e5415bb0b121f83d"
+        },
+        {
+          "bytes": 265195,
+          "n_rows": null,
+          "path": "raw/PPBR_AZ/20260830T181633Z/tdc_download/ppbr_az.tab",
+          "role": "tdc_delivered:ppbr_az.tab",
+          "sha256": "54c9520f4b6e04419b18bab7335583c3865d86fc53db40f74c2cff1577c8ec1b"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "dd7c82095a7cf498505a9768815d1124fea9c06acb037b4266de7f9ea99ffc39",
+      "task": "regression",
+      "tdc_loader": "ADME",
+      "tdc_name": "PPBR_AZ",
+      "variant": "primary"
+    },
+    "solubility_logs": {
+      "acquired_at_utc": "2026-08-30T18:16:53.586176Z",
+      "approx_n_blueprint": 9982,
+      "benchmark_group_name": "solubility_aqsoldb",
+      "benchmark_split": {
+        "protocol": "official fixed 80/20 scaffold split (Murcko); 5-seed train/valid CV is applied within train_val downstream",
+        "source": "tdc.benchmark_group.admet_group",
+        "test": {
+          "bytes": 187298,
+          "n_rows": 1997,
+          "path": "raw/Solubility_AqSolDB/20260830T181633Z/benchmark_split/test.csv",
+          "role": "benchmark_test",
+          "sha256": "fee80f90068029cb0e3e72a99182a6fcd04cdef67378912e33090d01777a3dd1",
+          "snapshot_sha256": "5c6177876949d833a50828d614db77eaf116e502c850347aeeab942516a5bc91"
+        },
+        "train_val": {
+          "bytes": 630017,
+          "n_rows": 7985,
+          "path": "raw/Solubility_AqSolDB/20260830T181633Z/benchmark_split/train_val.csv",
+          "role": "benchmark_train_val",
+          "sha256": "a58cdd38ad361d5c58fe1c68acaec186ff06eaceee6d504a7c5a23218306cc2e",
+          "snapshot_sha256": "bd0775c9a7909a9f9b5061229e1d37f1ffe7cd8644b84125e697b00b40657228"
+        }
+      },
+      "columns": [
+        "Drug_ID",
+        "Drug",
+        "Y"
+      ],
+      "dataset_key": "solubility_logs",
+      "endpoint_key": "solubility_logs",
+      "id_column": "Drug_ID",
+      "in_admet_benchmark_group": true,
+      "label_column": "Y",
+      "license": "CC BY 4.0",
+      "license_ref": "https://tdcommons.ai/single_pred_tasks/adme/#solubility-aqsoldb",
+      "n_matches_blueprint_within_5pct": true,
+      "n_rows": 9982,
+      "notes": "",
+      "raw_files": [
+        {
+          "bytes": 817337,
+          "n_rows": 9982,
+          "path": "raw/Solubility_AqSolDB/20260830T181633Z/Solubility_AqSolDB.full.csv",
+          "role": "full_normalized_csv",
+          "sha256": "d44e597cd899e16c61cca40edb5ca2cca2c69ee8e84125f9d68e7c4c8464430b"
+        },
+        {
+          "bytes": 852658,
+          "n_rows": null,
+          "path": "raw/Solubility_AqSolDB/20260830T181633Z/tdc_download/solubility_aqsoldb.tab",
+          "role": "tdc_delivered:solubility_aqsoldb.tab",
+          "sha256": "0b593f7b55abbe477ba4284aefd7b5450551f4ed21ac4aed80a097931141c9a4"
+        }
+      ],
+      "smiles_column": "Drug",
+      "snapshot_sha256": "b2c1292365365b40e941c5427c45f4b0ef7728ea0003af01e24429b38fc0f598",
+      "task": "regression",
+      "tdc_loader": "ADME",
+      "tdc_name": "Solubility_AqSolDB",
+      "variant": "primary"
+    }
+  },
+  "generator": "ml/data/acquire.py",
+  "notes": {
+    "dilist": "DILIst augmentation source (Module 1 \u00a76) is not a TDC dataset; its acquisition + provenance is deferred to Run 2.",
+    "hERG_Karim_not_leaderboard_comparable": "hERG_Karim is absent from TDC's ADMET Benchmark Group; the published TDC hERG leaderboard is computed on the 655-compound 'hERG'. Results on hERG_Karim are not directly leaderboard-comparable (blueprint Module 1 \u00a74 wording flagged for the maintainer).",
+    "herg": "Two hERG datasets acquired: 'hERG_Karim' (primary, ~13445, blueprint Module 2) and 'hERG' (benchmark_alt, ~655, TDC ADMET Benchmark Group). endpoint->dataset choice for herg_cardiotoxicity is deferred to Run 2 EDA (decision 2026-08-30). See documentation/FUTURE_SCOPE.md."
+  },
+  "schema_version": 1
+}

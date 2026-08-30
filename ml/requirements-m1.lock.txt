@@ -1,0 +1,25 @@
+annotated-types==0.8.0
+colorama==0.4.6
+iniconfig==2.3.0
+joblib==1.5.3
+-e git+ssh://git@github.com/Shashquatch28/mars-admet.git@daddcf7cddff04d9c19d949b7a3dfec9b39fec9e#egg=mars_contracts&subdirectory=contracts
+narwhals==2.25.0
+numpy==2.4.6
+packaging==26.3
+pandas==2.3.3
+pillow==12.3.0
+pluggy==1.6.0
+pydantic==2.13.5
+pydantic_core==2.46.5
+Pygments==2.21.0
+pytest==9.1.1
+python-dateutil==2.9.0.post0
+pytz==2026.3.post1
+rdkit==2026.3.5
+scikit-learn==1.9.0
+scipy==1.17.1
+six==1.17.0
+threadpoolctl==3.6.0
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+tzdata==2026.3

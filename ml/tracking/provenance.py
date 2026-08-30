@@ -15,8 +15,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-import torch
+# NOTE: numpy / torch are imported lazily inside collect_environment() on
+# purpose. Milestone 1 (data + featurization) runs CPU-only and does not install
+# torch (blueprint Module 10); provenance capture for those runs must not
+# ImportError just because the GNN stack is absent. See CF-5.
 
 
 def _run_git_command(
@@ -87,30 +89,60 @@ def _get_package_version(
         return None
 
 
+def _torch_info() -> dict[str, Any]:
+    """
+    Torch/CUDA details when torch is installed; explicit nulls when it is not
+    (CPU-only Milestone 1 / XGBoost-baseline runs — CF-5).
+    """
+    try:
+        import torch
+    except ModuleNotFoundError:
+        return {
+            "torch_installed": False,
+            "torch_version": None,
+            "cuda_available": None,
+            "cuda_version": None,
+            "cudnn_version": None,
+            "gpu_name": None,
+        }
+
+    cuda = torch.cuda.is_available()
+    return {
+        "torch_installed": True,
+        "torch_version": torch.__version__,
+        "cuda_available": cuda,
+        "cuda_version": torch.version.cuda,
+        "cudnn_version": torch.backends.cudnn.version() if cuda else None,
+        "gpu_name": torch.cuda.get_device_name(0) if cuda else None,
+    }
+
+
 def collect_environment() -> dict[str, Any]:
     """
     Collect the Python, OS, and core ML environment information.
+
+    Works with or without the GNN stack installed: numpy and torch are probed
+    lazily so CPU-only data/featurization runs can still record provenance.
     """
+    try:
+        import numpy as np
+
+        numpy_version = np.__version__
+    except ModuleNotFoundError:
+        numpy_version = None
+
     return {
         "timestamp_utc": datetime.now(UTC).isoformat(),
         "python_version": sys.version,
         "platform": platform.platform(),
         "machine": platform.machine(),
         "processor": platform.processor(),
-        "numpy_version": np.__version__,
-        "torch_version": torch.__version__,
-        "cuda_available": torch.cuda.is_available(),
-        "cuda_version": torch.version.cuda,
-        "cudnn_version": (
-            torch.backends.cudnn.version()
-            if torch.cuda.is_available()
-            else None
-        ),
+        "numpy_version": numpy_version,
+        **_torch_info(),
         "rdkit_version": _get_package_version("rdkit"),
-        "scikit_learn_version": _get_package_version(
-            "scikit-learn"
-        ),
+        "scikit_learn_version": _get_package_version("scikit-learn"),
         "xgboost_version": _get_package_version("xgboost"),
+        "pandas_version": _get_package_version("pandas"),
         "pytdc_version": _get_package_version("PyTDC"),
     }
 

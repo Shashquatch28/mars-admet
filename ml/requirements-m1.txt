@@ -1,0 +1,16 @@
+# MARS Milestone 1 — data + featurization working environment (ml/.venv).
+#
+# CPU-only. No torch / transformers / xgboost — those are M2 (see requirements.txt).
+# PyTDC is deliberately NOT here: it force-pins numpy<2 and rdkit<2024.3.1 and has
+# no Windows wheel for tiledbsoma. Acquisition runs in an isolated environment
+# instead — see ml/data/acquisition/README.md and ml/data/requirements-acquire.lock.txt.
+#
+# Exact resolved versions are frozen in ml/requirements-m1.lock.txt (use that for
+# a reproducible install). Decision: 2026-08-30, documentation/AIMS/decisions.md.
+
+numpy>=2.1,<3
+pandas>=2.2,<3
+scikit-learn>=1.5,<2
+rdkit>=2026.3.1
+joblib>=1.4
+pytest>=8

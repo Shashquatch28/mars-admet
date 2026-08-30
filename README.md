@@ -4,7 +4,7 @@ Drug safety/viability screening platform predicting 14 clinically relevant ADMET
 endpoints from molecular structure. `documentation/mars-blueprint_v4.md` is the
 full locked design spec and the source of truth — this repo is the execution of
 that blueprint, not a restatement of it. Current implementation status and the
-verification matrix live in `documentation/mars-status_M0.md`.
+verification matrix live in `documentation/status/mars-status_M0.md`.
 
 Build is **solo, sequenced by dependency order** (blueprint Module 14, revised
 from the earlier 3-person A/B/C split). The `ml/` / `api/` / `frontend/` READMEs
@@ -45,7 +45,7 @@ uvicorn app.main:app --reload
 
 # 5. ML deps (heavy — torch/rdkit/PyTDC; GNN training needs a CUDA box)
 cd ml && pip install -r requirements.txt
-python data/acquire.py   # STUB today — see documentation/mars-status_M0.md (M1)
+python data/acquire.py   # STUB today — see documentation/status/mars-status_M0.md (M1)
 ```
 
 > Frontend (`frontend/`) is **not runnable yet** — `package.json` exists but the
@@ -68,7 +68,7 @@ contract-shaped — this is what B and C build against until A's real models lan
 Dependency chain, not a team split:
 `contracts → data/featurize/models/AD → API+auth → frontend+3D → infra deploy →
 eval/explainability/novelty`. Milestones M0–M5 target Sep 30, 2026. See
-`documentation/mars-status_M0.md` for where each module actually stands.
+`documentation/status/mars-status_M0.md` for where each module actually stands.
 
 ## Key locked decisions (see blueprint for full reasoning)
 

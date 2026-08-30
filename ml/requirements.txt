@@ -1,11 +1,29 @@
+# MARS ml/ — full stack (superset across milestones). Loose ranges; not a lockfile.
+#
+# For a reproducible install, use the per-milestone pinned files instead:
+#   * M1 (data + featurization, CPU-only):  ml/requirements-m1.txt  /  ml/requirements-m1.lock.txt
+#   * acquisition (isolated, PyTDC):        ml/data/requirements-acquire.lock.txt
+#
+# PyTDC is intentionally acquisition-only (it force-pins numpy<2 / rdkit<2024.3.1
+# and lacks a Windows tiledbsoma wheel). See ml/data/acquisition/README.md.
+# torch / transformers / xgboost are M2 and are installed on the GPU box, not here.
+
+# --- M1: data + featurization ---
+rdkit>=2026.3.1
+scikit-learn>=1.5
+pandas>=2.2
+numpy>=2.1
+joblib>=1.4
+
+# --- M2: modeling (GPU box) ---
 torch>=2.2
 transformers>=4.40
-rdkit>=2023.9.5
-scikit-learn>=1.4
 xgboost>=2.0
-pandas>=2.2
-numpy>=1.26
-PyTDC>=0.4.1
+
+# --- tracking (all milestones) ---
 wandb>=0.16
+
+# --- M4: novelty track ---
 mmpdb>=3.1
+
 -e ../contracts
