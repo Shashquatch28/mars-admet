@@ -1,0 +1,41 @@
+{
+  "dataset_key": "solubility_logs",
+  "endpoint_key": "solubility_logs",
+  "stats": {
+    "conflict_rate_over_all_unique_molecules": 0.023000633044946192,
+    "conflict_rate_over_multi_measurement_molecules": 0.9396551724137931,
+    "distribution": {
+      "max": 2.1376816201,
+      "mean": -2.890454257453272,
+      "median": -2.6183,
+      "min": -13.1719,
+      "n": 9980,
+      "p25": -4.3265,
+      "p75": -1.2096462437,
+      "std": 2.367905516100008
+    },
+    "duplicate_rate_at_standardized_identity": 0.05030060120240481,
+    "molecules_with_conflicting_labels": 218,
+    "molecules_with_multiple_measurements": 232,
+    "n_label_parse_failures": 0,
+    "n_raw_rows": 9982,
+    "n_unique_standardized_molecules": 9478,
+    "n_valid_after_standardization": 9980,
+    "rejection_reasons": {
+      "sanitize-failed": 2
+    },
+    "scaffold_diversity": {
+      "acyclic_share": 0.27073222198776115,
+      "n_unique_scaffolds": 1883,
+      "scaffolds_per_molecule": 0.1986706056129985,
+      "top_scaffold_share": 0.27073222198776115
+    },
+    "stereo_defined_count": 979,
+    "stereo_defined_ratio": 0.09809619238476953,
+    "stereo_flagged_by_blueprint": false,
+    "validity_rate": 0.9997996393508315
+  },
+  "task": "regression",
+  "tdc_name": "Solubility_AqSolDB",
+  "variant": "primary"
+}

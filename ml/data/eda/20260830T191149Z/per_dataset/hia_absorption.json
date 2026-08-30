@@ -1,0 +1,36 @@
+{
+  "dataset_key": "hia_absorption",
+  "endpoint_key": "hia_absorption",
+  "stats": {
+    "conflict_rate_over_all_unique_molecules": 0.0,
+    "conflict_rate_over_multi_measurement_molecules": 0.0,
+    "distribution": {
+      "counts": {
+        "0": 78,
+        "1": 500
+      },
+      "positive_fraction": 0.8650519031141869
+    },
+    "duplicate_rate_at_standardized_identity": 0.0,
+    "molecules_with_conflicting_labels": 0,
+    "molecules_with_multiple_measurements": 0,
+    "n_label_parse_failures": 0,
+    "n_raw_rows": 578,
+    "n_unique_standardized_molecules": 578,
+    "n_valid_after_standardization": 578,
+    "rejection_reasons": {},
+    "scaffold_diversity": {
+      "acyclic_share": 0.0328719723183391,
+      "n_unique_scaffolds": 385,
+      "scaffolds_per_molecule": 0.6660899653979239,
+      "top_scaffold_share": 0.11072664359861592
+    },
+    "stereo_defined_count": 337,
+    "stereo_defined_ratio": 0.583044982698962,
+    "stereo_flagged_by_blueprint": false,
+    "validity_rate": 1.0
+  },
+  "task": "classification",
+  "tdc_name": "HIA_Hou",
+  "variant": "primary"
+}

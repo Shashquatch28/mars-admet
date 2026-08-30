@@ -1,0 +1,39 @@
+{
+  "dataset_key": "ppb_binding",
+  "endpoint_key": "ppb_binding",
+  "stats": {
+    "conflict_rate_over_all_unique_molecules": 0.0,
+    "conflict_rate_over_multi_measurement_molecules": 0.0,
+    "distribution": {
+      "max": 99.95,
+      "mean": 88.07294919454759,
+      "median": 95.43,
+      "min": 11.18,
+      "n": 1614,
+      "p25": 85.19,
+      "p75": 98.58,
+      "std": 16.733033785866677
+    },
+    "duplicate_rate_at_standardized_identity": 0.0,
+    "molecules_with_conflicting_labels": 0,
+    "molecules_with_multiple_measurements": 0,
+    "n_label_parse_failures": 0,
+    "n_raw_rows": 1614,
+    "n_unique_standardized_molecules": 1614,
+    "n_valid_after_standardization": 1614,
+    "rejection_reasons": {},
+    "scaffold_diversity": {
+      "acyclic_share": 0.0012391573729863693,
+      "n_unique_scaffolds": 1032,
+      "scaffolds_per_molecule": 0.6394052044609665,
+      "top_scaffold_share": 0.020446096654275093
+    },
+    "stereo_defined_count": 581,
+    "stereo_defined_ratio": 0.35997521685254025,
+    "stereo_flagged_by_blueprint": false,
+    "validity_rate": 1.0
+  },
+  "task": "regression",
+  "tdc_name": "PPBR_AZ",
+  "variant": "primary"
+}

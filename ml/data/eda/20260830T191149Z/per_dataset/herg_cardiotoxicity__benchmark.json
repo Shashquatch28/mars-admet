@@ -1,0 +1,36 @@
+{
+  "dataset_key": "herg_cardiotoxicity__benchmark",
+  "endpoint_key": "herg_cardiotoxicity",
+  "stats": {
+    "conflict_rate_over_all_unique_molecules": 0.01461038961038961,
+    "conflict_rate_over_multi_measurement_molecules": 0.23076923076923078,
+    "distribution": {
+      "counts": {
+        "0": 204,
+        "1": 451
+      },
+      "positive_fraction": 0.6885496183206107
+    },
+    "duplicate_rate_at_standardized_identity": 0.059541984732824425,
+    "molecules_with_conflicting_labels": 9,
+    "molecules_with_multiple_measurements": 39,
+    "n_label_parse_failures": 0,
+    "n_raw_rows": 655,
+    "n_unique_standardized_molecules": 616,
+    "n_valid_after_standardization": 655,
+    "rejection_reasons": {},
+    "scaffold_diversity": {
+      "acyclic_share": 0.027597402597402596,
+      "n_unique_scaffolds": 370,
+      "scaffolds_per_molecule": 0.6006493506493507,
+      "top_scaffold_share": 0.05032467532467533
+    },
+    "stereo_defined_count": 359,
+    "stereo_defined_ratio": 0.5480916030534351,
+    "stereo_flagged_by_blueprint": false,
+    "validity_rate": 1.0
+  },
+  "task": "classification",
+  "tdc_name": "hERG",
+  "variant": "benchmark_alt"
+}

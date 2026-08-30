@@ -1,0 +1,36 @@
+{
+  "dataset_key": "cyp3a4_inhibition",
+  "endpoint_key": "cyp3a4_inhibition",
+  "stats": {
+    "conflict_rate_over_all_unique_molecules": 8.132726089785297e-05,
+    "conflict_rate_over_multi_measurement_molecules": 0.03225806451612903,
+    "distribution": {
+      "counts": {
+        "0": 7218,
+        "1": 5110
+      },
+      "positive_fraction": 0.4145035691109669
+    },
+    "duplicate_rate_at_standardized_identity": 0.0025957170668397143,
+    "molecules_with_conflicting_labels": 1,
+    "molecules_with_multiple_measurements": 31,
+    "n_label_parse_failures": 0,
+    "n_raw_rows": 12328,
+    "n_unique_standardized_molecules": 12296,
+    "n_valid_after_standardization": 12328,
+    "rejection_reasons": {},
+    "scaffold_diversity": {
+      "acyclic_share": 0.022690305790500975,
+      "n_unique_scaffolds": 7379,
+      "scaffolds_per_molecule": 0.600113858165257,
+      "top_scaffold_share": 0.04172088484059857
+    },
+    "stereo_defined_count": 3570,
+    "stereo_defined_ratio": 0.28958468526930564,
+    "stereo_flagged_by_blueprint": true,
+    "validity_rate": 1.0
+  },
+  "task": "classification",
+  "tdc_name": "CYP3A4_Veith",
+  "variant": "primary"
+}

@@ -1,0 +1,36 @@
+{
+  "dataset_key": "cyp2c9_inhibition",
+  "endpoint_key": "cyp2c9_inhibition",
+  "stats": {
+    "conflict_rate_over_all_unique_molecules": 0.0004978839930296241,
+    "conflict_rate_over_multi_measurement_molecules": 0.16216216216216217,
+    "distribution": {
+      "counts": {
+        "0": 8047,
+        "1": 4045
+      },
+      "positive_fraction": 0.33451869004300366
+    },
+    "duplicate_rate_at_standardized_identity": 0.0033906715183592458,
+    "molecules_with_conflicting_labels": 6,
+    "molecules_with_multiple_measurements": 37,
+    "n_label_parse_failures": 0,
+    "n_raw_rows": 12092,
+    "n_unique_standardized_molecules": 12051,
+    "n_valid_after_standardization": 12092,
+    "rejection_reasons": {},
+    "scaffold_diversity": {
+      "acyclic_share": 0.022653721682847898,
+      "n_unique_scaffolds": 7098,
+      "scaffolds_per_molecule": 0.5889967637540453,
+      "top_scaffold_share": 0.039747738776864994
+    },
+    "stereo_defined_count": 3689,
+    "stereo_defined_ratio": 0.3050777373470063,
+    "stereo_flagged_by_blueprint": true,
+    "validity_rate": 1.0
+  },
+  "task": "classification",
+  "tdc_name": "CYP2C9_Veith",
+  "variant": "primary"
+}

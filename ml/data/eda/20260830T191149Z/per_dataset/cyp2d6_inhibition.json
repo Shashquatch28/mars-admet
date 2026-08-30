@@ -1,0 +1,36 @@
+{
+  "dataset_key": "cyp2d6_inhibition",
+  "endpoint_key": "cyp2d6_inhibition",
+  "stats": {
+    "conflict_rate_over_all_unique_molecules": 0.0003819709702062643,
+    "conflict_rate_over_multi_measurement_molecules": 0.13513513513513514,
+    "distribution": {
+      "counts": {
+        "0": 10616,
+        "1": 2514
+      },
+      "positive_fraction": 0.19146991622239146
+    },
+    "duplicate_rate_at_standardized_identity": 0.0030464584920030465,
+    "molecules_with_conflicting_labels": 5,
+    "molecules_with_multiple_measurements": 37,
+    "n_label_parse_failures": 0,
+    "n_raw_rows": 13130,
+    "n_unique_standardized_molecules": 13090,
+    "n_valid_after_standardization": 13130,
+    "rejection_reasons": {},
+    "scaffold_diversity": {
+      "acyclic_share": 0.021161191749427044,
+      "n_unique_scaffolds": 7728,
+      "scaffolds_per_molecule": 0.5903743315508021,
+      "top_scaffold_share": 0.040412528647822764
+    },
+    "stereo_defined_count": 3822,
+    "stereo_defined_ratio": 0.29108910891089107,
+    "stereo_flagged_by_blueprint": true,
+    "validity_rate": 1.0
+  },
+  "task": "classification",
+  "tdc_name": "CYP2D6_Veith",
+  "variant": "primary"
+}

@@ -1,0 +1,36 @@
+{
+  "dataset_key": "bbb_permeability",
+  "endpoint_key": "bbb_permeability",
+  "stats": {
+    "conflict_rate_over_all_unique_molecules": 0.005595116988809766,
+    "conflict_rate_over_multi_measurement_molecules": 0.18333333333333332,
+    "distribution": {
+      "counts": {
+        "0": 479,
+        "1": 1551
+      },
+      "positive_fraction": 0.7640394088669951
+    },
+    "duplicate_rate_at_standardized_identity": 0.03152709359605911,
+    "molecules_with_conflicting_labels": 11,
+    "molecules_with_multiple_measurements": 60,
+    "n_label_parse_failures": 0,
+    "n_raw_rows": 2030,
+    "n_unique_standardized_molecules": 1966,
+    "n_valid_after_standardization": 2030,
+    "rejection_reasons": {},
+    "scaffold_diversity": {
+      "acyclic_share": 0.04832146490335707,
+      "n_unique_scaffolds": 1020,
+      "scaffolds_per_molecule": 0.5188199389623601,
+      "top_scaffold_share": 0.06612410986775177
+    },
+    "stereo_defined_count": 717,
+    "stereo_defined_ratio": 0.3532019704433498,
+    "stereo_flagged_by_blueprint": true,
+    "validity_rate": 1.0
+  },
+  "task": "classification",
+  "tdc_name": "BBB_Martins",
+  "variant": "primary"
+}

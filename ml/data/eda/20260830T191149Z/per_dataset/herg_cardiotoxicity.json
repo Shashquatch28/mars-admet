@@ -1,0 +1,36 @@
+{
+  "dataset_key": "herg_cardiotoxicity",
+  "endpoint_key": "herg_cardiotoxicity",
+  "stats": {
+    "conflict_rate_over_all_unique_molecules": 0.0012165450121654502,
+    "conflict_rate_over_multi_measurement_molecules": 0.056140350877192984,
+    "distribution": {
+      "counts": {
+        "0": 6727,
+        "1": 6718
+      },
+      "positive_fraction": 0.4996653030866493
+    },
+    "duplicate_rate_at_standardized_identity": 0.021792487913722573,
+    "molecules_with_conflicting_labels": 16,
+    "molecules_with_multiple_measurements": 285,
+    "n_label_parse_failures": 0,
+    "n_raw_rows": 13445,
+    "n_unique_standardized_molecules": 13152,
+    "n_valid_after_standardization": 13445,
+    "rejection_reasons": {},
+    "scaffold_diversity": {
+      "acyclic_share": 0.0012925790754257907,
+      "n_unique_scaffolds": 5922,
+      "scaffolds_per_molecule": 0.45027372262773724,
+      "top_scaffold_share": 0.008819951338199513
+    },
+    "stereo_defined_count": 5509,
+    "stereo_defined_ratio": 0.4097433990330978,
+    "stereo_flagged_by_blueprint": false,
+    "validity_rate": 1.0
+  },
+  "task": "classification",
+  "tdc_name": "hERG_Karim",
+  "variant": "primary"
+}

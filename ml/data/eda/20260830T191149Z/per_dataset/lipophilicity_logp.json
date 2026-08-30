@@ -1,0 +1,39 @@
+{
+  "dataset_key": "lipophilicity_logp",
+  "endpoint_key": "lipophilicity_logp",
+  "stats": {
+    "conflict_rate_over_all_unique_molecules": 0.0,
+    "conflict_rate_over_multi_measurement_molecules": 0.0,
+    "distribution": {
+      "max": 4.5,
+      "mean": 2.1863357142857107,
+      "median": 2.36,
+      "min": -1.5,
+      "n": 4200,
+      "p25": 1.41,
+      "p75": 3.1,
+      "std": 1.202860490133629
+    },
+    "duplicate_rate_at_standardized_identity": 0.0,
+    "molecules_with_conflicting_labels": 0,
+    "molecules_with_multiple_measurements": 0,
+    "n_label_parse_failures": 0,
+    "n_raw_rows": 4200,
+    "n_unique_standardized_molecules": 4200,
+    "n_valid_after_standardization": 4200,
+    "rejection_reasons": {},
+    "scaffold_diversity": {
+      "acyclic_share": 0.0011904761904761906,
+      "n_unique_scaffolds": 2408,
+      "scaffolds_per_molecule": 0.5733333333333334,
+      "top_scaffold_share": 0.018095238095238095
+    },
+    "stereo_defined_count": 1186,
+    "stereo_defined_ratio": 0.2823809523809524,
+    "stereo_flagged_by_blueprint": false,
+    "validity_rate": 1.0
+  },
+  "task": "regression",
+  "tdc_name": "Lipophilicity_AstraZeneca",
+  "variant": "primary"
+}
