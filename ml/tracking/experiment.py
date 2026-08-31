@@ -82,9 +82,20 @@ class ExperimentRun:
 
         return f"{name}_{timestamp}"
 
-    def start(self) -> None:
+    def start(
+        self,
+        *,
+        run_tags: dict[str, Any] | None = None,
+    ) -> None:
         """
         Initialize the experiment directory and save initial metadata.
+
+        Parameters
+        ----------
+        run_tags:
+            Optional flat dict of M2-level fields merged into ``run.json``
+            for fast filtering without parsing ``config.json``.  Typical keys:
+            ``endpoint``, ``model_family``, ``seed``, ``prep_id``.
         """
         if self.run_dir.exists():
             raise FileExistsError(
@@ -110,7 +121,7 @@ class ExperimentRun:
             provenance,
         )
 
-        metadata = {
+        metadata: dict[str, Any] = {
             "run_id": self.run_id,
             "name": self.name,
             "status": "running",
@@ -118,6 +129,9 @@ class ExperimentRun:
                 UTC
             ).isoformat(),
         }
+
+        if run_tags:
+            metadata.update(run_tags)
 
         self._write_json(
             self.run_dir / "run.json",

@@ -1,0 +1,12 @@
+# MARS ml/ M2 — modeling dependencies (XGBoost baseline only).
+# Install into ml/.venv alongside M1 deps (requirements-m1.txt / .lock.txt).
+#
+# KERMT / torch / transformers are GPU-box only and are NOT listed here.
+# They are tracked in requirements.txt as reference.
+#
+# To install:
+#   ml\.venv\Scripts\pip install -r ml/requirements-m2.txt
+#
+# To lock after install:
+#   ml\.venv\Scripts\pip freeze | grep xgboost > ml/requirements-m2.lock.txt
+xgboost>=2.0
