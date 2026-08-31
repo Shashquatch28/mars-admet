@@ -135,16 +135,73 @@ _ADME: list[DatasetSpec] = [
         approx_n=1975,
         notes="PharmaBench augmentation dropped (Module 1 §7, CC BY-NC-ND). TDC-only.",
     ),
+    # PPB — Option C locked 2026-08-30: primary MARS endpoint is *human only*
+    # (blueprint Module 1 §4 PPB exception + Module 2 table). The all-species
+    # pooled dataset is retained as a comparability ablation (variant below),
+    # not on the M2 critical path.
+    #
+    # Species filter reproducibility (blueprint Option C §1 requirement):
+    #   Source dataset:  PPBR_AZ (Astrazeneca, TDC redistribution CC BY 4.0)
+    #   Loader:          tdc.single_pred.ADME(name="PPBR_AZ") — filters the raw
+    #                    5-species tab (2,828 rows / 1,797 unique compounds) to
+    #                    Species == "Homo sapiens" (1,614 rows / 1,614 compounds).
+    #   Inclusion:       every human measurement returned by the loader.
+    #   Exclusion:       non-human species measurements (Rattus, Canis, Mus,
+    #                    Cavia porcellus). Dropped: 1,214 rows.
+    #   Dedup + conflict: run through the tiered policy per blueprint §3
+    #                    (Module 1) using the same code path as every other
+    #                    endpoint (drop_conflicting since human PPBR_AZ has
+    #                    0 % conflict rate per Run-2 EDA).
+    #   Snapshot hash:   canonical (SMILES,Y) digest — recorded in the lockfile
+    #                    per acquisition; split hashes recorded in the processed
+    #                    dataset's split_report.json and provenance.json.
     DatasetSpec(
         dataset_key="ppb_binding",
         endpoint_key="ppb_binding",
         tdc_name="PPBR_AZ",
         tdc_loader="ADME",
         task="regression",
-        in_admet_benchmark_group=True,
+        # False under Option C: the TDC benchmark split is defined against the
+        # ALL-SPECIES pool, not against the human subset (2,790 measurements
+        # vs 1,614 human compounds — the benchmark split does not partition the
+        # human subset), so it cannot be adopted for the primary endpoint. The
+        # ablation variant below is the one that adopts the official split.
+        in_admet_benchmark_group=False,
         license=_TDC_CC_BY_4,
         license_ref="https://tdcommons.ai/single_pred_tasks/adme/#ppbr-plasma-protein-binding-rate-astrazeneca",
+        approx_n=1614,
+        notes=(
+            "PRIMARY MARS PPB endpoint under Option C (human only via "
+            "tdc.single_pred.ADME's Homo-sapiens filter, N=1614). Split is an "
+            "independent deterministic Murcko scaffold split (same policy shape "
+            "as hERG_Karim). Not directly TDC-leaderboard-comparable; the "
+            "ppb_binding__all_species variant is the leaderboard-comparable "
+            "ablation."
+        ),
+    ),
+    DatasetSpec(
+        dataset_key="ppb_binding__all_species",
+        endpoint_key="ppb_binding",
+        tdc_name="PPBR_AZ",
+        tdc_loader="ADME",
+        task="regression",
+        in_admet_benchmark_group=True,
+        license=_TDC_CC_BY_4,
+        license_ref="https://tdcommons.ai/benchmark/admet_group/17ppbr_az/",
+        variant="benchmark_alt",
         approx_n=1797,
+        notes=(
+            "SECONDARY (all-species pooled) PPB dataset, retained as a "
+            "comparability ablation under Option C. Uses TDC benchmark_group "
+            "PPBR_AZ (2,790 measurements over 1,797 unique compounds, all 5 "
+            "species pooled with species column dropped). "
+            "NOT on the M2 critical path — the ablation is scheduled after the "
+            "primary 14-endpoint system trains cleanly, and only executed if "
+            "its compute cost is acceptable (specifically: whether swapping the "
+            "PPB target requires re-training the multi-task cluster for each "
+            "seed vs only PPB-specific runs). Kept provenance-tracked so the "
+            "ablation can be run without re-derivation."
+        ),
     ),
     DatasetSpec(
         dataset_key="cyp3a4_inhibition",

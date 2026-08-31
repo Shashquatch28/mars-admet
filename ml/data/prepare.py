@@ -44,6 +44,7 @@ from typing import Any
 from featurize.scaffold import murcko_scaffold_from_smiles
 from featurize.standardize import STANDARDIZER_VERSION, standardize_batch
 
+from data.dataset_registry import DATASET_SPECS
 from data.dedup import (
     DEDUP_VERSION,
     dedup,
@@ -191,7 +192,15 @@ def prepare_dataset(
             "reason": "explicitly skipped by prepare invocation",
         }
 
-    bs = entry.get("benchmark_split")
+    # Registry is the source of truth for split method (blueprint Module 1 §4).
+    # The lockfile records what the acquisition physically wrote to disk, but
+    # policy changes between the acquisition and preparation runs (e.g. Option C
+    # for PPB, 2026-08-30) must be honored — so if the registry says the primary
+    # endpoint does not adopt a benchmark split, we scaffold-split regardless of
+    # what the lockfile has attached.
+    spec = DATASET_SPECS.get(dataset_key)
+    registry_says_adopt = bool(spec and spec.in_admet_benchmark_group)
+    bs = entry.get("benchmark_split") if registry_says_adopt else None
     post_std_leaks: list[str] = []
     if bs and "train_val" in bs and "test" in bs:
         tv_pairs = _read_csv_pairs(data_root / bs["train_val"]["path"], entry["smiles_column"], entry["label_column"])
@@ -360,6 +369,9 @@ def prepare_dataset(
         "acquired_at_utc": entry["acquired_at_utc"],
         "acq_snapshot_sha256": entry["snapshot_sha256"],
         "generated_at_utc": _utc_now(),
+        "registry_notes": spec.notes if spec else "",
+        "registry_says_adopt_benchmark": registry_says_adopt,
+        "lockfile_had_benchmark_split": bool(entry.get("benchmark_split")),
         "files": {
             "train_val": {
                 "path": str((ds_out / "train_val.csv").as_posix()),
@@ -406,8 +418,13 @@ def main() -> int:
     ap.add_argument(
         "--defer-ppb",
         action="store_true",
-        default=True,
-        help="skip PPBR_AZ splitting pending maintainer decision (default: on).",
+        default=False,
+        help=(
+            "Escape hatch: skip PPB processing entirely. Default: OFF. Option C "
+            "(human-only primary) was locked 2026-08-30; PPB is now on the same "
+            "footing as every other endpoint. The dataset_registry decides its "
+            "split method (scaffold for human-only PPB)."
+        ),
     )
     args = ap.parse_args()
 

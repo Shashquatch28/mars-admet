@@ -79,8 +79,30 @@ def test_all_datasets_are_cc_by_4():
         assert spec.license == "CC BY 4.0", spec.dataset_key
 
 
-def test_thirteen_primary_datasets_are_in_the_benchmark_group():
+def test_primary_datasets_split_between_benchmark_and_self_generated():
+    """Blueprint Module 1 §4 policy: adopt TDC benchmark split where an official
+    one exists; self-generate a Murcko scaffold split where it does not.
+
+    As of the 2026-08-30 Option C decision (PPB) and the 2026-08-30 hERG choice,
+    two primary endpoints (herg_cardiotoxicity, ppb_binding) use a self-generated
+    scaffold split rather than an official TDC benchmark split — see the blueprint
+    "hERG exception" and "PPB exception" paragraphs in §4.
+    """
     in_group = [s for s in primary_specs() if s.in_admet_benchmark_group]
     out_group = [s for s in primary_specs() if not s.in_admet_benchmark_group]
-    assert len(in_group) == 13
-    assert [s.endpoint_key for s in out_group] == ["herg_cardiotoxicity"]
+    assert len(in_group) == 12
+    assert sorted(s.endpoint_key for s in out_group) == ["herg_cardiotoxicity", "ppb_binding"]
+
+
+def test_ppb_has_both_primary_human_and_all_species_ablation_variants():
+    ppb = [s for s in DATASET_SPECS.values() if s.endpoint_key == "ppb_binding"]
+    assert {s.variant for s in ppb} == {"primary", "benchmark_alt"}
+    primary = next(s for s in ppb if s.variant == "primary")
+    ablation = next(s for s in ppb if s.variant == "benchmark_alt")
+    assert primary.in_admet_benchmark_group is False, (
+        "the TDC benchmark split pools all 5 species and does not partition the "
+        "human subset — it cannot be adopted for the primary human endpoint"
+    )
+    assert ablation.in_admet_benchmark_group is True
+    assert primary.approx_n == 1614
+    assert ablation.approx_n == 1797
