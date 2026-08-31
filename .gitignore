@@ -47,6 +47,10 @@ ml/data/processed/*
 !ml/data/raw/.gitkeep
 !ml/data/processed/.gitkeep
 
+# Feature/conformer cache — regenerable from ml/featurize/build_cache.py; can be
+# large (Morgan+descriptors+graph for the full corpus + 3D conformers).
+ml/data/cache/
+
 # W&B local files
 wandb/
 
