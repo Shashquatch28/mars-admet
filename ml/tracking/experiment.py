@@ -44,6 +44,7 @@ class ExperimentRun:
 
         self.run_dir = self.runs_dir / self.run_id
         self.artifacts_dir = self.run_dir / "artifacts"
+        self.provenance: dict[str, Any] = {}
 
     @staticmethod
     def _validate_name(name: str) -> str:
@@ -112,13 +113,13 @@ class ExperimentRun:
             self.config,
         )
 
-        provenance = collect_provenance(
+        self.provenance = collect_provenance(
             self.repo_root,
         )
 
         self._write_json(
             self.run_dir / "provenance.json",
-            provenance,
+            self.provenance,
         )
 
         metadata: dict[str, Any] = {

@@ -56,6 +56,13 @@ def _build_parser() -> argparse.ArgumentParser:
         dest="runs_dir",
         help="Path to experiment runs directory (default: ml/runs/)",
     )
+    p.add_argument(
+        "--no-wandb",
+        action="store_true",
+        default=False,
+        dest="no_wandb",
+        help="Disable W&B mirroring (ON by default for this production entry point)",
+    )
     return p
 
 
@@ -99,7 +106,8 @@ def main(argv: list[str] | None = None) -> int:
 
     cache = FeatureCache(cache_root)
 
-    print(f"Training seed={args.seed} …")
+    use_wandb = not args.no_wandb
+    print(f"Training seed={args.seed} … (W&B: {'on' if use_wandb else 'off'})")
     result = train_one_seed(
         endpoint_data,
         config,
@@ -107,12 +115,15 @@ def main(argv: list[str] | None = None) -> int:
         args.seed,
         runs_dir=runs_dir,
         repo_root=repo_root,
+        use_wandb=use_wandb,
     )
 
     print(f"Run ID : {result.run_id}")
     print(f"n_train: {result.n_train}  n_val: {result.n_val}")
     if result.best_iteration is not None:
         print(f"Best iteration: {result.best_iteration}")
+    if result.wandb_url:
+        print(f"W&B run: {result.wandb_url}")
 
     m = result.val_metrics
     for field_name in m.__dataclass_fields__:

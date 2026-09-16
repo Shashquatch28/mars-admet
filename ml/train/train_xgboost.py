@@ -8,6 +8,15 @@ The test set inside EndpointData is NEVER touched here.  Calibration split
 molecules are present in train_val (by design) and will appear in either the
 train or val fold — this is correct; they are used only for Platt calibration
 in Run 2a, not for model selection.
+
+W&B mirroring (`use_wandb=True`) is opt-in at this layer and OFF by default —
+this keeps ad-hoc/test calls to train_one_seed() from creating noise runs on
+the dashboard ("no W&B runs for debugging iterations" per project convention).
+`run_xgboost_baseline.py` (the actual production entry point) defaults it ON
+instead, so a real production run is mirrored automatically unless --no-wandb
+is passed. ExperimentRun (local, on disk) is always the source of truth; a
+W&B failure (auth, network) is caught and logged as a warning, never allowed
+to fail the training run itself.
 """
 
 from __future__ import annotations
@@ -39,6 +48,7 @@ class SeedResult:
     n_dropped_train: int
     n_dropped_val: int
     best_iteration: int | None
+    wandb_url: str | None = None
 
 
 def train_one_seed(
@@ -49,6 +59,7 @@ def train_one_seed(
     *,
     runs_dir: Path | str | None = None,
     repo_root: Path | str | None = None,
+    use_wandb: bool = False,
 ) -> SeedResult:
     """Train XGBoost for one seed; log to ExperimentRun; return SeedResult.
 
@@ -66,6 +77,10 @@ def train_one_seed(
         Override for the ExperimentRun runs directory (default: ml/runs/).
     repo_root:
         Override for the repo root (default: two dirs up from this file).
+    use_wandb:
+        Mirror this run to Weights & Biases (project/entity from .env).
+        OFF by default — see module docstring. A W&B failure is caught and
+        surfaced as a warning; it never fails the underlying training run.
     """
     if repo_root is None:
         repo_root = Path(__file__).resolve().parents[2]
@@ -122,6 +137,24 @@ def train_one_seed(
         }
     )
 
+    wandb_logger = None
+    if use_wandb:
+        try:
+            from tracking.wandb_logger import WandbLogger
+
+            wandb_logger = WandbLogger(
+                run_id=run.run_id,
+                config=tracking_config,
+                provenance=run.provenance,
+            )
+        except Exception as exc:
+            warnings.warn(
+                f"W&B logging disabled for run {run.run_id}: {exc}",
+                UserWarning,
+                stacklevel=2,
+            )
+            wandb_logger = None
+
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         model.fit(train_smiles, y_train, X_val=val_smiles, y_val=y_val)
@@ -148,6 +181,8 @@ def train_one_seed(
     for attr in val_metrics.__dataclass_fields__:
         metrics_dict[attr] = getattr(val_metrics, attr)
     run.log_metrics(metrics_dict)
+    if wandb_logger is not None:
+        wandb_logger.log(metrics_dict)
 
     model_path = run.artifact_path("model") / "xgboost"
     model.save(model_path)
@@ -160,6 +195,11 @@ def train_one_seed(
 
     run.finish("completed")
 
+    wandb_url: str | None = None
+    if wandb_logger is not None:
+        wandb_url = getattr(wandb_logger._run, "url", None)
+        wandb_logger.finish()
+
     return SeedResult(
         seed=seed,
         val_metrics=val_metrics,
@@ -170,6 +210,7 @@ def train_one_seed(
         n_dropped_train=n_dropped_train,
         n_dropped_val=n_dropped_val,
         best_iteration=best_iter,
+        wandb_url=wandb_url,
     )
 
 
@@ -180,6 +221,7 @@ def train_xgboost_all_seeds(
     *,
     runs_dir: Path | str | None = None,
     repo_root: Path | str | None = None,
+    use_wandb: bool = False,
 ) -> list[SeedResult]:
     """Train XGBoost for all FIXED_SEEDS; return one SeedResult per seed."""
     results: list[SeedResult] = []
@@ -191,6 +233,7 @@ def train_xgboost_all_seeds(
             seed,
             runs_dir=runs_dir,
             repo_root=repo_root,
+            use_wandb=use_wandb,
         )
         results.append(result)
     return results
