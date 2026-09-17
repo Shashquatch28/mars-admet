@@ -28,6 +28,16 @@ class EndpointPrediction(BaseModel):
     confidence_high: float = Field(..., description="Upper bound of ensemble-spread confidence interval")
     in_domain: bool = Field(..., description="Module 5 k-NN applicability-domain flag for THIS endpoint's training set")
     knn_distance: float = Field(..., description="Mean 5-NN Tanimoto distance used to compute in_domain")
+    model_id: str = Field(
+        default="stub-v0",
+        description="Which trained artifact actually served THIS endpoint (e.g. "
+        "'mars-xgboost-ecfp-desc-v1' vs 'stub-v0'). Endpoints in one response can "
+        "differ here when only some have a promoted trained model (Module 8 "
+        "routing table, M3) — the top-level PredictionResponse.model_version "
+        "describes the serving generation as a whole, this field is per-endpoint "
+        "ground truth. Additive field (M3); defaults to the M0 stub value so "
+        "existing callers are unaffected.",
+    )
 
 
 class PredictionResponse(BaseModel):

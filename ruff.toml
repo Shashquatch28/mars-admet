@@ -9,4 +9,5 @@ select = ["E", "F", "I", "B", "UP"]
 ignore = [
     "E501",   # line length is enforced by formatter, not the linter
     "UP042",  # keep `class X(str, Enum)` — switching to StrEnum changes str()/serialization semantics on the locked contract enums
+    "B008",   # `Depends(...)` in a default argument is FastAPI's own required pattern (M3), not the mutable-default-argument bug this rule targets
 ]

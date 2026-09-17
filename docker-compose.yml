@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: mars_dev_password
       POSTGRES_DB: mars_dev
     ports:
-      - "5432:5432"
+      - "55432:5432"  # host 5432 AND 5433 are both taken by native Windows Postgres services (16, 18) on this machine — see mistakes.md
     volumes:
       - mars_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -34,7 +34,7 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest  # docker.io/minio/minio now requires `docker login` for anonymous pulls — see mistakes.md
     container_name: mars_minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -62,7 +62,7 @@ services:
       - path: .env
         required: false
     environment:
-      DATABASE_URL: postgresql://mars:mars_dev_password@postgres:5432/mars_dev
+      DATABASE_URL: postgresql+asyncpg://mars:mars_dev_password@postgres:5432/mars_dev
       REDIS_URL: redis://redis:6379/0
       S3_ENDPOINT_URL: http://minio:9000
     ports:
@@ -70,6 +70,8 @@ services:
     volumes:
       - ./api/app:/app/app
       - ./contracts:/contracts
+      - ./ml/artifacts:/app/ml/artifacts
+      - ./ml/data/cache:/app/ml/data/cache
     depends_on:
       postgres:
         condition: service_healthy
@@ -78,6 +80,12 @@ services:
       minio:
         condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   mars_postgres_data:

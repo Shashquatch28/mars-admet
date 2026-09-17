@@ -1,0 +1,22 @@
+# MARS Module 8 serving — the minimal ml/ dependency subset the API container
+# needs to run REAL inference (ml/serve/) instead of falling back to the
+# Module 8 stub for every endpoint. Deliberately excludes training-only deps
+# (pandas, joblib, pytest, wandb) and GPU deps (torch, transformers/KERMT) —
+# this is inference-only, CPU-only.
+#
+# scikit-learn IS required here even though nothing in the serving path calls
+# sklearn API directly: `xgb.XGBClassifier()`/`XGBRegressor()` (the sklearn-
+# compatible wrapper classes `XGBoostModel` uses, see ml/models/xgboost_model.py)
+# raise ImportError at __init__ if sklearn isn't importable, regardless of
+# whether .fit()/.predict() ever touch it — discovered the hard way testing
+# the built api Docker image against a real promoted artifact (2026-09-17,
+# see mistakes.md). scipy comes along transitively via xgboost regardless.
+#
+# Installed into the api/Dockerfile image alongside api/requirements.txt.
+# NOT installed into the root .venv used for fast api/tests — those
+# deliberately run without the ml stack and exercise the stub-fallback path.
+
+numpy>=2.1,<3
+rdkit>=2026.3.1
+xgboost>=2.0
+scikit-learn>=1.5,<2

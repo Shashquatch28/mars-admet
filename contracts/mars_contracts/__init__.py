@@ -5,6 +5,14 @@ from .api import (
     CompareRequest,
     CompareResponse,
 )
+from .auth import (
+    LoginRequest,
+    LoginResponse,
+    PasswordResetConfirmRequest,
+    PasswordResetRequestModel,
+    RegisterRequest,
+    RegisterResponse,
+)
 from .conformer import Atom, Bond, ConformerResponse
 from .endpoints import (
     ALL_ENDPOINTS,
@@ -14,6 +22,13 @@ from .endpoints import (
     EndpointCategory,
     TaskType,
 )
+from .persistence import (
+    DeleteAccountRequest,
+    SavedMoleculeResponse,
+    SavedReportResponse,
+    SaveMoleculeRequest,
+    SaveReportRequest,
+)
 from .prediction import BatchJobStatus, EndpointPrediction, PredictionRequest, PredictionResponse
 
 __all__ = [
@@ -22,4 +37,8 @@ __all__ = [
     "ConformerResponse", "Atom", "Bond",
     "BatchPredictOptions", "BatchRowResult", "BatchPredictResponse",
     "CompareRequest", "CompareResponse",
+    "RegisterRequest", "RegisterResponse", "LoginRequest", "LoginResponse",
+    "PasswordResetRequestModel", "PasswordResetConfirmRequest",
+    "SaveMoleculeRequest", "SavedMoleculeResponse", "SaveReportRequest", "SavedReportResponse",
+    "DeleteAccountRequest",
 ]

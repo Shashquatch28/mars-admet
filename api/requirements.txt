@@ -1,14 +1,20 @@
 fastapi>=0.111
 uvicorn[standard]>=0.29
 pydantic>=2.6
+pydantic-settings>=2.2
 sqlalchemy>=2.0
 asyncpg>=0.29
 redis>=5.0
 boto3>=1.34
 python-multipart>=0.0.9
-passlib[bcrypt]>=1.7
+bcrypt>=4.1
 itsdangerous>=2.1
+alembic>=1.13
+httpx>=0.27
 
 # Auth = server-side Redis sessions (Module 13), NOT JWT — no python-jose.
 # Opaque session tokens (secrets.token_urlsafe) stored as session:{token}->user_id in Redis.
 # itsdangerous: signed password-reset tokens for the email flow.
+# bcrypt used directly, NOT via passlib: passlib 1.7.4's bcrypt-backend version
+# probe (`_bcrypt.__about__.__version__`) throws on bcrypt>=4.1 (the attribute
+# was removed) and passlib is unmaintained — see mistakes.md 2026-09-16.

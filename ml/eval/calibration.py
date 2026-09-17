@@ -31,8 +31,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import numpy as np
-from scipy.optimize import minimize_scalar
-from sklearn.linear_model import LogisticRegression
 
 CALIBRATION_VERSION = "mars-calibration-v1"
 _EPS = 1e-12
@@ -98,6 +96,10 @@ def fit_platt_calibrator(raw_probs: np.ndarray, y_true: np.ndarray) -> PlattCali
         )
     if len(np.unique(y_true)) < 2:
         raise ValueError("Platt scaling requires both classes present in the calibration split")
+
+    from sklearn.linear_model import (
+        LogisticRegression,  # lazy: training-only dep, not needed to serve
+    )
 
     lr = LogisticRegression()
     lr.fit(raw_probs.reshape(-1, 1), y_true)
@@ -174,6 +176,8 @@ def fit_temperature_scaler(
         raise ValueError(f"Length mismatch: logits has {len(logits)}, y_true has {len(y_true)}")
     if len(np.unique(y_true)) < 2:
         raise ValueError("Temperature scaling requires both classes present in the calibration split")
+
+    from scipy.optimize import minimize_scalar  # lazy: training-only dep, not needed to serve
 
     def nll(temperature: float) -> float:
         probs = 1.0 / (1.0 + np.exp(-(logits / temperature)))

@@ -3,7 +3,7 @@ name = "mars-contracts"
 version = "0.1.0"
 description = "Shared Pydantic contracts for MARS ADMET platform (ml/, api/, frontend codegen)"
 requires-python = ">=3.11"
-dependencies = ["pydantic>=2.6"]
+dependencies = ["pydantic[email]>=2.6"]
 
 [build-system]
 requires = ["setuptools>=68"]

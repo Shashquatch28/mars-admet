@@ -1,12 +1,15 @@
 name: CI
 
-# M0 CI/CD skeleton (blueprint Module 10):
-#   - lint + test on PR
-#   - build the API image
+# CI/CD (blueprint Module 10):
+#   - lint + test on PR (incl. real Postgres/Redis service containers for
+#     Module 13 auth/persistence + Module 8 batch integration tests)
+#   - build the API image (now includes the real ml/serve/ inference stack)
 #   - smoke-test a known-molecule /predict to catch silent regressions
 #     (ties into Module 11's reproducibility discipline)
-# Deploy-on-merge is intentionally NOT wired here yet — that is M3 (Module 10),
-# once the API + frontend are real and Render/Vercel targets exist.
+# Deploy-on-merge is intentionally NOT wired here yet — actual Cloud Run
+# deployment needs GCP_SA_KEY_JSON + explicit maintainer approval before any
+# push-to-a-live-service happens (M3/M10, tracked in next_steps.md), not a
+# silent CI addition.
 
 on:
   pull_request:
@@ -16,6 +19,30 @@ on:
 jobs:
   lint-test:
     runs-on: ubuntu-latest
+    services:
+      # Module 13 auth/persistence + Module 8 batch tests need real Postgres +
+      # Redis — they skip gracefully without this (see api/tests/conftest.py's
+      # requires_infra), but CI should actually exercise them, not just the
+      # stub-only fast tier.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mars
+          POSTGRES_PASSWORD: mars_dev_password
+          POSTGRES_DB: mars_dev
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mars -d mars_dev"
+          --health-interval 5s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql+asyncpg://mars:mars_dev_password@localhost:5432/mars_dev
+      REDIS_URL: redis://localhost:6379/0
     steps:
       - uses: actions/checkout@v4
 
@@ -33,10 +60,14 @@ jobs:
       - name: Lint (ruff)
         run: ruff check contracts api ml
 
+      - name: Apply DB migrations
+        working-directory: api
+        run: alembic upgrade head
+
       - name: Test contracts
         run: pytest contracts/tests -q
 
-      - name: Test API
+      - name: Test API (incl. auth/persistence/batch integration tests)
         run: pytest api/tests -q
 
   smoke-predict:
