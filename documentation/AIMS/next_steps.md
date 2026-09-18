@@ -224,7 +224,40 @@ had the identical gap specifically for augmented DILI's missing
 was corrected post-hoc (no re-training needed — the underlying leakage
 audit was already clean apart from the same documented benign check).
 
-### KERMT pre-flight — Phase 1-2 done (2026-09-17), Phase 3-5 GPU-blocked
+### KERMT integration — Phase 3+ underway (2026-09-18, RTX A4000 workstation)
+
+GPU workstation available now (RTX A4000 16GB) — the 2026-09-17 GPU blocker
+is lifted. See `decisions.md`'s 2026-09-18 entry for full detail; summary:
+
+- `kermt:latest` docker image build in progress/complete via
+  `~/mars-work/kermt-src/agent/scripts/kermt_container.sh ensure_image`
+  (KERMT vendored outside the mars-admet repo, referenced via
+  `MARS_KERMT_REPO` env var — see decisions.md for why: container isolation,
+  not a hand-installed venv, because `cuik_molmaker` is an unconditional
+  import in `kermt/data/molgraph.py` — genuinely required, not opt-in).
+- Checkpoint + vocab files downloaded and SHA256-hashed:
+  `ml/data/metadata/kermt_checkpoint.lock.json` (tracked),
+  binaries at `ml/data/checkpoints/kermt/NV-KERMT-70M-v2/` (gitignored).
+- `ml/featurize/kermt_adapter.py` + `ml/models/kermt_model.py` implemented;
+  13 adapter unit tests passing (`ml/tests/test_kermt_adapter.py`); full
+  `ml/tests/` suite re-run — 283 passed, 4 pre-existing failures unrelated
+  to KERMT (missing `ml/data/raw/` on this machine, same as before this
+  session), 50 skipped (torch-gated tests, no regression).
+- Smoke tests 2-6 (checkpoint load, forward, backward, tiny finetune, MARS
+  eval integration) **not yet run** as of this update — blocked on the
+  docker image finishing its build, then blocked on real M1 data existing
+  on this machine (`ml/data/raw/` and `ml/data/processed/` are both empty
+  here — M1 was acquired on a different machine and the directories are
+  gitignored by design; acquisition needs to be re-run on this workstation
+  before a real-data finetune, per `ml/data/acquisition/README.md`).
+- **New, verified blocker for mixed-type clusters** (Metabolism,
+  Absorption & Distribution): KERMT's stock CLI takes one `--dataset_type`
+  per run, so a single call can't jointly finetune classification +
+  regression targets. Not resolved — three options logged in decisions.md,
+  needs a maintainer call. Same-type clusters (Toxicity: hERG+AMES) and
+  all 14 single-task runs are unaffected.
+
+<details><summary>Original 2026-09-17 Phase 1-2 audit (superseded above, kept for history)</summary>
 
 Read-only audit only — no training, no installs. Gates single-task/
 multi-task GNN work (Run 3+); independent of the complete XGBoost sweep.
@@ -263,20 +296,38 @@ Featurization is DONE — consume `ml/data/processed/<prep_id>/` +
 `ml/featurize/featurize_batch` / `FeatureCache`. Do NOT re-standardize processed
 SMILES (they are canonical fixed-points).
 
-### M2 pre-flight (do before spending real GPU hours — see decisions.md)
+</details>
+
+### M2 pre-flight (live checklist, updated 2026-09-18 — see decisions.md)
 
 1. ✅ Confirm exact identity of `nvidia/NV-KERMT-70M-v2` (base vs contrastive)
-   — **RESOLVED 2026-09-17: contrastive v2.0.** Still need to hash checkpoint
-   + vocab + featurizer files into the lockfile once actually downloaded.
-2. Verify KERMT **CPU inference** latency — now the **Cloud Run** serving
-   assumption (Module 10). Resolve **B-7 / CF-8**. If CPU inference is too slow,
-   Cloud Run supports a GPU tier but that reintroduces cost → flag to maintainer.
-3. Smoke-finetune KERMT on a 16 GB free-tier card (Kaggle P100/T4) with gradient
-   checkpointing + small batch + gradient accumulation, to confirm the
-   memory-optimised path works. NO paid card fallback (2026-08-30 directive) —
-   if multi-task cluster runs OOM on 16 GB, they wait for a lab A100 session.
-4. Add KERMT's featurizer package to `ml/requirements.txt` once name/version known;
-   lock Stage 2 graph schema to it.
+   — **RESOLVED 2026-09-17: contrastive v2.0.** ✅ Checkpoint + 3 vocab files
+   downloaded and SHA256-hashed 2026-09-18 into
+   `ml/data/metadata/kermt_checkpoint.lock.json`.
+2. Verify KERMT **CPU inference** latency — **still open**, now moot for the
+   GPU-workstation smoke tests but still gates Module 10's CPU-only Cloud
+   Run serving assumption. Resolve **B-7 / CF-8** separately from this GPU work.
+3. Smoke-finetune KERMT on the RTX A4000 (16 GB) with gradient checkpointing +
+   small batch + gradient accumulation. **In progress 2026-09-18** — wrapper
+   (`ml/models/kermt_model.py`) built and unit-tested; Smoke tests 2-6 (ckpt
+   load, forward, backward, tiny finetune, eval integration) blocked on (a)
+   the `kermt:latest` image finishing its build and (b) real M1 data existing
+   on this machine (currently absent — see decisions.md 2026-09-18 entry).
+4. ~~Add KERMT's featurizer package to `ml/requirements.txt`~~ — **superseded**:
+   KERMT is NOT added to `ml/.venv`/`ml/requirements.txt` at all (container
+   isolation instead, see decisions.md). The Stage 2 graph schema
+   (`mars-graph-v1`) stays portable/unlocked; the "adapter" that exists is a
+   SMILES/CSV contract (`ml/featurize/kermt_adapter.py`), not a schema lock,
+   since KERMT re-derives its own graph internally from SMILES.
+5. **New:** decide how to handle KERMT's mixed-classification/regression
+   multi-task limitation for the Metabolism and Absorption & Distribution
+   clusters (decisions.md 2026-09-18 entry has 3 options) — needs a
+   maintainer call, not resolvable by further inspection alone.
+6. **New:** re-run M1 acquisition (`ml/data/acquire.py`) on this workstation
+   — `ml/data/raw/` and `ml/data/processed/` are empty here (gitignored by
+   design; M1 was originally run on a different machine). Needed before any
+   KERMT finetune can use real MARS endpoint data rather than synthetic
+   smoke-test data.
 
 ## M3 — Serving & Infra (active milestone, started 2026-09-17)
 

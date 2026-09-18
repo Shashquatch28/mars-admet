@@ -13,6 +13,144 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-09-18 (cont'd) — Smoke tests 1-6 PASSED on real AMES data; M1 re-acquired on this workstation
+
+**M1 data re-acquired on this workstation** via the existing isolated-venv mechanism (`ml/data/acquisition/README.md`), native Linux instead of WSL (`python3.12 -m venv --without-pip` + `get-pip.py`, since `python3.12-venv` apt package wasn't installed and neither system Python nor MARS's own `.venv`/`ml/.venv` were touched). All 15 canonical dataset_keys acquired (excluding `ppb_binding__all_species`, a documented deferred ablation — see below); dedup/split numbers match the original 2026-08-30 audit exactly (e.g. AMES 7278→7255, CYP3A4 12328→12295), confirming the pipeline's own determinism claim. `ml/data/prepare.py` run afterward — all 15 processed successfully.
+
+**Two dataset-registry findings surfaced, NOT modified (flagged only):**
+1. `ppb_binding` and `ppb_binding__all_species` share `tdc_name="PPBR_AZ"` in `dataset_registry.py`, so both can't be acquired in one `acquire.py` pass (second one hits `FileExistsError` on the shared raw path). Excluded the deferred ablation variant via `--only` (matching the original, already-audited 15-dataset M1 baseline) — did not touch the registry or acquire.py's collision handling.
+2. `test_acquisition_lockfile.py::test_benchmark_split_partitions_the_full_set_except_ppbr` and `::test_blueprint_n_flags_recorded` now fail against the fresh lockfile — traced to a real, already-resolved-elsewhere code change: `ppb_binding`'s `in_admet_benchmark_group` flag was flipped to `False` in the registry sometime after 2026-08-30 (the "Option C" fix mentioned in `mars-status_M1.md`'s "Registry–vs–lockfile divergence" note), so a fresh acquisition correctly no longer attaches a `benchmark_split` to it — the two tests were written against the old lockfile's now-superseded quirk and haven't been re-run since that registry fix landed (this session is the first re-acquisition since). Not fixed here — outside this session's KERMT-integration scope; flagged for whoever next touches `ml/data/`.
+3. `test_dilist_augmentation.py` + 3 `test_loaders.py` tests still fail — DILIst augmentation needs the external FDA/NCTR DILIst file (not a TDC dataset, not part of `acquire.py`), which this session did not obtain (external-source acquisition, out of scope; flagged per the session's own stop-at-external-source instruction).
+
+**Two real bugs found and fixed in `ml/models/kermt_model.py` during the actual smoke run (not in KERMT's code):**
+1. `_parse_json_stdout` couldn't parse `check_checkpoint.py`'s real output — it's pretty-printed JSON (`indent=2`) prefixed by container/CUDA banner text on stdout; the original whole-string-then-single-line fallback handled neither. Fixed to scan backward for a line starting `{` and parse from there to EOF. Regression test added.
+2. `KermtConfig.metric` defaulting to nothing let `run_finetune_local.py` fall back to `defaults_finetune.json`'s unconditional `"mae"` — invalid for `dataset_type=classification` (`kermt/util/parsing.py`'s own validation caught it: `ValueError: Metric "mae" invalid for dataset type "classification"`). Fixed: wrapper now always resolves an explicit, task_type-correct metric (`auc` / `mae`) rather than relying on the config file's regression-oriented default. Regression tests added.
+3. `fit()`/`predict()` read `run_manifest["save_dir"]` / `["output_csv"]` as host paths — they're CONTAINER paths (`/runs/...`, since we pass `--out /runs`), so the check for the finetuned checkpoint failed with "not found" even though finetune had genuinely already succeeded. Fixed to always construct the host path from the known `run_dir` bind-mount instead of trusting the container-side string. Two regression tests added (mocking `_run_container`, no docker needed to run them).
+
+All 35 `ml/tests/test_kermt_{model,adapter}.py` unit tests pass; full `ml/tests/` suite: 375 passed (the pre-existing 6 explained above; none newly broken).
+
+**Real smoke-test results (endpoint: `ames_mutagenicity`, classification, 300 real train / 80 real val molecules — genuine scaffold-fold subset of the real 5,802-compound train_val pool, never touching the 1,453-compound held-out test set):**
+
+| Smoke | Result |
+|---|---|
+| 1 — container import | PASS: `cuda_available=True`, `device_count=1`, `torch==2.9.1`, CUDA 12.8 runtime, `kermt`/`cuik_molmaker` import clean |
+| 2 — checkpoint load | PASS: `check_checkpoint.py --mode finetune_init` → `ok:true`, `model_type=hybrid`, arch matches HF card exactly |
+| 3 — forward (real data) | PASS: real graph conversion + forward, `loss_train=1.3317` epoch 0, no NaNs |
+| 4 — backward | PASS (inferred from real training dynamics, not an isolated hook — KERMT's CLI exposes no standalone forward/backward entry point): `loss_train` 1.3317→1.0341→0.8531 and `auc_val` 0.6575→0.6756→0.7244 monotonically improve across 3 epochs — proof gradients are flowing and the optimizer is updating real weights, not a static/no-op pass |
+| 5 — tiny finetune + ckpt save/reload | PASS: 3 epochs, batch_size=16, wall time 50.2s (includes container/prepare overhead; pure train loop ≈13.5s); reload-then-repredict bit-identical (`RELOAD_PREDS_MATCH=True`) |
+| 6 — MARS eval integration | PASS: `ml/eval/metrics.py::compute_metrics` → AUROC 0.7244 (matches KERMT's own `auc_val` exactly), AUPRC 0.8457, Brier 0.1920, ECE 0.1395; `tracking.experiment.ExperimentRun` logs the run + metrics cleanly |
+
+Peak GPU memory across the whole fit+predict: 1,909 MiB (of 16,376 MiB) including a ~412 MiB desktop-process baseline — KERMT's own delta ≈1.5 GB at batch_size 16 on this tiny run. Comfortable headroom; no OOM, no attempt yet at a larger-batch ceiling (out of this session's scope per the user's explicit stop instruction).
+
+**Confirmed by source inspection, not assumed:** KERMT's finetune CLI (`kermt/util/parsing.py`) has no `--fp16`/`--bf16`/`--amp`, no gradient-accumulation flag, and no gradient-checkpointing flag. Precision is fp32-only; the only VRAM lever exposed is `--batch_size` itself.
+
+**Mixed classification+regression multi-task limitation (Metabolism, Absorption & Distribution clusters): still open, per explicit instruction not to solve it this session.** Nothing new to add beyond the entry above — flagged, not touched.
+
+---
+
+## 2026-09-18 — KERMT integration (Phase 3+): GPU workstation, container isolation, wrapper built
+
+**Workstation.** RTX A4000, 16 GB VRAM, driver 580.173.02 (CUDA 13.0), nvcc 13.2,
+Python 3.11.15 in `.venv`. Docker 29.1.3 + nvidia-container-toolkit 1.20.0
+present and verified (`docker run --gpus all ... nvidia-smi` succeeds).
+
+**RDKit compatibility — resolved empirically, not assumed.** Cloned
+`github.com/NVIDIA-BioNeMo/KERMT` @ v2.0.0 (commit `e402473`) and read the
+actual source (not guessed): `kermt/data/molgraph.py`, `kermt/data/kermtdataset.py`,
+and `kermt/util/features.py` all have an **unconditional, top-level `import
+cuik_molmaker`** — not gated behind `args.use_cuikmolmaker_featurization`
+(that flag only gates which *codepath* runs once the module is already
+imported). This contradicts the 2026-09-17 pre-flight's open question ("a
+CPU-only attempt... skipping the cuik_molmaker conda pins... is plausible but
+genuinely untested") — it is not plausible. You cannot `import kermt.data.*`
+at all without `cuik_molmaker` built, regardless of rdkit version or CUDA
+usage intent. `cuik_molmaker` is a source-only PyPI sdist (no wheel) that
+compiles CUDA extensions against a specific torch+CUDA build.
+
+**Decision: isolate via KERMT's own official Docker container, do not
+hand-install into `ml/.venv`.** KERMT's repo is container-first by design
+(`agent/README.md`) and ships a Dockerfile (`nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04`
+base) that already builds `cuik_molmaker` + pins `rdkit==2025.9.1` in a conda
+env named `kermt`, completely isolated from `ml/.venv`'s `rdkit==2026.3.6`.
+This makes the RDKit-version question moot rather than answered — there is no
+shared environment for the two pins to conflict in. `ml/.venv` is untouched;
+no `transformers` or PyTorch Geometric were installed anywhere (KERMT uses
+neither — it's a from-scratch GROVER-style message-passing implementation,
+confirmed by reading `kermt/model/models.py` and `kermt/model/layers.py`; the
+`transformers>=4.40` line in `ml/requirements.txt` is a stale placeholder
+from before the backbone was chosen and should be removed in a future pass).
+
+Built `kermt:latest` via `agent/scripts/kermt_container.sh ensure_image`
+(the repo's own bootstrap helper, not a hand-rolled `docker build`). Vendored
+the KERMT checkout **outside** the mars-admet git tree, at
+`~/mars-work/kermt-src/` (sibling checkout, referenced via `MARS_KERMT_REPO`
+env var) — it's a third-party tool dependency, not MARS source.
+
+**Checkpoint downloaded and hashed.** `nvidia/NV-KERMT-70M-v2` ->
+`kermt_contrastive_v2.0.pt` (282,379,314 bytes) + its three vocab files,
+into `ml/data/checkpoints/kermt/NV-KERMT-70M-v2/` (gitignored, mirrors the
+`ml/data/raw/` convention). SHA256 provenance recorded in the newly-added,
+tracked `ml/data/metadata/kermt_checkpoint.lock.json`. Not yet loaded with
+`torch.load` inside the container (Smoke 2) as of this entry — see
+`next_steps.md` for exact status.
+
+**Genuine, verified architectural incompatibility — NOT worked around,
+flagged for a maintainer decision:** KERMT's own `main.py finetune` takes
+ONE `--dataset_type` value for the whole run (`kermt/util/parsing.py` L598
+`assert args.dataset_type is not None`; `task/train.py` picks one
+`loss_func` from it via `get_loss_func(args, model)`). MARS's blueprint
+Metabolism cluster (3 classification + 1 regression) and Absorption &
+Distribution cluster (4 regression + 3 classification) are **mixed-type**
+and cannot be finetuned as a single heterogeneous KERMT run against the
+stock CLI. Same-type multi-task clusters (Toxicity: hERG + AMES, both
+classification) work fine via KERMT's native `ffn_num_task_specific_layers`
+per-target heads. KERMT's own `kermt/util/loss.py::MTLLoss` **is** Kendall/
+Gal-Cipolla homoscedastic uncertainty weighting natively (`precision =
+0.5*exp(-2*log_sigma)`, applied on top of a per-task masked loss in
+`task/train.py`) — good news for same-type clusters, doesn't resolve the
+mixed-type problem. Options for the maintainer to choose from (none applied
+yet): (a) split each mixed cluster into a same-type sub-group per run
+(e.g. Metabolism -> {CYP3A4,CYP2D6,CYP2C9} classification run +
+{Clearance} single-task regression run) — cheapest, but weakens the
+cluster's intended joint-training rationale; (b) patch `task/train.py`'s
+`get_loss_func` to accept a per-task loss-type list (KERMT's code is
+Apache-2.0; a real change to code MARS doesn't own, needs its own review);
+(c) defer mixed-type joint training entirely and rely on single-task KERMT
+per endpoint (already required anyway as the XGBoost comparison baseline)
+until this is resolved. **Not decided — this entry exists so it isn't
+re-discovered from scratch next session.**
+
+**Adapter is a SMILES/CSV contract, not a graph-tensor transform.** KERMT's
+CLI has no entry point that accepts a precomputed atom/bond graph tensor in
+place of a SMILES column — every `kermt-*` workflow takes `--csv` with a
+`smiles` column and KERMT re-featurizes internally via `kermt/data/molgraph.py`.
+`ml/featurize/kermt_adapter.py` therefore hands KERMT MARS's already-
+standardized SMILES verbatim rather than translating `mars-graph-v1` tensors.
+Chirality preservation is verified as a vocabulary-equivalence claim (both
+MARS's `CHIRAL_TAGS` and KERMT's `ATOM_FEATURES['chiral_tag']` one-hot the
+same four `Chem.ChiralType` members in the same order — see
+`ml/tests/test_kermt_adapter.py::test_chiral_tag_vocab_matches_kermt`), not
+a tensor-diff, since no tensor ever crosses the boundary.
+
+**`ml/models/kermt_model.py`** implements `MARSModel` (single-task:
+`mars-kermt-single-v1`; same-type multi-task: `mars-kermt-multitask-v1`) by
+shelling out to `agent/scripts/kermt_container.sh run -- "python ... "`
+inside the container for every actual model operation — KERMT is never
+imported in-process. `fit()` passes MARS's val fold as both KERMT's
+`--val-csv` and `--test-csv` (the finetune CLI requires both-or-neither);
+KERMT's own resulting `test_result.csv` is therefore NOT MARS's real test
+metric — MARS computes that separately via `predict()` on the actual held-out
+test set, same as the XGBoost baseline already does.
+
+**Open follow-ups (see `next_steps.md` for the live checklist):** Smoke
+tests 2-6 not yet run as of this entry; M1 raw/processed data does not exist
+on this workstation (gitignored by design, acquired on a different machine)
+— acquisition needs to be re-run here before any real finetune can use real
+MARS data; mixed-type cluster decision above; `transformers` line removal
+from `ml/requirements.txt`.
+
+---
+
 ## 2026-09-17 — KERMT pre-flight (Phase 1-2): identity resolved, GPU still required
 
 **No code/training executed — this is the read-only feasibility audit.**

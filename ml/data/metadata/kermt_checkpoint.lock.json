@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "notes": "Locks the identity of the pretrained KERMT backbone (blueprint Module 4 / decisions.md 2026-08-30 + 2026-09-17 KERMT pre-flight entries). Mirrors ml/data/metadata/datasets.lock.json's convention: the actual binary lives in a gitignored directory (ml/data/checkpoints/, see .gitignore) and is re-downloadable from source_url; this file is the tracked provenance record. Downloaded, not trained by MARS.",
+  "generator": {
+    "downloaded_by": "MARS M2 KERMT integration session",
+    "downloaded_at_utc": "2026-09-18T14:09:00Z",
+    "repo_git_sha_at_download": "1c252acef6c2838e6e6e90f5ce89d6bff3628c6b",
+    "method": "curl https://huggingface.co/nvidia/NV-KERMT-70M-v2/resolve/main/<file>"
+  },
+  "model": {
+    "display_name": "KERMT (Kinetic GROVER Multi-Task) — Contrastive v2.0",
+    "huggingface_repo": "nvidia/NV-KERMT-70M-v2",
+    "huggingface_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+    "license": "NVIDIA Open Model License (weights); Apache-2.0 (source code)",
+    "source_code_repo": "https://github.com/NVIDIA-BioNeMo/KERMT",
+    "source_code_tag": "v2.0.0",
+    "source_code_commit": "e402473376ace30fa0092dad0578a88bf7f67287",
+    "architecture": {
+      "family": "GROVER-lineage graph-transformer (local message-passing + global self-attention)",
+      "variant": "contrastive (hybrid: vocab-prediction + cMIM, decoder+contrastive head stripped for inference release)",
+      "num_parameters": 70600000,
+      "hidden_size": 800,
+      "depth": 6,
+      "num_attn_head": 4,
+      "num_mt_block": 1,
+      "activation": "PReLU",
+      "dropout": 0.1,
+      "latent_dim": 512
+    }
+  },
+  "local_path": "ml/data/checkpoints/kermt/NV-KERMT-70M-v2/",
+  "files": {
+    "kermt_contrastive_v2.0.pt": {
+      "role": "checkpoint",
+      "source_url": "https://huggingface.co/nvidia/NV-KERMT-70M-v2/resolve/main/kermt_contrastive_v2.0.pt",
+      "bytes": 282379314,
+      "sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3"
+    },
+    "pretrain_atom_vocab.json": {
+      "role": "atom vocabulary (required by kermt.data.molgraph / kermtdataset)",
+      "source_url": "https://huggingface.co/nvidia/NV-KERMT-70M-v2/resolve/main/pretrain_atom_vocab.json",
+      "bytes": 128862,
+      "sha256": "6482e71a0b48c0711af6ada6fe5373c67a7078bbc5130946aff3dd7a64b65b8f"
+    },
+    "pretrain_bond_vocab.json": {
+      "role": "bond vocabulary (required by kermt.data.molgraph / kermtdataset)",
+      "source_url": "https://huggingface.co/nvidia/NV-KERMT-70M-v2/resolve/main/pretrain_bond_vocab.json",
+      "bytes": 599943,
+      "sha256": "09a6206d46e83bcff9a50ef4bfd407cd0fa23caf8ffd9c4e655712447fe4a48b"
+    },
+    "pretrain_smiles_vocab.pkl": {
+      "role": "SMILES vocabulary (required for cmim/hybrid checkpoints only, per KERMT agent/README.md)",
+      "source_url": "https://huggingface.co/nvidia/NV-KERMT-70M-v2/resolve/main/pretrain_smiles_vocab.pkl",
+      "bytes": 4044,
+      "sha256": "c30db667d18aa8dbbfb1c6d843f5cb56dcf3bfd6718ae91e766192c54c6d4863"
+    },
+    "README.md": {
+      "role": "model card (retained for the license/architecture/dataset provenance text)",
+      "source_url": "https://huggingface.co/nvidia/NV-KERMT-70M-v2/resolve/main/README.md",
+      "bytes": 16077,
+      "sha256": "a430f18cab990d6e12c33c7597cd97ed8b7f98c2dd7cc63f32cded41b8042100"
+    }
+  },
+  "verification_status": {
+    "downloaded": true,
+    "hashes_computed": true,
+    "loaded_with_torch": true,
+    "loaded_with_official_kermt_code": true,
+    "verified_at_utc": "2026-09-18T09:10:00Z",
+    "verification_method": "agent/scripts/check_checkpoint.py --mode finetune_init --ckpt <this file>, run inside kermt:latest container",
+    "verification_result": {
+      "model_type": "hybrid",
+      "has_encoder": true,
+      "has_vocab_head": true,
+      "has_contrast_head": true,
+      "has_task_ffn": false,
+      "arch": {
+        "hidden_size": 800,
+        "depth": 6,
+        "num_attn_head": 4,
+        "latent_dim": 512,
+        "activation": "PReLU",
+        "backbone": "gtrans",
+        "embedding_output_type": "both",
+        "self_attention": false
+      },
+      "vocab_sizes": {"atom": 1399, "bond": 1872, "smiles": 225}
+    },
+    "note": "Smoke 1 (container import) and Smoke 2 (checkpoint load) both passed 2026-09-18 on the RTX A4000 workstation. arch matches the HF model card exactly."
+  }
+}
