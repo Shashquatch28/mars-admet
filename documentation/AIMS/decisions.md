@@ -13,6 +13,516 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-09-21 (later) — CPU-side evaluation/provenance gaps closed; four new findings, no policy changed
+
+Provisional methodology unchanged: official TDC splits, strict cluster-level leakage
+prevention, `metabolism__cls` Option A, `holdout_calibration=True`, no regenerated CYP split,
+no Tier-1. No GPU training, no XGBoost retraining, no data regeneration.
+
+### 1. XGBoost held-out TEST evaluation — DONE (14 endpoints x 5 seeds, 0 blocked)
+
+`ml/eval/heldout_evaluation.py` + `ml/train/evaluate_xgboost_test.py`. Loads the 70 promoted
+models, scores each endpoint's canonical test split (prep `20260830T200000Z`; DILI on the
+augmented variant exactly as the sweep trained it — its test split is bit-identical to the base
+split, pinned by a test), and reports raw + calibrated metrics, mean ± std over seeds. Outputs go
+to `ml/runs/test_evaluations/` only; the tool refuses to write into `ml/artifacts/` or
+`ml/runs/evaluations/`. **Proven non-invasive:** SHA-256 digests of `ml/artifacts/` (178 files)
+and `ml/runs/evaluations/` are byte-identical before and after the run. Accuracy is not a MARS
+project metric and was not added. No molecule failed featurization (0 unscored).
+
+| Endpoint | VALIDATION (old report) | TEST (raw) | Δ |
+|---|---|---|---:|
+| ames | AUROC 0.823±0.009 | 0.858±0.005 | +0.035 |
+| bbb | 0.684±0.022 | 0.901±0.009 | **+0.217** |
+| cyp2c9 | 0.901±0.006 | 0.897±0.001 | −0.003 |
+| cyp2d6 | 0.913±0.003 | 0.873±0.002 | −0.040 |
+| cyp3a4 | 0.943±0.003 | 0.901±0.001 | −0.042 |
+| dili | 0.636±0.034 | 0.898±0.022 | **+0.263** |
+| herg | 0.836±0.007 | 0.876±0.005 | +0.040 |
+| hia | 1.000±0.000 | 0.972±0.002 | −0.028 |
+| pgp | 0.953±0.004 | 0.910±0.005 | −0.043 |
+| caco2 | MAE 0.336±0.010 | 0.288±0.012 | −0.048 |
+| clearance | 19.212±1.193 | 25.956±0.497 | +6.744 |
+| lipophilicity | 0.519±0.010 | 0.544±0.006 | +0.025 |
+| ppb | 7.490±0.117 | 7.363±0.122 | −0.127 |
+| solubility | 0.726±0.010 | 0.810±0.014 | +0.084 |
+
+**Validation was not a usable proxy for test.** AUROC moved by up to +0.263 (DILI) and +0.217
+(BBB); CYP3A4/2D6 fell ~0.04. Every comparison against KERMT must use the TEST column.
+HIA's suspicious 1.000 was validation-only (test: 0.972).
+
+**Calibration finding — the served Platt calibrators make held-out calibration WORSE.**
+Only ONE `calibrator.json` exists per endpoint: `serve.registry.promote_seed_artifact`
+overwrites it on every seed. Re-deriving it in memory from each seed's calibration-split
+predictions shows **only seed 4 reproduces it, for all 9 classification endpoints.** Like-for-like
+on seed 4 (the calibrator's own model), test ECE raw → calibrated: ames .026→.098, bbb .113→.156,
+cyp2c9 .019→.037, cyp2d6 .020→.023, cyp3a4 .025→.046, hia .045→**.209**, pgp .102→.123;
+improved only for dili (.199→.053) and herg (.075→.074, negligible). **Calibrated ECE is worse on
+7/9 endpoints and Brier is worse on 9/9.** The cause is the prior shift already recorded: the
+calibration-split positive rate is far from the test rate (cyp3a4 0.113 vs 0.439; cyp2c9 0.143 vs
+0.319; hia 0.980 vs 0.769). These calibrators are what `ml/serve/` applies to the API's
+classification probabilities. **Not fixed** — the calibration policy is out of scope — but this
+is a defect in served predictions, not a hypothetical. For seeds 0–3 the "calibrated" numbers use
+a calibrator not fit on those models; each per-seed record carries `calibrator_is_seed_matched`.
+
+### 2. Workstation data provenance — raw: byte-identical; processed: **D, UNABLE TO VERIFY**
+
+Established from repository evidence only (no workstation processed data exists in the repo):
+- **Raw acquisition — A, byte-identical.** All 15 `snapshot_sha256` match between
+  `ml/data/metadata/history/datasets.lock.20260830T181633Z.json` and the tracked
+  `datasets.lock.json` (acq `20260918T090143Z`); 56 of 58 file-level SHA-256 entries match. The 2
+  that don't are `ppb_binding`'s benchmark-split files, dropped by the Option-C registry policy
+  (`in_admet_benchmark_group` True→False). PyTDC 1.1.15 on both.
+- **Processed splits (`20260918T090433Z`) — D.** Corroborating but not sufficient: the counts
+  quoted from the workstation (AMES 7,278→7,255, train_val 5,802, test 1,453; CYP3A4 12,328→
+  12,295) equal this machine's `manifest.json`. Counts are not hashes.
+- **Note:** `manifest.json` embeds absolute paths, so two machines' manifests can never be
+  byte-identical; comparison must hash the split files.
+- **Tooling to close it in one command each side:** `ml/data/compare_prep.py` (read-only;
+  classifies A byte-identical / B content-identical / C materially different / D unable to
+  verify, overall = worst dataset). Canonical fingerprint committed at
+  `ml/data/metadata/prep_fingerprint.20260830T200000Z.json` (16 datasets; 60 files cross-checked
+  against the manifest's recorded hashes). Workstation: `python data/compare_prep.py
+  fingerprint --prep-dir data/processed/<id> --out ws.json`, then `compare --a <canonical> --b
+  ws.json`.
+
+### 3. Calibration holdout — exact data flow, and its consequences (behaviour unchanged)
+
+```
+train_val (wide, union-test already removed)
+  └─ minus EVERY calibration molecule of ANY member endpoint   <- ClusterData.train_pool
+       └─ five_seed_train_val_folds(pool, seed)  ->  train | validation
+            ├─ KermtModel.fit(train, val)         val selects the epoch; calibration molecules absent from BOTH
+            ├─ predict_logits(calibration split)  ->  fit_temperature_scaler  (calibration arrays only)
+            └─ predict_logits(TEST split)         ->  fitted scaler  ->  final metrics
+```
+Calibration molecules are excluded from **both training and epoch-selection validation**
+(pinned by `test_calibration_molecules_never_reach_fit`); the test set touches only the final
+transform-and-score step. **Consequence — KERMT's effective training pool differs from the
+XGBoost pipeline's.** Seed-0 labelled training molecules, XGBoost train vs KERMT Tier-0 defaults:
+cyp3a4 8,604 vs 5,405 (−37%); cyp2d6 9,160 vs 5,973 (−35%); cyp2c9 8,435 vs 5,238 (−38%);
+ames 5,077 vs 3,403 (−33%); herg 9,195 vs 9,418 (+2%); hia 403 vs 329; pgp 846 vs 748;
+bbb 1,376 vs 1,206; solubility 6,578 vs 5,937; lipophilicity 2,940 vs 2,361; caco2 634 vs 478;
+ppb 1,130 vs 947; clearance 771 vs 694. This is intentional leakage prevention (union-test removal
+plus calibration holdout), not an accident, and it makes the comparison conservative *against*
+KERMT for the CYPs. Two further facts surfaced while measuring it:
+- **DILI −71% (979 → 287) is a configuration mismatch, not a leakage effect:** XGBoost trained on
+  the DILIst-augmented pool; the harness default loads the base pool (`use_augmented_dili=False`).
+- **The shared cluster fold does not control per-task validation size.** `toxicity__cls`
+  validation holds only **18–24 hERG labels vs ~1,810 AMES labels** across all 5 seeds (hERG and
+  AMES cover largely disjoint compounds, so the scaffold groups that fill the validation fold are
+  AMES-heavy); `ppb_binding` gets 42–50, `hia` 46. Epoch selection for hERG is effectively
+  unmeasured. Recorded, **not fixed** (fold construction is a design decision).
+
+### 4. RNG-state checkpoint/resume — utility DONE, integration NOT done
+
+`ml/utils/rng_state.py` (stdlib-only at import; numpy/torch optional; stageable into the KERMT
+container): captures Python, NumPy legacy-global, optional named NumPy `Generator`s, torch CPU and
+every CUDA device; deterministic compact-sorted JSON + SHA-256 digest; versioned
+`mars-rng-state-v1`; strict/non-strict restore that validates everything *before* mutating (an
+all-or-nothing refusal). 23 CPU tests via a fake torch (real-torch test skips — torch absent).
+**Not integrated into any training path.** Future integration points: (1) the stock path cannot be
+checkpointed from MARS (the loop is in the container) — at most capture host RNG after
+`set_global_seed` in `train_kermt_cluster.train_one_seed`; (2) the real point is the Tier-1
+trainer's epoch loop (`ml/train/kermt_mixed/train_mixed.py`, runs in-container). Still true:
+`PYTHONHASHSEED` cannot be restored in-process, and KERMT CUDA determinism is not established.
+
+### 5. Readiness — `ml/train/readiness_report.py`
+
+Verdict on this machine: **`READY_FOR_GPU_SMOKE_TEST` — CPU-side scope only.** 15 PASS, 5 WARN, 0
+FAIL, 4 NOT_EVALUATED (checkpoint binary, KERMT checkout, Docker image, GPU — workstation-only;
+re-run with `--target workstation`). Smoke-test blockers: none. Comparison-gate concern: workstation
+processed-data identity not established. WARNs: tracked-lockfile acquisition ≠ snapshot (raw
+content identical); HIA calibration N=47 with 1 negative; **dozens of uncommitted changes (43 when
+measured), so a run's recorded git SHA would not describe the code that ran**. Every check exercises substance
+(re-hashes files, loads clusters, runs a calibration micro-run, round-trips RNG state, starts a real
+`ExperimentRun`); 28 tests prove it fails on tampered-but-present files. It found and I fixed two
+bugs **in my own checks** (looked for `config` inside `provenance.json`; it lives in `config.json`).
+
+### Remaining GPU-dependent gates
+Real KERMT logits calibration (unknown at N=241/47); full-endpoint and multi-task KERMT training;
+G1–G3 (need the not-yet-built Tier-1 trainer); KERMT CUDA determinism; Docker image identity
+(no pinned digest exists); workstation processed-data identity (needs one command on the
+workstation).
+
+---
+
+## 2026-09-21 — KERMT calibration path wired; three audit findings recorded (nothing about policy changed)
+
+**Provisional methodology unchanged:** official TDC endpoint splits, strict cluster-level
+leakage prevention, Option A for `metabolism__cls`. No split, dataset, cluster definition
+or calibration-sizing rule was altered. Real KERMT calibration behaviour is to be evaluated
+later on actual logits.
+
+### What was wired (CPU-only, unit-tested; the logit-producing step is GPU-gated)
+
+`fit_temperature_scaler` previously had **zero production call sites** — the KERMT path
+never calibrated anything. It now has one:
+
+- `ml/eval/cluster_calibration.py` — `calibrate_endpoints(...)`: per classification
+  endpoint, fit on the **calibration split only** via
+  `eval.calibration_diagnostics.diagnose_temperature_fit`, then transform + score the
+  **untouched test set** (raw and calibrated metrics). The fit function takes only
+  calibration arrays *by signature*; test arrays are read after the scaler exists.
+  Regression columns never reach the fitter. A single-class or unlabelled calibration
+  set is reported as `skipped_invalid_calibration_data` with the reason — no scaler is
+  fabricated and the other endpoints proceed. A fit pinned to a search boundary is
+  reported as `fitted_at_boundary`, not silently accepted or rejected (no project
+  document defines an acceptable temperature range).
+- `ml/train/train_kermt_cluster.py` — `train_one_seed(..., holdout_calibration=True,
+  calibrate=True)` now: build pool → fit → **calibrate** → **test-score** → persist →
+  log. Per-endpoint per-seed records carry every field the maintainer specified
+  (`endpoint_key, seed, n_fit_samples, n_positive, n_negative, positive_rate, temperature,
+  at_boundary, optimizer_success, nll/ece before/after, nll/ece_improved,
+  train_val_positive_rate, calibration_positive_rate`) plus `prep_id`, `model_id` and the
+  pretrained-checkpoint SHA-256 from `kermt_checkpoint.lock.json`.
+- `ml/data/cluster_loaders.py` — `ClusterData.train_pool(holdout_calibration)`,
+  `.positive_rates()`, `.calibration_molecules()`.
+- Persisted per endpoint under the run's artifacts: `calibration/<endpoint>/
+  temperature_scaler.json` (deliberately **not** `calibrator.json` — that is the XGBoost
+  registry's `PlattCalibrator` filename and a `TemperatureScaler` there would fail to load)
+  and `calibration_diagnostics.json`.
+
+### Decision made inside the wiring, flagged for sign-off: `holdout_calibration=True` by default
+
+The required data flow says the calibrator is fit on a *held-out* calibration split. The
+data did not make that true by itself:
+
+- `train_val.csv` **contains** the calibration molecules (`calibration ⊂ train_val`; M1's
+  `assignments.csv` only labels them).
+- KERMT selects its best epoch on the validation fold. On this snapshot the calibration
+  split is most of the XGBoost validation fold (CYP3A4: val n=1,229, calibration n=983).
+  Leaving it in would fit the scaler on molecules the model was *selected* on.
+- So `train_pool()` removes every calibration molecule, from **all** columns, before the
+  fold is built. Stricter than per-column masking on purpose: a calibration molecule for
+  CYP3A4 may carry a CYP2D6 label, and CYP labels are strongly correlated across the Veith
+  screens, so keeping it via that label would still expose the shared encoder to it.
+- `calibrate=True` with `holdout_calibration=False` raises `ValueError` — that
+  combination produces a calibration that looks fine and means nothing.
+
+**Measured cost, real M1 snapshot `20260830T200000Z`** (extra training labels lost,
+*on top of* the union-test removal): metabolism__cls cyp3a4 −715 / cyp2d6 −836 /
+cyp2c9 −803 (pool 9,720 → 8,700); toxicity__cls herg −1,056 / ames −576; A&D cls
+hia −65 / pgp −105 / bbb −163; A&D reg solubility −789 / lipophilicity −316 /
+caco2 −77 / ppb −114; metabolism__reg clearance −88; dili −50.
+
+**Consequence to weigh:** KERMT's training pool now differs from the pool XGBoost trained
+on. XGBoost's CV folds were built over all of `train_val`. The KERMT-vs-XGBoost comparison
+therefore must be made on the **test** set, not the validation fold (see finding 2 below).
+Setting `holdout_calibration=False, calibrate=False` restores the full pool for a run that
+does not calibrate.
+
+### Finding 1 — CORRECTION: `absorption_distribution__cls` is not "cleared" on calibration grounds
+
+The 2026-09-20 preflight marked A&D-cls cleared on *training-label* loss (4.6%). It never
+checked calibration size. After strict union-test removal the calibration sets are:
+
+| Arm | Endpoint | N | pos / neg | rate | vs blueprint floor of 50 |
+|---|---|---:|---|---:|---|
+| A&D cls | **hia_absorption** | **47** | **46 / 1** | 0.979 | **below the floor** |
+| A&D cls | pgp_inhibition | 97 | 36 / 61 | 0.371 | above |
+| A&D cls | bbb_permeability | 157 | 120 / 37 | 0.764 | above |
+| dili | dili_liver_injury | 50 | 13 / 37 | 0.260 | at the floor |
+| metabolism cls | cyp3a4 / cyp2d6 / cyp2c9 | 241 / 833 / 439 | 67/174, 110/723, 88/351 | 0.278/0.132/0.200 | above (miss the 10% target — see 2026-09-20) |
+| toxicity cls | herg / ames | 1,050 / 576 | 616/434, 392/184 | 0.587 / 0.681 | above |
+
+HIA falls from 50 to 47 — **below Module 4's floor** — with a single negative example, and
+its promoted XGBoost Platt calibrator was already fit on 49 positives + 1 negative. Not
+fixed (policy is out of scope); the wiring will record it as a fit on 47 rows with
+`n_negative=1`, or skip it if the negative is lost. Needs a maintainer call before A&D-cls
+calibration is treated as meaningful.
+
+### Finding 2 — no code path evaluates the held-out test set; XGBoost baselines are validation-fold numbers
+
+Verified from `ml/runs/evaluations/*.json` (no key or metric refers to test; per-seed
+`n_samples` equals the validation-fold size, e.g. CYP3A4 1,229) and by grep (the only
+reference to `.test` in `train/` is `preflight_sweep.py`'s row count). The 70-run XGBoost
+sweep reports **5-seed validation-fold metrics only.** Blueprint Module 4/11 select the
+winner "on held-out scaffold-split **test** set". So the KERMT-vs-XGBoost comparison
+cannot be made yet: KERMT (new wiring) reports test metrics, XGBoost reports none. This
+is CPU-doable (evaluate the 70 existing artifacts on test; no retraining) but was **not
+done here** and is now an explicit prerequisite in `next_steps.md`.
+
+### Finding 3 — the tracked lockfile and this machine's data are different acquisitions
+
+`ml/data/metadata/datasets.lock.json` is acquisition `20260918T090143Z` (written by the
+workstation re-acquisition, commit `64e1054`); this machine's raw + processed data and all
+70 XGBoost runs are acquisition `20260830T181633Z`. **Verified content-identical:** all 15
+`snapshot_sha256` values match between the old and new lockfiles; the only field that
+changed is `ppb_binding.in_admet_benchmark_group` True→False (the documented Option-C
+registry policy). This explains the 5 pre-existing failures in
+`test_acquisition_lockfile.py`: 3 look for `raw/*/20260918T090143Z/` (absent here), 2 are
+stale expectations after Option C. What is **not** established from repository evidence:
+that the workstation's processed splits (`prep_id 20260918T090433Z`, gitignored) are
+byte-identical to `20260830T200000Z` — only that the raw inputs are and that the counts
+quoted on 2026-09-18 match. Verify on the workstation before comparing KERMT to XGBoost.
+
+---
+
+## 2026-09-20 — RESOLVED: KERMT mixed-type cluster limitation. Three-tier ladder approved; option (b) fork rejected
+
+**This closes the 2026-09-18 "Not decided" item.** Literature review + a direct read of
+KERMT's own source settled it. Maintainer decision taken on two axes: **build the full
+ladder (Tier 0 + Tier 1 + Tier 2), and correctness comes ahead of the Sep 30 date.**
+
+### What the literature settled
+
+- **Type-homogeneous grouping is the published SOTA path, not a compromise.** ADMET-AI
+  (Swanson et al., *Bioinformatics* 2024) trains exactly two Chemprop-RDKit multitask
+  models over its 41 TDC datasets — one over all 10 regression sets, one over all 31
+  classification sets. Chemprop itself ties loss choice to a single dataset type, so
+  **KERMT inherits this constraint by lineage, not by oversight.** Our logged option (a)
+  is what the field's leading ADMET platform actually does.
+- **Multi-task frequently loses at our data sizes.** Negative transfer is well documented
+  (one benchmark: single-task KPGT wins 3/5 tasks, multitask 1/5). The Oct-2025 KERMT
+  multitask paper (arXiv 2510.12719) — which finetunes *this exact backbone* — finds gains
+  concentrated **>60K datapoints**. MARS's endpoints are 910–13,445. This tempers
+  expectations for every tier and is why the blueprint's "empirical winner selection"
+  language is load-bearing: **a result where multi-task loses is a publishable finding,
+  not a failure.**
+- **Regression-as-classification is sound** (Tier 2's basis): "Stop Regressing"
+  (Farebrother et al. 2024) shows binned cross-entropy beating MSE with the largest
+  margins (1.8–2.1x) in *multi-task* settings; ordinal binary decomposition
+  (Frank & Hall 2001; Li & Lin 2007) turns a continuous target into K-1 binary
+  `y > t_k` tasks with the CDF recovered by summation. Frank-Hall does **not** guarantee
+  monotonicity when the binary models are learned independently — must be enforced post-hoc.
+- **Kendall, Gal & Cipolla 2018** confirms the blueprint's Module 4 formula: `1/(2σ²)`
+  for regression, `1/σ²` for classification. The blueprint already mandates exactly this.
+
+### Four findings from reading KERMT's source (these changed the problem)
+
+1. **Cross-endpoint split leakage — highest-risk item, previously unconsidered anywhere
+   in MARS.** Twelve endpoints adopt their *own* TDC benchmark split. A molecule can be
+   `train_val` for `solubility_logs` and `test` for `hia_absorption`. **Any shared-encoder
+   cluster run therefore leaks through the encoder** and would silently inflate every
+   cluster number against the 70 completed XGBoost baselines. This is a correctness
+   precondition for Tier 0, Tier 1 **and** Tier 2 — not a Tier-1 concern. Fixed in the
+   loader (see `next_steps.md`), never discovered downstream.
+2. **Kendall weighting is UNREACHABLE through MARS's current KERMT path — and cannot be
+   reached by adding a flag.** Two layers, verified separately against the pinned commit
+   `e402473`:
+   - `task/train.py` builds `MTLLoss` only under `if args.use_mtl_loss:`, and `log_sigma`
+     *is* genuinely optimized when that is set
+     (`optimizer.param_groups[1]['params'].append(mtl_loss.log_sigma)`). So `main.py
+     finetune` itself can do Kendall weighting.
+   - **But MARS never calls `main.py` directly.** It calls
+     `agent/scripts/run_finetune_local.py`, and that wrapper **never forwards
+     `use_mtl_loss`** — it is absent from all three of its passthrough tuples
+     (`TRAINING_FLAGS`, `TASK_FLAGS`, `FFN_FLAGS`) and is never appended to the argv it
+     builds for `main.py`. It also uses strict `p.parse_args(argv)`, so passing
+     `--use-mtl-loss` to it would be an **unrecognized-argument hard failure (exit 2)**,
+     not a silent no-op.
+
+   **Consequence, and it is structural rather than a missing flag:** the stock-CLI path
+   (a) can only ever do **equal weighting**. That is fine — equal weighting is exactly
+   blueprint Module 4's *mandatory baseline comparison*. But it means **all three
+   loss-balancing arms (fixed / Kendall / GradNorm) are delivered by Tier 1**, for pure-type
+   clusters as well as mixed ones. The `toxicity` cluster's Kendall arm therefore also needs
+   Tier 1; it is not obtainable from the stock CLI. This also sharpens G3: stock KERMT *is*
+   fixed weighting, which is precisely why the Tier-1 trainer is run in `mode="fixed"` for
+   that parity gate.
+
+   **An earlier draft of this entry said the fix was to emit `--use-mtl-loss` from
+   `_hyperparam_flags()`. That is wrong and would have failed every Tier-0 run at the next
+   GPU session.** Caught during CPU-side prep by reading the wrapper script rather than
+   trusting the layer below it. No such flag is added to `KermtConfig`.
+3. **KERMT is usable as a library — no fork is needed to do mixed-type training.**
+   `KermtFinetuneTask` exposes `self.kermt` (the `KERMTEmbedding` encoder) plus dual
+   `mol_atom_from_atom_ffn` / `mol_atom_from_bond_ffn` heads, already builds
+   `nn.ModuleList` per-target heads under `ffn_num_task_specific_layers`, and `forward()`
+   returns **logits** in training mode — sigmoid is applied only in eval, gated by a
+   single `self.classification` bool. `kermt_container.sh run -- "<cmd>"` runs any
+   command inside the container. Mixed-type training is therefore a **MARS-owned training
+   loop that imports KERMT**, not a patch to it. `KermtFpGeneration` also exists, so
+   frozen-encoder embedding extraction is natively available if ever needed.
+4. **CORRECTION — KERMT's uniform `MTLLoss` is NOT buggy for pure-type clusters.**
+   It uses `precision = 0.5*exp(-2logσ)` for every task, which looks like the regression
+   form applied to classification. It is not a bug: substituting `σ_k = σ_c/√2` gives
+   `1/(2σ_k²) = 1/σ_c²` and `log σ_k = log σ_c − ½log2`, so the classification objective
+   differs by a **per-task additive constant** — identical gradients, identical optimum,
+   identical effective weights. It is an exact reparameterization. **It only bites when
+   classification and regression coexist in one run**, which is precisely the mixed
+   clusters. When reporting `log σ` for a pure-classification cluster, apply the offset
+   `log σ_compliant = log σ_kermt + ½log2`. **Do not "fix" this upstream** — an earlier
+   draft of this analysis wrongly called it non-compliant.
+
+### The approved architecture — three tiers, kept strictly distinct
+
+The three training paths must never be conflated in code, run names, or results tables:
+
+| | Path | What trains it | `model_family` |
+|---|---|---|---|
+| **(a)** | Stock KERMT, type-homogeneous | KERMT's own CLI, unmodified | `kermt_multitask_subgroup` / `kermt_single` |
+| **(b)** | MARS-owned mixed-type training | MARS trainer importing KERMT as a library, in-container | `kermt_mixed` |
+| **(c)** | Ordinalized all-classification | KERMT's own CLI, unmodified, on encoded targets | `kermt_ordinal` |
+
+**Tier 0 (path a)** — type-homogeneous subgroups. **Introduces MARS-side harness and CLI
+code only; it introduces no new KERMT optimization or model logic whatsoever.** The
+training step is the existing `KermtModel` shelling out to the stock CLI exactly as it does
+today. What is new is MARS-side plumbing: cluster registry, leakage-safe cluster loader,
+per-endpoint result decomposition, a sweep driver.
+
+**Tier 1 (path b)** — MARS-owned mixed-type trainer, staged into the container's `/data`
+bind mount and run with `import kermt`. Per-column type-correct losses (BCEWithLogits vs
+MSE/L1 on standardized targets), type-correct Kendall precisions, masked per-task loss,
+stratified batch composition, per-task logσ logging, fixed-weight escape hatch, and
+selectable `fixed | kendall | gradnorm` weighting. Emits true pre-sigmoid logits.
+
+**Tier 2 (path c)** — ordinal-CDF homogenization: each regression endpoint encoded as M
+binary `y > quantile_m` columns so a mixed cluster becomes one all-classification stock-CLI
+run with zero patching; scalar decoded from the survival function with monotonicity enforced
+(`np.minimum.accumulate`). **Investigated only after Tier 1**, and gated first by a
+zero-GPU discretization-ceiling test.
+
+### Clarifications that the plan document got loose and are corrected here
+
+- **`kermt_model.py` takes FOUR changes, not "three small things"** as an earlier draft
+  said: (1) the homogeneity guard the docstring already claims but does not implement,
+  (2) `target_names` / `target_task_types` properties, (3) an explicit
+  `supports_loss_weighting = False` marker plus documentation that the stock path is
+  equal-weighting-only — **not** a `--use-mtl-loss` flag, see finding 2,
+  (4) `predict_logits()`.
+- **`metabolism__reg` = `{clearance_microsomal}` is a single-task run, not a homogeneous
+  multi-task subgroup.** It is the **mandatory single-task KERMT baseline already owed**
+  for that endpoint under Module 4's "mandatory baselines per endpoint". It runs once under
+  `model_family="kermt_single"` and is cited in both roles. It must not be counted as, or
+  reported as, a multi-task cluster arm — doing so would fabricate a multi-task result out
+  of a single-task run. Tier 0 therefore yields **three** genuinely new multi-task
+  subgroups: `metabolism__cls` (3 tasks), `absorption_distribution__cls` (3),
+  `absorption_distribution__reg` (4). `toxicity__cls` is already covered by the existing
+  pure-cluster path. All Tier-0 runs are equal-weighting by construction (finding 2).
+- **G3 defined precisely.** G3 compares the MARS-owned Tier-1 trainer (path b) against the
+  stock KERMT CLI (path a) on **classification-only data, where both paths are legitimately
+  capable of running the identical job** — that is the whole point of the gate: it isolates
+  trainer-implementation differences from mixed-type effects. Datasets: `ames_mutagenicity`
+  (single-task) and `toxicity__cls` (hERG + AMES, 2-task). Seeds: `FIXED_SEEDS` = 0,1,2,3,4,
+  identical folds from `five_seed_train_val_folds`, identical hyperparameters, Tier-1 run in
+  `mode="fixed"` with all weights 1.0 (so it is imitating stock equal weighting, not Kendall).
+  Quantity compared: **validation-fold AUROC** from `ml/eval/metrics.py::compute_metrics`,
+  computed host-side by MARS for both paths (KERMT's own `test_result.csv` is never read —
+  standing rule). Pass iff `|mean_A − mean_B| <= 0.5 * max(std_A, std_B)` **and** paired
+  per-seed `|ΔAUROC| <= 0.02` on at least 4 of the 5 seeds.
+
+### Rejected, with reasons
+
+1. **Patching KERMT's `get_loss_func` / `task/train.py` (logged option b) — REJECTED.**
+   The checkout lives at `~/mars-work/kermt-src/`, **outside the MARS git tree**, so
+   `tracking/provenance.py` cannot see it, `ExperimentRun` cannot record it, and the patch
+   dies on any re-clone or image rebuild — every mixed-cluster number would be
+   unreproducible by construction. It also alters the `run_finetune_local.py` /
+   `check_checkpoint.py` contracts that `KermtModel` depends on, putting the comparability
+   of the 70 completed XGBoost runs at risk. **Import-as-library (Tier 1) gives identical
+   capability with provenance MARS actually controls.** Stock KERMT stays an untouched,
+   pinned dependency.
+2. **Deferring mixed-type training entirely (logged option c) — REJECTED.** It kills a
+   mandatory Module 11 ablation axis ("fixed vs. uncertainty-weighted vs. GradNorm" for
+   Metabolism and A&D) and leaves Module 4's clustering decision untested.
+3. **Widening `MARSModel.task_type` to a list — REJECTED.** It breaks `XGBoostModel`,
+   `compute_metrics`, `evaluate.py`, `serve/registry.py` and `serve/predictor.py` at once.
+   Use additive `target_names` / `target_task_types` properties with single-task defaults.
+4. **GradNorm as the default — REJECTED.** Cost (one extra partial backward per task), an
+   extra hyperparameter (α), no ADMET precedent. It is the mandated ablation arm, not the
+   shipped method. Kendall stays the default per blueprint Module 4.
+
+### MEASURED 2026-09-20 — the leakage fix is cheap everywhere except Metabolism
+
+`ml/train/preflight_clusters.py` run on the real M1 snapshot `20260830T200000Z`
+(zero GPU, full output in `ml/runs/cluster_preflight.json`):
+
+| Cluster arm | train_val rows | dropped | worst per-endpoint label loss |
+|---|---:|---:|---:|
+| `toxicity__cls` | 16,240 | 30 | **0.2%** |
+| `dili_standalone__cls` | 378 | 0 | 0.0% |
+| `metabolism__reg` (clearance) | 881 | 0 | 0.0% |
+| `absorption_distribution__cls` | 2,765 | 56 | 4.6% |
+| `absorption_distribution__reg` | 11,570 | 446 | 14.6% |
+| `absorption_distribution` (whole) | 13,724 | 684 | 16.1% |
+| **`metabolism__cls`** | 9,720 | **5,625** | **29.2%** |
+| **`metabolism` (whole)** | 10,568 | **5,629** | **29.2%** |
+
+**Metabolism is the problem, and the cause is structural, not a bug.** CYP3A4 /
+CYP2D6 / CYP2C9 are the Veith screens of substantially the *same compound library*
+against three enzymes, and each adopted its own independent TDC test split. So a
+molecule that is test for CYP3A4 is very often train for CYP2D6 — removing the union
+of the three test sets costs each CYP roughly 29% of its training labels
+(cyp3a4 −2,871 of 9,833; cyp2d6 −2,805 of 10,469; cyp2c9 −2,762 of 9,640).
+
+This is not an argument against the leakage fix — without it those numbers would
+simply have been wrong. It is a real cost that has to be weighed, and it is exactly
+why the measurement was made before spending GPU time. **Not decided here; flagged
+for the maintainer** — full analysis in the 2026-09-20 memo section below.
+
+#### Deeper measurement, 2026-09-20 (read-only analysis, no data changed)
+
+- **The structural cause is confirmed with numbers, not assumed.** Pairwise Jaccard
+  overlap of the full compound sets: CYP3A4↔CYP2D6 **0.641** (9,912 shared),
+  CYP3A4↔CYP2C9 **0.612** (9,242), CYP2D6↔CYP2C9 **0.631** (9,723). Against
+  `clearance_microsomal` the Jaccard is **0.002** — clearance is essentially
+  disjoint from the CYPs and contributes almost nothing to the loss (it sacrifices
+  8 of 881 labels, 0.9%). The damage is entirely internal to the three Veith screens.
+- The three CYP test sets themselves overlap: 7,495 summed → **6,330 unique** in the
+  union (1,165 collapse).
+- **Calibration split damage is worse than train_val damage and was not previously
+  recorded.** CYP3A4 loses **75.5%** of its calibration split (983 → 241), CYP2C9
+  **54.5%** (964 → 439), CYP2D6 **20.4%** (1,047 → 833). All three still clear
+  blueprint Module 4's absolute floor of 50 compounds, but all three fall well short
+  of that rule's *10%-of-train_val* target (CYP3A4 241 vs a 696 target; CYP2C9 439 vs
+  687; CYP2D6 833 vs 766 — only CYP2D6 clears it). Temperature scaling is a
+  1-parameter fit, which is the regime the blueprint explicitly chose *because* it
+  tolerates small calibration sets — so this is a tension to record, not an automatic
+  failure.
+- **Class balance shifts slightly but measurably:** CYP3A4 positive rate 0.4093 →
+  0.4384 (**+2.90 pp**), CYP2C9 0.3393 → 0.3518 (+1.25 pp), CYP2D6 0.1969 → 0.1900
+  (−0.69 pp). Non-random with respect to the label, so it is worth reporting, though
+  no project rule defines a threshold for acceptable drift.
+- **Multi-task label density is genuinely high**, which is the argument *for* the
+  cluster: of the 9,720 surviving cluster molecules, 39.0% carry all three CYP
+  labels, 43.2% carry two, 17.8% carry one.
+- **By the blueprint's own stated evidence base, `metabolism__cls` sits below the
+  regime where MT benefit is expected — before and after the loss.** Module 4 records
+  that pretrained MT outperforms specifically with ">5 correlated tasks and >50,000
+  combined datapoints; below that, benefit is marginal or reverses."
+  `metabolism__cls` is **3 tasks / 29,942 labels before removal, 21,504 after** —
+  under both criteria either way. The Oct-2025 KERMT multitask paper's >60K threshold
+  points the same direction. This reframes the decision: the 29% loss is not the only
+  reason to doubt this arm.
+- All four metabolism endpoints are `in_admet_benchmark_group=True` in
+  `ml/data/metadata/datasets.lock.json` and `split_method="adopt_benchmark"` in their
+  `provenance.json` — so unlike the hERG and PPB exceptions, an official TDC split
+  **does** exist here and regenerating one would discard it.
+
+The A&D and Toxicity arms need no such decision.
+
+### MEASURED 2026-09-20 — Tier 2 is viable at 16 bins
+
+Discretization-ceiling test (`featurize.ordinal.discretization_ceiling_mae`, no
+training at all) against the completed XGBoost baseline MAE, per regression endpoint:
+
+| Endpoint | XGBoost MAE | ceiling @8 bins | ceiling @16 | ceiling @32 |
+|---|---:|---:|---:|---:|
+| caco2_permeability | 0.336 | 35.0% | **17.6%** | 9.7% |
+| lipophilicity_logp | 0.519 | 33.4% | **17.3%** | 8.6% |
+| ppb_binding | 7.49 | 34.0% | **18.5%** | 9.0% |
+| clearance_microsomal | 19.21 | **24.3%** | 17.6% | 6.8% |
+| solubility_logs | 0.726 | 44.2% | **23.3%** | 12.3% |
+
+**16 bins clears the ≤25%-of-baseline gate for all five**, so Tier 2 is not blocked
+by discretization loss. `solubility_logs` is the tightest at 23.3% and is the one to
+watch; 32 bins halves every ceiling if headroom is wanted, at the cost of more heads
+(A&D at 32 bins would be 4×31 + 3 = 127 targets, which is likely impractical — 16 is
+the working default).
+
+### Open follow-ups
+
+- **Metabolism cluster scope** — the 29% decision above. Blocks the `metabolism__cls`
+  arm only; `absorption_distribution` and `toxicity` are unaffected and can proceed.
+- DILI-into-toxicity joint training (blueprint Module 4's flagged empirical question) is
+  still untested and is now cheap to test once the cluster substrate exists.
+- `ppb_binding` acquisition/test drift and the missing external DILIst file (both from the
+  2026-09-18 entry) remain open and are unrelated to this decision.
+
+---
+
 ## 2026-09-18 (cont'd) — Smoke tests 1-6 PASSED on real AMES data; M1 re-acquired on this workstation
 
 **M1 data re-acquired on this workstation** via the existing isolated-venv mechanism (`ml/data/acquisition/README.md`), native Linux instead of WSL (`python3.12 -m venv --without-pip` + `get-pip.py`, since `python3.12-venv` apt package wasn't installed and neither system Python nor MARS's own `.venv`/`ml/.venv` were touched). All 15 canonical dataset_keys acquired (excluding `ppb_binding__all_species`, a documented deferred ablation — see below); dedup/split numbers match the original 2026-08-30 audit exactly (e.g. AMES 7278→7255, CYP3A4 12328→12295), confirming the pipeline's own determinism claim. `ml/data/prepare.py` run afterward — all 15 processed successfully.

@@ -1,6 +1,6 @@
 # context.md
 
-_Last updated: 2026-09-17 (M2 production XGBoost sweep complete)_
+_Last updated: 2026-09-21 (XGBoost held-out evaluation, provenance tooling, RNG utility, readiness report; no GPU training)_
 
 ## What MARS is
 
@@ -41,7 +41,7 @@ StarDrop (enterprise).
   production CLI) mirrors to W&B by default; `train_one_seed`/
   `train_xgboost_all_seeds` default `use_wandb=False` so ad-hoc/test calls stay
   quiet. `_netrc` auth from M0 verified still valid. See next_steps.md for detail.
-  **386 ml tests green, 14 skip. Ruff clean repo-wide (contracts+api+ml).**
+  **Tests (2026-09-21, final): ml 633 passed / 15 skipped / 5 failed — the 5 are all in `test_acquisition_lockfile.py`, pre-existing (tracked lockfile is the workstation's `20260918T090143Z` acquisition; this machine's raw data is `20260830T181633Z`, plus 2 stale post-Option-C expectations). Root `contracts/tests api/tests`: 21 passed / 23 skipped (infra-marked, Docker down). Ruff clean repo-wide. No type checker installed.**
   **Production XGBoost sweep COMPLETE 2026-09-17: 70/70 runs, 0 failed.**
   14 endpoints × 5 seeds (`FIXED_SEEDS=(0,1,2,3,4)`), ~172 min total CPU
   wall-clock. Every endpoint: all 5 seeds trained, promoted into
@@ -176,17 +176,53 @@ StarDrop (enterprise).
       both cache hit and miss. Container-verified end-to-end: real ETKDGv3 +
       MMFF94 coordinates and Gasteiger partial charges returned for ethanol;
       unknown id → 404.
+- **Active: M2 KERMT/GNN track — mixed-type cluster blocker RESOLVED 2026-09-20.**
+  KERMT's stock CLI takes one `--dataset_type` per run, so the two mixed-type
+  clusters (`metabolism`, `absorption_distribution`) can't be jointly finetuned
+  against it. Decision: a three-tier ladder — (a) stock KERMT on type-homogeneous
+  subgroups, (b) a MARS-owned mixed-type trainer that **imports KERMT as a
+  library** inside its own container, (c) ordinalized all-classification runs —
+  with **stock KERMT left unforked and pinned** in every tier. Full rationale
+  and the rejected options in `decisions.md`'s 2026-09-20 entry; live work
+  breakdown in `next_steps.md`. Three findings from that pass matter beyond this
+  decision: **cross-endpoint split leakage** (a molecule can be `train_val` for
+  one endpoint and `test` for another, so any shared-encoder cluster run leaks
+  through the encoder — a correctness precondition for all three tiers);
+  **Kendall weighting is unreachable through the stock path** — KERMT's
+  `run_finetune_local.py` never forwards `--use_mtl_loss` and parses strictly, so
+  the stock CLI is equal-weighting only and all three loss-balancing arms must
+  come from the MARS-owned trainer; and KERMT's uniform `MTLLoss` precision is an **exact
+  reparameterization**, not a bug, for pure-type clusters — do not "fix" it.
+- **KERMT calibration (2026-09-21):** `fit_temperature_scaler` had no production call
+  site; it now does (`ml/eval/cluster_calibration.py`, called from
+  `ml/train/train_kermt_cluster.py`). Fit on the held-out calibration split only, test
+  set scored afterwards (raw + calibrated), per-seed diagnostics persisted. CPU-verified
+  with a labelled test double only — **no real KERMT logits have ever been calibrated.**
+  Findings recorded in `decisions.md` 2026-09-21: `hia_absorption`'s calibration set is
+  N=47 (46 pos / 1 neg, below the floor of 50) after strict union removal; the calibration
+  split is not label-representative; `holdout_calibration=True` (default) is a decision
+  awaiting sign-off; and **the XGBoost baselines are validation-fold metrics with no
+  test-set evaluation anywhere**, so KERMT-vs-XGBoost is not yet comparable.
+- **Held-out evaluation + readiness (2026-09-21, later):** the 70 XGBoost models have now been scored on the
+  untouched TEST split (`ml/runs/test_evaluations/`, 14 endpoints x 5 seeds; `artifacts/` byte-unchanged). Test
+  differs from the old validation-fold reports by up to +0.263 AUROC, so **compare KERMT against the test
+  numbers**. It also showed the served Platt calibrators worsen held-out calibration (ECE worse 7/9, Brier 9/9,
+  seed-4 like-for-like). Workstation processed data: raw is byte-identical, processed identity **unable to
+  verify** (`ml/data/compare_prep.py`, fingerprint `ml/data/metadata/prep_fingerprint.20260830T200000Z.json`).
+  RNG capture/restore utility exists (`ml/utils/rng_state.py`) but is **not integrated** into training.
+  `ml/train/readiness_report.py`: `READY_FOR_GPU_SMOKE_TEST` (CPU-side scope; 4 workstation checks pending).
 - Solo build, dependency-ordered, targeting Sep 30 2026 (blueprint Module 14).
+  Maintainer call 2026-09-20: **correctness ahead of the date** for the KERMT
+  mixed-type work.
 - Git: M0=`daddcf7`, M1 Run 1=`ec9c604`, Run 2=`c86a956`, Run 3=`77aab38`
-  (+`b072865` CI fix), Run 4=`f679e71`, M2 Runs 1a+1b=`141415b`.
-  M2 Runs 2a+2b+W&B-wiring committed at `a1f6b69`. **M3 session's work
-  (this entry) is uncommitted** — new `ml/serve/`, new `api/app/db|deps|
-  routers/{auth,batch,compare,molecules,reports,account}.py|services/*`,
-  `api/alembic/`, contract additions, Docker/compose/CI changes; see
-  `module_milestone_map.md` for the audit that preceded it. Branch is still
-  `milestone/m2-modeling` (M3 work landed on the same branch — no new branch
-  was created). The user commits manually. **The AI must not run git write
-  commands.**
+  (+`b072865` CI fix), Run 4=`f679e71`, M2 Runs 1a+1b=`141415b`,
+  M2 Runs 2a+2b+W&B=`a1f6b69`, M2 production-sweep tooling=`d67463f`,
+  M3 serving/auth/infra=`bad0b02`, documentation now git-TRACKED=`1c252ac`,
+  KERMT v2 integration + GPU validation=`64e1054`, KERMT GPU benchmark=`e2f45c7`.
+  Current branch **`milestone/m2-kermt`**. Note `documentation/` became
+  git-tracked at `1c252ac` (2026-09-18) — the older "documentation stays
+  untracked" note below is superseded. The user commits manually. **The AI must
+  not run git write commands.**
 
 ## Repo map
 
@@ -238,18 +274,25 @@ ml/          data/ — acquire.py, dataset_registry.py, snapshot.py, eda.py,
              **all 14 endpoints promoted**, 5 seeds each, real XGBoost models
              + AD indices + Platt calibrators (classification endpoints).
              requirements-serving.txt (rdkit+xgboost+numpy+**scikit-learn**,
-             installed into api/Dockerfile — NOT root .venv). tests/ (392
-             incl. test_serve_registry.py, run in ml/.venv). **Production
+             installed into api/Dockerfile — NOT root .venv). tests/ (653
+             collected, 633 pass, incl. test_serve_registry.py, run in ml/.venv). **Production
              XGBoost sweep COMPLETE (70/70) as of 2026-09-17** — see the
              bullet above for the full rundown; KERMT/GNN training is a
              separate, not-yet-started M2 track.
+             KERMT cluster track (2026-09-20/21): configs/clusters.py,
+             data/cluster_loaders.py, eval/cluster_eval.py,
+             eval/calibration_diagnostics.py, eval/cluster_calibration.py,
+             featurize/ordinal.py, train/train_kermt_cluster.py,
+             train/preflight_clusters.py, eval/heldout_evaluation.py, train/evaluate_xgboost_test.py,
+             data/compare_prep.py, utils/rng_state.py, train/readiness_report.py. Tier-1 trainer (ml/train/kermt_mixed/,
+             models/kermt_mixed_model.py) does NOT exist yet.
 frontend/    package.json + src/types/contracts.ts ONLY. NOT runnable (no Vite
              entry). React 18 + Vite + 3dmol planned. M4.
 infra/       empty (infra/docker/.gitkeep). M3/M10.
 docker-compose.yml   postgres + redis + minio(R2 stand-in) + api. Valid.
 .github/workflows/ci.yml   ruff + pytest + docker build + /predict smoke on CCO.
 ruff.toml    repo-wide lint (E,F,I,B,UP; ignore E501, UP042).
-documentation/   NOT git-tracked. blueprint v4 + archive + status + AIMS.
+documentation/   git-TRACKED since 1c252ac. blueprint v4 + archive + status + AIMS.
 ```
 
 ## Environment (this machine)
@@ -263,7 +306,7 @@ documentation/   NOT git-tracked. blueprint v4 + archive + status + AIMS.
      scikit-learn 1.9.0, **rdkit 2026.3.5**, joblib 1.5.3, pytest, `-e ../contracts`,
      plus M2: **xgboost 3.2.0**, **wandb 0.29.0**, scipy 1.17.1. No torch yet
      (KERMT is M2 Run 3+). Pins: `ml/requirements-m1.txt` + `-m2.txt` / `.lock.txt`.
-     Run ml tests: `cd ml && ../ml/.venv/Scripts/python.exe -m pytest -q` (386 pass, 14 skip).
+     Run ml tests: `cd ml && ../ml/.venv/Scripts/python.exe -m pytest -q` (633 pass, 15 skip, 5 pre-existing failures).
   3. **WSL Ubuntu `~/mars-acq-venv`** — isolated acquisition env, `PyTDC==1.1.15`
      `--no-deps` + pinned minimal runtime. Only runs `ml/data/acquire.py`.
      `ml/data/requirements-acquire.lock.txt`. Reproduce: `ml/data/acquisition/README.md`.
@@ -316,9 +359,9 @@ cd api && ..\.venv\Scripts\python.exe -m alembic upgrade head
 # Tests — API/contracts (root .venv). 5 stub-only + 25 real-Postgres/Redis
 # integration tests + 1 SDF-real test (env-gated, only runs where rdkit is
 # installed — skips here by construction, see api/tests/test_batch.py)
-.venv\Scripts\python.exe -m pytest contracts/tests api/tests -q      # 41 pass, 1 skip (or fewer + more skips if infra is down)
+.venv\Scripts\python.exe -m pytest contracts/tests api/tests -q      # 21 pass, 23 skip when Postgres/Redis are down (2026-09-21)
 # Tests — ml track (ml/.venv), run FROM ml/
-cd ml && PYTHONPATH=. ..\ml\.venv\Scripts\python.exe -m pytest -q    # 392 pass, 14 skip
+cd ml && PYTHONPATH=. ..\ml\.venv\Scripts\python.exe -m pytest -q    # 633 pass, 15 skip, 5 pre-existing lockfile failures (2026-09-21)
 
 # Lint
 .venv\Scripts\python.exe -m ruff check contracts api ml
@@ -380,7 +423,10 @@ docker compose up -d postgres redis minio
   free-tier VRAM < KERMT's recommended 32 GB → grad-checkpointing + small batch;
   multi-task cluster runs may have to wait for a lab A100 session. Whole
   training + ablation budget is ~185 GPU-hr / **$0**.
-- `documentation/` stays git-untracked (deliberate).
+- ~~`documentation/` stays git-untracked~~ — **superseded 2026-09-18 (`1c252ac`)**:
+  the whole `documentation/` tree (AIMS, blueprint + archive, status, technical
+  reference) is now git-TRACKED. AIMS files are therefore part of review and
+  should be updated in the same session as the work they describe.
 
 ## Open pre-flight items before/within M1–M2
 

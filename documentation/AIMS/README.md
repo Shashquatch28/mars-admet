@@ -12,10 +12,18 @@ Paste, in this order:
    preamble used to start this project).
 2. `documentation/mars-blueprint_v4.md` — the authoritative spec.
 3. These AIMS files: `context.md`, `decisions.md`, `next_steps.md`,
-   `mistakes.md`, `glossary.md`.
-4. `documentation/status/mars-status_M1.md` (current milestone matrix + Run
-   status). `documentation/status/mars-status_M0.md` only if the work touches M0.
+   `mistakes.md`, `glossary.md`, `module_milestone_map.md`.
+4. `documentation/status/mars-status_M1.md` (M1 matrix + Run status).
+   `documentation/status/mars-status_M0.md` only if the work touches M0.
+   `documentation/status/kermt_integration_status.md` if the work touches KERMT.
 5. `documentation/FUTURE_SCOPE.md` if the work is near a deferred item.
+6. `documentation/AIMS/lab_session_tasks.md` if the work is a GPU lab session — a sequential,
+   operational checklist (pull, GPU/data/W&B verification, smoke test, first real run, Tier-0, stop
+   conditions). It supersedes the ordered checklist in `next_steps.md` for lab use.
+
+**Note:** `documentation/` has been git-tracked since `1c252ac` (2026-09-18), so
+AIMS files now show up in diffs and review. Update them in the same session as
+the work they describe rather than retroactively.
 
 Then state the task.
 
@@ -30,6 +38,7 @@ Update at the end of any session that changes project state:
 | `next_steps.md` | a step is done or re-ordered; keep it to the *current* + *next* milestone only |
 | `mistakes.md` | something broke, was found broken, or a trap was identified — so it isn't repeated |
 | `glossary.md` | rarely — only when a new term becomes common |
+| `module_milestone_map.md` | a module's status changes, or the blueprint is edited |
 
 Keep entries dated (absolute dates, not "yesterday"). Prune stale content rather
 than letting it accumulate. Do not paste code diffs here — link to files.

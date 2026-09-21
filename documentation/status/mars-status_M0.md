@@ -22,7 +22,7 @@ The repo is an **M0 scaffold**, partially complete, with a few M1/M2 support mod
 | `.env.example` | All infra/model/W&B/auth/rate-limit vars pre-named. | n/a |
 | Tests | **None anywhere.** | — |
 | CI/CD | **None** (`.github/` absent). | — |
-| `documentation/` | Blueprints v1 → v4. **`documentation/` is in `.gitignore` line 1 → the blueprint is not version-controlled.** | — |
+| `documentation/` | Blueprints v1 → v4. **`documentation/` is in `.gitignore` line 1 → the blueprint is not version-controlled.** _(Superseded 2026-09-18: the whole `documentation/` tree became git-tracked at `1c252ac`; `.gitignore` line 1 is now `# Environment`. This row records the M0-audit state as it was.)_ | — |
 
 **Stray artifacts:** literal brace directories `api/app/{routers,services,core}/` and `frontend/src/{components,pages,styles}/` (from a `mkdir -p` on a shell without brace expansion). `.gitignore` negates `data/.gitkeep`, `ml/runs/.gitkeep`, `ml/artifacts/.gitkeep` which **do not exist**.
 

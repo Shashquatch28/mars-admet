@@ -1,0 +1,368 @@
+{
+  "datasets": {
+    "ames_mutagenicity": {
+      "assignments": {
+        "bytes_sha256": "9776a5213b9334ad229dae597e98c4a5c8eb3d9e492637d605b792f5cb078b33",
+        "content_sha256": "2ffc84e1057ab897de8b3add20e1b069a31e84b1da65e9a05c72f9140330eff8",
+        "n_rows": 7255
+      },
+      "calibration": {
+        "bytes_sha256": "14c097993205bf7a57d86cf9408e48e776714575687dbf6837194197dcb28297",
+        "content_sha256": "87e517a0634cd0bc64cca51d6372d0096d53feb9b91e0ba03aa12d4f9ac06a30",
+        "n_rows": 580
+      },
+      "test": {
+        "bytes_sha256": "6d7f48bf08d98725663bab2b7ea33ea80246eca996a0bfa1be257238a091bd8a",
+        "content_sha256": "882b8143e5cf4c2db570649af04c4330265e8f9db0ee696b791e7bed172d080c",
+        "n_rows": 1453
+      },
+      "train_val": {
+        "bytes_sha256": "71fc05a9d13d3749dff6eef12094e39b09641f63ecce27c159a7cdbdc779d246",
+        "content_sha256": "8db9d32cb6d9080a732b5daef2cfb117b5e9442799f0582e61bb9d9c75f17013",
+        "n_rows": 5802
+      }
+    },
+    "bbb_permeability": {
+      "assignments": {
+        "bytes_sha256": "102e7535f92d55d2d41324d276d159ac8545c04c289200ad07db3f98d7bcd97d",
+        "content_sha256": "b46fdfa2152ffd60eebc46d3e57315ff0df7f62efd4d3873055cbf9726b3fa20",
+        "n_rows": 1966
+      },
+      "calibration": {
+        "bytes_sha256": "d5d278d51dca0cd7aacba2d87860d775220c8e06cbabe9533c13b061e8c315ad",
+        "content_sha256": "44f18c07e3535ece3ca01d2715f8fec904091af3ad80b1283e023d43d92482d6",
+        "n_rows": 157
+      },
+      "test": {
+        "bytes_sha256": "44cd2ea38553300c7122cb73132a17e2f65050026639fed1f7bc14d8c8cf6e76",
+        "content_sha256": "286c3fcbdc3083891f3d6840736fb052eeee171ba615437077537323b0b8231a",
+        "n_rows": 394
+      },
+      "train_val": {
+        "bytes_sha256": "487e14372d3c6b501dfa78825e776151781594827578df781a74ecc7d9acaa95",
+        "content_sha256": "b5d6d389b8cdd2540ad5aeeead00bd19983a49f9df841452c7e50d28088686a0",
+        "n_rows": 1572
+      }
+    },
+    "caco2_permeability": {
+      "assignments": {
+        "bytes_sha256": "7e5fc8f93df7e2ed9c64bc2158fb02c548951782a3584f52775f4dcddbe983d1",
+        "content_sha256": "3a16a3cf1a9d25a321c0ed5d7a2cfd415a4165f352b12bfad5284d7e6e1bd989",
+        "n_rows": 904
+      },
+      "calibration": {
+        "bytes_sha256": "0df43e8d6478def685dff83855246148bc909dfd785bd86c5071d7b2849d370a",
+        "content_sha256": "cb53581f2cf7650c1528b53aa6f254acbe07a2e8a053af35f66198f5c593995b",
+        "n_rows": 72
+      },
+      "test": {
+        "bytes_sha256": "55e6547b1eba082e077ad49f4dfe24dcd21c072280aaab95ae9b5ea3c1657e68",
+        "content_sha256": "589ac214ae688f60f8b05761aace618c2aa214f119bb61b7ad65056a7f8ba569",
+        "n_rows": 180
+      },
+      "train_val": {
+        "bytes_sha256": "9a17f1ca7b5e5448c0d9f1fb92c56e78d28b288a0fb03a7c24c31cc6d4d563ef",
+        "content_sha256": "adc5ee22b29168baecf1705a716a93fdd04c0826b7d060e0a4842b5b98b9ddd4",
+        "n_rows": 724
+      }
+    },
+    "clearance_microsomal": {
+      "assignments": {
+        "bytes_sha256": "4ec115023e501b7a68596a4213ab2521ac70dd12c51980cbd5f22c27d962d02e",
+        "content_sha256": "4da72bc8b36eb99b6ee02a7d0b923f07d62c3bea47c2a4c399019dab76f9c879",
+        "n_rows": 1102
+      },
+      "calibration": {
+        "bytes_sha256": "3ad8c750c8ff518524f08f5b1258db794abfa6ec2987fcf19eb58adb7711f55f",
+        "content_sha256": "c01ca5da703a405190c71100f7f39b3edf96f20e7c7be195226d10e4204c577a",
+        "n_rows": 88
+      },
+      "test": {
+        "bytes_sha256": "7ec2fcda73b3edecae3d97c009fba605855cec370a1abd9295304fc53ece45d8",
+        "content_sha256": "907ac292f2c229226614fcf9d26210ec5d0b4bdf8ed7246068401f65d3e49ae2",
+        "n_rows": 221
+      },
+      "train_val": {
+        "bytes_sha256": "8b34899527384e94e0a88d14d40d0c5565f5b145bc7addb9f2084ac6c342e4e6",
+        "content_sha256": "3b478e26e27d3b4ef17e7b55ac74096f4525230bf084e9f90893cabe74a738ba",
+        "n_rows": 881
+      }
+    },
+    "cyp2c9_inhibition": {
+      "assignments": {
+        "bytes_sha256": "8ad100466ee2854e8eb403d58ec54aea18d5cc35eeb910b011a44ea8eb672cb4",
+        "content_sha256": "236123e11d3c17c2280bf641e2dd8d994812de336ae22a2317bcfcfbc6e1337f",
+        "n_rows": 12051
+      },
+      "calibration": {
+        "bytes_sha256": "775acae91a8bdc2b6770c4bcb27fe6ec0f47368b3f8add0fee7cd5919c091659",
+        "content_sha256": "f4491016ab92ef083301422e6b8095b5984c3793b19ae70dc8ece282fa0efae1",
+        "n_rows": 964
+      },
+      "test": {
+        "bytes_sha256": "8eeed338803eea2ed9847f1cecff85c74603b115c4c3747244fa49a985ba1aed",
+        "content_sha256": "85e1a3322a0128ff77853501158db16372ef9d67fb74e65ae0a6a214bc7166b3",
+        "n_rows": 2411
+      },
+      "train_val": {
+        "bytes_sha256": "dc3118e660eeb53e187a14213af75d885a704d14a13b58a7c43e4fa27949adb7",
+        "content_sha256": "5c2e1cf50d74f074e93e4695fe8bf93ec4bf8820481b1841af43ff715bf081f3",
+        "n_rows": 9640
+      }
+    },
+    "cyp2d6_inhibition": {
+      "assignments": {
+        "bytes_sha256": "3c83e9ffabfdbce1c4c1b1ecf2c27a13f7d10eca3cf03b2f20eb8e4fb4428557",
+        "content_sha256": "f7740943bdaa1ede2f24dcbe61f28ba500410987d2f74745f35a243cb0298dfb",
+        "n_rows": 13090
+      },
+      "calibration": {
+        "bytes_sha256": "3705f3b00dbb9fff5f0cebbe0337b4b1b712bac7bb08685246e30be571a6ac68",
+        "content_sha256": "dfb05e2fab09997762f8c1167858120667122affd549aafb6576b9648f161103",
+        "n_rows": 1047
+      },
+      "test": {
+        "bytes_sha256": "ffd1e5641567039b750f446a2c0dc9f36af4cb1ccc82ab4d6222cc58d9b58b9a",
+        "content_sha256": "aff5f97b7ed11391e499abe790efa2cf12058a6da2e2dfae4daafcb20a79d344",
+        "n_rows": 2621
+      },
+      "train_val": {
+        "bytes_sha256": "08fc91dd60aa1501993a0cdf2d22ada37419e036317c585b21ba6063d5fa32c5",
+        "content_sha256": "c3607f84f69d8f8d17d9a005bd7af1b92556d519d0bc498a71fa20cbe914940f",
+        "n_rows": 10469
+      }
+    },
+    "cyp3a4_inhibition": {
+      "assignments": {
+        "bytes_sha256": "bb6425e3108c4ee1f7baa31a399fb74d8167b35a0a138f2a55ab8607ca92f3a0",
+        "content_sha256": "d06af4c82238db728a8fb1d223ea349ce2e7cc67fdfda52a457cce2684b6c160",
+        "n_rows": 12296
+      },
+      "calibration": {
+        "bytes_sha256": "bc413d81c1e3a087376942ef3d359e2fbb355159aa946f884a261b7a437e7837",
+        "content_sha256": "4e9cf0336505d6b37fe2c3d0f243b7ca43d6a6f19566fcc5640cc54dc56d2c82",
+        "n_rows": 983
+      },
+      "test": {
+        "bytes_sha256": "3f85568be2c33b8884288fd32c39a186af09beaccb16d0749112e0afed5f1d83",
+        "content_sha256": "eea8f9ce7e8ae120776816af541511cd83637eda0afdebff3a7f7b485030ae50",
+        "n_rows": 2463
+      },
+      "train_val": {
+        "bytes_sha256": "803dcf651738945820e22fe58488b3c220b8621105481ac260d203f366ee8cc9",
+        "content_sha256": "13b622809dd60dc057f9cfb65fea5b82e95df0076cd2a9540a036d4d92a928bc",
+        "n_rows": 9833
+      }
+    },
+    "dili_liver_injury": {
+      "assignments": {
+        "bytes_sha256": "408831f44ab3085e6ce443a8e977a30245e274bc3dd07bf3cace936951541287",
+        "content_sha256": "36ecea7df3a8ce92878950b6dbf2fe9052ac2cf2696e433d7c7cd1ad4632e80d",
+        "n_rows": 474
+      },
+      "calibration": {
+        "bytes_sha256": "82425710aa60669e10131400f55cd6a29ded551496ae20e6a91b93c654a99853",
+        "content_sha256": "bac0c4d5a764cff57b57dfa782d813a5a6487645cb30b7bad5bc675d2202ba9a",
+        "n_rows": 50
+      },
+      "test": {
+        "bytes_sha256": "ce76a3fad6746a4d186867e7c732025c2e8179709903dc89b6cca36cfa1f3406",
+        "content_sha256": "0e83e1c910afeea0914991929376734981d664d7ea939bce4cff185bf09b3cdd",
+        "n_rows": 96
+      },
+      "train_val": {
+        "bytes_sha256": "6aac8f0a9bdcf24f74afd6a3a6e942d2afe3daf561b2fb5a6855d8e05a1563fd",
+        "content_sha256": "4dc7a6d8b3eee55cad7bf80b3403d412542f9688754ae54ef1956f33ef3b3617",
+        "n_rows": 378
+      }
+    },
+    "dili_liver_injury__augmented": {
+      "assignments": {
+        "bytes_sha256": "b6f320fd8aeb3b49ee5f6cd2603866bfc0379875a2f6cd93f05c7e9b807e6d81",
+        "content_sha256": "c797550b46668376c1e12c5786b83769ae3bf1d755d026df10d4e11a08b42354",
+        "n_rows": 1215
+      },
+      "calibration": {
+        "bytes_sha256": "a2c318b741534cc47f0d9a1e3601a37ad0daae511594ac7d684a0fb0cc1be845",
+        "content_sha256": "2cf3ec72aa022412cd702f5f84c1e2247d2329e99fe315ec844bd6a1cc489665",
+        "n_rows": 112
+      },
+      "test": {
+        "bytes_sha256": "ce76a3fad6746a4d186867e7c732025c2e8179709903dc89b6cca36cfa1f3406",
+        "content_sha256": "0e83e1c910afeea0914991929376734981d664d7ea939bce4cff185bf09b3cdd",
+        "n_rows": 96
+      },
+      "train_val": {
+        "bytes_sha256": "76dd71ea31d7b5e5a67ddf26fec471913cd2eabec34277e25a9219071ba00750",
+        "content_sha256": "e354d02d7c768581f41fdc40825dbb2824fb5aa3fbe2f5aa07d8aa4ae1ced56b",
+        "n_rows": 1119
+      }
+    },
+    "herg_cardiotoxicity": {
+      "assignments": {
+        "bytes_sha256": "5fcd3541cdb91ba20e888cb263f1cc92823ef27f5597c2efee5b8a23313e8250",
+        "content_sha256": "f2f0e20956a885e888738be00513c0cb69199de441fa36103479e98aeb57072d",
+        "n_rows": 13136
+      },
+      "calibration": {
+        "bytes_sha256": "c49854d0afe1827abc38463fd871e2c223048e3c0b9809babf0befe10fcf085d",
+        "content_sha256": "86de2c9b2dbdb885c4a5cc8b81780e27cccd98bb28e94f0be824aea492dbf718",
+        "n_rows": 1051
+      },
+      "test": {
+        "bytes_sha256": "a0a1cd26c2b6e47bc725814945a27a91840de94bdd7d08382f59c4e4128c55eb",
+        "content_sha256": "75fe5d650d4d4be0ae22096ff69b1d22a3868511911b4a9db8b77ffcbcc70f49",
+        "n_rows": 2627
+      },
+      "train_val": {
+        "bytes_sha256": "746ff23fda188d8c49eccbbc66cbf13d894caf42a066471fc977f57303d529ce",
+        "content_sha256": "07884aeeec3f78dff8d3c64dce574e500054e80fd100edc7d49740dbe6ffb1d7",
+        "n_rows": 10509
+      }
+    },
+    "herg_cardiotoxicity__benchmark": {
+      "assignments": {
+        "bytes_sha256": "196cc85b2d064b36af418e7f257d9ed4d1cfe58e4329cd1655e033bcb096a11e",
+        "content_sha256": "b213551568cabb4652d1b9a2f280eec368b5ebd6815ec767be02a1d160e4de93",
+        "n_rows": 616
+      },
+      "calibration": {
+        "bytes_sha256": "df820b11295a8342c59eb0d18d9167d8eccb496b7d922d992ca92450d2fe9228",
+        "content_sha256": "775f6488cab2b24caf4a94e5f507b7db1257fcd49cad51f3f0a5d312ce7b44b1",
+        "n_rows": 50
+      },
+      "test": {
+        "bytes_sha256": "a625696741604d0b1f3454e4b9538d723074009405466f43e421b82f0a0b0286",
+        "content_sha256": "79a3c724edb0b8524d84eec9405baa94990a44a3e41a479468aae7900597e2b3",
+        "n_rows": 123
+      },
+      "train_val": {
+        "bytes_sha256": "c5d77c6c1a64f9a0da27b4f8001545ffc6805476baf5ad334b6dd10cbe9d1162",
+        "content_sha256": "48739730b06fa4fe237e26c277e61ec6e00f94e3682dbe8aea0b4e77620d0b5a",
+        "n_rows": 493
+      }
+    },
+    "hia_absorption": {
+      "assignments": {
+        "bytes_sha256": "b602865fd00ef19dcb4be9adfc4e05a71d31d83bdc7f5751805f8c2582cb8831",
+        "content_sha256": "edf351bef92010885848121a7b54a40c9d03513c52096af7a3291c92d12564d3",
+        "n_rows": 578
+      },
+      "calibration": {
+        "bytes_sha256": "6f096935ead674a409228e958f6973495770f41af3c02dcdd2c4d9227cb54c47",
+        "content_sha256": "2c6b203920c3b58101d168a064ef8f806b51a2c3fcd100490b16ce9cf8214c5a",
+        "n_rows": 50
+      },
+      "test": {
+        "bytes_sha256": "939c2860be0af3255ce55675c43df13ec2c1018ce699d3790aa59646c76c1d6b",
+        "content_sha256": "90a14ae972b49269eee3719fe9e81a1f870fd0c1e385956d02810cf838033c8e",
+        "n_rows": 117
+      },
+      "train_val": {
+        "bytes_sha256": "0c77ff8e3bd4c1723eee4681284d09a8dd6fc24009f8e3fdb7cb597b6e94e45e",
+        "content_sha256": "f5ed72aa9c767a44e7297e22664b4c6b3f56e253ad6378d63c7400e15c6a859e",
+        "n_rows": 461
+      }
+    },
+    "lipophilicity_logp": {
+      "assignments": {
+        "bytes_sha256": "c4479d8b08fc4205b55ee43ba8de1a24ab801c2f82a5ab3593d76b6655f75bb6",
+        "content_sha256": "e725d88d9af1b20569f01cd248eb347ce080b502470037f1980bca5f0772379d",
+        "n_rows": 4200
+      },
+      "calibration": {
+        "bytes_sha256": "46e3eefbb48347d21bc0a11f907df795449d0d5760f3b0f853b33f10a774d262",
+        "content_sha256": "62970e7c048f166434bd398ac133a9217b4eaed463cae29d7ef8b99b32882672",
+        "n_rows": 336
+      },
+      "test": {
+        "bytes_sha256": "beb4d8d65c35fb52f6f7da35684c135598349518d7275988991c859641043d33",
+        "content_sha256": "bbc88ebe9023cbb3c98b9e1bc7b132a7d00d82d941830157cab86ed96aad6b7a",
+        "n_rows": 840
+      },
+      "train_val": {
+        "bytes_sha256": "a324170f08ffd30cf8e382c868833808536ea807812baedd57d82dd276dcf9fa",
+        "content_sha256": "1f5cd1f2a5b3950b82c4640aecc8db05f7166f87b9c0d3b68fe5dc554694a9f1",
+        "n_rows": 3360
+      }
+    },
+    "pgp_inhibition": {
+      "assignments": {
+        "bytes_sha256": "ef6033551a2404a4e66c5c38ecac905c213581f505c8d8b8ce1fde7d618f1428",
+        "content_sha256": "18f805da2044050e9a0ddf71403bb56ecb68d7064eb7cee42c9869dc7299cff8",
+        "n_rows": 1212
+      },
+      "calibration": {
+        "bytes_sha256": "0a8d89fd7a55019a7e2e73cd9d64a723a218aa7cac7b580a20b2f7ae6e921275",
+        "content_sha256": "95acec8be1a689a2b42fa2445bd972e2e16b69cc756513e22b39466cdebfd7d0",
+        "n_rows": 97
+      },
+      "test": {
+        "bytes_sha256": "1c5bed5a009473629c02f375dbbf90b8b2ec3579fc33bf6a5228fb2c82f75949",
+        "content_sha256": "70278c9569463cd5e7e9390929912907e516b555e5e525028eae31f407c9d2a9",
+        "n_rows": 245
+      },
+      "train_val": {
+        "bytes_sha256": "e9a4b7390a6adfebda04a34b3ead3f4e4db0a6664a94697ef4b2a62b18d862d8",
+        "content_sha256": "90276083dcfbc86de9653c4c7b2834c9ecc3ce9a232e064b16adebc9a313c60d",
+        "n_rows": 967
+      }
+    },
+    "ppb_binding": {
+      "assignments": {
+        "bytes_sha256": "02c361d9a523c8c7e336a1c8fc3bc764aa5ae69567985f22a21d0e68698e9987",
+        "content_sha256": "f7a1c1971bc3d31245b8022465798e1ad0f2a0b532a46d90147aac2ed4e38c5d",
+        "n_rows": 1614
+      },
+      "calibration": {
+        "bytes_sha256": "ad33c6ea3cb8e05dd67d3dceb1f9ca9b72a45789689a42078e9c30be50f1b9f4",
+        "content_sha256": "b5b03d1cd3051cf27ea223f0d4949656fb15bf489dc7d7ec247b70bfb9863da3",
+        "n_rows": 129
+      },
+      "test": {
+        "bytes_sha256": "2876236d06c75ff00b713f830fa50ec33fca4827f820e050eb6514c55e3015bf",
+        "content_sha256": "611efec4ad0716a4e1b33ff94aa49bd9a97ae92d519391b4ce4a38e0fecec44d",
+        "n_rows": 323
+      },
+      "train_val": {
+        "bytes_sha256": "40717dfa356a298b22b0acc9aaff3c2c2a66552c667ab491ad2dafa1dd097e80",
+        "content_sha256": "56ecfecf20fea153ada6eba6ae9d2f8bef01aacd4f47bccafe6c42ac5a2e2ca0",
+        "n_rows": 1291
+      }
+    },
+    "solubility_logs": {
+      "assignments": {
+        "bytes_sha256": "28d6a7710969fb7c6ea05372a46cf6c9358ef0e9a292348f453f6c59ab515f58",
+        "content_sha256": "4a6aa01cbafdba95afb29cd6dd6520b039c5952ae682d0b516f6b32be89e27de",
+        "n_rows": 9478
+      },
+      "calibration": {
+        "bytes_sha256": "fd1a7b6c77fa2f5eb2c96cb057e041021a68904ed4fb994cd58dc08ac1a582ac",
+        "content_sha256": "8ebfd5c28eef1c9faed2cb54228bd77d7cd7c716a73118993462043adaee9048",
+        "n_rows": 752
+      },
+      "test": {
+        "bytes_sha256": "1e8ff84509d6b6dfed5751418ce47879b4979c183f3c51b98cfad23864e5dc8f",
+        "content_sha256": "01f85f988361b02cdf1ac35bd6c4d50ad2968d7861fa6420630fb43f4f42f2ed",
+        "n_rows": 1960
+      },
+      "train_val": {
+        "bytes_sha256": "19372f5c8a912be224f0f8d06bcbb63e92dfea23f33758d3a424a1d700805f1a",
+        "content_sha256": "3a0e6929b9a2c1bd31804d7e0843246ed45966c4e41064aa853d04ca67e25b76",
+        "n_rows": 7518
+      }
+    }
+  },
+  "fingerprint_version": "mars-prep-fingerprint-v1",
+  "manifest": {
+    "acquisition_id": "20260830T181633Z",
+    "dedup_version": "mars-dedup-v1",
+    "eda_id": "20260830T191149Z",
+    "generated_at_utc": "2026-08-30T19:57:31.492282Z",
+    "prep_id": "20260830T200000Z",
+    "prep_schema_version": 1,
+    "split_version": "mars-split-v1",
+    "standardizer_version": "mars-standardizer-v1"
+  },
+  "prep_id": "20260830T200000Z"
+}

@@ -10,7 +10,6 @@ here — those need `MARS_KERMT_REPO` + the built `kermt:latest` image.
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 
 import numpy as np
@@ -128,8 +127,12 @@ def test_targets_dict_multitask_rejects_shape_mismatch(tmp_path, monkeypatch):
 
 
 def test_dataset_type_flag(tmp_path, monkeypatch):
+    # Targets must match the declared task type — the homogeneity guard added
+    # 2026-09-20 rejects a regression run declared over a classification endpoint.
     clf = _model(tmp_path, monkeypatch, task_type=TaskType.CLASSIFICATION)
-    reg = _model(tmp_path, monkeypatch, task_type=TaskType.REGRESSION)
+    reg = _model(
+        tmp_path, monkeypatch, task_type=TaskType.REGRESSION, targets=["solubility_logs"]
+    )
     assert clf._dataset_type_flag() == "classification"
     assert reg._dataset_type_flag() == "regression"
 
@@ -152,7 +155,9 @@ def test_hyperparam_flags_defaults_metric_by_task_type(tmp_path, monkeypatch):
     test: 'Metric "mae" invalid for dataset type "classification"'). The
     wrapper must always resolve a task_type-correct metric itself."""
     clf = _model(tmp_path, monkeypatch, task_type=TaskType.CLASSIFICATION)
-    reg = _model(tmp_path, monkeypatch, task_type=TaskType.REGRESSION)
+    reg = _model(
+        tmp_path, monkeypatch, task_type=TaskType.REGRESSION, targets=["solubility_logs"]
+    )
     assert "--metric auc" in clf._hyperparam_flags()
     assert "--metric mae" in reg._hyperparam_flags()
 
@@ -305,3 +310,140 @@ def test_save_and_load_metadata_roundtrip(tmp_path, monkeypatch):
     assert reloaded.task_type == TaskType.REGRESSION
     assert reloaded.is_fitted
     assert reloaded._target_names == ["solubility_logs"]
+
+
+# ---------------------------------------------------------------------------- #
+# Endpoint-homogeneity guard (added 2026-09-20 — the module docstring had
+# claimed this existed since the wrapper was written, but it did not)
+# ---------------------------------------------------------------------------- #
+
+
+def test_mixed_task_type_targets_are_rejected(tmp_path, monkeypatch):
+    """The core blocker: one --dataset_type cannot serve both column types.
+
+    Without this guard the regression column comes back squashed through a
+    sigmoid — a plausible-looking wrong number rather than an error.
+    """
+    with pytest.raises(ValueError, match="mixed classification/regression"):
+        _model(
+            tmp_path,
+            monkeypatch,
+            task_type=TaskType.CLASSIFICATION,
+            targets=["cyp3a4_inhibition", "clearance_microsomal"],
+        )
+
+
+def test_declared_task_type_must_match_the_endpoints(tmp_path, monkeypatch):
+    with pytest.raises(ValueError, match="was declared but targets"):
+        _model(
+            tmp_path,
+            monkeypatch,
+            task_type=TaskType.REGRESSION,
+            targets=["ames_mutagenicity"],
+        )
+
+
+def test_homogeneous_multitask_targets_are_accepted(tmp_path, monkeypatch):
+    m = _model(
+        tmp_path,
+        monkeypatch,
+        task_type=TaskType.CLASSIFICATION,
+        targets=["herg_cardiotoxicity", "ames_mutagenicity"],
+    )
+    assert m.model_id == "mars-kermt-multitask-v1"
+
+
+def test_unresolvable_target_names_are_tolerated(tmp_path, monkeypatch):
+    """Tier-2 ordinal columns (`solubility_logs__gt0`) carry no endpoint metadata.
+
+    They are binary by construction, so the guard must not reject them.
+    """
+    m = _model(
+        tmp_path,
+        monkeypatch,
+        task_type=TaskType.CLASSIFICATION,
+        targets=["solubility_logs__gt0", "solubility_logs__gt1"],
+    )
+    assert m.target_names == ["solubility_logs__gt0", "solubility_logs__gt1"]
+
+
+# ---------------------------------------------------------------------------- #
+# target_names / target_task_types / supports_loss_weighting
+# ---------------------------------------------------------------------------- #
+
+
+def test_target_properties(tmp_path, monkeypatch):
+    m = _model(
+        tmp_path,
+        monkeypatch,
+        task_type=TaskType.CLASSIFICATION,
+        targets=["herg_cardiotoxicity", "ames_mutagenicity"],
+    )
+    assert m.target_names == ["herg_cardiotoxicity", "ames_mutagenicity"]
+    assert m.target_task_types == {
+        "herg_cardiotoxicity": TaskType.CLASSIFICATION,
+        "ames_mutagenicity": TaskType.CLASSIFICATION,
+    }
+    # Mutating the returned list must not corrupt the model's own state.
+    m.target_names.append("bogus")
+    assert len(m.target_names) == 2
+
+
+def test_stock_path_declares_it_cannot_do_loss_weighting(tmp_path, monkeypatch):
+    """run_finetune_local.py never forwards --use_mtl_loss and parses strictly.
+
+    So this path is equal-weighting only; Kendall/GradNorm come from Tier 1.
+    See documentation/AIMS/decisions.md (2026-09-20, finding 2).
+    """
+    m = _model(tmp_path, monkeypatch)
+    assert m.supports_loss_weighting is False
+
+
+def test_no_mtl_loss_flag_is_ever_emitted(tmp_path, monkeypatch):
+    """Emitting it would be an unrecognized-argument hard failure, exit 2."""
+    m = _model(tmp_path, monkeypatch)
+    m._cfg = KermtConfig(epochs=3, batch_size=16)
+    flags = m._hyperparam_flags()
+    assert "mtl" not in flags
+
+
+# ---------------------------------------------------------------------------- #
+# predict_logits — unblocks temperature scaling for every KERMT clf run
+# ---------------------------------------------------------------------------- #
+
+
+def test_predict_logits_inverts_the_served_probability(tmp_path, monkeypatch):
+    m = _model(tmp_path, monkeypatch, task_type=TaskType.CLASSIFICATION)
+    monkeypatch.setattr(
+        KermtModel, "predict", lambda self, X, run_dir=None: np.array([0.5, 0.7310586])
+    )
+    out = m.predict_logits(["CCO", "CCC"])
+    assert out[0] == pytest.approx(0.0, abs=1e-9)
+    assert out[1] == pytest.approx(1.0, abs=1e-5)
+
+
+def test_predict_logits_is_monotone_so_ranking_metrics_are_unchanged(tmp_path, monkeypatch):
+    m = _model(tmp_path, monkeypatch, task_type=TaskType.CLASSIFICATION)
+    probs = np.array([0.01, 0.2, 0.5, 0.85, 0.99])
+    monkeypatch.setattr(KermtModel, "predict", lambda self, X, run_dir=None: probs)
+    out = m.predict_logits(["a", "b", "c", "d", "e"])
+    assert np.all(np.diff(out) > 0)
+
+
+def test_predict_logits_clips_saturated_probabilities(tmp_path, monkeypatch):
+    """0.0/1.0 in the CSV is decimal rounding, not infinite confidence."""
+    m = _model(tmp_path, monkeypatch, task_type=TaskType.CLASSIFICATION)
+    monkeypatch.setattr(
+        KermtModel, "predict", lambda self, X, run_dir=None: np.array([0.0, 1.0])
+    )
+    out = m.predict_logits(["a", "b"])
+    assert np.isfinite(out).all()
+    assert out[0] < 0 < out[1]
+
+
+def test_predict_logits_rejects_regression_models(tmp_path, monkeypatch):
+    m = _model(
+        tmp_path, monkeypatch, task_type=TaskType.REGRESSION, targets=["solubility_logs"]
+    )
+    with pytest.raises(ValueError, match="classification-only"):
+        m.predict_logits(["CCO"])

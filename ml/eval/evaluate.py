@@ -36,6 +36,11 @@ class EvaluationReport:
     per_seed_metrics: list[dict[str, Any]]
     aggregated: dict[str, float]
     version: str = EVALUATE_VERSION
+    # Set only for reports produced by a multi-task cluster/subgroup run, naming
+    # the grouping the endpoint was trained inside (e.g. "metabolism__cls").
+    # None for single-task and XGBoost reports. Additive with a default so
+    # previously written reports still load via ``EvaluationReport.load``.
+    cluster_key: str | None = None
 
     def save(self, path: Path) -> None:
         path = Path(path)

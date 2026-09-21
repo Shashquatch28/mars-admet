@@ -1,21 +1,215 @@
 # next_steps.md
 
-_Last updated: 2026-09-17 (M3 Serving/Auth/Batch/Infra session — see below).
-Active milestone: M3. M2 status unchanged (still no production training runs)._
+_Last updated: 2026-09-21 (full project audit + KERMT calibration wiring; still no GPU training).
+Active milestone: M2 (KERMT/GNN track). M3 is locally/container complete.
+Branch: `milestone/m2-kermt`. The lab-session checklist is the last section of
+"Immediately" below._
 
 ## Immediately
 
-- User to review and commit this session's M3 work manually (see
-  `context.md`'s git-state note for the full file list). AI does not commit.
-- M2's production XGBoost sweep (0/70 runs) and KERMT pre-flight are still
-  both outstanding and untouched by M3 — M3 was scoped and executed
-  independently per the session's own instructions (don't mix M2 GPU work
-  into M3 serving work).
+- **The KERMT mixed-type cluster blocker is RESOLVED as a decision** (see
+  `decisions.md`, 2026-09-20). Three-tier ladder approved; stock KERMT is NOT
+  forked. Implementation is in progress — see "M2 — mixed-type clusters" below.
+- **CPU-side prep is DONE as of 2026-09-20.** Built and tested without a GPU:
+  `ml/configs/clusters.py`, `ml/data/cluster_loaders.py` (leakage-safe wide
+  table), `ml/eval/cluster_eval.py`, `ml/featurize/ordinal.py` (Tier 2 codec),
+  `ml/train/train_kermt_cluster.py` (Tier 0 harness),
+  `ml/train/preflight_clusters.py` (the zero-GPU gate, already run), the four
+  `kermt_model.py` changes, and 65 new CPU-only tests. Repo is ruff-clean.
+  **The next lab session should go straight to GPU work.**
+- **Two gate results are already in** (see below and `decisions.md`):
+  `absorption_distribution` and `toxicity` arms are cleared to train;
+  **`metabolism__cls` is proceeding provisionally under Option A** (2026-09-20
+  maintainer call: keep official TDC splits, keep strict cluster-level leakage
+  prevention, accept the reduced pool, keep single-task CYP baselines on their
+  full original splits); Tier 2's `n_bins=16` is chosen.
+- **Calibration (2026-09-21):**
+  1. ✅ **WIRED (CPU-verified, GPU-gated).** `fit_temperature_scaler` now has a
+     production call site: `eval/cluster_calibration.py::calibrate_endpoints`,
+     called from `train/train_kermt_cluster.py::train_one_seed`. Fit on the held-out
+     calibration split only; test set scored afterwards, raw and calibrated;
+     per-seed diagnostics persisted. 43 new CPU tests (+8 diagnostics tests from
+     2026-09-20 = 51 on this path); the isolation property was mutation-tested. **What is NOT verified:** anything about real KERMT logits —
+     only a `StubKermt` test double has ever run through this path.
+  2. **OPEN — the calibration split is not label-representative** (`mistakes.md`) — a
+     pre-existing M1 property affecting all 9 classification endpoints and the
+     already-promoted XGBoost calibrators, worst at `cyp3a4_inhibition`
+     (train_val 0.4093 vs calibration 0.1129). Changing the split policy is an M1 data
+     decision and was **not** taken.
+  3. **OPEN — `hia_absorption` calibration is below the floor** after strict union
+     removal: N=47, 46 positive / 1 negative (blueprint floor is 50). Its promoted
+     XGBoost Platt calibrator was already fit on 49+1. Needs a maintainer call before
+     A&D-cls calibration is treated as meaningful. `preflight_clusters.py` did not
+     check calibration size when it "cleared" A&D-cls.
+  4. **OPEN — `holdout_calibration=True` default needs sign-off.** It removes every
+     calibration molecule from the KERMT training pool (`decisions.md` 2026-09-21),
+     costing ~10% more labels and making KERMT's pool differ from XGBoost's.
+- ✅ **DONE 2026-09-21 — XGBoost held-out TEST evaluation** (`ml/eval/heldout_evaluation.py`,
+  `ml/train/evaluate_xgboost_test.py`; reports in `ml/runs/test_evaluations/`, 14 endpoints x 5
+  seeds, 0 blocked; `artifacts/` and `runs/evaluations/` proven byte-unchanged). The KERMT
+  comparison must use these **test** numbers, not the old validation-fold reports — they differ by
+  up to +0.263 AUROC. Table in `decisions.md` 2026-09-21 (later).
+- **OPEN — served XGBoost Platt calibrators degrade held-out calibration** (like-for-like on the
+  calibrator's own seed 4: ECE worse on 7/9 endpoints, Brier worse on 9/9; worst hia .045→.209).
+  They are what the API applies. Cause: calibration-split prior ≠ test prior. Also only ONE
+  calibrator exists per endpoint (fit on seed 4). Calibration policy is out of scope so **not
+  fixed** — needs a maintainer call (the API is serving these).
+- **OPEN — shared cluster fold leaves tiny per-task validation sets.** `toxicity__cls` val =
+  18–24 hERG labels vs ~1,810 AMES; `ppb` 42–50; `hia` 46. Epoch selection for those tasks is
+  effectively unmeasured. Design decision; not changed.
+- **OPEN — KERMT harness trains DILI on the base pool** (287 train) while XGBoost used the
+  DILIst-augmented pool (979): −71%. Configuration mismatch; decide which the comparison uses and
+  pin `use_augmented_dili` in the run config.
+- ✅ **DONE 2026-09-21 — RNG capture/restore utility** (`ml/utils/rng_state.py`, 23 tests).
+  **Not integrated** into any training path — see the integration points in its docstring.
+- ✅ **DONE 2026-09-21 — readiness report** (`ml/train/readiness_report.py`): verdict
+  `READY_FOR_GPU_SMOKE_TEST` (CPU-side scope; 4 workstation checks NOT_EVALUATED).
+- **OPEN — workstation processed-data identity is UNABLE TO VERIFY (D).** Raw acquisition is
+  byte-identical (15/15). Run `data/compare_prep.py fingerprint` on the workstation and
+  `compare` against `ml/data/metadata/prep_fingerprint.20260830T200000Z.json`.
+- **OPEN — no KERMT sweep CLI driver exists.** `train_subgroup_all_seeds` does; the
+  lab snippets below call it directly. A thin CLI (subgroup, seeds, W&B on by default)
+  is a small implementation gap, not a blocker.
+- **Leakage first, before any GPU spend.** Cross-endpoint split leakage
+  (`decisions.md` 2026-09-20, finding 1) is a correctness precondition for all
+  three tiers. A cluster run that cannot prove zero train/test overlap does not
+  get trained.
 - The full M1 reference is `documentation/MARS_M1_TECHNICAL_REFERENCE.md` —
   cite it, don't re-derive.
-- No production XGBoost runs have been fired yet (0 of the planned 70 = 14
-  endpoints × 5 seeds). This is the next real decision point, not a code task —
-  see "Next" at the bottom of the M2 section.
+- M2's production **XGBoost** sweep is COMPLETE (70/70, 2026-09-17). The
+  remaining M2 scope is the KERMT/GNN track only.
+- The user commits manually. **The AI must not run git write commands.**
+
+### GPU lab session — ordered checklist (2026-09-21)
+
+> **For the lab itself, follow `lab_session_tasks.md`** (added 2026-09-21): every command there was
+> checked against the code, and it corrects two points below — on the workstation pass
+> `--prep-id 20260918T090433Z` to `readiness_report.py` and do **not** pass `--workstation-fingerprint`
+> (the report derives the canonical fingerprint's filename from `--prep-id`), and export
+> `WANDB_ENTITY`/`WANDB_PROJECT` (nothing loads `.env`). This section is kept as the record of intent.
+
+Verification tags: **[ran here]** executed on this laptop against the repo (with a
+`StubKermt` test double where KERMT is needed — real code, real data, fake model
+scores); **[recorded 9-18]** executed on the workstation on 2026-09-18 per
+`status/kermt_integration_status.md`, not re-run since; **[sig-checked]** matches the
+current function signatures but has not run against real KERMT. Workstation paths
+(`~/mars-work/...`, `../.venv/bin/python`) are as recorded 2026-09-18.
+
+**0. Before leaving the laptop (CPU, this machine)**
+- `git status --short` — expect the M2-kermt working tree; the user commits manually
+  **[ran here]**. Nothing below works on the workstation until the new modules
+  (`ml/eval/cluster_calibration.py`, `ml/train/train_kermt_cluster.py`, ...) are there.
+- Decide the OPEN items above (esp. HIA floor, `holdout_calibration` default, DILI pool, and what
+  to do about the served calibrators). The XGBoost test evaluation is already done.
+- **Commit first.** The readiness report WARNs that a dirty tree makes each run's recorded git SHA
+  not describe the code that ran.
+- `cd ml && PYTHONPATH=. ./.venv/Scripts/python.exe train/readiness_report.py` — expect
+  `READY_FOR_GPU_SMOKE_TEST` with 4 pending workstation checks **[ran here]**.
+
+**1. Environment on the workstation**
+- `nvidia-smi` — expect RTX A4000, 16376 MiB **[recorded 9-18]**.
+- `export MARS_KERMT_REPO=~/mars-work/kermt-src MARS_KERMT_IMAGE=kermt:latest`, then
+  `docker image ls kermt:latest` **[recorded 9-18]**.
+- `cd ~/mars-work/mars-admet/ml && PYTHONPATH=. ../.venv/bin/python -m pytest -q`
+  **[recorded 9-18 for the older suite]** — expect only the 5 known
+  `test_acquisition_lockfile.py` failures (3 of which should now *pass* on the
+  workstation, where `raw/*/20260918T090143Z/` exists).
+- `../.venv/bin/python -c "import wandb"` and confirm `wandb login` state without printing
+  the key — **not established** that wandb is installed in the workstation venv.
+
+**2. Data + checkpoint verification**
+- `ls data/processed/` — expect `20260918T090433Z` **[recorded 9-18]**. **Not
+  established:** that its splits are byte-identical to the laptop's `20260830T200000Z`
+  (raw inputs are; 15/15 `snapshot_sha256`). Close it: `PYTHONPATH=. ../.venv/bin/python
+  data/compare_prep.py fingerprint --prep-dir data/processed/20260918T090433Z --out ws.json`
+  then `... compare --a data/metadata/prep_fingerprint.20260830T200000Z.json --b ws.json`;
+  expect `A_BYTE_IDENTICAL` (or `B_...` if only formatting differs) **[ran here on both local
+  snapshots; not yet on the workstation]**. Manifests can't be diffed — they embed absolute paths.
+- `PYTHONPATH=. ../.venv/bin/python train/readiness_report.py --target workstation
+  --workstation-fingerprint ws.json` — evaluates the 4 workstation-only checks for real
+  (checkpoint sha, KERMT commit, Docker image id, GPU/VRAM) **[ran here with `--target laptop`;
+  the workstation branch is unit-tested with mocks only]**. Record the printed Docker image id: no
+  pinned expected id exists anywhere in the repo.
+- `sha256sum data/checkpoints/kermt/NV-KERMT-70M-v2/kermt_contrastive_v2.0.pt` — expect
+  `e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3`
+  (`ml/data/metadata/kermt_checkpoint.lock.json`) **[recorded 9-18]**.
+- `PYTHONPATH=. ../.venv/bin/python train/preflight_clusters.py --prep-dir
+  data/processed/20260918T090433Z` **[ran here on the laptop's snapshot]** — re-confirms
+  the leakage cost and the Tier-2 bin choice on the workstation's snapshot. The
+  `xgb_mae` columns will read `n/a` unless `runs/evaluations/` was copied over.
+
+**3. KERMT smoke test (unchanged from 9-18)**
+- Re-run the tiny AMES fine-tune in `status/kermt_integration_status.md` §11
+  **[recorded 9-18]**: expect 3 epochs, `loss_train` falling, `auc_val` ≈ 0.72, reload
+  bit-identical.
+
+**4. Calibration smoke test + first real run — `dili_standalone__cls`**
+Smallest classification arm (328-molecule training pool after the calibration holdout,
+of which the fold splits train/val; 50-row calibration set with 13 positives), so it exercises train → calibrate → test →
+persist in minutes. **[sig-checked and executed here with `StubKermt`]**:
+
+```python
+from pathlib import Path
+from configs.clusters import all_subgroups
+from configs.experiment_config import ExperimentConfig
+from data.cluster_loaders import load_cluster
+from models.kermt_model import KermtConfig
+from train.train_kermt_cluster import train_one_seed
+
+PREP = Path("data/processed/20260918T090433Z")
+CKPT = Path("data/checkpoints/kermt/NV-KERMT-70M-v2/kermt_contrastive_v2.0.pt")
+key = "dili_standalone__cls"
+spec = all_subgroups()[key]
+cd = load_cluster(PREP, list(spec.endpoints), cluster_key=key)
+cfg = ExperimentConfig(endpoint=key, model_family=spec.model_family, seed=0, prep_id=cd.prep_id)
+res = train_one_seed(cd, spec, cfg, 0, checkpoint=CKPT,
+                     kermt_config=KermtConfig(epochs=3, batch_size=16),
+                     runs_dir=Path("runs"), use_wandb=False)
+print(res.calibration)
+```
+
+Expected outputs under `runs/<run_id>/`: `artifacts/kermt/` (KERMT work dir),
+`artifacts/model/kermt/`, `artifacts/calibration/dili_liver_injury/{temperature_scaler,
+calibration_diagnostics}.json`, `metrics.jsonl` with a `val` and a `calibration+test`
+record. **Inspect** `at_boundary`, `optimizer_success`, `n_negative` (expect 37 of 50),
+and that `test_metrics_calibrated.auroc == test_metrics_raw.auroc`.
+
+**5. Tier-0 runs** (`use_wandb=True` for these; every run is equal-weighted). Same snippet
+with `train_subgroup_all_seeds`, then the aggregators **[sig-checked and executed here
+with `StubKermt`, 5 seeds, on `dili_standalone__cls`]**:
+
+```python
+from eval.cluster_calibration import (aggregate_calibration_across_seeds,
+                                      aggregate_test_metrics_across_seeds)
+from eval.cluster_eval import cluster_results_to_endpoint_reports
+from train.train_kermt_cluster import train_subgroup_all_seeds
+
+results = train_subgroup_all_seeds(cd, spec, cfg, checkpoint=CKPT, runs_dir=Path("runs"),
+                                   use_wandb=True)
+records = [r for res in results for r in res.calibration.values()]
+test_agg = aggregate_test_metrics_across_seeds(records)      # <- final numbers
+cal_agg = aggregate_calibration_across_seeds(records)        # <- stability diagnostics
+val_reports = cluster_results_to_endpoint_reports(
+    results, cluster_key=key, model_family=spec.model_family,
+    prep_id=cd.prep_id, task_types=cd.task_types)            # val-fold only
+```
+
+Arms, in suggested order (`all_subgroups()` keys): `metabolism__reg` (clearance, the
+single-task baseline, no calibration), `dili_standalone__cls`, `toxicity__cls`,
+`absorption_distribution__reg`, `absorption_distribution__cls` (**HIA calibration is
+N=47, 1 negative — see OPEN item 3**), `metabolism__cls` (**provisional Option A**).
+Each x 5 seeds. **Also required, not in that list:** the single-task KERMT baselines for
+the 3 CYPs on their full original splits (Option A) — `KermtModel` supports them but no
+harness path builds them yet.
+
+**6. Equivalence gates G1-G4** — all need the Tier-1 trainer (`ml/train/kermt_mixed/`,
+`models/kermt_mixed_model.py`), which **does not exist yet**. G1/G2/G3 are GPU-dependent;
+G4 (Kendall math) is CPU-only and can be written first. Tier 1 becomes executable only
+after Tier 0 completes and G1-G4 pass.
+
+**7. Tier 2** — codec and zero-GPU ceiling gate are done (`n_bins=16`). Remaining, all
+GPU: the ordinal-encoded stock-CLI runs and the decoded-MAE-within-15% gate. Postpone
+until Tier 1 lands.
 
 ## M1 — Data & Featurization — ✅ COMPLETE 2026-08-30
 
@@ -319,15 +513,183 @@ SMILES (they are canonical fixed-points).
    (`mars-graph-v1`) stays portable/unlocked; the "adapter" that exists is a
    SMILES/CSV contract (`ml/featurize/kermt_adapter.py`), not a schema lock,
    since KERMT re-derives its own graph internally from SMILES.
-5. **New:** decide how to handle KERMT's mixed-classification/regression
-   multi-task limitation for the Metabolism and Absorption & Distribution
-   clusters (decisions.md 2026-09-18 entry has 3 options) — needs a
-   maintainer call, not resolvable by further inspection alone.
+5. ✅ **RESOLVED 2026-09-20.** KERMT's mixed-classification/regression multi-task
+   limitation for the Metabolism and Absorption & Distribution clusters —
+   three-tier ladder approved, option (b) fork rejected. Full rationale in
+   `decisions.md`'s 2026-09-20 entry; live work breakdown in
+   "M2 — mixed-type clusters" below.
 6. **New:** re-run M1 acquisition (`ml/data/acquire.py`) on this workstation
    — `ml/data/raw/` and `ml/data/processed/` are empty here (gitignored by
    design; M1 was originally run on a different machine). Needed before any
    KERMT finetune can use real MARS endpoint data rather than synthetic
    smoke-test data.
+
+### M2 — mixed-type clusters (live work breakdown, opened 2026-09-20)
+
+Decision + rationale: `decisions.md` 2026-09-20. **Three paths, kept strictly
+distinct in code, run names and results tables — never conflate them:**
+
+| | Path | Trained by | `model_family` |
+|---|---|---|---|
+| **(a)** | Stock KERMT, type-homogeneous | KERMT's own CLI, unmodified | `kermt_multitask_subgroup` / `kermt_single` |
+| **(b)** | MARS-owned mixed-type training | MARS trainer importing KERMT as a library, in-container | `kermt_mixed` |
+| **(c)** | Ordinalized all-classification | KERMT's own CLI, unmodified, on encoded targets | `kermt_ordinal` |
+
+**Stock KERMT stays an untouched, pinned dependency in every tier.**
+
+#### Shared substrate — CPU-only, blocks all three tiers
+
+- `ml/configs/clusters.py` — cluster + type-homogeneous subgroup registry,
+  **derived** from `ENDPOINT_METADATA`, never re-listed (drift-proof by test).
+  Subgroup keys: `metabolism__cls`, `metabolism__reg`,
+  `absorption_distribution__cls`, `absorption_distribution__reg`, `toxicity__cls`.
+  Lives in `ml/configs/`, NOT `contracts/` — subgroups are a training-time
+  artifact of a third-party CLI limit and must not leak into the serving contract.
+- `ml/data/cluster_loaders.py` — `load_cluster(...)`: wide multi-endpoint label
+  table (one NaN-able column per endpoint) over the existing `load_endpoint`,
+  **plus the mandatory leakage fix**: `cluster_test = ∪ members' test rows`, then
+  every `cluster_test` molecule is removed from the wide `train_val` **in all
+  columns**; emits `ClusterSplitReport` quantifying the labels sacrificed; asserts
+  zero SMILES and zero scaffold overlap. One **shared** fold per seed for all
+  tasks (per-task folds would leak across tasks).
+- `ml/eval/cluster_eval.py` — per-column decomposition of 2-D cluster predictions
+  into per-endpoint metrics and per-endpoint `EvaluationReport`s, so cluster
+  results stay directly comparable with the 70 completed XGBoost runs.
+- `ml/configs/experiment_config.py` — new families/prefixes
+  `kermt_multitask_subgroup`→`kermt_mtsub`, `kermt_mixed`→`kermt_mx`,
+  `kermt_ordinal`→`kermt_ord`, plus a `variant` field so the three weighting arms
+  don't collide on one run name.
+- `ml/models/kermt_model.py` — **four** changes (an earlier draft said "three"):
+  (1) the endpoint-homogeneity guard the docstring already claims but does not
+  implement; (2) `target_names` / `target_task_types` properties;
+  (3) an explicit `supports_loss_weighting = False` marker + docs recording that
+  this path is **equal-weighting only** — KERMT's `run_finetune_local.py` never
+  forwards `use_mtl_loss` and parses strictly, so there is no flag to add and
+  asking for Kendall here must fail loudly rather than silently do nothing
+  (see `decisions.md` finding 2); (4) `predict_logits()`, which unblocks
+  temperature scaling for **every** KERMT classification run and does **not**
+  require Tier 1.
+- `ml/models/base.py` — additive `target_names` / `target_task_types` only.
+  Do NOT widen `task_type` to a list.
+
+#### Tier 0 (path a) — type-homogeneous subgroups
+
+**Introduces MARS-side harness and CLI code only. It introduces NO new KERMT
+optimization or model logic** — the training step is the existing `KermtModel`
+shelling out to the stock CLI exactly as it already does.
+
+New: `ml/train/train_kermt_cluster.py` (mirrors `train_xgboost.py`'s harness) and
+`ml/train/run_kermt_subgroup_sweep.py` (production CLI, W&B on by default).
+
+**`metabolism__reg` = `{clearance_microsomal}` is a SINGLE-TASK run, not a
+homogeneous multi-task subgroup.** It is the mandatory single-task KERMT baseline
+already owed for that endpoint under Module 4. It runs once under
+`model_family="kermt_single"` and is cited in both roles; it must never be
+reported as a multi-task cluster arm. Tier 0 therefore yields **three** genuinely
+new multi-task subgroups — `metabolism__cls` (3), `absorption_distribution__cls`
+(3), `absorption_distribution__reg` (4). `toxicity__cls` is already covered by the
+existing pure-cluster path.
+
+**All Tier-0 runs are equal-weighting by construction** — that is the blueprint's
+mandatory fixed/equal baseline arm, and it is the only arm the stock CLI can
+produce. Kendall and GradNorm for *every* cluster, pure or mixed, come from Tier 1.
+
+**Gate to Tier 1:** subgroups complete; per-endpoint `EvaluationReport`s written;
+`ClusterSplitReport` label sacrifice judged acceptable.
+
+**✅ The sacrifice is now MEASURED (2026-09-20, zero GPU)** — run
+`cd ml && PYTHONPATH=. python train/preflight_clusters.py`; results in
+`ml/runs/cluster_preflight.json` and tabulated in `decisions.md`. Headline:
+`toxicity__cls` 0.2%, `absorption_distribution__cls` 4.6%,
+`absorption_distribution__reg` 14.6% — all fine and **cleared to train**. But
+**`metabolism__cls` loses 29% of each CYP's training labels** (5,625 rows dropped),
+because the three Veith CYP screens cover largely the same compound library with
+three independent TDC test splits. **That one arm is blocked on a maintainer
+decision** (accept the loss / keep CYPs single-task / regenerate a cluster-level
+split and forfeit leaderboard comparability). Do not start `metabolism__cls` on
+the GPU until that is decided; the other arms need no such call.
+
+#### Tier 1 (path b) — MARS-owned mixed-type trainer, KERMT as a library
+
+Staged into the run's `--data` bind mount (`/data/_mars_trainer/`) and run with
+`import kermt` inside the container. **Do not extend `kermt_container.sh`** — it
+lives in the un-MARS-versioned checkout, the same provenance hole that rules out
+forking. Provenance: sha256 of every staged file + MARS git commit +
+`KERMT_COMMIT` + in-container `pip freeze` → `trainer_provenance.json`.
+
+`ml/train/kermt_mixed/`: `train_mixed.py`, `losses.py` (per-column BCEWithLogits
+vs MSE/L1 on standardized targets; type-correct Kendall precisions `0.5*exp(-2logσ)`
+regression / `exp(-2logσ)` classification; **a task with zero labeled rows in a
+batch drops its entire term including `log σ_t`**), `sampler.py` (stratified
+batches — the blueprint's mandated preventive fix; identical sampler across all
+three weighting arms so the ablation isolates weighting), `scaling.py` (NaN-aware
+per-column, train-fold only), `gradnorm.py` (ablation arm only),
+`metrics_hooks.py` (JSONL → `ExperimentRun` + W&B host-side; no second tracking
+system). Host side: `ml/models/kermt_mixed_model.py` — a **separate**
+`KermtMixedModel`, so the stock path stays un-regressed.
+
+**Equivalence gates — all four must pass before any mixed run is believed:**
+
+- **G1 forward/inference parity** (~30s, no training). A Tier-0 finetuned AMES
+  checkpoint loaded through `KermtMixedModel`'s inference path must reproduce the
+  stock `predictions.csv` on 64 fixed molecules to 1e-5. Isolates model
+  construction, featurization, two-view averaging and sigmoid placement from
+  optimizer noise.
+- **G2 one-epoch loss parity** (~15s). Same argv-derived args, seed 0,
+  `mode="fixed"`, all weights 1.0; epoch-1 train loss within 5% of stock.
+- **G3 multi-seed AUROC parity — precisely:** compares path (b) against path (a)
+  on **classification-only data, where both paths can legitimately run the
+  identical job** — that is the point of the gate, isolating trainer
+  implementation from mixed-type effects. Datasets: `ames_mutagenicity`
+  (single-task) and `toxicity__cls` (hERG + AMES). Seeds: `FIXED_SEEDS` 0–4,
+  identical folds from `five_seed_train_val_folds`, identical hyperparameters,
+  Tier 1 in `mode="fixed"` with all weights 1.0. Quantity: **validation-fold
+  AUROC** from `ml/eval/metrics.py::compute_metrics`, computed host-side by MARS
+  for both paths (KERMT's own `test_result.csv` is never read — standing rule).
+  Pass iff `|mean_A − mean_B| <= 0.5*max(std_A, std_B)` **and** paired per-seed
+  `|ΔAUROC| <= 0.02` on ≥4/5 seeds.
+- **G4 Kendall-loss mathematical unit test** (CPU). `mode="kendall"` with
+  `log_sigma` frozen at 0 must equal the fixed-weight loss ×0.5 per regression
+  term and ×1.0 per classification term, exactly.
+
+Then: `fixed` / `kendall` / `gradnorm` arms on both mixed clusters — the Module 11
+mandated ablation axis.
+
+#### Tier 2 (path c) — ordinal-CDF homogenization
+
+**Investigated only after Tier 1.** `ml/featurize/ordinal.py` — `OrdinalCdfCodec`
+(quantile thresholds fit on the train fold only); `encode` → M binary
+`<endpoint>__gt<m>` columns, which keeps `kermt_adapter.py`'s
+`write_finetune_csv` / `read_predictions_csv` **unchanged**; `decode` enforces
+the monotonicity Frank-Hall does not guarantee (`np.minimum.accumulate`) and
+recovers the scalar from the survival function using train-fold in-bin means.
+
+**Zero-GPU discretization-ceiling test first, before any GPU training:** encode
+true `y`, decode the exact binary labels, measure the pure discretization-floor
+MAE; require ≤25% of the direct-regression baseline MAE, and use it to choose
+`n_bins`.
+
+**✅ DONE 2026-09-20 — `n_bins=16` is the working default.** Ceilings at 16 bins:
+caco2 17.6%, lipophilicity 17.3%, ppb 18.5%, clearance 17.6%, solubility 23.3% of
+their XGBoost baseline MAE. All five clear the gate; solubility is tightest and is
+the one to watch. 32 bins roughly halves every ceiling but would make A&D 127
+targets, which is impractical. Full table in `decisions.md`; raw numbers in
+`ml/runs/cluster_preflight.json`.
+
+Only then the remaining (GPU) gate: val-fold decoded MAE within 15% of the direct
+single-task regression MAE for the same endpoint and seed.
+
+#### Final comparison (all tiers)
+
+Per endpoint, on the held-out scaffold test set, against **both** mandatory
+baselines: the completed XGBoost runs and single-task KERMT. **XGBoost's side of this table is
+`ml/runs/test_evaluations/<endpoint>.json` (`aggregated_test_raw`), never `ml/runs/evaluations/`**
+(validation fold). KERMT's side is `aggregate_test_metrics_across_seeds`. Compare RAW to RAW for
+ranking metrics; treat calibrated numbers with the served-calibrator caveat above. Mean ± std over the
+5 fixed seeds, never a single run. **Multi-task is an empirical experiment — a
+result where it loses is a publishable finding, not a failure**; the Oct-2025
+KERMT multitask paper puts the gains above 60K datapoints and MARS's endpoints
+are 910–13,445.
 
 ## M3 — Serving & Infra (active milestone, started 2026-09-17)
 

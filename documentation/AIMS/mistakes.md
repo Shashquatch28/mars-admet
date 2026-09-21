@@ -1,5 +1,171 @@
 # mistakes.md
 
+## Held-out evaluation + readiness (2026-09-21, later) — five traps
+
+- **The served Platt calibrators degrade held-out calibration, and the API applies them.**
+  First test-set evaluation of the 70 XGBoost models. Like-for-like on seed 4 (the only seed the
+  single per-endpoint `calibrator.json` was fit on — verified empirically, `promote_seed_artifact`
+  overwrites it each seed): calibrated ECE is worse on 7/9 classification endpoints and Brier is
+  worse on 9/9 (e.g. hia ECE .045→.209, cyp3a4 .025→.046). Cause: calibration-split positive rate
+  ≠ test rate (cyp3a4 0.113 vs 0.439). Nothing flagged it because no evaluation had ever looked at
+  calibration on held-out data. **Lesson: a calibrator is only validated by held-out calibration
+  metrics; "it was fit without error" and "its own split's ECE is 0.0" (in-sample) prove nothing.**
+  Not fixed (calibration policy out of scope); tracked in `next_steps.md`.
+- **Validation-fold numbers were reported as if they were test numbers.** AUROC moved +0.263
+  (dili), +0.217 (bbb), −0.043 (pgp) from validation to test. The old report was internally
+  consistent, so it looked fine. **Lesson: label every metric with its split in the artifact
+  itself** — `HeldOutEvaluationReport.split == "test"` and a labelled `validation_reference`.
+- **The shared cluster fold does not control per-task validation size.** `toxicity__cls`
+  validation = 18–24 hERG labels vs ~1,810 AMES (5 seeds); `ppb` 42–50. Only visible by counting
+  per-task labels *inside* the fold; the cluster-level counts looked healthy. Epoch selection for
+  the small tasks is effectively unmeasured. Not fixed.
+- **Two arms silently trained on different data than their baseline.** DILI: XGBoost used the
+  augmented pool (979 train), the harness default loads the base pool (287): −71%. Found only by
+  putting the two pipelines' training counts side by side. **Lesson: pin `use_augmented_dili` in
+  the run config and compare training-pool sizes per endpoint before comparing scores.**
+- **My own test-helper bug looked like a product bug.** On Windows `Path.write_text("a\n")` writes
+  `\r\n`, so a manifest hash computed from the string didn't match the file — the manifest-integrity
+  check (correctly) failed. The check was right; the fixture was wrong. Also: my first readiness
+  provenance check looked for `config` inside `provenance.json` (it is in `config.json`) and
+  reported a false BLOCKED. **Lesson: when a new check fails, establish which side is wrong
+  before touching either.**
+
+## Audit + calibration wiring (2026-09-21) — five traps
+
+- **A preflight that gates on one quantity can "clear" an arm that fails on another.**
+  The 2026-09-20 cluster preflight cleared `absorption_distribution__cls` because
+  *training-label* loss was only 4.6%. It never measured calibration size. After the same
+  union-test removal, `hia_absorption`'s calibration set is **47 molecules, 46 positive and
+  1 negative** — below blueprint Module 4's floor of 50. **Lesson: when a gate is named
+  "cleared", list every requirement it does and does not test.** `preflight_clusters.py`
+  still does not check calibration size; logged in `next_steps.md`, not silently extended.
+- **The XGBoost baselines have never been scored on the test set.** Every number in
+  `ml/runs/evaluations/*.json` is a 5-seed *validation-fold* metric (per-seed `n_samples`
+  equals the val-fold size — CYP3A4 1,229 — and no report carries a test key). Blueprint
+  Module 4/11 pick the winner on the held-out test set, and the new KERMT wiring reports
+  test metrics, so the two are currently **not comparable**. It went unnoticed because the
+  reports are internally consistent and the leakage audit passes. **Lesson: check that the
+  quantity you are comparing is the same quantity on both sides before trusting a
+  comparison table, not after.**
+- **A tracked lockfile can silently describe a different machine than the data beside it.**
+  `datasets.lock.json` is the workstation's `20260918T090143Z` acquisition; the raw and
+  processed data on the laptop are `20260830T181633Z`. Raw content is identical (15/15
+  `snapshot_sha256` match) so nothing is wrong with the science, but `test_acquisition_lockfile.py`
+  fails 3 tests looking for a raw directory that only exists elsewhere, plus 2 stale
+  Option-C expectations. **Lesson: gitignored data + a tracked lockfile = the lockfile
+  outruns the data on any machine that didn't produce it. Compare digests, not IDs.**
+- **The blueprint's "mandatory" checkpoint + RNG-state discipline is not implemented for
+  KERMT runs.** Blueprint Module 10 / `context.md` "Locked facts" require checkpoints to
+  carry model + optimizer + LR scheduler + Python/NumPy/PyTorch RNG state, synced to R2.
+  A grep of `ml/` for `rng_state` / `set_rng_state` / `resume` finds nothing (only a W&B
+  `resume="allow"` flag). KERMT's stock CLI writes its own best-model checkpoint and MARS
+  records only the integer seed (`utils/seed.py::set_global_seed`, which also sets
+  `PYTHONHASHSEED` at runtime — a no-op for the already-running interpreter). Not a
+  correctness blocker for an uninterrupted single-session A4000 run, but bit-exact
+  resumption after a preemption is impossible today, and KERMT's own CUDA determinism
+  is **not established**. Do not describe seed tracking as full reproducibility.
+- **My own audit trap: `None == None` reads as "identical".** The first snapshot-digest
+  comparison used a key that does not exist (`snapshot_digest`; the real one is
+  `snapshot_sha256`), so every dataset compared `None == None` and printed `True` for
+  15/15. Caught because I asserted the values were non-empty before believing the result.
+  **Lesson: any "all match" result needs an assertion that the operands exist.**
+
+## Calibration split is NOT label-representative (2026-09-20) — pre-existing, affects shipped artifacts
+
+Found while assessing whether Option A's reduced CYP calibration sets are usable.
+The problem is older and wider than that question, and it affects the **already
+promoted** XGBoost calibrators, not just future KERMT runs.
+
+- **The calibration split is scaffold-aware but not label-stratified**, so its
+  positive rate can differ wildly from the train_val pool it was carved from.
+  Measured on `ml/data/processed/20260830T200000Z/` (all 9 classification
+  endpoints, `train_val` rate vs `calibration` rate):
+  `cyp3a4_inhibition` **0.4093 vs 0.1129 (3.6x)**, `cyp2c9_inhibition`
+  0.3393 vs 0.1432 (2.4x), `dili_liver_injury` 0.4921 vs 0.2600 (1.9x),
+  `pgp_inhibition` 0.5408 vs 0.3711 (1.5x), `cyp2d6_inhibition` 0.1969 vs 0.1452,
+  `bbb_permeability` 0.7519 vs 0.7643, `hia_absorption` 0.8894 vs 0.9800,
+  `herg_cardiotoxicity` 0.4899 vs 0.5871, `ames_mutagenicity` 0.5317 vs 0.6759.
+  A calibrator fit at an 11% positive rate and then applied to a ~41% positive
+  population is being asked to correct a prior shift it never saw.
+- **`hia_absorption`'s promoted Platt calibrator was fit on 50 molecules of which
+  49 are positive and 1 is negative.** `ml/artifacts/hia_absorption/calibrator.json`
+  records `n_fit_samples: 50` with `A=0.318, B=3.578`, which maps essentially
+  every input to ~0.97-0.99. `fit_platt_calibrator` only rejects a *strictly*
+  single-class split, so 49:1 passed. This is the same endpoint already flagged
+  for AUROC = 1.000 ± 0.000 — the two anomalies are probably the same underlying
+  data problem, and this calibrator is currently promoted and served.
+- **Lesson: "the fitter did not raise" is not evidence the fit is meaningful.**
+  Both calibration fitters guard only against empty input, length mismatch and
+  strictly-single-class labels. Record `n_positive`/`n_negative` alongside
+  `n_fit_samples` for every fit — `eval/calibration_diagnostics.py` now does this.
+- Not fixed here: changing the calibration split policy is an M1 data decision
+  and was explicitly out of scope for this pass. Logged in `next_steps.md`.
+
+## Temperature scaling has two silent degenerate modes (2026-09-20)
+
+`eval/calibration.py::fit_temperature_scaler` uses
+`scipy.optimize.minimize_scalar(..., bounds=(0.05, 10.0), method="bounded")` and
+**never checks `result.success`**, and the returned `TemperatureScaler` records
+only `(temperature, n_fit_samples)`.
+
+- **Anti-correlated calibration logits pin T to the upper bound.** Verified:
+  N=241 synthetic logits with labels anti-correlated to them returns exactly
+  `T = 10.0`, no error, no warning. Pinned in
+  `ml/tests/test_calibration_diagnostics.py`.
+- **Perfectly separable calibration logits drive T toward the lower bound** —
+  NLL is monotone in `1/T`, so the fit degenerates into sharpening. Verified at
+  N=241: `T = 0.236`.
+- Both return an object indistinguishable from a good fit. **Lesson: a bounded
+  1-D optimiser that returns a value at its boundary has not found an optimum —
+  it has run out of room. Flag it.** `eval/calibration_diagnostics.py::
+  is_temperature_at_boundary` exists for exactly this and must be logged per seed.
+- Existing `test_calibration.py` coverage is N=300-4000 well-behaved synthetic
+  logits only; neither degenerate mode nor any small-N case was covered before.
+
+## KERMT mixed-type resolution (2026-09-20) — three traps, two of them latent for days
+
+- **"Kendall weighting" was never reachable — and the first proposed fix would
+  have broken every run.** Two layers, and checking only the first gives the
+  wrong answer. Layer 1: `task/train.py` builds `MTLLoss` only under
+  `if args.use_mtl_loss:`, so `main.py finetune` *can* do Kendall weighting —
+  which made "just pass `--use-mtl-loss` from `_hyperparam_flags()`" look like
+  the fix. Layer 2, and the one that matters: **MARS never calls `main.py`.** It
+  calls `agent/scripts/run_finetune_local.py`, which never forwards
+  `use_mtl_loss` (absent from `TRAINING_FLAGS` / `TASK_FLAGS` / `FFN_FLAGS`, never
+  appended to the argv it builds) **and uses strict `p.parse_args(argv)`** — so
+  the "fix" would have been an unrecognized-argument hard failure, exit 2, on
+  every Tier-0 run at the next lab session. Caught during CPU-side prep by
+  reading the wrapper script instead of the engine underneath it.
+  **Lesson: when shelling out through someone else's convenience wrapper, the
+  wrapper's passthrough list is the real API — not the underlying tool's.** Read
+  the argv the wrapper actually constructs before adding a flag to it. Corollary
+  now standard here: after any multi-task run, assert `log σ` is non-zero before
+  claiming the run used Kendall weighting at all.
+- **DO NOT "fix" KERMT's uniform `MTLLoss` precision — it is an exact
+  reparameterization, not a bug.** `kermt/util/loss.py` uses
+  `precision = 0.5*exp(-2logσ)` for every task, which looks like Kendall's
+  *regression* form wrongly applied to classification (the blueprint asks for
+  `1/σ²` on classification). It is not wrong: substituting `σ_k = σ_c/√2` gives
+  `1/(2σ_k²) = 1/σ_c²` and `log σ_k = log σ_c − ½log2`, so the two objectives
+  differ by a per-task **additive constant** — identical gradients, identical
+  optimum, identical effective weights. An earlier draft of the 2026-09-20
+  analysis called this non-compliant and was wrong. It only matters when
+  classification and regression coexist in one run. When reporting `log σ` for a
+  pure-classification cluster, apply `log σ_compliant = log σ_kermt + ½log2`.
+  **Lesson: before filing a third-party "bug", check whether the difference is
+  absorbable into a reparameterization of the learnable parameter.**
+- **Cross-endpoint split leakage is invisible to every existing leakage check.**
+  All of `ml/eval/leakage_audit.py`'s 10 checks are *within* one endpoint. But 12
+  endpoints adopt their own TDC benchmark split, so a molecule can legitimately
+  be `train_val` for `solubility_logs` and `test` for `hia_absorption`. The
+  moment a cluster shares one encoder across those endpoints, training on the
+  first leaks into the second's test set — and every existing check still passes.
+  This would have silently inflated every cluster number against the 70
+  completed XGBoost baselines. **Lesson: a leakage audit written for single-task
+  training does not transfer to multi-task training. Re-derive the audit when the
+  unit of training changes**, and run it *before* spending GPU hours, not after
+  the numbers look good.
+
 ## M2 production sweep — driver script (2026-09-17, same day as preflight)
 
 - **`run_production_sweep.py`'s own leakage-check classification didn't

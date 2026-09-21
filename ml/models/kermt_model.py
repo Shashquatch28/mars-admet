@@ -45,20 +45,34 @@ stock CLI. ``KermtModel`` supports:
   * multi-task clusters where every target shares the same task type
     (e.g. Toxicity: hERG + AMES, both classification),
 via KERMT's native masked multi-task head (``ffn_num_task_specific_layers``)
-+ its native Kendall/homoscedastic-uncertainty ``MTLLoss``
-(``kermt/util/loss.py`` — ``precision = 0.5*exp(-2*log_sigma)``, the same
-closed form as Kendall, Gal & Cipolla 2018, applied on top of a
-per-task masked loss in ``task/train.py``'s ``train()``: ``loss =
-loss_func(preds, targets) * class_weights * mask``).
+on top of a per-task masked loss in ``task/train.py``'s ``train()``:
+``loss = loss_func(preds, targets) * class_weights * mask``.
 
-Mixed-type clusters are an open, unresolved incompatibility, not silently
-worked around — see ``documentation/AIMS/decisions.md`` for the flagged
-options (split the cluster into same-typed sub-groups; patch
-``task/train.py``'s ``get_loss_func`` to accept a per-task loss-type list,
-which the KERMT source's Apache-2.0 license permits but is a nontrivial
-change to code MARS does not own; or defer those two clusters' *joint*
-loss to single-task-per-endpoint until a decision is made). Do not call
-``KermtModel`` with mixed classification/regression targets — it raises.
+EQUAL WEIGHTING ONLY — this path cannot do Kendall or GradNorm
+---------------------------------------------------------------
+KERMT *does* ship a Kendall/homoscedastic-uncertainty ``MTLLoss``
+(``kermt/util/loss.py``, ``precision = 0.5*exp(-2*log_sigma)``), but
+``task/train.py`` only builds it under ``if args.use_mtl_loss:`` and the
+wrapper script MARS actually invokes — ``agent/scripts/run_finetune_local.py``
+— **never forwards that flag** (it is absent from its ``TRAINING_FLAGS`` /
+``TASK_FLAGS`` / ``FFN_FLAGS`` passthrough tuples) and uses strict
+``parse_args``, so passing it is an unrecognized-argument failure rather than
+a no-op. Every run through this class is therefore **equal-weighted**, which
+is exactly blueprint Module 4's mandatory fixed/equal baseline arm.
+
+Kendall and GradNorm — for pure-type clusters as well as mixed ones — come
+from the MARS-owned Tier-1 trainer, not from here. See
+``documentation/AIMS/decisions.md`` (2026-09-20, finding 2).
+
+Mixed-type clusters
+-------------------
+KERMT's CLI takes one ``--dataset_type`` per run and ``KermtFinetuneTask`` has
+a single ``self.classification`` bool, so a cluster mixing classification and
+regression cannot be trained here at all. That is resolved at the MARS level by
+the three-tier ladder (``decisions.md`` 2026-09-20), **not** by forking KERMT.
+This class deliberately stays the stock-CLI path (a); mixed-type training lives
+in ``models.kermt_mixed_model``. Constructing ``KermtModel`` with targets of
+differing task types raises — see ``_assert_homogeneous_targets``.
 """
 
 from __future__ import annotations
@@ -71,14 +85,14 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from mars_contracts.endpoints import TaskType
-
 from featurize.kermt_adapter import (
     assert_chirality_preserved,
     read_predictions_csv,
     write_finetune_csv,
     write_predict_csv,
 )
+from mars_contracts.endpoints import ENDPOINT_METADATA, Endpoint, TaskType
+
 from models.base import MARSModel
 
 MODEL_ID_SINGLE = "mars-kermt-single-v1"
@@ -91,6 +105,66 @@ _DEFAULT_KERMT_IMAGE = "kermt:latest"
 
 class KermtUnavailableError(RuntimeError):
     """Raised when the KERMT repo checkout or its docker image aren't ready."""
+
+
+def _resolved_target_task_types(target_names: list[str]) -> dict[str, TaskType]:
+    """Task type for each target name that resolves to a known endpoint.
+
+    Names that are not ``Endpoint`` members are skipped rather than rejected:
+    the Tier-2 ordinal path deliberately uses synthetic column names such as
+    ``solubility_logs__gt3``, which are binary by construction and carry no
+    endpoint metadata of their own.
+    """
+    out: dict[str, TaskType] = {}
+    for name in target_names:
+        try:
+            ep = Endpoint(name)
+        except ValueError:
+            continue
+        out[name] = ENDPOINT_METADATA[ep]["task_type"]
+    return out
+
+
+def _assert_homogeneous_targets(target_names: list[str], task_type: TaskType) -> None:
+    """Reject target sets this stock-CLI path cannot honestly train.
+
+    Two distinct failure modes, both of which would otherwise produce
+    plausible-looking wrong numbers rather than an error:
+
+    1. **Mixed task types in one target list.** KERMT applies one
+       ``--dataset_type`` and one ``self.classification`` bool to the whole
+       output tensor, so a regression column in a classification run comes back
+       squashed through a sigmoid.
+    2. **Declared ``task_type`` disagreeing with the endpoints' real types** —
+       same consequence, arrived at from the other direction.
+
+    The module docstring has claimed this guard existed since the wrapper was
+    written; it did not until 2026-09-20.
+    """
+    resolved = _resolved_target_task_types(target_names)
+    if not resolved:
+        return
+
+    distinct = set(resolved.values())
+    if len(distinct) > 1:
+        by_type: dict[str, list[str]] = {}
+        for name, tt in resolved.items():
+            by_type.setdefault(tt.value, []).append(name)
+        raise ValueError(
+            "KermtModel cannot train mixed classification/regression targets: "
+            f"{ {k: sorted(v) for k, v in sorted(by_type.items())} }. "
+            "KERMT's stock CLI takes one --dataset_type per run. Use a "
+            "type-homogeneous subgroup (configs.clusters.type_homogeneous_subgroups) "
+            "or the mixed-type trainer (models.kermt_mixed_model)."
+        )
+
+    actual = distinct.pop()
+    if actual is not task_type:
+        raise ValueError(
+            f"task_type={task_type.value!r} was declared but targets "
+            f"{sorted(resolved)} are {actual.value!r} endpoints. This would apply "
+            "the wrong loss and the wrong output activation."
+        )
 
 
 def _kermt_repo() -> Path:
@@ -238,6 +312,7 @@ class KermtModel(MARSModel):
     ) -> None:
         if not target_names:
             raise ValueError("target_names must be non-empty")
+        _assert_homogeneous_targets(list(target_names), task_type)
         self._task_type = task_type
         self._pretrained_checkpoint = Path(pretrained_checkpoint)
         if not self._pretrained_checkpoint.exists():
@@ -259,6 +334,21 @@ class KermtModel(MARSModel):
     @property
     def task_type(self) -> TaskType:
         return self._task_type
+
+    @property
+    def target_names(self) -> list[str]:
+        """Target column names, in the order predictions are returned."""
+        return list(self._target_names)
+
+    @property
+    def target_task_types(self) -> dict[str, TaskType]:
+        """Task type per target. Homogeneous here by construction (see the guard)."""
+        return {name: self._task_type for name in self._target_names}
+
+    #: This path shells out to KERMT's stock CLI, which cannot enable ``MTLLoss``
+    #: (see the module docstring). Callers selecting a loss-balancing arm must
+    #: check this rather than assume Kendall weighting is available.
+    supports_loss_weighting: bool = False
 
     @property
     def is_fitted(self) -> bool:
@@ -537,6 +627,45 @@ class KermtModel(MARSModel):
         if len(self._target_names) == 1:
             return preds[self._target_names[0]]
         return np.stack([preds[name] for name in self._target_names], axis=1)
+
+    def predict_logits(self, X: list[str], *, run_dir: Path | None = None) -> np.ndarray:
+        """Return logits suitable for ``eval.calibration.fit_temperature_scaler``.
+
+        ``fit_temperature_scaler`` needs pre-sigmoid values; ``predict()`` returns
+        probabilities, which is why temperature scaling had no usable input for
+        any KERMT run. This closes that gap without needing the Tier-1 trainer.
+
+        **What this actually is, stated precisely:** ``logit(p)`` where ``p`` is
+        the served quantity — the *mean of the two views'* sigmoid outputs,
+        ``(sigmoid(a) + sigmoid(b)) / 2``, as computed inside
+        ``KermtFinetuneTask.forward()`` in eval mode. It is therefore **not** the
+        pre-sigmoid activation of either individual head, and inverting the mean
+        of two sigmoids is not the mean of the two logits. That distinction does
+        not matter for temperature scaling: ``logit`` is strictly monotone, so
+        this is a well-defined recalibration of exactly the number serving emits,
+        fit on the calibration split, and it leaves AUROC/AUPRC untouched.
+        (The Tier-1 mixed trainer does expose true per-head pre-sigmoid logits,
+        since ``forward()`` returns logits in training mode.)
+
+        Probabilities are clipped to ``[1e-6, 1-1e-6]`` before inversion — the
+        predictions CSV carries finite decimal precision, so an exact 0.0 or 1.0
+        is a rounding artifact rather than genuine infinite confidence.
+
+        Raises
+        ------
+        RuntimeError
+            If the model is not fitted.
+        ValueError
+            If this is a regression model — logits are meaningless there.
+        """
+        if self._task_type is not TaskType.CLASSIFICATION:
+            raise ValueError(
+                "predict_logits() is classification-only; this model is "
+                f"{self._task_type.value}."
+            )
+        probs = self.predict(X, run_dir=run_dir)
+        clipped = np.clip(probs, 1e-6, 1.0 - 1e-6)
+        return np.log(clipped / (1.0 - clipped))
 
     # ------------------------------------------------------------------
     # save() / load()

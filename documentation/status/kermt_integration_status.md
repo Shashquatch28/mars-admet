@@ -86,12 +86,35 @@ Three real bugs were found and fixed in `ml/models/kermt_model.py` (not in KERMT
 
 ## 10. Known limitations
 
-- **Mixed-type multi-task clusters unsupported by the stock CLI.** Unchanged from before this run — see `decisions.md`; explicitly not solved this session per instruction.
+- **Mixed-type multi-task clusters unsupported by the stock CLI.** Still true of the *stock CLI* and always will be — but **no longer an open question for MARS as of 2026-09-20**: resolved by the three-tier ladder in `decisions.md`'s 2026-09-20 entry (stock KERMT on type-homogeneous subgroups; a MARS-owned mixed-type trainer importing KERMT as a library; ordinalized all-classification runs). Stock KERMT stays unforked and pinned. See `next_steps.md` for the live work breakdown.
 - **CPU inference latency still unmeasured** (B-7/CF-8) — orthogonal to this GPU work.
-- **Calibration interface (`TemperatureScaler`) not yet exercised** — `KermtModel.predict()` returns probabilities, not the raw pre-sigmoid logits `fit_temperature_scaler` expects; would need a small wrapper change to expose logits, not attempted this session.
+- **Calibration interface (`TemperatureScaler`) not yet exercised** — `KermtModel.predict()` returns probabilities, not the raw pre-sigmoid logits `fit_temperature_scaler` expects. **Resolution chosen 2026-09-20:** `KermtModel.predict_logits()` returns `logit(p)` of the served two-view mean (clipped to ±12) — a well-defined monotone recalibration of exactly the quantity that serving emits, and precisely what `fit_temperature_scaler` needs. This unblocks temperature scaling for **every** KERMT classification run and does not depend on the mixed-type trainer. (The Tier-1 trainer additionally exposes true pre-sigmoid logits, since `KermtFinetuneTask.forward()` returns logits in training mode.)
 - **No gradient-checkpointing, AMS/mixed-precision, or gradient-accumulation flag exists** in KERMT's finetune CLI — confirmed by grepping `kermt/util/parsing.py` for `fp16|bf16|amp|precision|accum|grad_checkpoint` (zero matches). The only VRAM lever is `--batch_size` itself.
 - **Largest practical batch size not yet determined** — peak VRAM at batch_size=16 on this tiny run was ~1.5GB above baseline (of 16GB total), suggesting large headroom, but no larger-batch run has actually been tried yet (out of this session's scope per explicit instruction to stop after the tiny smoke fine-tune).
 - **`ppb_binding` acquisition/test drift** and **DILIst augmentation needs an external, non-TDC file** — both real findings from re-acquiring M1 data this session, neither is a KERMT-integration blocker; see `decisions.md`.
+
+## 10b. Calibration path (added 2026-09-21 — CPU-verified only)
+
+`fit_temperature_scaler` previously had no production call site, so nothing in the KERMT
+path calibrated. It is now wired: `ml/eval/cluster_calibration.py::calibrate_endpoints`,
+called from `ml/train/train_kermt_cluster.py::train_one_seed`. Flow: calibration-split
+logits (`KermtModel.predict_logits`) → `fit_temperature_scaler` → persist scaler +
+diagnostics → untouched test logits → calibrated probabilities → raw **and** calibrated
+test metrics. The test set never reaches the fitter (enforced by function signature and
+mutation-tested).
+
+| Aspect | State |
+|---|---|
+| Fit / isolation / persistence / diagnostics logic | ✅ 51 CPU tests pass (25 + 13 + 8 + 5) |
+| Harness wiring (holdout, order of operations, artifacts) | ✅ tested with `StubKermt`, a labelled test double — **not KERMT** |
+| Real-data dry run on `metabolism__cls`, `absorption_distribution__cls`, `metabolism__reg` | ✅ ran on the laptop with the stub — data flow and shapes only |
+| **Real KERMT logits on the calibration and test sets** | ⬜ **never run** — GPU-gated |
+| Whether a 241-molecule (CYP3A4) or 47-molecule (HIA, 1 negative) calibration set gives a usable temperature | ⬜ **not established** — depends on real logit separability |
+
+The `predict_logits()` caveat in §10 still applies: it is `logit` of the two-view mean, not
+either head's pre-sigmoid activation. `holdout_calibration=True` (default) removes the
+calibration molecules from the training pool because KERMT selects epochs on the
+validation fold — see `decisions.md` 2026-09-21.
 
 ## 11. Reproducing the smoke fine-tune
 

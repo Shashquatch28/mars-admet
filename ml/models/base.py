@@ -33,7 +33,33 @@ class MARSModel(ABC):
     @property
     @abstractmethod
     def task_type(self) -> TaskType:
-        """Whether this model is a classifier or regressor."""
+        """Whether this model is a classifier or regressor.
+
+        Single-valued by design. Multi-task models expose per-target detail via
+        :attr:`target_task_types` instead — widening this to a list would break
+        ``eval.metrics.compute_metrics``, ``eval.evaluate``, ``serve.registry``
+        and ``serve.predictor``, all of which are per-endpoint by contract.
+        """
+
+    @property
+    def target_names(self) -> list[str]:
+        """Names of the columns :meth:`predict` returns, in order.
+
+        Single-task models predict one unnamed column; multi-task models
+        override this with their real target list. Default keeps every existing
+        single-task model working unchanged.
+        """
+        return [""]
+
+    @property
+    def target_task_types(self) -> dict[str, TaskType]:
+        """Task type per target column.
+
+        Defaults to ``task_type`` for every target, which is correct for any
+        single-task or type-homogeneous model. Only a genuinely mixed-type model
+        needs to override it.
+        """
+        return {name: self.task_type for name in self.target_names}
 
     @abstractmethod
     def fit(
