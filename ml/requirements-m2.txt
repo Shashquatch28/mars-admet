@@ -11,3 +11,4 @@
 #   ml\.venv\Scripts\pip freeze | grep -E "xgboost|wandb" > ml/requirements-m2.lock.txt
 xgboost>=2.0
 wandb==0.29.0
+matplotlib>=3.10  # post-hoc Tier-0 artifact/plot generation (eval/tier0_artifacts.py); not a training/serving dep
