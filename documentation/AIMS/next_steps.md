@@ -1,12 +1,24 @@
 # next_steps.md
 
-_Last updated: 2026-09-21 (full project audit + KERMT calibration wiring; still no GPU training).
+_Last updated: 2026-09-24 (GPU training has started: DILI seeds 0–4, `toxicity__cls` seeds 0–1 done; see the
+"GPU status" bullet below). Earlier 2026-09-21 content below was written before any GPU training.
 Active milestone: M2 (KERMT/GNN track). M3 is locally/container complete.
 Branch: `milestone/m2-kermt`. The lab-session checklist is the last section of
 "Immediately" below._
 
 ## Immediately
 
+- **GPU status (2026-09-24) — supersedes any "no GPU training" wording below.** Real KERMT Tier-0 runs on the
+  RTX A4000 workstation, prep `20260918T090433Z`, harness defaults: `dili_standalone__cls` seeds 0–4 complete
+  (2026-09-22); `toxicity__cls` seed 0 complete (2026-09-22) and **seed 1 complete + verified PASS
+  (2026-09-24)**; `toxicity__cls` **seeds 2–4 pending**, five-seed aggregation pending (toxicity is NOT
+  complete until then). Seed-1 record: `documentation/status/kermt_gpu_session_2026-09-24.md` and
+  `documentation/status/kermt_tier0_results/toxicity__cls/seed1/`. W&B (`shashquatch/mars-admet`) holds run
+  config, validation + calibration metrics (**not test metrics**) and, since 2026-09-24, the final `model.pt` of all 7
+  completed runs as hash-verified artifacts `kermt-{dili,toxicity}-seed<N>:v0` (references + retrieval:
+  `documentation/status/kermt_tier0_results/README.md`; results for all 7 runs are tracked there too). Git holds
+  no model binaries; full run dirs (incl. `last_checkpoint.pt`) stay on `CL502-18` (`ml/runs/` is gitignored). Runs are launched one seed at a time, verified with
+  `s_verify.py` before the next.
 - **The KERMT mixed-type cluster blocker is RESOLVED as a decision** (see
   `decisions.md`, 2026-09-20). Three-tier ladder approved; stock KERMT is NOT
   forked. Implementation is in progress — see "M2 — mixed-type clusters" below.

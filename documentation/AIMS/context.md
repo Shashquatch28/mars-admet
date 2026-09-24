@@ -1,6 +1,6 @@
 # context.md
 
-_Last updated: 2026-09-21 (XGBoost held-out evaluation, provenance tooling, RNG utility, readiness report; no GPU training)_
+_Last updated: 2026-09-24 (KERMT Tier-0 GPU runs under way: DILI seeds 0–4, `toxicity__cls` seeds 0–1 done, seeds 2–4 pending; the "no GPU training" statements further down predate 2026-09-22)_
 
 ## What MARS is
 

@@ -1,0 +1,52 @@
+{
+  "calibration_stability_across_seeds": {
+    "dili_liver_injury": {
+      "n_at_boundary": 0,
+      "n_ece_not_improved": 0,
+      "n_fitted": 5,
+      "n_nll_not_improved": 0,
+      "n_optimizer_failed": 0,
+      "n_seeds": 5,
+      "statuses": [
+        "fitted"
+      ],
+      "temperature_max": 2.8991163014733945,
+      "temperature_mean": 2.6536058660030815,
+      "temperature_min": 2.4183855785788104,
+      "temperature_std": 0.18555918457303744
+    }
+  },
+  "prep_id": "20260918T090433Z",
+  "subgroup": "dili_standalone__cls",
+  "test_metrics_across_seeds": {
+    "dili_liver_injury": {
+      "calibrated": {
+        "auprc_mean": 0.8607888468308806,
+        "auprc_std": 0.005614460696122807,
+        "auroc_mean": 0.8593043478260871,
+        "auroc_std": 0.011493402397756227,
+        "brier_score_mean": 0.1579923696125714,
+        "brier_score_std": 0.005889820779036112,
+        "ece_mean": 0.10130188862348093,
+        "ece_std": 0.009307802989867497,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "n_calibrated_seeds": 5,
+      "n_seeds": 5,
+      "raw": {
+        "auprc_mean": 0.8607888468308806,
+        "auprc_std": 0.005614460696122807,
+        "auroc_mean": 0.8593043478260871,
+        "auroc_std": 0.011493402397756227,
+        "brier_score_mean": 0.16196857021722558,
+        "brier_score_std": 0.013786866819390467,
+        "ece_mean": 0.11438204903194371,
+        "ece_std": 0.01330174734257427,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "task_type": "classification"
+    }
+  }
+}
