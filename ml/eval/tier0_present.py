@@ -25,7 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import matplotlib
@@ -165,7 +165,7 @@ def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
         epochs_axis = np.arange(n_ep)
 
         fig, ax = plt.subplots(figsize=(7, 4.5))
-        for i, s in enumerate(seeds):
+        for i, _ in enumerate(seeds):
             ax.plot(epochs_axis, loss_train_mat[i], color="#1f77b4", alpha=0.35, linewidth=1)
             ax.plot(epochs_axis, loss_val_mat[i], color="#ff7f0e", alpha=0.35, linewidth=1)
         mean_tr, std_tr = loss_train_mat.mean(axis=0), loss_train_mat.std(axis=0, ddof=1)
@@ -182,7 +182,7 @@ def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
         generated.append({"file_png": png, "file_pdf": pdf, "description": "Mean +- std train/val loss across all 5 seeds, individual seed curves preserved as thin lines."})
 
         fig, ax = plt.subplots(figsize=(7, 4.5))
-        for i, s in enumerate(seeds):
+        for i, _ in enumerate(seeds):
             ax.plot(epochs_axis, auc_val_mat[i], color="#2ca02c", alpha=0.35, linewidth=1)
         mean_auc, std_auc = auc_val_mat.mean(axis=0), auc_val_mat.std(axis=0, ddof=1)
         ax.plot(epochs_axis, mean_auc, color="#2ca02c", linewidth=2.5, label="mean val AUROC")
@@ -235,7 +235,7 @@ def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
             "test_ece_calibrated": descriptive(test_cal["ece"]),
         },
         "calibration_stability": aggregate["calibration_stability_across_seeds"],
-        "val_to_test_gap": {"mean": float(gap.mean()), "std": float(gap.std(ddof=1)), "per_seed": {int(s): float(g) for s, g in zip(seeds, gap)}},
+        "val_to_test_gap": {"mean": float(gap.mean()), "std": float(gap.std(ddof=1)), "per_seed": {int(s): float(g) for s, g in zip(seeds, gap, strict=True)}},
     }
     (tables_dir / "summary_metrics.json").write_text(json.dumps(summary_metrics, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     with (tables_dir / "summary_metrics.csv").open("w", newline="", encoding="utf-8") as f:
@@ -289,7 +289,7 @@ def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
         "checkpoint_sha256": seeds_summaries[0]["checkpoint_sha256"],
         "prep_id": seeds_summaries[0]["prep_id"],
         "config": seeds_summaries[0]["config"],
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "generated_at_utc": datetime.now(UTC).isoformat(),
         "generator": "ml/eval/tier0_present.py + ml/eval/tier0_artifacts.py",
         "aggregation_source": str(agg_path),
     }

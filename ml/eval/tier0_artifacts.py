@@ -39,7 +39,7 @@ import json
 import re
 import subprocess
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import matplotlib
@@ -47,13 +47,13 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import precision_recall_curve, roc_curve
-
 from configs.clusters import all_subgroups
 from data.cluster_loaders import SMILES_COL, load_cluster
+from mars_contracts.endpoints import TaskType
+from sklearn.metrics import precision_recall_curve, roc_curve
+
 from eval.calibration import TemperatureScaler
 from eval.metrics import compute_metrics
-from mars_contracts.endpoints import TaskType
 
 RUNS_DIR = Path("runs")
 DEFAULT_THRESHOLD = 0.5  # no project-specific operating threshold is documented anywhere in the
@@ -150,7 +150,7 @@ def load_predictions(predict_dir: Path, target_name: str) -> dict[str, float]:
             f"{predict_dir}: input smiles.csv has {len(input_smiles)} rows but "
             f"predictions.csv has {len(output_rows)} — cannot safely join positionally"
         )
-    return {s: float(row[target_name]) for s, row in zip(input_smiles, output_rows)}
+    return {s: float(row[target_name]) for s, row in zip(input_smiles, output_rows, strict=True)}
 
 
 def _read_multi_input_csv(path: Path, endpoints: list[str]) -> tuple[list[str], dict[str, dict[str, int]]]:
@@ -231,9 +231,9 @@ class RunBundle:
         self.cal_labels: dict[str, dict[str, int]] = {}
         for ep in self.endpoint_keys:
             test_df = self.cd.endpoint_test_frame(ep)
-            self.test_labels[ep] = dict(zip(test_df[SMILES_COL], test_df[ep].astype(int)))
+            self.test_labels[ep] = dict(zip(test_df[SMILES_COL], test_df[ep].astype(int), strict=True))
             cal_df = self.cd.calibration[[SMILES_COL, ep]].dropna()
-            self.cal_labels[ep] = dict(zip(cal_df[SMILES_COL], cal_df[ep].astype(int)))
+            self.cal_labels[ep] = dict(zip(cal_df[SMILES_COL], cal_df[ep].astype(int), strict=True))
 
         # Raw probabilities from the model's own on-disk predictions (no re-inference).
         # One predict_* dir covers the whole cluster test set (all endpoints' columns).
@@ -310,7 +310,6 @@ def generate(run_id: str) -> dict:
     loss_val = [r["loss_val"] for r in rb.epoch_rows]
     auc_val = [r["auc_val"] for r in rb.epoch_rows]
     best_epoch = rb.kermt_best_epoch
-    final_epoch = epochs[-1] if epochs else None
     joint_note = (
         f" (JOINT across all {len(rb.endpoint_keys)} targets: {', '.join(rb.endpoint_keys)} — "
         "KERMT's finetune CLI logs one auc_val per epoch for the whole multi-task model, not per-endpoint)"
@@ -579,7 +578,7 @@ def generate(run_id: str) -> dict:
 
         fig, ax = plt.subplots(figsize=(5.5, 4))
         ax.bar(list(counts_ep.keys()), list(counts_ep.values()), color="#1f77b4")
-        for i, (k, v) in enumerate(counts_ep.items()):
+        for i, (_, v) in enumerate(counts_ep.items()):
             ax.text(i, v, str(v), ha="center", va="bottom")
         ax.set_ylabel("n molecules")
         ax.set_title(f"{run_id}{ep_label}\nSplit sizes (labelled rows for this endpoint)")
@@ -591,7 +590,7 @@ def generate(run_id: str) -> dict:
         neg = [balance_ep[s]["negative"] for s in splits]
         ax.bar(splits, neg, label="negative", color="#1f77b4")
         ax.bar(splits, pos, bottom=neg, label="positive", color="#d62728")
-        for i, s in enumerate(splits):
+        for i, _ in enumerate(splits):
             ax.text(i, neg[i] + pos[i], f"{pos[i]}/{neg[i]+pos[i]} pos", ha="center", va="bottom", fontsize=8)
         ax.set_ylabel("n molecules")
         ax.set_title(f"{run_id}{ep_label}\nClass balance per split")
@@ -676,7 +675,7 @@ def generate(run_id: str) -> dict:
         "wandb_project": "mars-admet",
         "wall_seconds": rb.lab_summary.get("wall_seconds"),
         "n_epochs": len(epochs),
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "generated_at_utc": datetime.now(UTC).isoformat(),
         "best_epoch": best_epoch,
         "best_val_auroc_joint_whole_model": best_val_auroc,
         "final_val_auroc_joint_whole_model": final_val_auroc,
