@@ -65,8 +65,10 @@ Requires `wandb login` for the `shashquatch` account. After download compare `sh
   DILI seeds 1–4 and toxicity seed 0 recorded `git.dirty=true`), `f51cb8f` clean for toxicity seed 1. Whether the
   dirty flag reflected code changes or only untracked files during those sessions was not established; the two
   commits differ only by `ml/eval/tier0_*.py` and `ml/requirements-m2.txt`.
-- The Docker image is recorded by tag in run provenance; the image id in `artifact_metadata.json` was read from the
-  workstation (`sha256:2918726c…d87d`, created 2026-09-18, before every run).
+- The Docker image is **not** recorded in any `provenance.json` (all 11 hold only `environment` and `git`; `config.json` and `run.json` do not mention it either).
+  Its tag (`kermt:latest`) and id (`sha256:2918726c…d87d`, created 2026-09-18, before every run) were captured separately in the workstation sessions and appear
+  only in `artifact_metadata.json`. The `note` field inside those files ("run provenance records tag only") is inaccurate; they are kept unchanged because they mirror
+  the W&B artifact metadata. No image digest is part of the committed provenance.
 - W&B run pages do not carry held-out test metrics; those are in each `lab_summary.json` here.
 - Uploading attached each artifact to its original W&B run (resume) and set that run's `job_type` to `model-upload`;
   run config, summary and state were unchanged (checked on toxicity seed 1).
@@ -77,7 +79,7 @@ No record in this folder was changed by these rules; they say how to read them.
 
 - **Provisional until 5 seeds.** An arm with fewer than five seeds has provisional single-seed numbers — no "± std", no ranking.
 - **Epoch.** Where an epoch is quoted, it is the **saved** epoch (last `Saving model at epoch N` line of `finetune.log`, i.e. the epoch
-  of `model.pt`). KERMT's final `best validation … on epoch N` line was wrong on all three runs checked (per the 2026-09-30 session note) and must not be used. `model.pt` (SHA-256 in the table
+  of `model.pt`; that wording is from the 2026-09-30 session note and was not verified against KERMT source or a log on the laptop). KERMT's final `best validation … on epoch N` line was wrong on all three runs checked (per the 2026-09-30 session note) and must not be used. `model.pt` (SHA-256 in the table
   above) — not any epoch number — identifies the model.
 - **HIA calibration.** `absorption_distribution__cls`: HIA's calibration set is N=47 (46 positive / 1 negative), below the blueprint
   floor of 50. The run is valid; HIA AUROC/AUPRC and raw Brier/ECE stand. HIA **calibrated** metrics and the HIA temperature are

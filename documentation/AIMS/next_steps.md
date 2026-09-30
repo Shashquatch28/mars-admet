@@ -43,8 +43,9 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
     (CYP single-task baselines on full splits still owed); DILI base-pool variant; served XGBoost calibrators degrade held-out
     calibration.
   - **Housekeeping still open:** `matplotlib` is in `requirements-m2.txt` but not `requirements-m2.lock.txt`; effective KERMT
-    hyperparameters live only in `artifact_metadata.json`/W&B (`config.json` `hyperparams` are all `null`); Docker image is recorded by
-    tag only (id `sha256:2918726c…d87d` was read from the workstation).
+    hyperparameters live only in `artifact_metadata.json`/W&B (`config.json` `hyperparams` are all `null`); the Docker image is **not
+    recorded in any run `provenance.json`** (they hold only `environment` and `git`); its tag and id (`kermt:latest`, `sha256:2918726c…d87d`) were captured
+    separately in the workstation session and appear only in each `artifact_metadata.json`; no image digest is part of the committed provenance.
 
 - **The KERMT mixed-type cluster blocker is RESOLVED as a decision** (see
   `decisions.md`, 2026-09-20). Three-tier ladder approved; stock KERMT is NOT

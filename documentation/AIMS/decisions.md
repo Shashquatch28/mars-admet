@@ -36,7 +36,7 @@ across seeds of an arm — DILI 50/37 ×5, toxicity 1,050 & 576 ×2). Pass 2 mus
 **Decision.** (a) The authoritative model is KERMT's saved `ckpt/fold_0/model_0/model.pt` (byte-identical to the W&B
 `model.pt`); it is the checkpoint MARS evaluates, calibrates, uploads and reports, identified by its SHA-256. (b) The epoch
 number is descriptive metadata only. Report the **saved epoch** = `N` from the last `Saving model at epoch N` line of
-`finetune.log`, **never** `N` from the final `best validation … on epoch N` line. (c) The selection rule stays KERMT's
+`finetune.log` (that wording is from the 2026-09-30 session note only — see Evidence), **never** `N` from the final `best validation … on epoch N` line. (c) The selection rule stays KERMT's
 stock rule and is **not** changed for any Tier-0 arm: metric `auc` for classification and `mae` for regression as passed by the harness
 (`KermtModel._default_metric`); for multi-task regression the session note documents the aggregate as the unweighted mean of per-task val MAE
 in raw units (classification multi-task aggregation was not checked).
@@ -45,16 +45,22 @@ in raw units (classification multi-task aggregation was not checked).
 - Repo: `KermtModel.fit` (`ml/models/kermt_model.py:492`) loads exactly `ckpt/fold_0/model_0/model.pt` and never parses an epoch
   from any log; every val/calibration/test metric is computed by MARS from that model's predictions, so results cannot
   depend on the logged epoch number.
-- Repo + session note: mean of MARS-computed val MAE for `absorption_distribution__reg` seed 0 (from `lab_summary.json`) = (0.7028 + 0.4179 +
-  0.4134 + 10.9189)/4 = 3.1133, equal to the 3.113 that the session note says KERMT logged as its best score → consistent with `model.pt` being
-  the metric-selected checkpoint (the logged figure itself was not seen here).
+- Repo (added 2026-10-01): `ml/eval/tier0_artifacts.py:69` (`BEST_EPOCH_LINE`) parses the final `best validation auc = … on epoch N` line into `best_epoch`,
+  which feeds `seed_summary.json`, the "selected epoch" plot lines and `tier0_present.py`'s "selected epoch per seed" chart. So the repo itself confirms the
+  format of the *misleading* line, and those post-hoc outputs currently carry the misleading epoch. No committed record contains `best_epoch` (grep), so the
+  exposure is limited to workstation-only, gitignored packages (for example the DILI presentation package); the fix is a tracked P1 item.
+- Laptop recomputation from session evidence: the mean of the per-task val MAE in the committed `lab_summary.json` for `absorption_distribution__reg` seed 0
+  (a 2026-09-30 session record) is (0.7028 + 0.4179 + 0.4134 + 10.9189)/4 = 3.1133. The 3.113 "logged best score" it is compared with comes from the
+  2026-09-30 session note; the log itself was not seen here. So both inputs are session evidence; the agreement is consistent with `model.pt` being the
+  metric-selected checkpoint, and is **not** independent confirmation from KERMT source or logs.
 - Session note §4.3 M1 — **workstation-derived, not verified locally** (from `task/train.py` lines 363/393 of the pinned KERMT checkout, which
   lives outside this repo and was not re-read here; `finetune.log` is not in Git — only in the W&B `run-record` artifacts): `best_epoch` is assigned by both the metric rule (which saves `model.pt`) and the
   val-loss tracker (which runs even with `select_by_loss=False`); the log prints whichever wrote last. Observed on 3/3
-  checked runs (logged 29/saved 18, 28/19, 26/21), each time with logged best *score* == saved epoch's val metric. The wording of the `Saving model at epoch N` line is likewise taken from
-  the session note; the first Pass-2 `finetune.log` must be checked for it (the runbook STOPs if the line is absent).
-- No committed status note quotes a KERMT-logged best epoch (grep of `documentation/`), so no historical note is wrong; only
-  the runbook §8 instruction was.
+  checked runs (logged 29/saved 18, 28/19, 26/21), each time with logged best *score* == saved epoch's val metric. The `Saving model at epoch N` wording appears nowhere in this repo's code or
+  committed records — it is taken solely from the session note and is **not independently verified** (neither the KERMT source nor a `finetune.log` was
+  available on this laptop). The first Pass-2 `finetune.log` must be checked for it (the runbook STOPs if the line is absent).
+- No committed status note or result record quotes a KERMT-logged best epoch (grep of `documentation/`), so no committed historical note is wrong. The
+  runbook §8 instruction was wrong, and (see the `tier0_artifacts.py` bullet above) so is the post-hoc script output derived from the same line.
 
 **Rationale.** The saved checkpoint is the evaluated object and is correct; only the printed epoch is misleading. Keeping
 the stock rule: Tier 0 is defined (2026-09-20) as the unmodified stock CLI with no new selection logic; changing it would

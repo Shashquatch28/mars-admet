@@ -5,8 +5,9 @@
 - **KERMT's final log line reports the wrong best epoch.** `finetune.log` ends with `best validation … on epoch N`, but `N` can differ from
   the epoch that was saved (logged 29 / saved 18, 28 / 19, 26 / 21 on the three runs checked). The saved `model.pt` is correct and is what
   MARS evaluates; only the printed number misleads. The runbook §8 told the session to read the epoch from the log. **Lesson: identify a
-  model by its `model.pt` SHA-256; take the epoch from the last `Saving model at epoch N` line and cross-check its val score against the
-  best score.** Fixed in the runbook and `decisions.md` 2026-09-30 D1.
+  model by its `model.pt` SHA-256; take the epoch from the last `Saving model at epoch N` line (wording per the 2026-09-30 session note; unverified on the laptop) and cross-check
+  its val score against the best score.** Runbook and `decisions.md` 2026-09-30 D1 corrected; **`ml/eval/tier0_artifacts.py:69` still parses the misleading line into
+  `best_epoch` (and `tier0_present.py` charts it) — not yet fixed (P1).**
 - **"Option A" is an ambiguous label.** The repo uses "Option A/B/C" for two unrelated things: the PPB split (`status/ppbr_az_investigation.md`) and the
   `metabolism__cls` leakage decision (`next_steps.md`, 2026-09-20). Session notes then listed "Option A" next to the HIA floor and it was read as an HIA
   item. **Lesson: name decisions by arm and topic (`metabolism__cls` leakage-safe pool), not by a bare option letter.** Clarified in `decisions.md` D5.

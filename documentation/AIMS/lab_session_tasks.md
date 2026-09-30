@@ -164,7 +164,8 @@ only: HIA N=47; nothing else is expected — anything else is reported); `s_prot
 <launch log>` = 0; `run.json` `completed`; the **saved epoch** (`N` of the last `Saving model at epoch N` line in
 `finetune.log`; that wording comes from the 2026-09-30 session note and has not been seen on the laptop — if the line is absent, STOP, §12) recorded —
 **never** the epoch on the final `best validation … on epoch` line (KERMT logging bug; `decisions.md` 2026-09-30 D1) — and its val score equal to
-KERMT's logged best score within 1e-3. Read numbers from `lab_summary.json`.
+KERMT's logged best score within 1e-3. **Do not use the "selected epoch" that `ml/eval/tier0_artifacts.py` / `tier0_present.py` produce** — they parse the misleading
+final line (`decisions.md` D1) until that is fixed. Read numbers from `lab_summary.json`.
 
 **P-8 Record artifacts (in the gitignored area, so the tree stays clean for every launch).** Per run, collect into
 `ml/runs/lab_logs/` the same set as the Pass-1 records: `lab_summary.json`, `config.json`, `run.json`, `provenance.json`, the
@@ -1024,7 +1025,7 @@ du -sh "runs/$RUN_ID"      # per-run disk cost — use it to budget the Tier-0 a
 Record in the session log: **wall time** (`wall_seconds`; note it includes container/prepare
 overhead, like the 9-18 figure); **peak VRAM** (sampler; subtract the ~412 MiB baseline for KERMT's
 own delta); **training loss** and the **saved epoch** (the epoch whose checkpoint is `ckpt/fold_0/model_0/model.pt`: take `N` from the
-**last `Saving model at epoch N` line** of `finetune.log`. **Do NOT use the final `best validation … on epoch N` line** — KERMT logs the
+**last `Saving model at epoch N` line** of `finetune.log` (wording per the 2026-09-30 session note; not verified against KERMT source or a log on the laptop). **Do NOT use the final `best validation … on epoch N` line** — KERMT logs the
 wrong epoch there (3/3 checked runs: logged 29/saved 18, 28/19, 26/21; `decisions.md` 2026-09-30 D1). Cross-check: the saved epoch's
 validation score equals KERMT's logged best score, within 1e-3, and MARS's own `val_metrics`); **validation metrics** (`val_metrics`); **checkpoint path**
 (`runs/<run_id>/artifacts/model/kermt/model.pt`, KERMT's own copy under `artifacts/kermt/ckpt/`);

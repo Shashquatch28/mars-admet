@@ -251,3 +251,13 @@ was changed by it; all four Pass-1 runs remain valid as recorded.
 
 Pass 2 is therefore **not blocked by decisions**; it proceeds under the drift guard in `decisions.md` D7 and the Pass-2 procedure in
 `AIMS/lab_session_tasks.md`.
+
+### Corrections (added 2026-10-01, after the P1 audit)
+
+- **Docker provenance.** Line "Known provenance gap unchanged: Docker image recorded by tag only in run provenance" (§4.1), and the same statement in
+  `kermt_gpu_session_2026-09-24.md`, are inaccurate: all 11 committed `provenance.json` files hold only `environment` and `git`. The image tag and id were captured
+  separately in the workstation sessions and appear only in `artifact_metadata.json`; no image digest is part of the committed provenance.
+- **Saved-epoch wording.** The `Saving model at epoch N` line named in this note and in the §7 table above is not present anywhere in the repo's code; its wording is
+  unverified on the laptop. What the repo does show: MARS evaluates the saved `model.pt`, and `ml/eval/tier0_artifacts.py:69` parses the *misleading* `best validation
+  auc … on epoch N` line. The 3.1133 recomputation in `decisions.md` D1 uses the committed `lab_summary.json` and the logged score reported in this note — both session
+  evidence.
