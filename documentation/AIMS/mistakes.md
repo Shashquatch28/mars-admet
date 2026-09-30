@@ -1,5 +1,20 @@
 # mistakes.md
 
+## Pass-1 close-out / Pass-2 preparation (2026-09-30) — three traps
+
+- **KERMT's final log line reports the wrong best epoch.** `finetune.log` ends with `best validation … on epoch N`, but `N` can differ from
+  the epoch that was saved (logged 29 / saved 18, 28 / 19, 26 / 21 on the three runs checked). The saved `model.pt` is correct and is what
+  MARS evaluates; only the printed number misleads. The runbook §8 told the session to read the epoch from the log. **Lesson: identify a
+  model by its `model.pt` SHA-256; take the epoch from the last `Saving model at epoch N` line and cross-check its val score against the
+  best score.** Fixed in the runbook and `decisions.md` 2026-09-30 D1.
+- **"Option A" is an ambiguous label.** The repo uses "Option A/B/C" for two unrelated things: the PPB split (`status/ppbr_az_investigation.md`) and the
+  `metabolism__cls` leakage decision (`next_steps.md`, 2026-09-20). Session notes then listed "Option A" next to the HIA floor and it was read as an HIA
+  item. **Lesson: name decisions by arm and topic (`metabolism__cls` leakage-safe pool), not by a bare option letter.** Clarified in `decisions.md` D5.
+- **A runbook that pins commit SHAs and phase status goes stale silently.** After Pass 1 the runbook still said "pull `6df4bab`", "`EXPECTED_SHA` pins
+  `7475342`" and listed Pass 1 as pending, while AIMS files said the laptop was at `f51cb8f`. **Lesson: `EXPECTED_SHA` is supplied by the maintainer at
+  session start, never written into the runbook; guard the *protocol-critical files* against the training commit (`git diff --quiet ae5d28d HEAD -- <files>`)
+  instead of pinning a SHA, and re-check the runbook's state banner whenever a session ends.**
+
 ## Preflight / seed strategy (2026-09-28) — two traps
 
 - **The laptop's picture of the GPU work was stale, and a status PDF repeated it.** Local `HEAD` was `f51cb8f`;

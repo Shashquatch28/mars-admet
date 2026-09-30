@@ -13,7 +13,218 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-09-30 — Tier-0 Pass-2 protocol frozen: resolution of the §4.4 items from `status/kermt_gpu_session_2026-09-30.md`
+
+**Status:** decided 2026-09-30 from repository evidence, on the maintainer's instruction to resolve on evidence rather
+than ask; takes effect when this entry is committed. Supersedes the "OPEN" markers for these items in
+`next_steps.md`, `lab_session_tasks.md` §10 and the 2026-09-21/09-28 entries below. **Nothing here changes code, data,
+checkpoints or any Pass-1 result record.** Evidence is tagged: *repo* = checked by reading/recomputing committed files or code
+on the laptop; *session note* = taken from `status/kermt_gpu_session_2026-09-30.md` (written on the workstation; `finetune.log`, the KERMT
+source and the workstation are not available here, so those facts are **not independently verified**). Base state: `origin/milestone/m2-kermt` @ `ad6eaf1` (Pass 1 complete: seed 0 of
+all six Tier-0 arms; DILI seeds 0–4, toxicity 0–1).
+
+**The single protocol in force for every remaining Tier-0 run (Pass 2 = `metabolism__reg`, `absorption_distribution__cls`,
+`metabolism__cls`, `absorption_distribution__reg` seeds 1–4; `toxicity__cls` seeds 2–4):** the code at `ae5d28d` (the
+commit that trained Pass 1), KERMT stock CLI with harness defaults, equal weighting, `holdout_calibration=True`,
+`use_augmented_dili=False`, the fixed M1 calibration split, prep `20260918T090433Z`, Option A for `metabolism__cls`.
+All 11 existing runs (DILI ×5, toxicity ×2, Pass-1 ×4) were recorded under exactly this protocol (checked from every
+`config.json`: `holdout_calibration=true`, `use_augmented_dili=false`, `loss_weighting=equal`; calibration N identical
+across seeds of an arm — DILI 50/37 ×5, toxicity 1,050 & 576 ×2). Pass 2 must not deviate; §D7 is the drift guard.
+
+### D1 — Epoch selection and which epoch to report (M1 logging finding; M2/M3 selection rule)
+
+**Decision.** (a) The authoritative model is KERMT's saved `ckpt/fold_0/model_0/model.pt` (byte-identical to the W&B
+`model.pt`); it is the checkpoint MARS evaluates, calibrates, uploads and reports, identified by its SHA-256. (b) The epoch
+number is descriptive metadata only. Report the **saved epoch** = `N` from the last `Saving model at epoch N` line of
+`finetune.log`, **never** `N` from the final `best validation … on epoch N` line. (c) The selection rule stays KERMT's
+stock rule and is **not** changed for any Tier-0 arm: metric `auc` for classification and `mae` for regression as passed by the harness
+(`KermtModel._default_metric`); for multi-task regression the session note documents the aggregate as the unweighted mean of per-task val MAE
+in raw units (classification multi-task aggregation was not checked).
+
+**Evidence.**
+- Repo: `KermtModel.fit` (`ml/models/kermt_model.py:492`) loads exactly `ckpt/fold_0/model_0/model.pt` and never parses an epoch
+  from any log; every val/calibration/test metric is computed by MARS from that model's predictions, so results cannot
+  depend on the logged epoch number.
+- Repo + session note: mean of MARS-computed val MAE for `absorption_distribution__reg` seed 0 (from `lab_summary.json`) = (0.7028 + 0.4179 +
+  0.4134 + 10.9189)/4 = 3.1133, equal to the 3.113 that the session note says KERMT logged as its best score → consistent with `model.pt` being
+  the metric-selected checkpoint (the logged figure itself was not seen here).
+- Session note §4.3 M1 — **workstation-derived, not verified locally** (from `task/train.py` lines 363/393 of the pinned KERMT checkout, which
+  lives outside this repo and was not re-read here; `finetune.log` is not in Git — only in the W&B `run-record` artifacts): `best_epoch` is assigned by both the metric rule (which saves `model.pt`) and the
+  val-loss tracker (which runs even with `select_by_loss=False`); the log prints whichever wrote last. Observed on 3/3
+  checked runs (logged 29/saved 18, 28/19, 26/21), each time with logged best *score* == saved epoch's val metric. The wording of the `Saving model at epoch N` line is likewise taken from
+  the session note; the first Pass-2 `finetune.log` must be checked for it (the runbook STOPs if the line is absent).
+- No committed status note quotes a KERMT-logged best epoch (grep of `documentation/`), so no historical note is wrong; only
+  the runbook §8 instruction was.
+
+**Rationale.** The saved checkpoint is the evaluated object and is correct; only the printed epoch is misleading. Keeping
+the stock rule: Tier 0 is defined (2026-09-20) as the unmodified stock CLI with no new selection logic; changing it would
+force re-running seed 0 (7 min / 57 min) and depends on flags `run_finetune_local.py` may not forward (it parses strictly;
+the same wrapper limitation killed the `--use-mtl-loss` idea, 2026-09-20 finding 2); all five seeds of an arm must share one
+rule. The known weakness — in `absorption_distribution__reg` the mean is dominated by PPB (MAE ≈ 10 on a % scale vs ≈ 0.4–0.7
+on log scales) with only 42 PPB val molecules (M2/M3) — is recorded as an arm limitation, not fixed; scale-normalised/per-task
+selection belongs to the MARS-owned Tier-1 trainer.
+
+**Impact on Pass 1.** None; all four runs valid. The "Saved epoch" column in the session note (11, 18, 24, 19) is the one the session derived from the saved-model lines (session note; not
+re-derived here); the "logged" epochs (29, 28) are the wrong ones.
+**Impact on Pass 2.** None on code or config. Report saved epoch per the rule above; treat PPB-dominated selection as a stated
+limitation of `absorption_distribution__reg` (and small-fold hERG/HIA/PPB selection generally) in any write-up.
+**Required execution rule.** Do not launch with any epoch/selection flag. Record the saved epoch from the `Saving model at
+epoch` line and check that the saved epoch's val score equals the best score; a clear mismatch (more than 1e-3; **new assumption** — derived from the one regression
+check above and the session note's statement that scores matched) between `model.pt`'s MARS-computed val metric and the logged best score is a
+STOP, to be reported, not worked around. Never cite the last `best validation … on epoch` line.
+
+### D2 — Regression calibration holdout (M5)
+
+**Decision.** Keep `holdout_calibration=True` for **all** arms and **all** seeds, regression included. Regression calibration is
+**explicitly unused** (`status: skipped_regression`, no scaler is produced); the calibration molecules of regression endpoints are
+still withheld from training and epoch selection. The same M1 calibration split serves classification and regression; no separate
+split is created.
+
+**Evidence.** `ClusterData.train_pool(holdout_calibration)` (`ml/data/cluster_loaders.py`) removes every calibration molecule of
+every member endpoint before the fold is built; all 11 recorded `config.json` have `holdout_calibration: true`; regression
+records carry `test_metrics_raw.mae` and `test_metrics_calibrated: null`. Cost: 88 labels (`metabolism__reg`) and 1,296
+(`absorption_distribution__reg`: logS 789, logP 316, Caco-2 77, PPB 114). Blueprint Module 4: the calibration split is
+carved once, "held out before the 5-seed CV division", as shared infrastructure that Post-MVP conformal prediction reuses.
+
+**Rationale.** Disabling it only for regression would change the training pool of two arms already run (re-run seed 0 of both,
+≈ 64 min), make regression and classification arms follow different pool rules, and spend the reserved split that later
+conformal/uncertainty work is meant to reuse (blueprint Module 5). Keeping it costs ≈ 10 % of labels — a documented, conservative disadvantage for KERMT relative
+to XGBoost (which trained on the full `train_val`), which is why KERMT-vs-XGBoost must be compared on the held-out **test** set.
+
+**Impact on Pass 1.** None. **Impact on Pass 2.** None; pools for seeds 1–4 are built by the same rule (the pool is seed-independent;
+only the train/val fold varies). **Required execution rule.** `config.json` of every new run must show `holdout_calibration: true`
+and `labels_held_out_for_calibration` identical to seed 0 (checked by `s_protocol.py`, §D7).
+
+### D3 — Calibration split representativeness (M4)
+
+**Decision.** The M1 calibration split is **frozen for all Tier-0 runs**. It is not revisited inside Tier 0. Temperature scaling
+stays a post-hoc step reported next to the raw numbers.
+
+**Evidence.** The split is fixed at M1 (seed 42, 10 % or floor 50, scaffold-aware), independent of the run seed (identical
+calibration N across seeds in the records above), and defines which molecules leave the training pool. Its positive rate differs from
+test in both directions (session note M4: DILI 0.26 vs 0.52, Pgp 0.37 vs 0.51, CYP3A4 0.28 vs 0.44, HIA 0.98 vs 0.77 …). Effect on
+test calibration is mixed: ECE worse for Pgp, BBB, HIA; better for CYP3A4, CYP2C9; neutral CYP2D6. NLL improves on the calibration
+split in every case (session note; consistent with the `nll_improved` fields in the records), which the session note reads as "the fit is sound, the
+split is the issue" — an attribution to prior shift, not something tested here. AUROC/AUPRC are unchanged by construction (raw == calibrated,
+verified in every `verify.txt`).
+
+**Rationale.** Changing which molecules are calibration molecules changes every training pool, invalidating all 11 runs; it is an
+M1 data decision that would also change the XGBoost calibrators the API serves (open since 2026-09-21), so it needs its own decision
+after Pass 2. What *is* free: alternative calibration methods fitted to the saved calibration predictions (W&B `run-record`
+artifacts hold `predictions/{val,calibration,test}`) — post-hoc analysis needing no retraining.
+
+**Impact on Pass 1.** None. **Impact on Pass 2.** None; the split is the same for seeds 1–4.
+**Required execution rule.** Always report raw and calibrated test metrics side by side; never claim calibration "improves" an
+endpoint without the held-out ECE/Brier from the same record; state the prior-shift caveat wherever calibrated numbers appear.
+
+### D4 — HIA calibration floor (N = 47, one negative)
+
+**Decision (four separate statements).** (1) *Run validity:* the `absorption_distribution__cls` runs stay **valid** — discrimination (HIA/Pgp/BBB
+AUROC, AUPRC) and raw calibration metrics stand. (2) *Calibration availability:* HIA calibration is **not available** for reporting — HIA calibrated metrics and
+the HIA temperature are recorded but not reportable, because the calibration set is below the blueprint floor and has a single negative. (3) *The warning:*
+N = 47 < 50 is an expected, non-blocking `[WARN]` on every seed. (4) *History:* neither the split, the floor rule, the code nor any recorded result is
+changed.
+
+**Evidence (reproduced read-only on the laptop's canonical prep `20260830T200000Z`; the workstation prep `20260918T090433Z` used for the runs is
+reported byte-identical for these datasets by the session note's `compare_prep` result, and the recorded N = 47 (46/1) and 284 calibration rows agree).** HIA's M1 calibration set is 50 molecules (49 positive, 1 negative) —
+exactly the blueprint floor (10 % of train_val ≈ 46, floor 50). Union-test removal for the `absorption_distribution__cls` cluster
+then drops 3 positive HIA molecules that are Pgp *test* molecules → 47 (46 pos / 1 neg); cluster calibration rows 287 → 284.
+Recorded fit: T = 0.90, NLL improved, but calibration positive rate 0.98 vs test 0.77; test ECE 0.067 → 0.074, Brier 0.073 → 0.074
+(not interpretable with one negative). Blueprint Module 4: floor of 50 "is specifically what keeps HIA's calibration split from
+being unusably thin"; it is "a starting rule". `s_verify.py` already emits `[WARN] calibration N below blueprint floor` and
+requires both classes present (they are).
+
+**Rationale.** N = 47 is below the explicit floor, and with a single negative the scaler cannot separate miscalibration from
+the 46:1 prior — it is not a stable estimate. Not changing the split: the 3 removed molecules are cross-endpoint test molecules
+(must stay out), and adding calibration molecules would come out of a pool that is itself tiny (HIA train_val holds ≈ 410 positives / 51 negatives, `context.md`).
+Not lowering the floor or the requirement: that would be tuning the rule to make HIA pass. Not editing code to skip HIA: the
+run is valid and the qualification belongs in reporting, not in retroactive changes to a result.
+
+**Impact on Pass 1.** Records unchanged; the HIA calibrated columns in the session note table are kept for transparency but are
+"information only". **Impact on Pass 2.** Seeds 1–4 will again show N = 47 (46/1) and the WARN — expected, non-blocking; the
+per-launch "explicit go" for this arm is withdrawn. **Required execution rule.** In any aggregate/table HIA is reported as raw only
+("calibration unavailable: N = 47 < 50, 1 negative"); HIA temperature stability across seeds is not analysed or claimed. General gate
+used for all endpoints — **a new reporting rule introduced by this entry** (it reuses the existing blueprint floor and `s_verify.py`'s two-class
+check, and excludes no other existing endpoint: DILI sits exactly at 50): calibrated metrics count as results only if `n_fit_samples ≥ 50` and both
+classes are present.
+
+### D5 — "Option A" (`metabolism__cls`)
+
+**Correction of a common misreading:** Option A is **not** an HIA item; it is the `metabolism__cls` leakage decision.
+**Decision.** Option A (maintainer call 2026-09-20, recorded in `next_steps.md` "Two gate results") is confirmed for the whole of
+Tier 0: official TDC splits kept, strict cluster-level leakage prevention (union of the three CYP test sets removed from train_val
+and calibration), reduced pool accepted, single-task CYP baselines to stay on their full original splits. It is no longer
+"provisional" for execution purposes; it changes only by a new decision entry.
+
+**Evidence.** Preflight (2026-09-20): union-test removal drops 5,625 of 9,720 rows; CYP3A4 −2,871/9,833, CYP2D6 −2,805/10,469,
+CYP2C9 −2,762/9,640 (29.2 %/26.8 %/28.7 %); identical figures in each arm's `config.json` (`labels_sacrificed` 2,871/2,805/2,762; `labels_held_out_for_calibration` 715/836/803) and, per the
+session note, in the launch banner. Cause is structural (Jaccard
+0.61–0.64 between the CYP compound sets, each with its own official split). Calibration sets shrink CYP3A4 983 → 241, CYP2C9
+964 → 439, CYP2D6 1,047 → 833 (all ≥ 50). The repo never enumerated labelled alternatives for metabolism (its "Option A/B/C" labels
+belong to the PPB split); the alternatives implied by the 2026-09-20 analysis are: regenerate a leakage-free CYP split (discards
+the official splits the XGBoost test evaluation uses), drop the leakage fix (invalid: inflates every number), or no metabolism
+cluster (loses the arm).
+
+**Rationale.** Against the five criteria: reproducible (already executed unchanged for seed 0); consistent (identical rule for all
+five seeds — any alternative forces a seed-0 re-run, ≈ 57 min); comparable (same test molecules as the XGBoost held-out
+evaluation); statistically valid (no cross-endpoint leakage; cost lands on KERMT, i.e. conservative); minimal change (none).
+**Consequence to state, not hide:** the mandatory single-task KERMT CYP baselines on full original splits are still owed (no harness path
+exists), so a `metabolism__cls` result cannot yet be attributed to multi-task learning vs. the smaller pool.
+
+**Impact on Pass 1.** None. **Impact on Pass 2.** `metabolism__cls` seeds 1–4 run unchanged; the per-launch "explicit go" is withdrawn
+(disk/VRAM check remains). **Required execution rule.** Banner and `config.json` must show the same label losses as seed 0
+(CYP3A4 2,871, CYP2D6 2,805, CYP2C9 2,762 lost to leakage-safe assembly; 715/836/803 further to the calibration holdout).
+
+### D6 — DILI training pool (979 → 287)
+
+**Classification: a configuration mismatch that was insufficiently documented — not a code or data bug, and not an accident that
+invalidates results.**
+
+**Decision.** The five DILI KERMT runs are retained as the **non-augmented (base-pool) variant** and labelled as such. No DILI run
+in Pass 2. Any KERMT-vs-XGBoost DILI comparison must be pool-matched before it enters a final table (see rule).
+
+**Evidence.** XGBoost trained on `dili_liver_injury__augmented` (train_val 1,119, calibration 112); the KERMT harness default is
+`use_augmented_dili=False` → base pool (train_val 378, calibration 50, pool 328 → seed-0 train 287 / val 41). Both variants share the
+identical 96-molecule test set (bit-identical, pinned by a test), so test numbers are on the same molecules, but training data differ
+(and so do the calibration splits: 112 vs 50). All five DILI configs record `use_augmented_dili: false`. Blueprint Module 1 adopts
+DILIst augmentation as the DILI pool and Module 11 lists "DILI augmented vs non-augmented" as an ablation — so the blueprint's primary
+DILI is the augmented pool and KERMT has so far run the ablation variant. The augmented variant is absent from the workstation prep
+(`compare_prep` item D), and the lab launcher cannot select it (the `load_cluster` function accepts `use_augmented_dili`, but the runbook's `s_run.py` never passes it).
+
+**Rationale.** The runs are internally consistent, reproducible and valid for what they are; regenerating data or re-running them
+is not needed for Pass 2 and is out of scope for a GPU session. The error would be to compare them with the augmented XGBoost
+figure as if like-for-like.
+
+**Impact on Pass 1.** DILI records unchanged; the `0.859 ± 0.011` (KERMT, base) vs `0.898` (XGBoost, augmented) pairing in
+`next_steps.md` is explicitly **not comparable**. **Impact on Pass 2.** None (DILI complete). **Required execution rule.** Label the
+DILI KERMT arm "base pool, non-augmented" wherever it appears. Before a DILI row enters a KERMT-vs-XGBoost table, do one of:
+(1) run XGBoost DILI on the base pool (CPU-only, the blueprint's "extra: non-augmented version"), or (2) run a KERMT augmented arm
+under a distinct `variant` with `use_augmented_dili` pinned and the augmented dataset hash-verified on the workstation. Decide
+which after Pass 2; neither blocks it.
+
+### D7 — Drift guard, and what is deliberately not decided here
+
+**Drift guard (mandatory at the start of Pass 2).** The Pass-2 checkout must be a descendant of `ad6eaf1` in which the
+protocol-critical files are byte-identical to `ae5d28d` (the Pass-1 training commit): the file list and command are in
+`lab_session_tasks.md` step P-2; every new run must additionally pass `s_protocol.py` (config + KERMT command identical to the arm's
+seed-0 record except `--seed`). Fixes elsewhere (docs, tests, aggregation/reporting code, lint) do not trip the guard. Two things to know: (a) `ml/eval/metrics.py` is deliberately **not**
+guarded, because the planned single-seed-std fix lives in the same file as `compute_metrics`; any diff touching `compute_metrics`, ECE or Brier must be
+reviewed by hand before Pass 2. (b) Pass-2 runs will record a different `git.commit` (the Pass-2 tip) from Pass 1's `ae5d28d` — expected; equivalence is
+established by this guard, not by the SHA. The comparison logic in `s_protocol.py` was checked on the laptop against the five real later-seed records
+(DILI seeds 1–4, toxicity seed 1): config and KERMT command identical to their seed 0 except `--seed`, i.e. it does not false-alarm on genuine same-protocol runs. Any change to a guarded
+file requires a new decision entry first, because all five seeds of an arm share one protocol.
+
+**Not decided here (none gates Pass 2):** M6 regression metrics beyond MAE (computable post hoc from saved predictions); M7 single-seed
+std (`ml/eval/metrics.py:221`) and the "5 seeds" wording in `tier0_present.py` (fix before any table); W&B test-metric logging; Docker
+image pinning by digest; recording effective hyperparameters in `config.json`; CYP single-task baselines; DILI pool matching (§D6);
+served-XGBoost-calibrator degradation; the 5 lockfile test failures; 12 ruff findings.
+
+---
+
 ## 2026-09-28 — KERMT training strategy: breadth-first (seed 0 of every arm first), extra seeds later
+
+*(Partly superseded 2026-09-30: the per-arm "needs explicit go" gates for HIA and `metabolism__cls` Option A, and the open DILI-pool / `holdout_calibration`
+items, are resolved in the 2026-09-30 entry above. The strategy itself — Pass 1 then Pass 2 — stands.)*
 
 **Decision (maintainer directive, 2026-09-28):** stop finishing one arm's five seeds before starting the next.
 Get **at least one seed (seed 0) of every Tier-0 arm** trained, verified and recorded first ("Pass 1"), then
@@ -65,6 +276,8 @@ never re-run over or deleted; test set never used for selection/tuning/calibrati
 
 **Open follow-ups:** the three reporting gaps above; the arms-5/6 open items (HIA floor, Option A) still need the
 maintainer's explicit go per session; DILI base-pool-vs-augmented and `holdout_calibration=True` sign-off remain OPEN.
+*(Superseded 2026-09-30: HIA floor, `metabolism__cls` Option A, DILI pool and `holdout_calibration` are resolved in the 2026-09-30 entry above;
+the per-session "explicit go" for HIA and for `metabolism__cls` Option A is withdrawn. The reporting gaps remain open.)*
 
 ---
 

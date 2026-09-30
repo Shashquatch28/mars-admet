@@ -14,6 +14,9 @@ Seeds 1–4 NOT RUN    (no seed-1+ run launched this session)
 Pass 2 BLOCKED       pending maintainer review of §4.4 decisions
 ```
 
+> **Status update (2026-09-30, after the session):** the §4.4 decisions are now resolved in `AIMS/decisions.md` (2026-09-30) —
+> see the addendum in §7. This note's body is the session record as written and is otherwise unchanged.
+
 All four trained models are preserved in W&B as `model` artifacts and verified by full download (§5).
 
 ## 1. Session / identities
@@ -227,3 +230,24 @@ from `input/smiles.csv`, and the rerun passed every pre-upload check, including 
 | `metabolism__cls` | 0 | Pass 1 ✅ — seeds 1–4 → Pass 2 |
 
 **Next action:** maintainer review of §4.4, then Pass 2 one seed at a time with `s_verify.py` PASS between launches.
+
+## 7. Addendum — §4.4 resolved (written after the session, 2026-09-30)
+
+Authoritative text: `documentation/AIMS/decisions.md`, entry "2026-09-30 — Tier-0 Pass-2 protocol frozen". No result record, code, dataset or checkpoint
+was changed by it; all four Pass-1 runs remain valid as recorded.
+
+| §4.4 item | Resolution (`decisions.md` 2026-09-30) |
+|---|---|
+| 1. M2/M3 epoch-selection metric | **D1** — stock KERMT rule kept for all Tier-0 arms; PPB-dominated selection in `absorption_distribution__reg` (and small hERG/HIA/PPB folds) is a stated limitation, not fixed |
+| 2. M5 regression `holdout_calibration` | **D2** — kept (`True`) for every arm and seed; regression calibration explicitly unused (`skipped_regression`) |
+| 3. M4 calibration split | **D3** — split frozen for Tier 0; raw and calibrated always reported together; prior-shift caveat required |
+| 4. M6 regression metrics | deferred (post hoc from saved predictions; does not block Pass 2) |
+| 5. M7 single-seed std | deferred; must be fixed before any table (does not block Pass 2) |
+| 6. M1 runbook correction | done — runbook now says: report the **saved epoch** (last `Saving model at epoch N` line), never the final `best validation … on epoch N` line (**D1**). The "Saved epoch" column in §3 above is the correct one; footnote † stands |
+| 7. HIA calibration floor (N=47, 1 negative) | **D4** — runs valid; HIA calibrated metrics and temperature not reportable; per-launch "explicit go" withdrawn |
+| 7. Option A (`metabolism__cls`) | **D5** — confirmed for all of Tier 0 (Option A is the `metabolism__cls` leakage decision, not an HIA item); per-launch "explicit go" withdrawn |
+| 7. DILI base vs augmented pool | **D6** — DILI runs kept and labelled "base pool, non-augmented"; pool-match before any KERMT-vs-XGBoost DILI comparison; no DILI run in Pass 2 |
+| 7. `toxicity__cls` seeds 2–4 | last in Pass 2 (`lab_session_tasks.md` P-6) |
+
+Pass 2 is therefore **not blocked by decisions**; it proceeds under the drift guard in `decisions.md` D7 and the Pass-2 procedure in
+`AIMS/lab_session_tasks.md`.

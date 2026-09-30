@@ -70,3 +70,27 @@ Requires `wandb login` for the `shashquatch` account. After download compare `sh
 - W&B run pages do not carry held-out test metrics; those are in each `lab_summary.json` here.
 - Uploading attached each artifact to its original W&B run (resume) and set that run's `job_type` to `model-upload`;
   run config, summary and state were unchanged (checked on toxicity seed 1).
+
+## Reading rules (added 2026-09-30; authoritative text: `../../AIMS/decisions.md` 2026-09-30)
+
+No record in this folder was changed by these rules; they say how to read them.
+
+- **Provisional until 5 seeds.** An arm with fewer than five seeds has provisional single-seed numbers — no "± std", no ranking.
+- **Epoch.** Where an epoch is quoted, it is the **saved** epoch (last `Saving model at epoch N` line of `finetune.log`, i.e. the epoch
+  of `model.pt`). KERMT's final `best validation … on epoch N` line was wrong on all three runs checked (per the 2026-09-30 session note) and must not be used. `model.pt` (SHA-256 in the table
+  above) — not any epoch number — identifies the model.
+- **HIA calibration.** `absorption_distribution__cls`: HIA's calibration set is N=47 (46 positive / 1 negative), below the blueprint
+  floor of 50. The run is valid; HIA AUROC/AUPRC and raw Brier/ECE stand. HIA **calibrated** metrics and the HIA temperature are
+  recorded but **not reportable**. Calibrated metrics count as results only where `n_fit_samples ≥ 50` and both classes are present.
+- **Calibration in general.** One fixed calibration split per endpoint (same for every seed, withheld from training in every arm,
+  regression included; regression calibration is unused). Always read raw and calibrated columns together — calibration worsened test ECE for
+  Pgp, BBB and HIA, and improved it for CYP3A4 and CYP2C9; the session note attributes this to the calibration split's class prior differing from the test set's.
+- **DILI.** `dili_standalone__cls` is the **base-pool, non-augmented** variant (`use_augmented_dili=false`, 287 training molecules at
+  seed 0). XGBoost's DILI used the augmented pool (979). Do not compare the two directly; pool-match first.
+- **`metabolism__cls`** follows Option A (strict cluster-level leakage removal: 27–29 % of each CYP's labels lost). It is a
+  multi-task arm on a reduced pool; the single-task CYP baselines on full splits are still owed, so multi-task benefit cannot yet be
+  separated from the pool reduction.
+- **`absorption_distribution__reg`** selects its epoch by the unweighted mean of per-task raw-unit MAE, which PPB (MAE ≈ 10 on a % scale, 42 val molecules)
+  dominates. Treat the solubility/logP/Caco-2 rows as evaluated at a PPB-chosen epoch.
+- **Hyperparameters.** `config.json` `hyperparams` are all `null` by design (KERMT defaults); the applied values are in
+  `artifact_metadata.json` → `training_config` (`args_applied`, `cmd_replay`).

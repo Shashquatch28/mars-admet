@@ -7,19 +7,184 @@ document — for context, decisions and history see `context.md`, `decisions.md`
 > **STRATEGY CHANGE 2026-09-28 — read this before §10.** Training is now **breadth-first**: seed 0 of every Tier-0 arm
 > first (**Pass 1**), then seeds 1–4 (**Pass 2**) — not five seeds of one arm in a row. Rationale, blueprint tie-in and
 > the reporting caveats are in `decisions.md` 2026-09-28. Practical effects on this file: (a) §10's "Seeds to launch"
-> column and launch order are replaced by the Pass 1 / Pass 2 tables in §10; (b) `s_agg.py` refuses to aggregate < 5
+> column and launch order are replaced by the Pass-2 table P-6 above (Pass 1 is done); (b) `s_agg.py` refuses to aggregate < 5
 > seeds, so Pass-1 results are read from each run's `lab_summary.json` and are **provisional single-seed numbers**
 > (never write "± std" for one seed — `aggregate_seed_metrics` would print 0.0); (c) `toxicity__cls` seeds 2–4
 > (≈ 4.75 h) are deferred to Pass 2. Everything else (verification, STOP rules, no git writes) is unchanged.
 >
-> **Update 2026-09-28 (state):** origin `milestone/m2-kermt` is at `6df4bab` — `toxicity__cls` **seed 1 was run on
-> 2026-09-24** (≈ 95 min, verify PASS), so toxicity has seeds 0–1, not just seed 0 as the note below says. Pull
-> `6df4bab` before the session and set `EXPECTED_SHA` to it (`~/mars-work/lab_env.sh` still pins `7475342`).
->
-> **Update 2026-09-24:** this runbook was executed on 2026-09-22. §8 (DILI seed 0) and §10 row 1 (DILI seeds 1–4)
-> are DONE (≈ 4 min/seed); §10 row 2 `toxicity__cls` has **seed 0 done (≈ 96 min)**, seeds 1–4 remain. Per-run time is
-> therefore now measured (see `status/kermt_gpu_session_2026-09-22.md` for the run table, discrepancies and the
-> next-session checklist). The "first real run" and "per-run time is unmeasured" statements below are historical.
+> **CURRENT STATE (2026-09-30).** **Pass 1 is COMPLETE** and verified (session `status/kermt_gpu_session_2026-09-30.md`):
+> seed 0 of all four remaining arms plus DILI seeds 0–4 and `toxicity__cls` seeds 0–1 — 11 KERMT models, all in W&B.
+> Repository baseline: `origin/milestone/m2-kermt` @ `ad6eaf1`; the code that trained Pass 1 is `ae5d28d` (identical `ml/`
+> code). **Pass 2 (seeds 1–4; toxicity 2–4) is governed by `decisions.md` 2026-09-30** — every §4.4 item is decided there — and
+> is executed with the **Pass-2 procedure immediately below**. Sections 0–9 are the historical first-session checklist and
+> stay valid as the *detailed command reference* for the steps the procedure points to; **where they disagree with the
+> procedure or with `decisions.md` 2026-09-30, those win.** `EXPECTED_SHA` is **never** a constant written in this file:
+> it is the full SHA the maintainer pushes after reviewing the 2026-09-30 protocol commit (see step P-0).
+
+## Pass-2 procedure (authoritative — follow in order)
+
+Standing rules unchanged: one run at a time, `s_verify.py` PASS before the next launch; a crashed run is never re-run over or
+deleted; the test set is never used for selection, tuning or calibration; **no AI git writes** (no add/commit/push/reset/
+checkout) — the maintainer commits; no code, data, config or hyperparameter change (a change needs a new `decisions.md` entry
+first, because all five seeds of an arm share one protocol).
+
+**P-0 Preconditions (maintainer, before leaving the laptop).** `decisions.md` 2026-09-30 and this runbook are committed and
+pushed. The maintainer gives the session the **40-character SHA of that pushed tip** as `EXPECTED_SHA`. None of `7475342`,
+`f51cb8f`, `6df4bab`, `ae5d28d`, `ad6eaf1` is a valid `EXPECTED_SHA` (they are the Pass-1 baselines, not the Pass-2 tip). **STOP** if no
+SHA is supplied or `decisions.md` has no `2026-09-30 — Tier-0 Pass-2 protocol frozen` entry in the checkout.
+
+**P-1 Synchronize the repository.** §1 (session env file; `EXPECTED_SHA` in `~/mars-work/lab_env.sh` **replaced**, not appended
+— `grep -c '^export EXPECTED_SHA=' ~/mars-work/lab_env.sh` must print 1, since the file currently pins `ae5d28d`) then §2 (fetch, collision
+check, `git pull --ff-only`, `HEAD == EXPECTED_SHA`, clean tree). The helper scripts `s_ckpt.py`/`s_run.py`/`s_verify.py`/`s_ames.py`
+must be byte-identical to §2's text (the 2026-09-30 session confirmed this except a defensive `.get()` in `s_agg.py`); install the
+new `s_protocol.py` (P-5).
+
+**P-2 Verify the expected SHA and the frozen code.**
+
+```bash
+source ~/mars-work/lab_env.sh && cd "$MARS_REPO"
+test "$(git rev-parse HEAD)" = "$EXPECTED_SHA" && echo "HEAD == EXPECTED_SHA" || echo "STOP: HEAD != EXPECTED_SHA"
+git merge-base --is-ancestor ad6eaf1 HEAD && echo "descends from ad6eaf1" || echo "STOP: not a descendant of ad6eaf1"
+PROTO="ml/train/train_kermt_cluster.py ml/models/kermt_model.py ml/data/cluster_loaders.py ml/data/loaders.py ml/data/split.py \
+ml/configs/clusters.py ml/configs/experiment_config.py ml/eval/cluster_calibration.py ml/eval/calibration.py \
+ml/eval/calibration_diagnostics.py ml/featurize/kermt_adapter.py ml/data/metadata/kermt_checkpoint.lock.json"
+git diff --quiet ae5d28d HEAD -- $PROTO && echo "protocol files identical to ae5d28d (the Pass-1 training commit)" || echo "STOP: protocol file changed since Pass 1"
+git status --short                                    # MUST be empty
+```
+
+**STOP** on any line starting `STOP` or a non-empty `git status --short`. A changed protocol file is not fixed on the workstation:
+report it; the maintainer records a decision first. (Docs, tests, reporting/aggregation code and lint fixes do not trip this guard. `ml/eval/metrics.py` is deliberately **not** in the list — the planned
+single-seed-std fix lives there — so if it differs from `ae5d28d`, read the diff by hand and confirm `compute_metrics`, ECE and Brier are untouched.)
+
+**P-3 Verify the checkpoint and KERMT identity.** §5c (`s_ckpt.py`: all lockfile files PASS; `sha256sum` of
+`kermt_contrastive_v2.0.pt` must print `e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3`) and §4's KERMT
+checks (`git -C "$MARS_KERMT_REPO" rev-parse HEAD` = `e402473376ace30fa0092dad0578a88bf7f67287`, tag `v2.0.0`, clean). Record the
+`kermt:latest` image id (Pass 1 ran on `sha256:2918726c6bd041339ee00534f7b7b9c547466282dc73df71ca365887f3d5d87d`; a different id is
+not an automatic STOP because no pin exists, but it **must be reported before launching** — it changes the meaning of "same
+protocol").
+
+**P-4 Verify environment, GPU, data, W&B.** §3 (GPU idle, CUDA visible in the container), §4 (host imports; CPU test subset), §5b
+(`compare_prep`: every dataset used by the arms about to run must be `A_BYTE_IDENTICAL`/`B_…`; the known `D` for
+`dili_liver_injury__augmented` is expected and irrelevant to Pass 2), §5d (readiness `READY_FOR_GPU_SMOKE_TEST`), §5e (preflight
+counts unchanged), §6 (W&B login as `shashquatch28`, entity `shashquatch`, project `mars-admet`; a Tier-0 run must not run without W&B).
+The smoke tests (§7) are **not** repeated (gate passed 2026-09-22, regression path exercised 2026-09-30).
+
+**P-5 Verify the protocol configuration (banner check before every launch; `s_protocol.py` after every run).** Install once:
+
+```bash
+source ~/mars-work/lab_env.sh
+cat > "$LAB/s_protocol.py" <<'PY'
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+arm = os.environ["SUBGROUP"]
+run = Path("runs") / os.environ["RUN_ID"]
+ref = Path(os.environ.get("REF_ROOT", "../documentation/status/kermt_tier0_results")) / arm / "seed0"
+KEYS = ["endpoint", "model_family", "variant", "prep_id", "calibrate", "holdout_calibration", "use_augmented_dili",
+        "loss_weighting", "hyperparams", "cluster_split_report", "labels_held_out_for_calibration"]
+
+
+def load(p):
+    return json.loads(Path(p).read_text(encoding="utf-8"))
+
+
+def find(obj, key):  # first value stored under `key`, at any depth
+    if isinstance(obj, dict):
+        if key in obj:
+            return obj[key]
+        for v in obj.values():
+            r = find(v, key)
+            if r is not None:
+                return r
+    elif isinstance(obj, list):
+        for v in obj:
+            r = find(v, key)
+            if r is not None:
+                return r
+    return None
+
+
+new, old = load(run / "config.json"), load(ref / "config.json")
+bad = [f"config.{k}: run={new.get(k)!r} seed0={old.get(k)!r}" for k in KEYS if new.get(k) != old.get(k)]
+cmd_new = find(load(run / "artifacts" / "kermt" / "run.json"), "cmd_replay")
+cmd_old = find(load(ref / "artifact_metadata.json"), "cmd_replay")
+if not cmd_new or not cmd_old:
+    bad.append(f"cmd_replay not found (run: {bool(cmd_new)}, seed0 record: {bool(cmd_old)})")
+elif re.sub(r"--seed \d+", "--seed N", cmd_new) != re.sub(r"--seed \d+", "--seed N", cmd_old):
+    bad.append(f"KERMT command differs from seed 0 beyond --seed:\n  run  : {cmd_new}\n  seed0: {cmd_old}")
+for b in bad:
+    print("[FAIL]", b)
+print("PROTOCOL:", "MISMATCH vs seed 0 - " + str(len(bad)) + " difference(s)" if bad else f"MATCH (config + KERMT command identical to {arm} seed 0 except seed)")
+sys.exit(1 if bad else 0)
+PY
+```
+
+Run it as `SUBGROUP=$ARM RUN_ID=<run id> $PY "$LAB/s_protocol.py" | tee "$LOGS/protocol_<run id>.txt"` after each run (the reference is the arm's committed
+`seed0/` record, present in the checkout). **[Tested on the laptop against the committed records: passes a matching run, fails a
+flipped `holdout_calibration` and a changed `--epochs`. Not verifiable here: the exact position of `cmd_replay` inside the real
+`artifacts/kermt/run.json` — the helper searches at any depth and prints `[FAIL] cmd_replay not found` rather than passing silently.]**
+
+The pre-launch banner (`s_run.py`) must show, per arm — **STOP and kill the job** on any difference (`n_train`/`n_val` vary by seed and
+are not compared):
+
+| Arm | `model_family` | `train_pool_labels_lost_to_calibration_holdout` | `git_dirty` |
+|---|---|---|---|
+| `metabolism__reg` | `kermt_single` | `clearance_microsomal` 88 | false |
+| `absorption_distribution__cls` | `kermt_multitask_subgroup` | `hia_absorption` 65, `pgp_inhibition` 105, `bbb_permeability` 163 | false |
+| `metabolism__cls` | `kermt_multitask_subgroup` | `cyp3a4_inhibition` 715, `cyp2d6_inhibition` 836, `cyp2c9_inhibition` 803 | false |
+| `absorption_distribution__reg` | `kermt_multitask_subgroup` | `solubility_logs` 789, `lipophilicity_logp` 316, `caco2_permeability` 77, `ppb_binding` 114 | false |
+| `toxicity__cls` | `kermt_multitask_subgroup` | `herg_cardiotoxicity` 1056, `ames_mutagenicity` 576 | false |
+
+Also required in every banner: `prep_id` `20260918T090433Z`, `seeds` a single seed from the tables below, `checkpoint_sha256`
+`e9e6649b…6cea6be3`, `kermt_config` with every field `null`/empty except `gpu` 0 (**never** pass `EPOCHS`/`BATCH`/any hyperparameter — the protocol is the
+KERMT defaults: 30 epochs, batch 32, lr 1e-4 → 2e-5, dropout 0.0, bond-drop 0.1, dist-coff 0.15, FFN 700×3, `scaffold_balanced`, metric
+`auc`/`mae`, ensemble 1, one fold), `use_wandb` true, `wandb_entity` `shashquatch`, `wandb_project` `mars-admet`, no `variant`.
+
+**P-6 Execute Pass 2 (per `decisions.md` 2026-09-30).** One arm, one seed per launch, cheapest first, launch pattern of §10.
+No "explicit go" is needed for `absorption_distribution__cls` (HIA) or `metabolism__cls` (Option A) any more — both are decided; the
+disk/VRAM check before `metabolism__cls` remains.
+
+| Order | `ARM` | `SEEDS` (one per launch) | Measured cost / seed | Notes |
+|---:|---|---|---|---|
+| 1 | `metabolism__reg` | 1, 2, 3, 4 | ≈ 7 min | regression, no calibration |
+| 2 | `absorption_distribution__cls` | 1, 2, 3, 4 | ≈ 18 min | HIA calibration N=47 (46/1) and `[WARN]` are expected every seed |
+| 3 | `metabolism__cls` | 1, 2, 3, 4 | ≈ 57 min | Option A; `df -h .` and VRAM first |
+| 4 | `absorption_distribution__reg` | 1, 2, 3, 4 | ≈ 57 min | regression, no calibration |
+| 5 | `toxicity__cls` | 2, 3, 4 | ≈ 95 min | last; seeds 0–1 done |
+| — | `dili_standalone__cls` | — | — | complete (0–4); **no DILI run in Pass 2** |
+
+Total ≈ 9.3 h (arms 1–4) + 4.75 h (arm 5): more than one session. Do not start a run you cannot finish; a partial seed set is
+recorded as partial. Tell the maintainer the remaining-time estimate before starting an arm.
+
+**P-7 Verify each run before launching the next.** All of: `RUN_ID=<id> $PY "$LAB/s_verify.py"` → `VERDICT: PASS` (expected `[WARN]`s
+only: HIA N=47; nothing else is expected — anything else is reported); `s_protocol.py` → `PROTOCOL: MATCH`; `grep -c "UserWarning: W&B"
+<launch log>` = 0; `run.json` `completed`; the **saved epoch** (`N` of the last `Saving model at epoch N` line in
+`finetune.log`; that wording comes from the 2026-09-30 session note and has not been seen on the laptop — if the line is absent, STOP, §12) recorded —
+**never** the epoch on the final `best validation … on epoch` line (KERMT logging bug; `decisions.md` 2026-09-30 D1) — and its val score equal to
+KERMT's logged best score within 1e-3. Read numbers from `lab_summary.json`.
+
+**P-8 Record artifacts (in the gitignored area, so the tree stays clean for every launch).** Per run, collect into
+`ml/runs/lab_logs/` the same set as the Pass-1 records: `lab_summary.json`, `config.json`, `run.json`, `provenance.json`, the
+`<endpoint>__calibration_diagnostics.json` (+ `__temperature_scaler.json` for classification), `verify.txt`, the `s_protocol.py`
+output, the launch log and the VRAM trace, plus `artifact_metadata.json` and `wandb_artifact.json` once P-9 has produced them. Session note goes there too. Move them under
+`documentation/status/kermt_tier0_results/<arm>/seed<N>/` only **after the last run of the session**.
+
+**P-9 Upload and verify W&B artifacts.** Per run, follow the 2026-09-30 convention exactly (`status/kermt_gpu_session_2026-09-30.md` §5):
+type `model`, files `model.pt` + `metadata.json` only, aliases `final` + `latest`, logged by resuming the original training run,
+one version `v0`; plus the additive `run-record` artifact; then verify from W&B (state `COMMITTED`, exactly those files, full-download
+SHA-256 == local `model.pt`). The helpers used on 2026-09-30 (`s_upload.py`, `s_wandb_verify.py`) live only on `CL502-18` under
+`ml/runs/lab_helpers/` and are **not in this repo**; use them, do not reinvent them, and do not upload until `s_verify.py` and
+`s_protocol.py` have passed for that run. Entity is `shashquatch` (login `shashquatch28`; `shashquatch28/mars-admet` does not exist).
+
+**P-10 Aggregate and hand over.** Aggregate an arm only when all five seeds exist (`s_agg.py` refuses otherwise): mean ± std over
+**test** metrics, raw and calibrated side by side; HIA calibrated metrics are omitted (D4); DILI is labelled "base pool" (D6). Before a
+partial arm is reported, every number is labelled provisional single-seed and no "± std" is printed. End-of-session §13, then the
+maintainer commits and pushes the result records — the session itself commits and pushes nothing. Update the session note with what
+ran, what did not, and the verification results.
+
 
 **How to use this file**
 
@@ -114,11 +279,15 @@ process environment. Nothing in `ml/` loads `.env` (grep-verified), so a value s
 file is silently ignored and `entity` falls back to the logged-in account's default.
 
 **Verify the expected commit.** The SHA is created when the maintainer commits and pushes on the
-laptop (section 7 of the pre-push audit prints it). Ask for it, then:
+laptop. **Ask for it — never reuse an old one** (`~/mars-work/lab_env.sh` currently pins `ae5d28d`, the Pass-1 commit; it must be
+**replaced**, not appended to, so exactly one `EXPECTED_SHA` line exists):
 
 ```bash
-echo 'export EXPECTED_SHA=<paste the 40-char SHA the maintainer pushed>' >> ~/mars-work/lab_env.sh
+NEW_SHA=<paste the 40-char SHA the maintainer pushed>
+sed -i.bak '/^export EXPECTED_SHA=/d' ~/mars-work/lab_env.sh       # drops the stale pin; keeps lab_env.sh.bak
+echo "export EXPECTED_SHA=$NEW_SHA" >> ~/mars-work/lab_env.sh
 source ~/mars-work/lab_env.sh
+grep -c '^export EXPECTED_SHA=' ~/mars-work/lab_env.sh              # MUST print 1
 git rev-parse HEAD          # BEFORE the pull this is the workstation's old commit — expected
 git rev-parse origin/milestone/m2-kermt   # local view of the remote; stale until the fetch in section 2
 ```
@@ -592,7 +761,8 @@ $PY -m pytest -q -p no:cacheprovider tests/test_kermt_model.py tests/test_kermt_
   tests/test_experiment_config.py tests/test_calibration.py 2>&1 | tail -8
 ```
 
-Expect **219 passed, 0 failed** (laptop, 2026-09-21, ~110 s; these tests need no data, no GPU and no
+Expect **0 failed**: 219 passed on the laptop (2026-09-21, ~110 s) and **216 passed, 3 skipped** on the workstation (2026-09-30: the
+canonical-snapshot tests ×2 are laptop-only, xgboost is not installed ×1); these tests need no data, no GPU and no
 checkpoint, but `test_readiness_report.py` needs the checkout to be a git repository — it is). Any
 failure here is a STOP: something differs between the pushed code and what was tested.
 A clean export of the committable files (no `.git`) also passed everything except
@@ -680,7 +850,7 @@ Expect (laptop values on the canonical snapshot **[ran here]**; the workstation 
 match): `dili_standalone__cls` train_val 378 rows / test 96 / calibration 50, dropped 0 (0.0%);
 `toxicity__cls` 0.2% worst sacrifice; `absorption_distribution__cls` 4.6%;
 `absorption_distribution__reg` 14.6%; `metabolism__reg` 0.0%; `metabolism__cls` **WARN** 29.2%
-(5,625 rows dropped — the known, provisional Option A arm); the two whole-cluster rows (`metabolism` WARN 29.2%,
+(5,625 rows dropped — Option A, confirmed in `decisions.md` 2026-09-30 D5); the two whole-cluster rows (`metabolism` WARN 29.2%,
 `absorption_distribution` ok 16.1%) are informational. **STOP** on any `ok`/`warn` status
 different from these, or a row count that differs.
 
@@ -791,10 +961,10 @@ to `auc`, by `KermtModel._default_metric`); equal weighting (the stock CLI canno
 `config.json`. **No hyperparameters were ever tuned or approved beyond these defaults** — if the
 maintainer wants specific `EPOCHS`/`BATCH`, they pass them and they are recorded.
 
-Two open decisions are inherited, not resolved (`next_steps.md`): DILI trains on the **base**
-pool (287 train) while XGBoost used the DILIst-augmented pool (979); and `holdout_calibration=True`
-needs sign-off. Neither blocks the run; both are pinned in its config so it can be reproduced or
-superseded.
+*(Historical — this section describes the 2026-09-22 DILI seed-0 run.)* Two decisions were open then and are **resolved in
+`decisions.md` 2026-09-30**: DILI trains on the **base** pool (287 train; XGBoost used the augmented pool, 979) — kept, and labelled
+as the non-augmented variant (D6); `holdout_calibration=True` — kept for every arm and seed (D2). Both are pinned in each run's
+`config.json`.
 
 Record KERMT's own defaults first (they are not in this repo):
 
@@ -853,9 +1023,10 @@ du -sh "runs/$RUN_ID"      # per-run disk cost — use it to budget the Tier-0 a
 
 Record in the session log: **wall time** (`wall_seconds`; note it includes container/prepare
 overhead, like the 9-18 figure); **peak VRAM** (sampler; subtract the ~412 MiB baseline for KERMT's
-own delta); **training loss** and **best epoch** (the epoch KERMT selected on the validation fold — the harness
-docstring's "val selects the epoch"; read it from `finetune.log`, whose format is **[not verifiable
-here]**; `ckpt/fold_0/model_0/model.pt` is KERMT's saved checkpoint) ; **validation metrics** (`val_metrics`); **checkpoint path**
+own delta); **training loss** and the **saved epoch** (the epoch whose checkpoint is `ckpt/fold_0/model_0/model.pt`: take `N` from the
+**last `Saving model at epoch N` line** of `finetune.log`. **Do NOT use the final `best validation … on epoch N` line** — KERMT logs the
+wrong epoch there (3/3 checked runs: logged 29/saved 18, 28/19, 26/21; `decisions.md` 2026-09-30 D1). Cross-check: the saved epoch's
+validation score equals KERMT's logged best score, within 1e-3, and MARS's own `val_metrics`); **validation metrics** (`val_metrics`); **checkpoint path**
 (`runs/<run_id>/artifacts/model/kermt/model.pt`, KERMT's own copy under `artifacts/kermt/ckpt/`);
 **calibration diagnostics** (`artifacts/calibration/dili_liver_injury/calibration_diagnostics.json`,
 `temperature_scaler.json`); **held-out test metrics, raw and calibrated** (`test_raw`/`test_cal`
@@ -907,6 +1078,13 @@ calibration 0.26 — printed in the record) and a 50-molecule fit sits exactly a
 `predict_logits` is `logit` of the two-view mean of sigmoids, not either head's pre-sigmoid value
 (monotone, so ranking metrics are untouched).
 
+**Calibration protocol in force for all Tier-0 runs (`decisions.md` 2026-09-30 D2–D4):** one fixed M1 calibration split per endpoint,
+identical for every seed; its molecules are withheld from training and epoch selection in **every** arm (`holdout_calibration=True`,
+classification and regression alike); temperature scaling is fitted on it for classification only — regression calibration is
+**unused by design** (`skipped_regression`); the split is never changed inside Tier 0; raw and calibrated metrics are always reported
+together; calibrated metrics count as results only if `n_fit_samples ≥ 50` with both classes present (so HIA's, N=47 with one negative,
+do not).
+
 **STOP** on any leakage `[FAIL]`, on a missing `test_metrics_raw`, or if calibrated AUROC differs
 from raw AUROC.
 
@@ -914,42 +1092,31 @@ from raw AUROC.
 
 ## 10. Tier-0
 
-**Gate:** run this section only if 7a, 7b and 8 all PASSED (they did on 2026-09-22). Tier-0 = stock KERMT CLI on
+**Gate:** 7a, 7b and 8 PASSED (2026-09-22) and **Pass 1 is complete** (2026-09-30). Tier-0 = stock KERMT CLI on
 type-homogeneous subgroups, **equal weighting only**, `holdout_calibration=True`, fixed seeds `(0,1,2,3,4)`.
-**Order (since 2026-09-28): breadth-first** — Pass 1 = seed 0 of every arm, Pass 2 = seeds 1–4. Do not launch a run if
-the previous run's `s_verify.py` failed.
+**Order (since 2026-09-28): breadth-first** — Pass 1 (seed 0 of every arm) is **DONE**; what remains is Pass 2. The Pass-2 order,
+per-launch checks and per-seed cost are in the **Pass-2 procedure at the top of this file (P-6)** — that table is the only launch
+order. Do not launch a run if the previous run's `s_verify.py` or `s_protocol.py` failed.
 
-**Pass 1 — seed 0 of every arm (do these first, in this order, one run at a time):**
+**Pass 1 — DONE 2026-09-30 (record only; do not repeat):** `metabolism__reg` seed 0 (7.1 min), `absorption_distribution__cls` seed 0
+(18.2 min), `absorption_distribution__reg` seed 0 (56.7 min), `metabolism__cls` seed 0 (57.3 min) — all `VERDICT: PASS`, all on
+`ae5d28d` with `git.dirty=false`; DILI seeds 0–4 and `toxicity__cls` seeds 0–1 were run 2026-09-22/24. Records:
+`status/kermt_tier0_results/`. The old "explicit go" gates for HIA and for `metabolism__cls` (Option A) are **withdrawn** (`decisions.md` 2026-09-30 D4/D5).
 
-| Order | `ARM` | `SEEDS` | Est. time* | Gate before launching |
-|---:|---|---|---|---|
-| 1 | `metabolism__reg` | `0` | ≈ 5–10 min | none. First real **regression** run on KERMT (never run on GPU): treat it as the smoke test for the regression path — no calibration step is expected |
-| 2 | `absorption_distribution__cls` | `0` | ≈ 15–25 min | **explicit go** — HIA calibration N=47 (46/1) is below the 50 floor; expect a skipped/meaningless HIA temperature, record `n_negative`, do not interpret |
-| 3 | `absorption_distribution__reg` | `0` | ≈ 1–1.3 h | none beyond disk check (regression, no calibration) |
-| 4 | `metabolism__cls` | `0` | ≈ 0.8–1.2 h | **explicit go** — provisional Option A (27–29 % of each CYP's labels removed); largest arm: check `df -h .` and VRAM first |
-| done | `dili_standalone__cls` | 0–4 | — | complete, do not repeat |
-| done | `toxicity__cls` | 0, 1 | — | seeds 2–4 wait for Pass 2 |
-
-\*Extrapolated from DILI (≈ 4 min, 287 train rows) and toxicity (≈ 95 min, 12,787 train rows); **unmeasured** for these
-arms — record the real `wall_seconds` after each run and re-plan from it. Pass 1 ≈ 2.5–3 h if all four run. Do not start a
-run you cannot finish in the session unless the maintainer agrees.
-
-**Pass 2 — only after every Pass-1 run is verified PASS:** seeds 1–4, cheapest arm first: `metabolism__reg`,
-`absorption_distribution__cls`, `metabolism__cls`, `absorption_distribution__reg`, then `toxicity__cls` 2–4. Launch one
-seed at a time (`SEEDS=<n>`), verify, then the next.
+**Pass 2 — seeds 1–4 (toxicity 2–4):** see P-6. Launch one seed at a time (`SEEDS=<n>`), verify (P-7), then the next.
 
 Common launch (one arm; `SEEDS` chooses which seeds — **use a single seed per launch**; W&B on; detached; VRAM sampled):
 
 ```bash
 source ~/mars-work/lab_env.sh
-ARM=metabolism__reg; SEEDS=0                # <- one arm, one seed; set per the Pass 1 / Pass 2 tables above
+ARM=metabolism__reg; SEEDS=1                # <- one arm, one seed; set per the Pass-2 table (P-6). No EPOCHS/BATCH/VARIANT env vars.
 TAG=$(date -u +%Y%m%dT%H%M%SZ); df -h . | tail -1
 nohup env SUBGROUP=$ARM SEEDS=$SEEDS WANDB=1 NOTES="Tier-0 ${ARM} seed ${SEEDS}" $PY "$LAB/s_run.py" > "$LOGS/tier0_${ARM}_$TAG.log" 2>&1 &
 echo $! > "$LOGS/tier0_$ARM.pid"; sleep 20; head -40 "$LOGS/tier0_${ARM}_$TAG.log"
 ```
 
-Verify **every** finished run. In Pass 1 stop here and read the run's `lab_summary.json` (provisional, one seed);
-aggregate only once all five seeds of an arm exist (Pass 2):
+Verify **every** finished run (P-7: `s_verify.py` **and** `s_protocol.py`). While an arm has fewer than five seeds, read the run's
+`lab_summary.json` (provisional, single seed, no "± std"); aggregate only once all five seeds of an arm exist:
 
 ```bash
 source ~/mars-work/lab_env.sh
@@ -958,24 +1125,24 @@ for RUN_ID in $(ls -d runs/kermt_*_${ARM}_seed?_2* | xargs -n1 basename); do ech
 SUBGROUP=$ARM PREP_ID=$PREP_ID $PY "$LAB/s_agg.py" | tee "$LOGS/agg_$ARM.txt" | tail -60
 ```
 
-`s_agg.py` refuses to report unless completed runs exist for all five seeds (so it will refuse throughout Pass 1), skips runs whose
+`s_agg.py` refuses to report unless completed runs exist for all five seeds (so it refuses until an arm has all five seeds), skips runs whose
 `run.json` status is not `completed` (a crashed run stays `running` — see section 12), and writes
 `runs/kermt_tier0_<arm>_aggregate.json`: mean ± std of the **test** metrics, raw and calibrated,
 plus per-endpoint temperature stability. This — not the validation-fold numbers — is what the final
 comparison against XGBoost must use.
 
-Arm reference (this table is the **arm inventory**; for run *order* use the Pass 1 / Pass 2 tables above — the
-"Seeds to launch" column is the pre-2026-09-28 depth-first plan and is superseded). All are `kermt_single` / `kermt_multitask_subgroup` families through
+Arm reference (this table is the **arm inventory** and status; for run *order* use the Pass-2 table P-6 at the top of this file).
+All are `kermt_single` / `kermt_multitask_subgroup` families through
 the **same** `train_one_seed`; W&B name = run id = `kermt_<prefix>_<arm>_seed<N>_<UTC>`:
 
 | # | `ARM` | Family (run-name prefix) | Task | Endpoints | Seeds to launch | Notes / gate |
 |---|---|---|---|---|---|---|
-| 1 | `dili_standalone__cls` | `kermt_single` (`kermt_st`) | classification | `dili_liver_injury` | **1,2,3,4** — seed 0 is section 8's run (same config, same prep); do not repeat it | base pool, 287 train; calibration N=50 (13/37) |
-| 2 | `toxicity__cls` | `kermt_multitask_subgroup` (`kermt_mtsub`) | classification, 2 targets | `herg_cardiotoxicity`, `ames_mutagenicity` | **0, 1 done; 2,3,4 deferred to Pass 2** | cleared to train (0.2% sacrifice). Known: hERG validation holds only 18–24 labels vs ~1,810 AMES, so hERG epoch selection is barely measured — record, don't fix |
-| 3 | `metabolism__reg` | `kermt_single` (`kermt_st`) | regression | `clearance_microsomal` | 0,1,2,3,4 | this is the **single-task baseline**, cited in both roles; never label it a multi-task arm. No calibration (regression) |
-| 4 | `absorption_distribution__reg` | `kermt_multitask_subgroup` | regression, 4 targets | `solubility_logs`, `lipophilicity_logp`, `caco2_permeability`, `ppb_binding` | 0,1,2,3,4 | cleared (14.6% sacrifice). No calibration |
-| 5 | `absorption_distribution__cls` | `kermt_multitask_subgroup` | classification, 3 targets | `hia_absorption`, `pgp_inhibition`, `bbb_permeability` | 0,1,2,3,4 | **OPEN:** HIA calibration N=47 (46 pos / 1 neg), below the floor of 50 — expect a skipped or meaningless HIA temperature; record `n_negative`, do not interpret. Run only if the maintainer says go |
-| 6 | `metabolism__cls` | `kermt_multitask_subgroup` | classification, 3 targets | `cyp3a4_inhibition`, `cyp2d6_inhibition`, `cyp2c9_inhibition` | 0,1,2,3,4 | **Provisional Option A** (29% of each CYP's training labels removed by strict leakage prevention). Largest arm: run last, only with the maintainer's go, and check disk/VRAM first |
+| 1 | `dili_standalone__cls` | `kermt_single` (`kermt_st`) | classification | `dili_liver_injury` | **0–4 DONE** — complete, do not repeat | **base pool, non-augmented variant** (287 train; XGBoost used the augmented pool, 979) — label it so; calibration N=50 (13/37). `decisions.md` 2026-09-30 D6 |
+| 2 | `toxicity__cls` | `kermt_multitask_subgroup` (`kermt_mtsub`) | classification, 2 targets | `herg_cardiotoxicity`, `ames_mutagenicity` | **0, 1 done; 2,3,4 → Pass 2** | cleared to train (0.2% sacrifice). Known: hERG validation holds only 18–24 labels vs ~1,810 AMES, so hERG epoch selection is barely measured — record, don't fix |
+| 3 | `metabolism__reg` | `kermt_single` (`kermt_st`) | regression | `clearance_microsomal` | **0 done; 1–4 → Pass 2** | this is the **single-task baseline**, cited in both roles; never label it a multi-task arm. No calibration (regression) |
+| 4 | `absorption_distribution__reg` | `kermt_multitask_subgroup` | regression, 4 targets | `solubility_logs`, `lipophilicity_logp`, `caco2_permeability`, `ppb_binding` | **0 done; 1–4 → Pass 2** | cleared (14.6% sacrifice). No calibration. Epoch selection = stock raw-unit mean MAE, PPB-dominated — a stated limitation, not changed (D1) |
+| 5 | `absorption_distribution__cls` | `kermt_multitask_subgroup` | classification, 3 targets | `hia_absorption`, `pgp_inhibition`, `bbb_permeability` | **0 done; 1–4 → Pass 2** | **Decided (D4):** HIA calibration N=47 (46 pos / 1 neg) is below the floor of 50 — the run is valid; HIA calibrated metrics/temperature are **not reportable** (raw only); the `[WARN]` is expected every seed; no per-launch go needed |
+| 6 | `metabolism__cls` | `kermt_multitask_subgroup` | classification, 3 targets | `cyp3a4_inhibition`, `cyp2d6_inhibition`, `cyp2c9_inhibition` | **0 done; 1–4 → Pass 2** | **Option A, confirmed (D5)** (29% of each CYP's training labels removed by strict leakage prevention). Largest arm: check disk/VRAM first; no per-launch go needed |
 
 Evaluation command for every arm is the verify-then-aggregate block above with that row's `ARM`.
 Expected outputs per run: `runs/<run_id>/{config.json,provenance.json,run.json,metrics.jsonl,
@@ -989,10 +1156,10 @@ original splits (Option A). `KermtModel` supports them, but no harness path buil
 **No KERMT sweep CLI exists** (`ml/train/run_kermt_subgroup_sweep.py` is planned, not written); that
 is why every launch above goes through `s_run.py`.
 
-**Per-run time is now measured for two arms only:** DILI ≈ 4 min/seed, toxicity ≈ 95–96 min/seed (peak VRAM ≈ 4.1–4.2 GiB;
-run dir ≈ 898 MB incl. a 496 MB `last_checkpoint.pt`). The other four arms are extrapolated (Pass 1 table). Tell the
-maintainer before committing to a long run. A partial seed set is recorded as partial — `s_agg.py` will refuse to
-aggregate it; that is expected during Pass 1.
+**Per-run time is measured for every arm:** DILI ≈ 4 min/seed, `metabolism__reg` ≈ 7 min, `absorption_distribution__cls` ≈ 18 min,
+`absorption_distribution__reg` ≈ 57 min, `metabolism__cls` ≈ 57 min, toxicity ≈ 95–96 min (peak VRAM ≈ 3.9–4.2 GiB incl. ≈ 0.6 GiB desktop;
+≈ 0.9 GB disk per run incl. a 496 MB `last_checkpoint.pt`). Tell the maintainer before committing to a long run. A partial seed set is
+recorded as partial — `s_agg.py` refuses to aggregate it; that is expected until an arm has all five seeds.
 
 ---
 
@@ -1023,7 +1190,9 @@ single-task baselines, a sweep CLI, the final KERMT-vs-XGBoost table (it needs t
 
 | Condition | How you will see it |
 |---|---|
-| Unexpected git state | dirty tree; wrong branch; `HEAD != $EXPECTED_SHA`; workstation-only commits; pull collision; `EXPECTED_SHA` unset |
+| Unexpected git state | dirty tree; wrong branch; `HEAD != $EXPECTED_SHA`; workstation-only commits; pull collision; `EXPECTED_SHA` unset, malformed, or one of the old baselines (`7475342`, `f51cb8f`, `6df4bab`, `ae5d28d`, `ad6eaf1`) |
+| Protocol drift | P-2 guard prints `STOP` (a protocol-critical file differs from `ae5d28d`); `s_protocol.py` prints `MISMATCH`; the banner differs from the P-5 table; any `EPOCHS`/`BATCH`/hyperparameter/`VARIANT` env var set; `decisions.md` lacks the 2026-09-30 entry; a `holdout_calibration`/`use_augmented_dili`/`loss_weighting` value differs from seed 0 |
+| Model/epoch mismatch | `model.pt`'s MARS-computed val metric differs from KERMT's logged best score by more than 1e-3; the saved epoch cannot be found in `finetune.log` (never substitute the `best validation … on epoch` line) |
 | Checkpoint mismatch | `s_ckpt.py` `[FAIL]`; `s_run.py` assertion `STOP: checkpoint sha256 … != lockfile` |
 | Data fingerprint mismatch | `compare_prep.py` overall `C_…` or `D_…`; readiness `data.manifest_integrity` FAIL |
 | Unexpected dataset counts | preflight or banner differ from section 5e / 8 (DILI: train_val 378, pool 328, seed-0 train 287 / val 41, calibration 50 with 13 positives, test 96) |
@@ -1081,12 +1250,14 @@ Then:
 7. **Document what succeeded/failed** — write the outcome of each numbered step above (PASS / FAIL /
    not reached, with the run ids and numbers) into the session note for the maintainer; the AIMS
    files are updated by the maintainer's session, not blindly from here.
-8. **Prepare next-session tasks** — carry over: remaining Tier-0 arms and seeds; the open decisions
-   (`holdout_calibration` sign-off, HIA calibration floor, DILI augmented pool, Option A,
-   served-XGBoost-calibrator degradation); the missing W&B test-metric logging; the missing sweep
-   CLI and CYP single-task baselines; Tier-1 implementation (G1–G4); and the laptop-side
-   KERMT-vs-XGBoost comparison using the carried aggregate JSONs against
-   `ml/runs/test_evaluations/`.
+8. **Prepare next-session tasks** — carry over: remaining Pass-2 arms/seeds (P-6 table, minus what ran); the reporting fixes that must
+   land before any table (`aggregate_seed_metrics` single-seed std, `tier0_present.py` "5 seeds" wording, regression metrics beyond
+   MAE); pool-matching for the DILI comparison (`decisions.md` 2026-09-30 D6); the missing W&B test-metric logging; recording the
+   effective KERMT hyperparameters and the Docker image digest in the run record; adding `s_upload.py`/`s_wandb_verify.py` to the repo;
+   the missing sweep CLI and CYP single-task baselines; served-XGBoost-calibrator degradation; Tier-1 implementation (G1–G4); and the
+   laptop-side KERMT-vs-XGBoost comparison using the carried aggregate JSONs against `ml/runs/test_evaluations/`. The protocol
+   decisions themselves (HIA floor, `holdout_calibration`, calibration split, `metabolism__cls` Option A, DILI pool, epoch selection) are **closed** —
+   do not re-open them in a session; report a concern and let the maintainer record a new decision.
 
 ---
 

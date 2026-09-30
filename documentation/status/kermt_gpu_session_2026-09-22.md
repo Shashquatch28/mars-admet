@@ -106,6 +106,9 @@ unmeasured (already a known OPEN item).
 > Pass 1 / Pass 2 plan in `AIMS/decisions.md` 2026-09-28 and `AIMS/lab_session_tasks.md` §10. Also stale: origin
 > `6df4bab` records that `toxicity__cls` **seed 1 was run on 2026-09-24**. Items 1–2 and 5–10 (commit/dirty-tree, preflight,
 > W&B, capture, do-not, post-run) still apply to every launch; items 3–4 (arm/seeds/runtime) do not.
+>
+> **Further superseded 2026-09-30:** the whole checklist below is replaced by the "Pass-2 procedure" at the top of
+> `AIMS/lab_session_tasks.md` (item 1 names an obsolete SHA; Pass 1 is complete). Kept only as the 2026-09-22 record.
 
 Plan source: `lab_session_tasks.md` §10 table (row 2 continues; rows 3–6 follow). **Undecided:** whether to run
 `toxicity__cls` seeds 1–4 only or also start row 3+ in the same session (maintainer's call — the runbook says

@@ -1,56 +1,50 @@
 # next_steps.md
 
-_Last updated: 2026-09-28 (**breadth-first seed strategy adopted** — see the first bullet under "Immediately";
-laptop-side preflight for the next GPU session run; local checkout is BEHIND origin, see the sync note).
-Active milestone: M2 (KERMT/GNN track). M3 is locally/container complete.
-Branch: `milestone/m2-kermt` @ `f51cb8f` locally; **origin is at `6df4bab`** (2026-09-24, workstation). The lab-session checklist is the last section of
-"Immediately" below._
+_Last updated: 2026-09-30 (**Pass 1 of the KERMT Tier-0 breadth-first plan is COMPLETE; the Pass-2 protocol is frozen** —
+`decisions.md` 2026-09-30). Active milestone: M2 (KERMT/GNN track). M3 is locally/container complete.
+Branch: `milestone/m2-kermt`; laptop synced to `origin` @ `ad6eaf1` on 2026-09-30 (fast-forward; no local-only commits). The Pass-1
+training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6eaf1`. The lab checklist is `lab_session_tasks.md`
+(its "Pass-2 procedure" at the top is authoritative)._
 
 ## Immediately
 
-- **STRATEGY CHANGE 2026-09-28 — breadth-first seeds (full entry: `decisions.md` 2026-09-28).** Get **seed 0 of every
-  Tier-0 arm** trained and verified first (Pass 1), then add seeds 1–4 (Pass 2). Stop finishing one arm's five seeds
-  before starting the next. Launching needs no code change (`SEEDS=0` through the runbook launcher; `SEEDS=1` was already
-  used on 2026-09-24). Status → Pass 1 remaining: `metabolism__reg`, `absorption_distribution__cls` (needs go — HIA
-  floor), `absorption_distribution__reg`, `metabolism__cls` (needs go — Option A); est. ≈ 2.5–3 h total (extrapolated,
-  unmeasured). `dili_standalone__cls` is complete (5 seeds); `toxicity__cls` has seeds 0–1, its seeds 2–4
-  (≈ 4.75 h) are **deferred to Pass 2**. Pass-1 numbers are provisional single-seed results — the blueprint's
-  5-seed mean ± std requirement for final tables is unchanged.
-  - **Reporting gaps to close before a Pass-1 number goes in any table:** `aggregate_seed_metrics` prints
-    `std = 0.0` for one seed (`ml/eval/metrics.py:221`); `s_agg.py` refuses < 5 seeds (workstation helper, not in repo);
-    `tier0_present.py` hard-codes "5 seeds". Details in `decisions.md`.
-  - **SYNC — do this first:** origin `milestone/m2-kermt` = `6df4bab` (workstation, 2026-09-24: toxicity seed 1, the
-    `status/kermt_tier0_results/` records for all 7 runs, W&B model artifacts). This laptop is at `f51cb8f` with
-    **uncommitted** edits to `context.md`, `next_steps.md`, `lab_session_tasks.md`, `kermt_integration_status.md` and an
-    untracked `kermt_gpu_session_2026-09-22.md`; `6df4bab` also edits `context.md` and `next_steps.md` (top of both) →
-    expect merge conflicts there. AI does not run git writes; commit/stash and pull, then reconcile.
-  - **Laptop preflight 2026-09-28 (CPU scope, `readiness_report.py --target laptop`): `READY_FOR_GPU_SMOKE_TEST`, 0 smoke
-    blockers.** WARNs (none gating): lockfile is the workstation's acquisition `20260918T090143Z` vs snapshot
-    `20260830T181633Z` (raw 15/15 hashes identical); HIA calibration N=47 (46/1); workstation processed data not
-    fingerprint-verified from this side (the workstation's own note says 15/15 datasets byte-identical — confirm the
-    verdict is recorded); tree dirty (6 changes) so a run launched from *this* tree would record `git.dirty=True`.
-    Pending on the workstation only: checkpoint binary, KERMT commit, Docker image, GPU. `ruff`: 12 findings, all in
-    `ml/eval/tier0_*.py` (unchanged). ML tests: 633 passed / 5 failed (the known lockfile tests) / 15 skipped on 2026-09-28.
-  - **First KERMT-vs-XGBoost data points (test set, NOT a comparison — single arms, mismatched pools):** DILI KERMT
-    AUROC 0.859 ± 0.011 (5 seeds, 287-train base pool) vs XGBoost 0.898 (979-molecule augmented pool); toxicity
-    seed 0/1 hERG 0.892/0.894 vs XGBoost 0.876, AMES 0.854/0.857 vs 0.858. Source: `status/kermt_tier0_results/`.
+- **STATE 2026-09-30.** Pass 1 done: seed 0 of `metabolism__reg`, `absorption_distribution__cls`, `absorption_distribution__reg`,
+  `metabolism__cls` (all `VERDICT: PASS`, ≈ 2.3 h GPU) on top of DILI seeds 0–4 and `toxicity__cls` seeds 0–1 = **11 KERMT models**, all
+  in W&B (`shashquatch/mars-admet`, model + run-record artifacts). Records: `status/kermt_tier0_results/`; session note:
+  `status/kermt_gpu_session_2026-09-30.md`. Every number is a provisional single-seed result until an arm has 5 seeds.
+- **NEXT: Pass 2** — seeds 1–4 of the four Pass-1 arms (`metabolism__reg` → `absorption_distribution__cls` → `metabolism__cls` →
+  `absorption_distribution__reg`; ≈ 9.3 h) then `toxicity__cls` 2–4 (≈ 4.75 h). Order, per-launch checks and costs: `lab_session_tasks.md`
+  P-6. It needs **no code change and no further decision** — the §4.4 items are closed (`decisions.md` 2026-09-30):
+  D1 epoch reporting/selection (report the saved epoch; stock selection rule kept), D2 `holdout_calibration=True` for all arms,
+  D3 calibration split frozen, D4 HIA calibration not reportable (N=47, 1 negative) but the run is valid, D5 `metabolism__cls` Option A
+  (leakage-safe pool) confirmed,
+  D6 DILI = base-pool variant (label it; pool-match before comparing). Guard: protocol-critical files must equal `ae5d28d`, each
+  run must pass `s_protocol.py`.
+  - **Reporting gaps to close before any Pass-1/partial number goes in a table (P1, do not block Pass 2):** `aggregate_seed_metrics`
+    prints `std = 0.0` for one seed (`ml/eval/metrics.py:221`); `s_agg.py` refuses < 5 seeds (workstation helper, not in repo);
+    `tier0_present.py` hard-codes "5 seeds"; regression arms report MAE only (M6).
+  - **Laptop baseline 2026-09-30 (read-only audit):** clean tree at `ad6eaf1`; ml tests 633 passed / 5 failed (the known
+    `test_acquisition_lockfile.py` failures) / 15 skipped; root `contracts`+`api` tests 21 passed / 23 skipped (Redis/Postgres down);
+    `ruff`: 12 findings, all in `ml/eval/tier0_artifacts.py` (8) and `tier0_present.py` (4) — none new.
+  - **First KERMT-vs-XGBoost data points (test set, NOT a comparison — single arms, mismatched pools):** DILI KERMT AUROC
+    0.859 ± 0.011 (5 seeds, **base** pool, 287 train) vs XGBoost 0.898 (**augmented** pool, 979) — explicitly **not comparable**
+    (`decisions.md` D6); toxicity seed 0/1 hERG 0.892/0.894 vs XGBoost 0.876, AMES 0.854/0.857 vs 0.858. Source:
+    `status/kermt_tier0_results/`.
 
-- ✅ **GPU SESSIONS DONE: 2026-09-22 and 2026-09-24** (2026-09-22 reconstructed from Git + W&B — record and the older
-  checklist: `status/kermt_gpu_session_2026-09-22.md`; 2026-09-24 record: `status/kermt_gpu_session_2026-09-24.md`,
-  on origin). Trained: `dili_standalone__cls` **seeds 0–4** (≈ 4 min each, prep `20260918T090433Z`) and
-  `toxicity__cls` **seeds 0 and 1** (≈ 95–96 min each; seed 1 verified PASS). (The handoff belief "5 seeds on one
-  endpoint, 1 on DILI" was inverted.) Everything below in this section that says "no GPU training yet" or "lab session" as
-  *future* predates this and is kept as the record of intent.
-  - **Superseded:** the old "next session = `toxicity__cls` seeds 1,2,3,4" plan (≈ 6.4 h). Replaced by the Pass 1 / Pass 2
-    plan above.
-  - **Before the next session:** on the workstation explain the "dirty" git flag on DILI seeds 1–4 + toxicity seed 0
-    (`git status`, `git stash list`); pull `6df4bab` (not `f51cb8f`); record actual KERMT hyperparameters — origin's
-    2026-09-24 note now records them (30 epochs, batch 32, lr 1e-4 → 2e-5, dropout 0.0, bond_drop 0.1, FFN 700×3).
-  - **Not on this laptop / not in Git:** full run dirs, checkpoints, `finetune.log`, the `tier0_dili_standalone__cls/`
-    presentation package (models are in W&B as `kermt-*-seed<N>:v0`; small result records are in
-    `status/kermt_tier0_results/` on origin). W&B holds only **validation-fold** metrics (`split: val`).
-  - **New findings:** `f51cb8f` adds 12 ruff findings (`eval/tier0_*.py`); `matplotlib` is in `requirements-m2.txt` but
-    not `requirements-m2.lock.txt`; DILI Tier-0 used the base 287-train pool (see the existing OPEN item).
+- ✅ **GPU SESSIONS DONE: 2026-09-22, 2026-09-24, 2026-09-30** (records: `status/kermt_gpu_session_2026-09-22.md`,
+  `…-09-24.md`, `…-09-30.md`). 09-22: DILI ×5 + toxicity seed 0; 09-24: toxicity seed 1; 09-30: the four Pass-1 arms. (The handoff belief
+  "5 seeds on one endpoint, 1 on DILI" was inverted.) Everything below in this file that says "no GPU training yet" or "lab
+  session" as *future* predates these and is kept as the record of intent.
+  - **Not on this laptop / not in Git:** full run dirs, checkpoints, `finetune.log`, the `tier0_dili_standalone__cls/` presentation
+    package (models are in W&B as `kermt-*:v0`; small result records are in `status/kermt_tier0_results/`). W&B holds only
+    **validation-fold** metrics for the training runs; held-out test metrics are in each `lab_summary.json`.
+  - **Known limitations to state in any write-up (not fixed):** PPB-dominated epoch selection in `absorption_distribution__reg`;
+    tiny per-task validation folds (hERG 18–24, HIA 46, PPB 42); calibration split not label-representative; `metabolism__cls` Option A cost
+    (CYP single-task baselines on full splits still owed); DILI base-pool variant; served XGBoost calibrators degrade held-out
+    calibration.
+  - **Housekeeping still open:** `matplotlib` is in `requirements-m2.txt` but not `requirements-m2.lock.txt`; effective KERMT
+    hyperparameters live only in `artifact_metadata.json`/W&B (`config.json` `hyperparams` are all `null`); Docker image is recorded by
+    tag only (id `sha256:2918726c…d87d` was read from the workstation).
 
 - **The KERMT mixed-type cluster blocker is RESOLVED as a decision** (see
   `decisions.md`, 2026-09-20). Three-tier ladder approved; stock KERMT is NOT
@@ -64,7 +58,7 @@ Branch: `milestone/m2-kermt` @ `f51cb8f` locally; **origin is at `6df4bab`** (20
   **The next lab session should go straight to GPU work.**
 - **Two gate results are already in** (see below and `decisions.md`):
   `absorption_distribution` and `toxicity` arms are cleared to train;
-  **`metabolism__cls` is proceeding provisionally under Option A** (2026-09-20
+  **`metabolism__cls` is proceeding provisionally under Option A** *(confirmed for all of Tier 0 on 2026-09-30, `decisions.md` D5)* (2026-09-20
   maintainer call: keep official TDC splits, keep strict cluster-level leakage
   prevention, accept the reduced pool, keep single-task CYP baselines on their
   full original splits); Tier 2's `n_bins=16` is chosen.
@@ -76,17 +70,17 @@ Branch: `milestone/m2-kermt` @ `f51cb8f` locally; **origin is at `6df4bab`** (20
      per-seed diagnostics persisted. 43 new CPU tests (+8 diagnostics tests from
      2026-09-20 = 51 on this path); the isolation property was mutation-tested. **What is NOT verified:** anything about real KERMT logits —
      only a `StubKermt` test double has ever run through this path.
-  2. **OPEN — the calibration split is not label-representative** (`mistakes.md`) — a
+  2. **DECIDED 2026-09-30 (`decisions.md` D3: split frozen for Tier 0; raw + calibrated always reported) — the calibration split is not label-representative** (`mistakes.md`) — a
      pre-existing M1 property affecting all 9 classification endpoints and the
      already-promoted XGBoost calibrators, worst at `cyp3a4_inhibition`
      (train_val 0.4093 vs calibration 0.1129). Changing the split policy is an M1 data
      decision and was **not** taken.
-  3. **OPEN — `hia_absorption` calibration is below the floor** after strict union
+  3. **DECIDED 2026-09-30 (`decisions.md` D4: run valid; HIA calibrated metrics not reportable) — `hia_absorption` calibration is below the floor** after strict union
      removal: N=47, 46 positive / 1 negative (blueprint floor is 50). Its promoted
-     XGBoost Platt calibrator was already fit on 49+1. Needs a maintainer call before
-     A&D-cls calibration is treated as meaningful. `preflight_clusters.py` did not
+     XGBoost Platt calibrator was already fit on 49+1. *(Decision D4: HIA calibrated
+     metrics are not reportable; the rest of the arm's calibration stands.)* `preflight_clusters.py` did not
      check calibration size when it "cleared" A&D-cls.
-  4. **OPEN — `holdout_calibration=True` default needs sign-off.** It removes every
+  4. **DECIDED 2026-09-30 (`decisions.md` D2: kept for all arms and seeds) — `holdout_calibration=True` default.** It removes every
      calibration molecule from the KERMT training pool (`decisions.md` 2026-09-21),
      costing ~10% more labels and making KERMT's pool differ from XGBoost's.
 - ✅ **DONE 2026-09-21 — XGBoost held-out TEST evaluation** (`ml/eval/heldout_evaluation.py`,
@@ -102,9 +96,9 @@ Branch: `milestone/m2-kermt` @ `f51cb8f` locally; **origin is at `6df4bab`** (20
 - **OPEN — shared cluster fold leaves tiny per-task validation sets.** `toxicity__cls` val =
   18–24 hERG labels vs ~1,810 AMES; `ppb` 42–50; `hia` 46. Epoch selection for those tasks is
   effectively unmeasured. Design decision; not changed.
-- **OPEN — KERMT harness trains DILI on the base pool** (287 train) while XGBoost used the
-  DILIst-augmented pool (979): −71%. Configuration mismatch; decide which the comparison uses and
-  pin `use_augmented_dili` in the run config.
+- **DECIDED 2026-09-30 (`decisions.md` D6: keep, label as the base-pool variant, pool-match before comparing) — KERMT harness trains DILI on the base pool** (287 train) while XGBoost used the
+  DILIst-augmented pool (979): −71%. Configuration mismatch — *decided D6: KERMT DILI stays the base-pool variant; the comparison must
+  be pool-matched; `use_augmented_dili` is pinned (false) in every run config.*
 - ✅ **DONE 2026-09-21 — RNG capture/restore utility** (`ml/utils/rng_state.py`, 23 tests).
   **Not integrated** into any training path — see the integration points in its docstring.
 - ✅ **DONE 2026-09-21 — readiness report** (`ml/train/readiness_report.py`): verdict
@@ -132,6 +126,8 @@ Branch: `milestone/m2-kermt` @ `f51cb8f` locally; **origin is at `6df4bab`** (20
 > `--prep-id 20260918T090433Z` to `readiness_report.py` and do **not** pass `--workstation-fingerprint`
 > (the report derives the canonical fingerprint's filename from `--prep-id`), and export
 > `WANDB_ENTITY`/`WANDB_PROJECT` (nothing loads `.env`). This section is kept as the record of intent.
+> **Status 2026-09-30:** this checklist was executed (2026-09-22 → 09-30). Do **not** plan Pass 2 from it — use `lab_session_tasks.md`
+> (Pass-2 procedure) and `decisions.md` 2026-09-30.
 
 Verification tags: **[ran here]** executed on this laptop against the repo (with a
 `StubKermt` test double where KERMT is needed — real code, real data, fake model
@@ -145,7 +141,7 @@ current function signatures but has not run against real KERMT. Workstation path
   **[ran here]**. Nothing below works on the workstation until the new modules
   (`ml/eval/cluster_calibration.py`, `ml/train/train_kermt_cluster.py`, ...) are there.
 - Decide the OPEN items above (esp. HIA floor, `holdout_calibration` default, DILI pool, and what
-  to do about the served calibrators). The XGBoost test evaluation is already done.
+  to do about the served calibrators). *(All but the served calibrators were decided 2026-09-30.)* The XGBoost test evaluation is already done.
 - **Commit first.** The readiness report WARNs that a dirty tree makes each run's recorded git SHA
   not describe the code that ran.
 - `cd ml && PYTHONPATH=. ./.venv/Scripts/python.exe train/readiness_report.py` — expect
@@ -242,7 +238,7 @@ val_reports = cluster_results_to_endpoint_reports(
 Arms, in suggested order (`all_subgroups()` keys): `metabolism__reg` (clearance, the
 single-task baseline, no calibration), `dili_standalone__cls`, `toxicity__cls`,
 `absorption_distribution__reg`, `absorption_distribution__cls` (**HIA calibration is
-N=47, 1 negative — see OPEN item 3**), `metabolism__cls` (**provisional Option A**).
+N=47, 1 negative — decided, `decisions.md` D4**), `metabolism__cls` (**Option A, confirmed — D5**).
 Each x 5 seeds. **Also required, not in that list:** the single-task KERMT baselines for
 the 3 CYPs on their full original splits (Option A) — `KermtModel` supports them but no
 harness path builds them yet.

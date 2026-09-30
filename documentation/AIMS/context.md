@@ -1,6 +1,6 @@
 # context.md
 
-_Last updated: 2026-09-28 (**KERMT training is now breadth-first: seed 0 of every arm first, extra seeds later** — `decisions.md` 2026-09-28; origin `6df4bab` shows `toxicity__cls` has seeds 0–1, not just 0). Previously 2026-09-24 (first real KERMT GPU training on 2026-09-22 reconciled: DILI ×5 seeds + toxicity__cls ×1 seed; see `status/kermt_gpu_session_2026-09-22.md`). The body below is otherwise as of 2026-09-21 and still says "no GPU training" in places — it predates the 2026-09-22 session._
+_Last updated: 2026-09-30 (**KERMT Tier-0 Pass 1 is COMPLETE** — seed 0 of every arm trained and verified on the workstation; **Pass-2 protocol frozen**, `decisions.md` 2026-09-30; laptop synced to `origin/milestone/m2-kermt` @ `ad6eaf1`). Earlier: 2026-09-28 (breadth-first seeds, `decisions.md` 2026-09-28), 2026-09-24 (GPU session 2026-09-22 reconciled). Sections below that describe M1/M2/M3 work are as of their own dates; the KERMT bullets carry inline supersession notes._
 
 ## What MARS is
 
@@ -41,7 +41,7 @@ StarDrop (enterprise).
   production CLI) mirrors to W&B by default; `train_one_seed`/
   `train_xgboost_all_seeds` default `use_wandb=False` so ad-hoc/test calls stay
   quiet. `_netrc` auth from M0 verified still valid. See next_steps.md for detail.
-  **Tests (2026-09-21, final): ml 633 passed / 15 skipped / 5 failed — the 5 are all in `test_acquisition_lockfile.py`, pre-existing (tracked lockfile is the workstation's `20260918T090143Z` acquisition; this machine's raw data is `20260830T181633Z`, plus 2 stale post-Option-C expectations). Root `contracts/tests api/tests`: 21 passed / 23 skipped (infra-marked, Docker down). Ruff clean repo-wide. No type checker installed.**
+  **Tests (2026-09-21, final): ml 633 passed / 15 skipped / 5 failed — the 5 are all in `test_acquisition_lockfile.py`, pre-existing (tracked lockfile is the workstation's `20260918T090143Z` acquisition; this machine's raw data is `20260830T181633Z`, plus 2 stale post-Option-C expectations). Root `contracts/tests api/tests`: 21 passed / 23 skipped (infra-marked, Docker down). Ruff clean repo-wide *(superseded 2026-09-22: `f51cb8f` added 12 findings in `ml/eval/tier0_*.py`; test baseline unchanged as of 2026-09-30)*. No type checker installed.**
   **Production XGBoost sweep COMPLETE 2026-09-17: 70/70 runs, 0 failed.**
   14 endpoints × 5 seeds (`FIXED_SEEDS=(0,1,2,3,4)`), ~172 min total CPU
   wall-clock. Every endpoint: all 5 seeds trained, promoted into
@@ -62,7 +62,7 @@ StarDrop (enterprise).
   ± 0.000 across all 5 seeds — plausible given HIA's small, severely
   imbalanced validation folds (410 positive / 51 negative in train_val)
   but flagged for scrutiny before being cited as a strong result.
-  KERMT/GNN work is untouched (separate M2 track, not started).
+  KERMT/GNN work was untouched at that point *(as of 2026-09-17; KERMT Tier-0 training ran 2026-09-22 → 2026-09-30 — see the KERMT bullets below)*.
 - **Active: M3 — Serving & Infra (Module 8/13/10), started 2026-09-17.**
   See `module_milestone_map.md` for the authoritative Module↔Milestone audit
   done at kickoff. Real (not stubbed) work landed this session:
@@ -197,11 +197,11 @@ StarDrop (enterprise).
   site; it now does (`ml/eval/cluster_calibration.py`, called from
   `ml/train/train_kermt_cluster.py`). Fit on the held-out calibration split only, test
   set scored afterwards (raw + calibrated), per-seed diagnostics persisted. CPU-verified
-  with a labelled test double only — **no real KERMT logits have ever been calibrated.**
+  with a labelled test double only — **no real KERMT logits had been calibrated as of that date** *(superseded: real KERMT logits have been calibrated since 2026-09-22)*.
   Findings recorded in `decisions.md` 2026-09-21: `hia_absorption`'s calibration set is
-  N=47 (46 pos / 1 neg, below the floor of 50) after strict union removal; the calibration
-  split is not label-representative; `holdout_calibration=True` (default) is a decision
-  awaiting sign-off; and **the XGBoost baselines are validation-fold metrics with no
+  N=47 (46 pos / 1 neg, below the floor of 50) after strict union removal *(decided 2026-09-30: run valid, HIA calibrated metrics not reportable)*; the calibration
+  split is not label-representative; `holdout_calibration=True` (default) was a decision
+  awaiting sign-off *(decided 2026-09-30: kept for all arms and seeds)*; and **the XGBoost baselines are validation-fold metrics with no
   test-set evaluation anywhere**, so KERMT-vs-XGBoost is not yet comparable.
 - **Held-out evaluation + readiness (2026-09-21, later):** the 70 XGBoost models have now been scored on the
   untouched TEST split (`ml/runs/test_evaluations/`, 14 endpoints x 5 seeds; `artifacts/` byte-unchanged). Test
@@ -211,6 +211,14 @@ StarDrop (enterprise).
   verify** (`ml/data/compare_prep.py`, fingerprint `ml/data/metadata/prep_fingerprint.20260830T200000Z.json`).
   RNG capture/restore utility exists (`ml/utils/rng_state.py`) but is **not integrated** into training.
   `ml/train/readiness_report.py`: `READY_FOR_GPU_SMOKE_TEST` (CPU-side scope; 4 workstation checks pending).
+- **KERMT Tier-0 state (2026-09-30).** GPU sessions 2026-09-22, 09-24, 09-30 on the RTX A4000 workstation (`CL502-18`). **11 KERMT
+  models trained, verified (`VERDICT: PASS`) and stored in W&B** (`shashquatch/mars-admet`): `dili_standalone__cls` seeds 0–4 (base pool),
+  `toxicity__cls` seeds 0–1, and — Pass 1, 2026-09-30, commit `ae5d28d`, prep `20260918T090433Z` — seed 0 of `metabolism__reg`,
+  `absorption_distribution__cls`, `absorption_distribution__reg`, `metabolism__cls`. Records: `status/kermt_tier0_results/`; notes:
+  `status/kermt_gpu_session_2026-09-{22,24,30}.md`. **Pass 2 (seeds 1–4; toxicity 2–4, ≈ 14 h) is next** under one frozen protocol
+  (`decisions.md` 2026-09-30 D1–D7: saved-epoch reporting, `holdout_calibration=True` everywhere, frozen calibration split, HIA calibrated
+  metrics not reportable, `metabolism__cls` Option A (leakage-safe pool) confirmed, DILI = base-pool variant, drift guard). All Pass-1 numbers are provisional single-seed
+  results; no KERMT-vs-XGBoost ranking yet.
 - Solo build, dependency-ordered, targeting Sep 30 2026 (blueprint Module 14).
   Maintainer call 2026-09-20: **correctness ahead of the date** for the KERMT
   mixed-type work.
@@ -218,7 +226,8 @@ StarDrop (enterprise).
   (+`b072865` CI fix), Run 4=`f679e71`, M2 Runs 1a+1b=`141415b`,
   M2 Runs 2a+2b+W&B=`a1f6b69`, M2 production-sweep tooling=`d67463f`,
   M3 serving/auth/infra=`bad0b02`, documentation now git-TRACKED=`1c252ac`,
-  KERMT v2 integration + GPU validation=`64e1054`, KERMT GPU benchmark=`e2f45c7`.
+  KERMT v2 integration + GPU validation=`64e1054`, KERMT GPU benchmark=`e2f45c7`, Tier-0 harness=`7475342`, post-hoc
+  scripts=`f51cb8f`, Tier-0 results/session records=`6df4bab`, `5c29407`, `ad6eaf1` (Pass-1 training commit `ae5d28d`).
   Current branch **`milestone/m2-kermt`**. Note `documentation/` became
   git-tracked at `1c252ac` (2026-09-18) — the older "documentation stays
   untracked" note below is superseded. The user commits manually. **The AI must
@@ -278,7 +287,7 @@ ml/          data/ — acquire.py, dataset_registry.py, snapshot.py, eda.py,
              collected, 633 pass, incl. test_serve_registry.py, run in ml/.venv). **Production
              XGBoost sweep COMPLETE (70/70) as of 2026-09-17** — see the
              bullet above for the full rundown; KERMT/GNN training is a
-             separate, not-yet-started M2 track.
+             separate M2 track *(Tier-0 training since started — see below)*.
              KERMT cluster track (2026-09-20/21): configs/clusters.py,
              data/cluster_loaders.py, eval/cluster_eval.py,
              eval/calibration_diagnostics.py, eval/cluster_calibration.py,
@@ -390,7 +399,8 @@ docker compose up -d postgres redis minio
 - Loss balancing for mixed clusters: Kendall homoscedastic uncertainty weighting.
   Mandatory: log per-task logσ_t trajectory. Preventive: stratified batches.
   Fallback: fixed weight for a persistently unstable task.
-- Calibration: temperature scaling (GNN), Platt (XGBoost baseline).
+- Calibration: temperature scaling (GNN), Platt (XGBoost baseline). **Tier-0 KERMT protocol frozen 2026-09-30** (`decisions.md`): one fixed
+  calibration split, `holdout_calibration=True` for every arm, HIA calibrated metrics not reportable, Option A for `metabolism__cls`.
 - Uncertainty CORE: 5-seed ensemble bands + k-NN AD (5-NN Tanimoto ECFP4,
   per-endpoint 90th-pctile threshold). Conformal prediction = Post-MVP.
 - Featurization (`ml/featurize/`, all built Run 3, all batched + deterministic +
