@@ -1,0 +1,23 @@
+[PASS] run.json status == completed                                completed
+[PASS] finetuned model.pt saved and non-empty                      runs/kermt_st_dili_standalone__cls_seed4_20260922T060122Z/artifacts/model/kermt/model.pt
+[PASS] a val record per endpoint                                   1 records
+[PASS] val auroc finite [dili_liver_injury]                        0.9240196078431372
+[PASS] a calibration+test record per endpoint                      1 records
+[PASS] test metrics present [dili_liver_injury]                    
+[PASS] calibration fitted [dili_liver_injury]                      fitted
+[PASS] temperature finite and > 0 [dili_liver_injury]              2.4183855785788104
+[PASS] optimizer_success [dili_liver_injury]                       True
+[PASS] calibration has both classes [dili_liver_injury]            pos=13 neg=37 n=50
+[PASS] raw AUROC == calibrated AUROC [dili_liver_injury]           raw=0.8739130434782609 cal=0.8739130434782609
+[PASS] checkpoint_sha256 recorded == lockfile [dili_liver_injury]  e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3
+[PASS] prep_id recorded [dili_liver_injury]                        20260918T090433Z
+[PASS] train.csv disjoint from TEST                                overlap=0 train=287
+[PASS] val.csv disjoint from TEST                                  overlap=0 val=41
+[PASS] train.csv disjoint from CALIBRATION                         overlap=0
+[PASS] val.csv disjoint from CALIBRATION                           overlap=0
+[PASS] train.csv disjoint from val.csv                             overlap=0
+[PASS] provenance has git commit                                   7475342b692626a78ff5152a958936795c734874
+[PASS] config.json records hyperparams + prep_id                   {'batch_size': None, 'bond_drop_rate': None, 'dist_coff': None, 'dropout': None, 'epochs': None, 'extra_finetune_flags': {}, 'ffn_hidden_size': None, 'ffn_num_layers': None, 'final_lr': None, 'gpu': 0, 'init_lr': None, 'max_lr': None, 'metric': None}
+git.dirty recorded for this run: True
+
+VERDICT: PASS

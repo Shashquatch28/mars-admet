@@ -1,0 +1,13 @@
+{
+  "cluster": "toxicity",
+  "endpoint": "toxicity__cls",
+  "finished_at": "2026-09-24T09:43:59.448667+00:00",
+  "model_family": "kermt_multitask_subgroup",
+  "n_targets": 2,
+  "name": "kermt_mtsub_toxicity__cls_seed1",
+  "prep_id": "20260918T090433Z",
+  "run_id": "kermt_mtsub_toxicity__cls_seed1_20260924T080913Z",
+  "seed": 1,
+  "started_at": "2026-09-24T08:09:13.035665+00:00",
+  "status": "completed"
+}

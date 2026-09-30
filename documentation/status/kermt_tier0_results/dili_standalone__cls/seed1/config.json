@@ -1,0 +1,53 @@
+{
+  "calibrate": true,
+  "cluster_split_report": {
+    "cluster_key": "dili_standalone__cls",
+    "endpoint_keys": [
+      "dili_liver_injury"
+    ],
+    "labels_retained": {
+      "dili_liver_injury": 378
+    },
+    "labels_sacrificed": {
+      "dili_liver_injury": 0
+    },
+    "n_calibration_rows": 50,
+    "n_rows_dropped_from_calibration": 0,
+    "n_rows_dropped_from_train_val": 0,
+    "n_test_rows": 96,
+    "n_train_val_rows": 378,
+    "notes": [],
+    "sacrifice_fraction": {
+      "dili_liver_injury": 0.0
+    },
+    "scaffold_overlap_count_excluding_acyclic": 0,
+    "smiles_overlap_count": 0
+  },
+  "endpoint": "dili_standalone__cls",
+  "holdout_calibration": true,
+  "hyperparams": {
+    "batch_size": null,
+    "bond_drop_rate": null,
+    "dist_coff": null,
+    "dropout": null,
+    "epochs": null,
+    "extra_finetune_flags": {},
+    "ffn_hidden_size": null,
+    "ffn_num_layers": null,
+    "final_lr": null,
+    "gpu": 0,
+    "init_lr": null,
+    "max_lr": null,
+    "metric": null
+  },
+  "labels_held_out_for_calibration": {
+    "dili_liver_injury": 50
+  },
+  "loss_weighting": "equal",
+  "model_family": "kermt_single",
+  "notes": "Tier-0 DILI KERMT seed 1",
+  "prep_id": "20260918T090433Z",
+  "seed": 1,
+  "use_augmented_dili": false,
+  "variant": ""
+}

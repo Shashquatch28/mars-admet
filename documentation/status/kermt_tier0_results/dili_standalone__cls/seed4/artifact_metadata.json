@@ -1,0 +1,63 @@
+{
+  "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+  "docker_image": {
+    "image_id": "sha256:2918726c6bd041339ee00534f7b7b9c547466282dc73df71ca365887f3d5d87d",
+    "note": "run provenance records tag only (image_digest null); image_id read from the workstation and unchanged since 2026-09-18",
+    "tag": "kermt:latest"
+  },
+  "endpoint": "dili_standalone__cls",
+  "entity": "shashquatch",
+  "finished_at": "2026-09-22T06:05:21.142753+00:00",
+  "git_branch": "milestone/m2-kermt",
+  "git_dirty": true,
+  "git_sha": "7475342b692626a78ff5152a958936795c734874",
+  "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287",
+  "kermt_container_repo_commit": "e402473376ace30fa0092dad0578a88bf7f67287",
+  "model_family": "kermt_single",
+  "model_file": "model.pt",
+  "model_id": "mars-kermt-single-v1",
+  "model_role": "final trained model (best-validation KERMT checkpoint, identical bytes to ckpt/fold_0/model_0/model.pt); not a resume checkpoint",
+  "model_sha256": "e72c62379b6414ab9c796e6e49c338e4d035ce3d7f7ea1b3e75f38cae57c982d",
+  "model_size_bytes": 203151758,
+  "n_train": 287,
+  "n_val": 41,
+  "prep_id": "20260918T090433Z",
+  "pretrained_checkpoint": "data/checkpoints/kermt/NV-KERMT-70M-v2/kermt_contrastive_v2.0.pt",
+  "project": "mars-admet",
+  "run_id": "kermt_st_dili_standalone__cls_seed4_20260922T060122Z",
+  "run_status": "completed",
+  "runtime_seconds": 240.8,
+  "seed": 4,
+  "started_at": "2026-09-22T06:01:22.222349+00:00",
+  "target_names": [
+    "dili_liver_injury"
+  ],
+  "task_type": "classification",
+  "training_config": {
+    "args_applied": {
+      "batch_size": 32,
+      "bond_drop_rate": 0.1,
+      "dataset_type": "classification",
+      "dist_coff": 0.15,
+      "dropout": 0.0,
+      "ensemble_size": 1,
+      "epochs": 30,
+      "ffn_hidden_size": 700,
+      "ffn_num_layers": 3,
+      "ffn_num_task_specific_layers": 0,
+      "ffn_task_specific_hidden_size": null,
+      "final_lr": 2e-05,
+      "init_lr": 0.0001,
+      "max_lr": 0.0001,
+      "metric": "auc",
+      "no_features_scaling": true,
+      "num_folds": 1,
+      "seed": 4,
+      "split_type": "scaffold_balanced",
+      "tensorboard": true
+    },
+    "cmd_replay": "CUDA_VISIBLE_DEVICES=0 /softwares/miniconda3/envs/kermt/bin/python -u /workspace/main.py finetune --data_path /runs/data/clean_train.csv --separate_val_path /runs/data/clean_val.csv --separate_test_path /runs/data/clean_test.csv --features_path /runs/data/clean_train.npz --separate_val_features_path /runs/data/clean_val.npz --separate_test_features_path /runs/data/clean_test.npz --split_type scaffold_balanced --checkpoint_path /ckpt --dataset_type classification --metric auc --no_features_scaling --ensemble_size 1 --num_folds 1 --hidden_size 800 --depth 6 --num_attn_head 4 --activation PReLU --embedding_output_type both --ffn_hidden_size 700 --ffn_num_layers 3 --epochs 30 --batch_size 32 --init_lr 0.0001 --max_lr 0.0001 --final_lr 2e-05 --dropout 0.0 --bond_drop_rate 0.1 --dist_coff 0.15 --seed 4 --tensorboard --gpu 0 --save_dir /runs/ckpt"
+  },
+  "verification": "VERDICT: PASS",
+  "wandb_run_url": "https://wandb.ai/shashquatch/mars-admet/runs/kermt_st_dili_standalone__cls_seed4_20260922T060122Z"
+}

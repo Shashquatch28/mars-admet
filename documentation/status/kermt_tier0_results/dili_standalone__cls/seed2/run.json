@@ -1,0 +1,13 @@
+{
+  "cluster": "dili_standalone",
+  "endpoint": "dili_standalone__cls",
+  "finished_at": "2026-09-22T05:55:35.161548+00:00",
+  "model_family": "kermt_single",
+  "n_targets": 1,
+  "name": "kermt_st_dili_standalone__cls_seed2",
+  "prep_id": "20260918T090433Z",
+  "run_id": "kermt_st_dili_standalone__cls_seed2_20260922T055135Z",
+  "seed": 2,
+  "started_at": "2026-09-22T05:51:35.716218+00:00",
+  "status": "completed"
+}

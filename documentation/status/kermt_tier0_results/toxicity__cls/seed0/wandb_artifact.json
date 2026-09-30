@@ -1,0 +1,16 @@
+{
+  "wandb_artifact": "kermt-toxicity-seed0",
+  "version": "v0",
+  "reference": "shashquatch/mars-admet/kermt-toxicity-seed0:v0",
+  "artifact_id": "QXJ0aWZhY3Q6MzczMTE0NjE0MA==",
+  "digest": "a08a118bdb5656040ac56fb448023f0f",
+  "artifact_size_bytes": 203513085,
+  "model_sha256": "ebf4e283079db3d69d3e99feec7c2a8e94f1a81f6aa53da8342176e65d6972ce",
+  "model_size_bytes": 203509766,
+  "produced_by_run": "https://wandb.ai/shashquatch/mars-admet/runs/kermt_mtsub_toxicity__cls_seed0_20260922T062623Z",
+  "aliases": [
+    "final",
+    "latest"
+  ],
+  "verified": "queried via wandb.Api; model.pt + metadata.json present; full download SHA-256 == local model.pt SHA-256 (2026-09-24)"
+}

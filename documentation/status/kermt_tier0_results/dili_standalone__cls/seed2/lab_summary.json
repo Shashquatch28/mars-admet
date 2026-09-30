@@ -1,0 +1,72 @@
+{
+  "run_id": "kermt_st_dili_standalone__cls_seed2_20260922T055135Z",
+  "seed": 2,
+  "wall_seconds": 241.3,
+  "n_train": 287,
+  "n_val": 41,
+  "wandb_url": "https://wandb.ai/shashquatch/mars-admet/runs/kermt_st_dili_standalone__cls_seed2_20260922T055135Z",
+  "model_path": "/home/CL502-18/mars-work/mars-admet/ml/runs/kermt_st_dili_standalone__cls_seed2_20260922T055135Z/artifacts/model/kermt",
+  "val_metrics": {
+    "dili_liver_injury": {
+      "auroc": 0.8975,
+      "auprc": 0.8997345587615564,
+      "brier_score": 0.12369361556375948,
+      "ece": 0.14464645634870976,
+      "n_samples": 41,
+      "n_positive": 16,
+      "auroc_valid": true
+    }
+  },
+  "calibration": {
+    "dili_liver_injury": {
+      "version": "mars-cluster-calibration-v1",
+      "endpoint_key": "dili_liver_injury",
+      "seed": 2,
+      "task_type": "classification",
+      "status": "fitted",
+      "reason": null,
+      "n_fit_samples": 50,
+      "n_positive": 13,
+      "n_negative": 37,
+      "positive_rate": 0.26,
+      "temperature": 2.749827185588071,
+      "at_boundary": false,
+      "optimizer_success": true,
+      "nll_before": 0.7105426431699264,
+      "nll_after": 0.5285802548726793,
+      "ece_before": 0.19566136659472252,
+      "ece_after": 0.1920331774741659,
+      "nll_improved": true,
+      "ece_improved": true,
+      "train_val_positive_rate": 0.49206349206349204,
+      "calibration_positive_rate": 0.26,
+      "n_calibration_labeled": 50,
+      "n_test_labeled": 96,
+      "test_metrics_raw": {
+        "auroc": 0.8591304347826086,
+        "auprc": 0.8547268867426778,
+        "brier_score": 0.15517011544553494,
+        "ece": 0.1062273464340251,
+        "n_samples": 96,
+        "n_positive": 50,
+        "auroc_valid": true
+      },
+      "test_metrics_calibrated": {
+        "auroc": 0.8591304347826086,
+        "auprc": 0.8547268867426778,
+        "brier_score": 0.15793057365259797,
+        "ece": 0.1006521477702546,
+        "n_samples": 96,
+        "n_positive": 50,
+        "auroc_valid": true
+      },
+      "prep_id": "20260918T090433Z",
+      "model_id": "mars-kermt-single-v1",
+      "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+      "provenance": {
+        "checkpoint_hf_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+        "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287"
+      }
+    }
+  }
+}
