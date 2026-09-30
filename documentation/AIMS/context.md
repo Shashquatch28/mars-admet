@@ -1,6 +1,6 @@
 # context.md
 
-_Last updated: 2026-09-21 (XGBoost held-out evaluation, provenance tooling, RNG utility, readiness report; no GPU training)_
+_Last updated: 2026-09-28 (**KERMT training is now breadth-first: seed 0 of every arm first, extra seeds later** — `decisions.md` 2026-09-28; origin `6df4bab` shows `toxicity__cls` has seeds 0–1, not just 0). Previously 2026-09-24 (first real KERMT GPU training on 2026-09-22 reconciled: DILI ×5 seeds + toxicity__cls ×1 seed; see `status/kermt_gpu_session_2026-09-22.md`). The body below is otherwise as of 2026-09-21 and still says "no GPU training" in places — it predates the 2026-09-22 session._
 
 ## What MARS is
 

@@ -1,5 +1,19 @@
 # mistakes.md
 
+## Preflight / seed strategy (2026-09-28) — two traps
+
+- **The laptop's picture of the GPU work was stale, and a status PDF repeated it.** Local `HEAD` was `f51cb8f`;
+  `git ls-remote` showed origin at `6df4bab` — the workstation had run `toxicity__cls` seed 1 on 2026-09-24 and pushed
+  result records, W&B model artifacts and a session note. A one-page status report written from the local tree said
+  toxicity was 1/5 seeds (it is 2/5) and that KERMT test results were unavailable (DILI's five-seed test aggregate is on
+  origin). **Lesson: before any status report or preflight, compare local HEAD to origin (`git ls-remote`, read-only)
+  and read the remote's newest commit.** Divergence also means uncommitted local doc edits will conflict with the
+  workstation's edits to `context.md` / `next_steps.md`.
+- **A single-seed aggregate silently reports zero variance.** `aggregate_seed_metrics` (`ml/eval/metrics.py:221`) sets
+  `<metric>_std = 0.0` when there is one valid seed. Under the breadth-first strategy (`decisions.md` 2026-09-28) that
+  would print "± 0.000" for every Pass-1 arm, which reads as perfect stability. **Lesson: n=1 has no standard
+  deviation — return None/NaN, and label single-seed numbers provisional.** Not fixed (out of scope for the preflight).
+
 ## Held-out evaluation + readiness (2026-09-21, later) — five traps
 
 - **The served Platt calibrators degrade held-out calibration, and the API applies them.**

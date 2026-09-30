@@ -1,11 +1,56 @@
 # next_steps.md
 
-_Last updated: 2026-09-21 (full project audit + KERMT calibration wiring; still no GPU training).
+_Last updated: 2026-09-28 (**breadth-first seed strategy adopted** — see the first bullet under "Immediately";
+laptop-side preflight for the next GPU session run; local checkout is BEHIND origin, see the sync note).
 Active milestone: M2 (KERMT/GNN track). M3 is locally/container complete.
-Branch: `milestone/m2-kermt`. The lab-session checklist is the last section of
+Branch: `milestone/m2-kermt` @ `f51cb8f` locally; **origin is at `6df4bab`** (2026-09-24, workstation). The lab-session checklist is the last section of
 "Immediately" below._
 
 ## Immediately
+
+- **STRATEGY CHANGE 2026-09-28 — breadth-first seeds (full entry: `decisions.md` 2026-09-28).** Get **seed 0 of every
+  Tier-0 arm** trained and verified first (Pass 1), then add seeds 1–4 (Pass 2). Stop finishing one arm's five seeds
+  before starting the next. Launching needs no code change (`SEEDS=0` through the runbook launcher; `SEEDS=1` was already
+  used on 2026-09-24). Status → Pass 1 remaining: `metabolism__reg`, `absorption_distribution__cls` (needs go — HIA
+  floor), `absorption_distribution__reg`, `metabolism__cls` (needs go — Option A); est. ≈ 2.5–3 h total (extrapolated,
+  unmeasured). `dili_standalone__cls` is complete (5 seeds); `toxicity__cls` has seeds 0–1, its seeds 2–4
+  (≈ 4.75 h) are **deferred to Pass 2**. Pass-1 numbers are provisional single-seed results — the blueprint's
+  5-seed mean ± std requirement for final tables is unchanged.
+  - **Reporting gaps to close before a Pass-1 number goes in any table:** `aggregate_seed_metrics` prints
+    `std = 0.0` for one seed (`ml/eval/metrics.py:221`); `s_agg.py` refuses < 5 seeds (workstation helper, not in repo);
+    `tier0_present.py` hard-codes "5 seeds". Details in `decisions.md`.
+  - **SYNC — do this first:** origin `milestone/m2-kermt` = `6df4bab` (workstation, 2026-09-24: toxicity seed 1, the
+    `status/kermt_tier0_results/` records for all 7 runs, W&B model artifacts). This laptop is at `f51cb8f` with
+    **uncommitted** edits to `context.md`, `next_steps.md`, `lab_session_tasks.md`, `kermt_integration_status.md` and an
+    untracked `kermt_gpu_session_2026-09-22.md`; `6df4bab` also edits `context.md` and `next_steps.md` (top of both) →
+    expect merge conflicts there. AI does not run git writes; commit/stash and pull, then reconcile.
+  - **Laptop preflight 2026-09-28 (CPU scope, `readiness_report.py --target laptop`): `READY_FOR_GPU_SMOKE_TEST`, 0 smoke
+    blockers.** WARNs (none gating): lockfile is the workstation's acquisition `20260918T090143Z` vs snapshot
+    `20260830T181633Z` (raw 15/15 hashes identical); HIA calibration N=47 (46/1); workstation processed data not
+    fingerprint-verified from this side (the workstation's own note says 15/15 datasets byte-identical — confirm the
+    verdict is recorded); tree dirty (6 changes) so a run launched from *this* tree would record `git.dirty=True`.
+    Pending on the workstation only: checkpoint binary, KERMT commit, Docker image, GPU. `ruff`: 12 findings, all in
+    `ml/eval/tier0_*.py` (unchanged). ML tests: 633 passed / 5 failed (the known lockfile tests) / 15 skipped on 2026-09-28.
+  - **First KERMT-vs-XGBoost data points (test set, NOT a comparison — single arms, mismatched pools):** DILI KERMT
+    AUROC 0.859 ± 0.011 (5 seeds, 287-train base pool) vs XGBoost 0.898 (979-molecule augmented pool); toxicity
+    seed 0/1 hERG 0.892/0.894 vs XGBoost 0.876, AMES 0.854/0.857 vs 0.858. Source: `status/kermt_tier0_results/`.
+
+- ✅ **GPU SESSIONS DONE: 2026-09-22 and 2026-09-24** (2026-09-22 reconstructed from Git + W&B — record and the older
+  checklist: `status/kermt_gpu_session_2026-09-22.md`; 2026-09-24 record: `status/kermt_gpu_session_2026-09-24.md`,
+  on origin). Trained: `dili_standalone__cls` **seeds 0–4** (≈ 4 min each, prep `20260918T090433Z`) and
+  `toxicity__cls` **seeds 0 and 1** (≈ 95–96 min each; seed 1 verified PASS). (The handoff belief "5 seeds on one
+  endpoint, 1 on DILI" was inverted.) Everything below in this section that says "no GPU training yet" or "lab session" as
+  *future* predates this and is kept as the record of intent.
+  - **Superseded:** the old "next session = `toxicity__cls` seeds 1,2,3,4" plan (≈ 6.4 h). Replaced by the Pass 1 / Pass 2
+    plan above.
+  - **Before the next session:** on the workstation explain the "dirty" git flag on DILI seeds 1–4 + toxicity seed 0
+    (`git status`, `git stash list`); pull `6df4bab` (not `f51cb8f`); record actual KERMT hyperparameters — origin's
+    2026-09-24 note now records them (30 epochs, batch 32, lr 1e-4 → 2e-5, dropout 0.0, bond_drop 0.1, FFN 700×3).
+  - **Not on this laptop / not in Git:** full run dirs, checkpoints, `finetune.log`, the `tier0_dili_standalone__cls/`
+    presentation package (models are in W&B as `kermt-*-seed<N>:v0`; small result records are in
+    `status/kermt_tier0_results/` on origin). W&B holds only **validation-fold** metrics (`split: val`).
+  - **New findings:** `f51cb8f` adds 12 ruff findings (`eval/tier0_*.py`); `matplotlib` is in `requirements-m2.txt` but
+    not `requirements-m2.lock.txt`; DILI Tier-0 used the base 287-train pool (see the existing OPEN item).
 
 - **The KERMT mixed-type cluster blocker is RESOLVED as a decision** (see
   `decisions.md`, 2026-09-20). Three-tier ladder approved; stock KERMT is NOT

@@ -13,6 +13,61 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-09-28 — KERMT training strategy: breadth-first (seed 0 of every arm first), extra seeds later
+
+**Decision (maintainer directive, 2026-09-28):** stop finishing one arm's five seeds before starting the next.
+Get **at least one seed (seed 0) of every Tier-0 arm** trained, verified and recorded first ("Pass 1"), then
+spend remaining GPU time adding seeds 1–4 ("Pass 2"). This supersedes the arm-by-arm, five-seeds-in-a-row plan in
+`lab_session_tasks.md` §10 and the "toxicity seeds 1,2,3,4 next" checklist in `status/kermt_gpu_session_2026-09-22.md` §6.
+
+**Is it possible? Yes for launching, with reporting caveats.** Verified against the code:
+- `train_one_seed` (`ml/train/train_kermt_cluster.py`) trains exactly one seed; the runbook launcher takes
+  `SEEDS=<list>` and was already run with a single seed on 2026-09-24 (`toxicity__cls` seed 1, per origin commit
+  `6df4bab`). **No code change is needed to launch Pass 1.** (`train_subgroup_all_seeds` loops all five seeds but is
+  not on the lab path.)
+- Reporting is *not* ready for one seed: (1) `aggregate_seed_metrics` (`ml/eval/metrics.py:221`) returns
+  `<metric>_std = 0.0` when only one seed exists — a single seed would print "± 0.000", which reads as perfect
+  stability. It must return None/NaN before any single-seed number goes into a table; not changed here.
+  (2) `s_agg.py` (workstation helper, gitignored, **not inspected here**) refuses to aggregate fewer than five
+  seeds — for Pass 1, read each run's `lab_summary.json` directly, or decide on a labelled "provisional" mode.
+  (3) `ml/eval/tier0_present.py` hard-codes "5 seeds" wording — do not run it on a partial arm.
+
+**Blueprint tie-in (no conflict created, one line to keep straight).** Module 11 §2 requires mean ± std across
+5 fixed seeds and forbids a single-run point estimate. This decision changes the **order** of work, not the
+requirement: Pass-1 numbers are *provisional single-seed results* and must be labelled so; final KERMT-vs-XGBoost
+tables and any ablation still need five seeds per arm. If the project ever decides to stop below five seeds for an
+arm, that is a blueprint deviation and needs its own explicit decision — **not made here**.
+
+**Pass 1 plan** (state per origin `6df4bab`, 2026-09-24; run-record source: `status/kermt_tier0_results/`):
+
+| Order | Arm | Seeds done | Pass 1 action | Estimated GPU time* |
+|---:|---|---|---|---|
+| — | `dili_standalone__cls` | 0–4 (≈ 4 min each) | none — already complete | — |
+| — | `toxicity__cls` | 0, 1 (≈ 95 min each) | none — seeds 2–4 **deferred to Pass 2** (≈ 4.75 h) | — |
+| 1 | `metabolism__reg` (`clearance_microsomal`) | 0 | seed 0. First-ever **regression** run on real KERMT — cheapest, so it doubles as the smoke test for the regression path (no calibration step) | ≈ 5–10 min |
+| 2 | `absorption_distribution__cls` (HIA, Pgp, BBB) | 0 | seed 0 — **needs explicit go**: HIA calibration N=47 (46 pos / 1 neg) is below the 50 floor (OPEN, unchanged) | ≈ 15–25 min |
+| 3 | `absorption_distribution__reg` (solubility, logP, Caco-2, PPB) | 0 | seed 0 | ≈ 1–1.3 h |
+| 4 | `metabolism__cls` (CYP3A4/2D6/2C9) | 0 | seed 0 — **needs explicit go**: provisional Option A (27–29 % of each CYP's labels removed); check disk/VRAM first | ≈ 0.8–1.2 h |
+
+\*Extrapolated from two measured points (DILI ≈ 4 min at 287 train rows; toxicity ≈ 95 min at 12,787 train rows
+≈ 0.44 s/row + ~100 s overhead) applied to each arm's row count from `preflight_clusters.py`. **Not measured**;
+replace with the real `wall_seconds` after each run. Pass 1 total ≈ 2.5–3 h if all four run.
+
+**Pass 2** (only after Pass 1 is verified): add seeds 1–4, cheapest arm first (`metabolism__reg`,
+`absorption_distribution__cls`, `metabolism__cls`, `absorption_distribution__reg`, then `toxicity__cls` 2–4).
+
+**What Pass 1 does not license:** ranking KERMT against XGBoost, drawing any conclusion from a seed-to-seed
+difference, or judging temperature-scaling stability (needs ≥2 seeds). It exists to prove every arm runs end to
+end, to measure real cost, and to surface arm-specific failures early rather than after ~6 h on one arm.
+
+**Rules carried over unchanged:** one run at a time, `s_verify.py` PASS before the next launch; a crashed run is
+never re-run over or deleted; test set never used for selection/tuning/calibration; no git writes.
+
+**Open follow-ups:** the three reporting gaps above; the arms-5/6 open items (HIA floor, Option A) still need the
+maintainer's explicit go per session; DILI base-pool-vs-augmented and `holdout_calibration=True` sign-off remain OPEN.
+
+---
+
 ## 2026-09-21 (later) — CPU-side evaluation/provenance gaps closed; four new findings, no policy changed
 
 Provisional methodology unchanged: official TDC splits, strict cluster-level leakage

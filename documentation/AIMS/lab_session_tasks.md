@@ -4,6 +4,23 @@ _Written 2026-09-21 for the next KERMT GPU lab session (RTX A4000 workstation). 
 checklist for Claude Code, to be followed **top to bottom**. It is not a general project
 document — for context, decisions and history see `context.md`, `decisions.md`, `next_steps.md`._
 
+> **STRATEGY CHANGE 2026-09-28 — read this before §10.** Training is now **breadth-first**: seed 0 of every Tier-0 arm
+> first (**Pass 1**), then seeds 1–4 (**Pass 2**) — not five seeds of one arm in a row. Rationale, blueprint tie-in and
+> the reporting caveats are in `decisions.md` 2026-09-28. Practical effects on this file: (a) §10's "Seeds to launch"
+> column and launch order are replaced by the Pass 1 / Pass 2 tables in §10; (b) `s_agg.py` refuses to aggregate < 5
+> seeds, so Pass-1 results are read from each run's `lab_summary.json` and are **provisional single-seed numbers**
+> (never write "± std" for one seed — `aggregate_seed_metrics` would print 0.0); (c) `toxicity__cls` seeds 2–4
+> (≈ 4.75 h) are deferred to Pass 2. Everything else (verification, STOP rules, no git writes) is unchanged.
+>
+> **Update 2026-09-28 (state):** origin `milestone/m2-kermt` is at `6df4bab` — `toxicity__cls` **seed 1 was run on
+> 2026-09-24** (≈ 95 min, verify PASS), so toxicity has seeds 0–1, not just seed 0 as the note below says. Pull
+> `6df4bab` before the session and set `EXPECTED_SHA` to it (`~/mars-work/lab_env.sh` still pins `7475342`).
+>
+> **Update 2026-09-24:** this runbook was executed on 2026-09-22. §8 (DILI seed 0) and §10 row 1 (DILI seeds 1–4)
+> are DONE (≈ 4 min/seed); §10 row 2 `toxicity__cls` has **seed 0 done (≈ 96 min)**, seeds 1–4 remain. Per-run time is
+> therefore now measured (see `status/kermt_gpu_session_2026-09-22.md` for the run table, discrepancies and the
+> next-session checklist). The "first real run" and "per-run time is unmeasured" statements below are historical.
+
 **How to use this file**
 
 - Every step has a command, an *expected* result, and a **STOP** rule. If a STOP rule fires,
@@ -897,21 +914,42 @@ from raw AUROC.
 
 ## 10. Tier-0
 
-**Gate:** run this section only if 7a, 7b and 8 all PASSED. Tier-0 = stock KERMT CLI on
-type-homogeneous subgroups, **equal weighting only**, `holdout_calibration=True`, 5 fixed seeds
-`(0,1,2,3,4)`. Do not launch an arm if the previous arm's `s_verify.py` failed.
+**Gate:** run this section only if 7a, 7b and 8 all PASSED (they did on 2026-09-22). Tier-0 = stock KERMT CLI on
+type-homogeneous subgroups, **equal weighting only**, `holdout_calibration=True`, fixed seeds `(0,1,2,3,4)`.
+**Order (since 2026-09-28): breadth-first** — Pass 1 = seed 0 of every arm, Pass 2 = seeds 1–4. Do not launch a run if
+the previous run's `s_verify.py` failed.
 
-Common launch (one arm; `SEEDS` chooses which seeds; W&B on; detached; VRAM sampled):
+**Pass 1 — seed 0 of every arm (do these first, in this order, one run at a time):**
+
+| Order | `ARM` | `SEEDS` | Est. time* | Gate before launching |
+|---:|---|---|---|---|
+| 1 | `metabolism__reg` | `0` | ≈ 5–10 min | none. First real **regression** run on KERMT (never run on GPU): treat it as the smoke test for the regression path — no calibration step is expected |
+| 2 | `absorption_distribution__cls` | `0` | ≈ 15–25 min | **explicit go** — HIA calibration N=47 (46/1) is below the 50 floor; expect a skipped/meaningless HIA temperature, record `n_negative`, do not interpret |
+| 3 | `absorption_distribution__reg` | `0` | ≈ 1–1.3 h | none beyond disk check (regression, no calibration) |
+| 4 | `metabolism__cls` | `0` | ≈ 0.8–1.2 h | **explicit go** — provisional Option A (27–29 % of each CYP's labels removed); largest arm: check `df -h .` and VRAM first |
+| done | `dili_standalone__cls` | 0–4 | — | complete, do not repeat |
+| done | `toxicity__cls` | 0, 1 | — | seeds 2–4 wait for Pass 2 |
+
+\*Extrapolated from DILI (≈ 4 min, 287 train rows) and toxicity (≈ 95 min, 12,787 train rows); **unmeasured** for these
+arms — record the real `wall_seconds` after each run and re-plan from it. Pass 1 ≈ 2.5–3 h if all four run. Do not start a
+run you cannot finish in the session unless the maintainer agrees.
+
+**Pass 2 — only after every Pass-1 run is verified PASS:** seeds 1–4, cheapest arm first: `metabolism__reg`,
+`absorption_distribution__cls`, `metabolism__cls`, `absorption_distribution__reg`, then `toxicity__cls` 2–4. Launch one
+seed at a time (`SEEDS=<n>`), verify, then the next.
+
+Common launch (one arm; `SEEDS` chooses which seeds — **use a single seed per launch**; W&B on; detached; VRAM sampled):
 
 ```bash
 source ~/mars-work/lab_env.sh
-ARM=toxicity__cls; SEEDS=0,1,2,3,4          # <- set per row of the table below
+ARM=metabolism__reg; SEEDS=0                # <- one arm, one seed; set per the Pass 1 / Pass 2 tables above
 TAG=$(date -u +%Y%m%dT%H%M%SZ); df -h . | tail -1
-nohup env SUBGROUP=$ARM SEEDS=$SEEDS WANDB=1 NOTES="tier0" $PY "$LAB/s_run.py" > "$LOGS/tier0_${ARM}_$TAG.log" 2>&1 &
+nohup env SUBGROUP=$ARM SEEDS=$SEEDS WANDB=1 NOTES="Tier-0 ${ARM} seed ${SEEDS}" $PY "$LAB/s_run.py" > "$LOGS/tier0_${ARM}_$TAG.log" 2>&1 &
 echo $! > "$LOGS/tier0_$ARM.pid"; sleep 20; head -40 "$LOGS/tier0_${ARM}_$TAG.log"
 ```
 
-Verify **every** finished run, then aggregate after all five seeds exist:
+Verify **every** finished run. In Pass 1 stop here and read the run's `lab_summary.json` (provisional, one seed);
+aggregate only once all five seeds of an arm exist (Pass 2):
 
 ```bash
 source ~/mars-work/lab_env.sh
@@ -920,19 +958,20 @@ for RUN_ID in $(ls -d runs/kermt_*_${ARM}_seed?_2* | xargs -n1 basename); do ech
 SUBGROUP=$ARM PREP_ID=$PREP_ID $PY "$LAB/s_agg.py" | tee "$LOGS/agg_$ARM.txt" | tail -60
 ```
 
-`s_agg.py` refuses to report unless completed runs exist for all five seeds, skips runs whose
+`s_agg.py` refuses to report unless completed runs exist for all five seeds (so it will refuse throughout Pass 1), skips runs whose
 `run.json` status is not `completed` (a crashed run stays `running` — see section 12), and writes
 `runs/kermt_tier0_<arm>_aggregate.json`: mean ± std of the **test** metrics, raw and calibrated,
 plus per-endpoint temperature stability. This — not the validation-fold numbers — is what the final
 comparison against XGBoost must use.
 
-Arms in the order to run them. All are `kermt_single` / `kermt_multitask_subgroup` families through
+Arm reference (this table is the **arm inventory**; for run *order* use the Pass 1 / Pass 2 tables above — the
+"Seeds to launch" column is the pre-2026-09-28 depth-first plan and is superseded). All are `kermt_single` / `kermt_multitask_subgroup` families through
 the **same** `train_one_seed`; W&B name = run id = `kermt_<prefix>_<arm>_seed<N>_<UTC>`:
 
 | # | `ARM` | Family (run-name prefix) | Task | Endpoints | Seeds to launch | Notes / gate |
 |---|---|---|---|---|---|---|
 | 1 | `dili_standalone__cls` | `kermt_single` (`kermt_st`) | classification | `dili_liver_injury` | **1,2,3,4** — seed 0 is section 8's run (same config, same prep); do not repeat it | base pool, 287 train; calibration N=50 (13/37) |
-| 2 | `toxicity__cls` | `kermt_multitask_subgroup` (`kermt_mtsub`) | classification, 2 targets | `herg_cardiotoxicity`, `ames_mutagenicity` | 0,1,2,3,4 | cleared to train (0.2% sacrifice). Known: hERG validation holds only 18–24 labels vs ~1,810 AMES, so hERG epoch selection is barely measured — record, don't fix |
+| 2 | `toxicity__cls` | `kermt_multitask_subgroup` (`kermt_mtsub`) | classification, 2 targets | `herg_cardiotoxicity`, `ames_mutagenicity` | **0, 1 done; 2,3,4 deferred to Pass 2** | cleared to train (0.2% sacrifice). Known: hERG validation holds only 18–24 labels vs ~1,810 AMES, so hERG epoch selection is barely measured — record, don't fix |
 | 3 | `metabolism__reg` | `kermt_single` (`kermt_st`) | regression | `clearance_microsomal` | 0,1,2,3,4 | this is the **single-task baseline**, cited in both roles; never label it a multi-task arm. No calibration (regression) |
 | 4 | `absorption_distribution__reg` | `kermt_multitask_subgroup` | regression, 4 targets | `solubility_logs`, `lipophilicity_logp`, `caco2_permeability`, `ppb_binding` | 0,1,2,3,4 | cleared (14.6% sacrifice). No calibration |
 | 5 | `absorption_distribution__cls` | `kermt_multitask_subgroup` | classification, 3 targets | `hia_absorption`, `pgp_inhibition`, `bbb_permeability` | 0,1,2,3,4 | **OPEN:** HIA calibration N=47 (46 pos / 1 neg), below the floor of 50 — expect a skipped or meaningless HIA temperature; record `n_negative`, do not interpret. Run only if the maintainer says go |
@@ -950,10 +989,10 @@ original splits (Option A). `KermtModel` supports them, but no harness path buil
 **No KERMT sweep CLI exists** (`ml/train/run_kermt_subgroup_sweep.py` is planned, not written); that
 is why every launch above goes through `s_run.py`.
 
-**Per-run time is unmeasured.** Section 8's `wall_seconds` is the first real number; use it to
-budget the rest and tell the maintainer before committing to a long arm. Do not launch an arm you
-cannot finish in the session unless the maintainer agrees to a partial seed set (a partial set is
-recorded as partial — `s_agg.py` will refuse to aggregate it).
+**Per-run time is now measured for two arms only:** DILI ≈ 4 min/seed, toxicity ≈ 95–96 min/seed (peak VRAM ≈ 4.1–4.2 GiB;
+run dir ≈ 898 MB incl. a 496 MB `last_checkpoint.pt`). The other four arms are extrapolated (Pass 1 table). Tell the
+maintainer before committing to a long run. A partial seed set is recorded as partial — `s_agg.py` will refuse to
+aggregate it; that is expected during Pass 1.
 
 ---
 
@@ -997,7 +1036,7 @@ single-task baselines, a sweep CLI, the final KERMT-vs-XGBoost table (it needs t
 | Test leakage | any `train.csv`/`val.csv` overlap line FAIL; raw vs calibrated AUROC differ. **Highest severity — stop everything and quarantine the run** |
 | W&B failure | `UserWarning: W&B logging disabled`; `s_wandb.py` auth error. A *smoke* run may proceed without W&B; a *real/Tier-0* run must not (a real run with no dashboard record is a lost result) — stop and ask for `wandb login` |
 | Crashed run | `run.json` `status` stays `running` and the process is gone: the harness has no failure handler, so the run directory is left half-written. Do **not** rerun over it and do **not** delete it; report it. `s_agg.py` ignores it |
-| Disk | free space (`df -h .`) could not hold the next arm's five seeds, using the per-run `du -sh` recorded in section 8 (each run keeps two finetuned checkpoints; no size has been measured yet) — report and ask |
+| Disk | free space (`df -h .`) could not hold the next run (≈ 0.9 GB for a toxicity-sized run; budget per-run `du -sh`), (each run keeps two finetuned checkpoints) — report and ask |
 | Anything outside this runbook | a command you would have to invent, a fix you would have to write, a data file you would have to fetch |
 
 ---
