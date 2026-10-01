@@ -89,6 +89,17 @@ def test_build_comparison_adopt_benchmark():
     assert result.tdc_reference is None
 
 
+def test_build_comparison_undefined_std_passes_through_and_round_trips(tmp_path):
+    ep = _fake_endpoint_data(endpoint_key="ames_mutagenicity", split_method="adopt_benchmark")
+    report = _fake_report("ames_mutagenicity")
+    report.aggregated["auroc_std"] = None  # what aggregate_seed_metrics returns for fewer than two valid seeds
+    result = build_tdc_comparison(report, ep, mars_metric_name="auroc")
+    assert result.mars_metric_std is None
+    path = tmp_path / "cmp.json"
+    result.save(path)
+    assert TDCComparisonResult.load(path).mars_metric_std is None
+
+
 def test_build_comparison_scaffold_split_not_comparable():
     ep = _fake_endpoint_data(endpoint_key="herg_cardiotoxicity", split_method="scaffold")
     report = _fake_report("herg_cardiotoxicity")

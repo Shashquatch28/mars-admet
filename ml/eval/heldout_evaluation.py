@@ -122,8 +122,8 @@ class HeldOutEvaluationReport:
     n_test: int
     seeds: list[int]
     per_seed: list[dict[str, Any]]
-    aggregated_test_raw: dict[str, float]
-    aggregated_test_calibrated: dict[str, float] | None
+    aggregated_test_raw: dict[str, float | None]  # `<metric>_std` is None when fewer than two valid seeds
+    aggregated_test_calibrated: dict[str, float | None] | None
     calibrator: dict[str, Any] | None
     validation_reference: dict[str, Any] | None = None
     split: str = SPLIT_LABEL

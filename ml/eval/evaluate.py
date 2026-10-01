@@ -34,7 +34,7 @@ class EvaluationReport:
     seeds: list[int]
     run_ids: list[str]
     per_seed_metrics: list[dict[str, Any]]
-    aggregated: dict[str, float]
+    aggregated: dict[str, float | None]  # `<metric>_std` is None when fewer than two valid seeds
     version: str = EVALUATE_VERSION
     # Set only for reports produced by a multi-task cluster/subgroup run, naming
     # the grouping the endpoint was trained inside (e.g. "metabolism__cls").

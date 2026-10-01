@@ -30,6 +30,7 @@ from eval.heldout_evaluation import (
     HeldOutEvaluationReport,
     evaluate_endpoint_on_test,
 )
+from eval.metrics import format_mean_std
 from featurize.cache import FeatureCache
 from mars_contracts.endpoints import ML_ENDPOINTS
 
@@ -100,9 +101,9 @@ def main(argv: list[str] | None = None) -> int:
         done[key] = report
         agg = report.aggregated_test_raw
         headline = (
-            f"AUROC {agg['auroc_mean']:.3f}+-{agg['auroc_std']:.3f}"
+            f"AUROC {format_mean_std(agg['auroc_mean'], agg['auroc_std'])}"
             if report.task_type == "classification"
-            else f"MAE {agg['mae_mean']:.3f}+-{agg['mae_std']:.3f}"
+            else f"MAE {format_mean_std(agg['mae_mean'], agg['mae_std'])}"
         )
         print(f"OK {key:24s} n_test={report.n_test:5d} {headline}  ({time.time() - t0:.0f}s)", flush=True)
 

@@ -36,7 +36,6 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import re
 import subprocess
 from dataclasses import asdict
 from datetime import UTC, datetime
@@ -53,6 +52,7 @@ from mars_contracts.endpoints import TaskType
 from sklearn.metrics import precision_recall_curve, roc_curve
 
 from eval.calibration import TemperatureScaler
+from eval.kermt_log import parse_epoch_rows, parse_logged_best, resolve_saved_epoch_from_file
 from eval.metrics import compute_metrics
 
 RUNS_DIR = Path("runs")
@@ -62,11 +62,7 @@ DEFAULT_THRESHOLD = 0.5  # no project-specific operating threshold is documented
 # plot that uses it, per the explicit instruction not to invent an approved threshold.
 EPS = 1e-6
 
-EPOCH_LINE = re.compile(
-    r"Epoch:\s*(\d+)\s+loss_train:\s*([\d.eE+-]+)\s+loss_val:\s*([\d.eE+-]+)\s+"
-    r"auc_val:\s*([\d.eE+-]+)\s+cur_lr:\s*([\d.eE+-]+)\s+t_time:\s*([\d.eE+-]+)s\s+v_time:\s*([\d.eE+-]+)s"
-)
-BEST_EPOCH_LINE = re.compile(r"best validation auc\s*=\s*([\d.eE+-]+)\s+on epoch\s+(\d+)", re.IGNORECASE)
+# The finetune.log patterns (EPOCH_LINE, BEST_EPOCH_LINE) and the saved-epoch logic live in eval.kermt_log.
 
 
 def _logit(p: np.ndarray) -> np.ndarray:
@@ -84,30 +80,15 @@ def _git(*args: str) -> str:
 
 
 def parse_finetune_log(path: Path) -> tuple[list[dict], int | None, float | None]:
-    """Per-epoch rows plus KERMT's own reported best epoch, if logged."""
+    """Per-epoch rows plus KERMT's own *logged* best epoch and score, if logged.
+
+    The logged best **epoch** is known to disagree with the epoch whose checkpoint was saved
+    (``decisions.md`` 2026-09-30 D1) — do not report it as the selected epoch; use
+    ``eval.kermt_log.resolve_saved_epoch`` (``RunBundle.saved_epoch``).
+    """
     text = path.read_text(encoding="utf-8", errors="replace")
-    rows = []
-    for line in text.splitlines():
-        m = EPOCH_LINE.search(line)
-        if m:
-            rows.append(
-                {
-                    "epoch": int(m.group(1)),
-                    "loss_train": float(m.group(2)),
-                    "loss_val": float(m.group(3)),
-                    "auc_val": float(m.group(4)),
-                    "lr": float(m.group(5)),
-                    "t_time": float(m.group(6)),
-                    "v_time": float(m.group(7)),
-                }
-            )
-    best_epoch = None
-    best_auc = None
-    bm = BEST_EPOCH_LINE.search(text)
-    if bm:
-        best_auc = float(bm.group(1))
-        best_epoch = int(bm.group(2))
-    return rows, best_epoch, best_auc
+    best_epoch, best_auc = parse_logged_best(text)
+    return parse_epoch_rows(text), best_epoch, best_auc
 
 
 def find_predict_dir(run_dir: Path, target_smiles: set[str]) -> Path:
@@ -219,6 +200,8 @@ class RunBundle:
 
         finetune_log = self.run_dir / "artifacts" / "kermt" / "logs" / "finetune.log"
         self.epoch_rows, self.kermt_best_epoch, self.kermt_best_auc = parse_finetune_log(finetune_log)
+        # kermt_best_epoch is KERMT's *logged* best epoch (unreliable as the saved epoch); saved_epoch is the one to report.
+        self.saved_epoch = resolve_saved_epoch_from_file(finetune_log)
 
         # Splits (labels), from the same source s_verify.py trusts. One shared
         # train.csv/val.csv for the whole (possibly multi-task) model.
@@ -309,7 +292,7 @@ def generate(run_id: str) -> dict:
     loss_train = [r["loss_train"] for r in rb.epoch_rows]
     loss_val = [r["loss_val"] for r in rb.epoch_rows]
     auc_val = [r["auc_val"] for r in rb.epoch_rows]
-    best_epoch = rb.kermt_best_epoch
+    best_epoch = rb.saved_epoch.epoch  # the SAVED epoch, not KERMT's logged best epoch (decisions.md D1)
     joint_note = (
         f" (JOINT across all {len(rb.endpoint_keys)} targets: {', '.join(rb.endpoint_keys)} — "
         "KERMT's finetune CLI logs one auc_val per epoch for the whole multi-task model, not per-endpoint)"
@@ -676,7 +659,8 @@ def generate(run_id: str) -> dict:
         "wall_seconds": rb.lab_summary.get("wall_seconds"),
         "n_epochs": len(epochs),
         "generated_at_utc": datetime.now(UTC).isoformat(),
-        "best_epoch": best_epoch,
+        "best_epoch": best_epoch,  # = saved_epoch_resolution["epoch"]; historically this key held KERMT's logged (misleading) epoch
+        "saved_epoch_resolution": rb.saved_epoch.to_dict(),
         "best_val_auroc_joint_whole_model": best_val_auroc,
         "final_val_auroc_joint_whole_model": final_val_auroc,
         "per_endpoint": per_endpoint_summary,

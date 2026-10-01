@@ -33,8 +33,66 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from configs.experiment_config import FIXED_SEEDS
 
 RUNS_DIR = Path("runs")
+
+DILI_ARM = "dili_standalone__cls"
+# Historical explanation that is true ONLY for the 2026-09-22 DILI runs (seed 0 clean, seeds 1-4 dirty).
+DILI_GIT_DIRTY_NOTE = (
+    " — seed 0 was recorded clean; seeds 1-4 show `true` because `ml/eval/tier0_artifacts.py` "
+    "and one line in `ml/requirements-m2.txt` (documenting the new `matplotlib` dependency used only "
+    "for this post-hoc plotting) were added to the working tree between seed 0 and seed 1. Verified via "
+    "`git diff --stat` that no file under `train/`, `models/`, `data/`, `configs/`, or "
+    "`eval/calibration*.py`/`cluster_calibration.py`/`metrics.py` changed — the training/calibration "
+    "methodology executed identically for all 5 seeds."
+)
+
+
+def validate_presentable(aggregate: dict, seeds_summaries: list[dict]) -> str:
+    """Return the endpoint key to present, or refuse inputs this script cannot present correctly.
+
+    The presenter was written for one complete five-seed, single-endpoint *classification* arm. Anything
+    else used to be mis-presented silently (only the first endpoint shown; a regression arm crashing or
+    printing classification wording; a partial arm printing a mean ± std). It now fails loudly instead.
+    """
+    across = aggregate["test_metrics_across_seeds"]
+    if len(across) != 1:
+        raise NotImplementedError(
+            f"aggregate has {len(across)} endpoints ({sorted(across)}); only single-endpoint arms are supported — "
+            "presenting the first one alone would silently drop the rest"
+        )
+    endpoint_key = next(iter(across))
+    entry = across[endpoint_key]
+    if entry["task_type"] != "classification":
+        raise NotImplementedError(
+            f"{endpoint_key} is a {entry['task_type']} endpoint; this presenter is classification-only "
+            "(regression reporting is a separate P1 item)"
+        )
+    seeds = sorted(s["seed"] for s in seeds_summaries)
+    if tuple(seeds) != tuple(FIXED_SEEDS):
+        raise ValueError(
+            f"need exactly the fixed seeds {tuple(FIXED_SEEDS)}, got {seeds}: a mean ± std is published only for a "
+            "complete arm (runbook P-10, decisions.md 2026-09-28)"
+        )
+    raw, cal = entry["raw"], entry["calibrated"]
+    if raw is None or cal is None:
+        raise ValueError(f"{endpoint_key}: the aggregate lacks raw or calibrated test metrics")
+    metrics = ("auroc", "auprc", "brier_score", "ece")
+    for name, agg in (("raw", raw), ("calibrated", cal)):
+        if int(agg["n_seeds"]) != len(FIXED_SEEDS) or any(agg[f"{m}_std"] is None for m in metrics):
+            raise ValueError(f"{endpoint_key}: {name} aggregate is not a complete {len(FIXED_SEEDS)}-seed mean ± std")
+    for s in seeds_summaries:
+        res = s.get("saved_epoch_resolution")
+        if res is None:
+            raise ValueError(
+                f"seed {s['seed']}: seed_summary.json has no 'saved_epoch_resolution' — regenerate the per-seed artifacts "
+                "with the current eval/tier0_artifacts.py (older ones store KERMT's misleading logged epoch as "
+                "best_epoch; decisions.md 2026-09-30 D1)"
+            )
+        if res["epoch"] is None or res["consistent_with_logged_best_score"] is False:
+            raise ValueError(f"seed {s['seed']}: saved epoch unresolved or inconsistent with the logged score: {res['notes']}")
+    return endpoint_key
 
 
 def save_fig(fig, out_dir: Path, stem: str) -> tuple[str, str]:
@@ -49,13 +107,13 @@ def save_fig(fig, out_dir: Path, stem: str) -> tuple[str, str]:
 def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
     agg_path = RUNS_DIR / f"kermt_tier0_{arm}_aggregate.json"
     aggregate = json.loads(agg_path.read_text(encoding="utf-8"))
-    endpoint_key = next(iter(aggregate["test_metrics_across_seeds"]))
 
     seeds_summaries = []
     for rid in run_ids:
         p = RUNS_DIR / rid / "artifacts" / "metrics" / "seed_summary.json"
         seeds_summaries.append(json.loads(p.read_text(encoding="utf-8")))
     seeds_summaries.sort(key=lambda s: s["seed"])
+    endpoint_key = validate_presentable(aggregate, seeds_summaries)
 
     out_dir = RUNS_DIR / (out_name or f"tier0_{arm}")
     plots_dir = out_dir / "plots"
@@ -144,7 +202,7 @@ def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
     generated.append({"file_png": png, "file_pdf": pdf, "description": "Validation AUROC (x) vs test AUROC (y), one point per seed."})
 
     bar_by_seed(gap, "val AUROC − test AUROC", f"{arm} / {endpoint_key}\nValidation→test AUROC gap by seed", "09_val_to_test_gap_by_seed", color="#e377c2")
-    bar_by_seed(best_epochs, "selected (best) epoch", f"{arm} / {endpoint_key}\nBest/selected epoch by seed (of 30)", "10_best_epoch_by_seed", color="#17becf")
+    bar_by_seed(best_epochs, "saved epoch", f"{arm} / {endpoint_key}\nSaved (selected) epoch by seed (of 30)", "10_best_epoch_by_seed", color="#17becf")
 
     # ---- Part 10: training-curve aggregation across seeds --------------- #
     per_seed_epochs = []
@@ -297,7 +355,7 @@ def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
 
     # ---- README ------------------------------------------------------------ #
     readme_lines = [
-        f"# Tier-0 DILI KERMT — {arm} / {endpoint_key} — 5-seed presentation package",
+        f"# Tier-0 KERMT — {arm} / {endpoint_key} — 5-seed presentation package",
         "",
         f"Generated {prov_manifest['generated_at_utc']} by `ml/eval/tier0_present.py` (aggregate layer) "
         "and `ml/eval/tier0_artifacts.py` (per-seed layer). Both are read-only, post-hoc analysis scripts: "
@@ -319,18 +377,16 @@ def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
         readme_lines.append(f"  - seed {s}: {prov_manifest['wandb_urls'][s]}")
     readme_lines += [
         "- `git_dirty` per seed: " + json.dumps(prov_manifest["git_dirty_per_seed"])
-        + " — seed 0 was recorded clean; seeds 1-4 show `true` because `ml/eval/tier0_artifacts.py` "
-        "and one line in `ml/requirements-m2.txt` (documenting the new `matplotlib` dependency used only "
-        "for this post-hoc plotting) were added to the working tree between seed 0 and seed 1. Verified via "
-        "`git diff --stat` that no file under `train/`, `models/`, `data/`, `configs/`, or "
-        "`eval/calibration*.py`/`cluster_calibration.py`/`metrics.py` changed — the training/calibration "
-        "methodology executed identically for all 5 seeds.",
+        + (DILI_GIT_DIRTY_NOTE if arm == DILI_ARM else " — see each run's `provenance.json`."),
         "",
         "## Run IDs",
         "",
     ]
     for s in seeds_summaries:
-        readme_lines.append(f"- seed {s['seed']}: `{s['run_id']}` (wall {s['wall_seconds']}s, best epoch {s['best_epoch']})")
+        readme_lines.append(
+            f"- seed {s['seed']}: `{s['run_id']}` (wall {s['wall_seconds']}s, saved epoch {s['best_epoch']}; "
+            f"KERMT's own log names epoch {s['saved_epoch_resolution']['logged_best_epoch']})"
+        )
     readme_lines += [
         "",
         "## Documented aggregation method",
@@ -346,7 +402,7 @@ def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
         "## Directory guide",
         "",
         "```",
-        "tier0_dili_standalone__cls/",
+        f"{out_dir.name}/",
         "  README.md                        <- this file",
         "  plots/                            <- MULTI-SEED aggregate plots (new content; Parts 9-10)",
         "    01-04_*_by_seed.*                individual metric per seed, bar + mean line",
@@ -354,7 +410,7 @@ def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
         "    07_mean_sd_summary.*              documented mean+-std + individual seed points",
         "    08_val_auroc_vs_test_auroc_*.*    generalization scatter, one point per seed",
         "    09_val_to_test_gap_by_seed.*      val-test AUROC gap per seed",
-        "    10_best_epoch_by_seed.*           KERMT's selected epoch per seed",
+        "    10_best_epoch_by_seed.*           saved (selected) epoch per seed (saved_epoch_resolution, not KERMT's logged epoch)",
         "    11_aggregate_training_loss_curve.*  mean+-std train/val loss across seeds + individual curves",
         "    12_aggregate_val_auroc_curve.*      mean+-std val AUROC across seeds + individual curves",
         "  tables/",
@@ -403,8 +459,17 @@ def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
         readme_lines.append(f"| {split} | {counts0[split]} | {bal0[split]['positive']} | {bal0[split]['negative']} |")
     readme_lines += [
         "",
-        "Expected per the runbook: train 287, val 41, calibration 50 (13 pos/37 neg), test 96. "
-        + ("Matches exactly for all 5 seeds." if counts0 == {"train": 287, "val": 41, "calibration": 50, "test": 96} and bal0["calibration"] == {"positive": 13, "negative": 37} else "See tables/ for actual per-seed values — differs from the documented expectation; see per-seed leakage_summary.json/seed_summary.json for detail."),
+        (
+            "Expected per the runbook: train 287, val 41, calibration 50 (13 pos/37 neg), test 96. "
+            + (
+                "Matches exactly for all 5 seeds."
+                if counts0 == {"train": 287, "val": 41, "calibration": 50, "test": 96}
+                and bal0["calibration"] == {"positive": 13, "negative": 37}
+                else "See tables/ for actual per-seed values — differs from the documented expectation; see per-seed leakage_summary.json/seed_summary.json for detail."
+            )
+            if arm == DILI_ARM
+            else "Counts above are read from the first seed's seed_summary.json; per-seed values are in tables/."
+        ),
         "",
         "Leakage: all 5 seeds show 0 overlap for every train/val/calibration/test pair (see each "
         "`per_seed/<run_id>/tables/leakage_summary.json` and the corresponding `s_verify.py` VERDICT: PASS "
@@ -412,7 +477,7 @@ def present(arm: str, run_ids: list[str], out_name: str | None = None) -> Path:
         "",
         "## What this does and does not support",
         "",
-        "This package characterizes `dili_standalone__cls` / `dili_liver_injury` across the 5 fixed KERMT "
+        f"This package characterizes `{arm}` / `{endpoint_key}` across the 5 fixed KERMT "
         "Tier-0 seeds using the project's documented aggregation (mean +/- std). It does not constitute a "
         "KERMT-vs-XGBoost comparison (that needs the laptop-only `ml/runs/test_evaluations/*.json`, "
         "per the runbook — `eval.xgboost_heldout` is a known, expected FAIL on this workstation). No "
