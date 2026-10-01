@@ -20,3 +20,16 @@ dependency-ordered (blueprint Module 14). This is a module grouping, not a perso
   real prediction from a stub (`"stub-v0"`) rather than assuming.
 - Design direction: see Module 9 in the blueprint — analytical
   lab-instrumentation vernacular, not generic SaaS dashboard.
+
+## Design phase (2026-09-30)
+
+Frontend design/engineering documentation now lives in `documentation/frontend/`.
+Read `documentation/frontend/README.md` before starting M4 — it holds the design
+system, architecture decision, component boundaries and the open questions that
+need resolving first. The visual source of truth is the Claude Design canvas
+linked from that README.
+
+**Known defect:** `src/types/contracts.ts` is missing
+`EndpointPrediction.model_id` (added to the Python contract in M3). The UI
+depends on it to distinguish stub-served endpoints from real ones. See
+`documentation/frontend/DECISIONS.md` ADR-009.

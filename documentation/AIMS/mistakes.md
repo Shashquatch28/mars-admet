@@ -6,8 +6,9 @@
   the epoch that was saved (logged 29 / saved 18, 28 / 19, 26 / 21 on the three runs checked). The saved `model.pt` is correct and is what
   MARS evaluates; only the printed number misleads. The runbook §8 told the session to read the epoch from the log. **Lesson: identify a
   model by its `model.pt` SHA-256; take the epoch from the last `Saving model at epoch N` line (wording per the 2026-09-30 session note; unverified on the laptop) and cross-check
-  its val score against the best score.** Runbook and `decisions.md` 2026-09-30 D1 corrected; **`ml/eval/tier0_artifacts.py:69` still parses the misleading line into
-  `best_epoch` (and `tier0_present.py` charts it) — not yet fixed (P1).**
+  its val score against the best score.** Runbook and `decisions.md` 2026-09-30 D1 corrected; `ml/eval/tier0_artifacts.py` used to parse the misleading line into
+  `best_epoch` (and `tier0_present.py` charted it); fixed 2026-10-01 via `ml/eval/kermt_log.py` (saved epoch derived from the per-epoch rows and cross-checked) — packages
+  generated before then must be regenerated, and the derivation is unverified on a real log.
 - **"Option A" is an ambiguous label.** The repo uses "Option A/B/C" for two unrelated things: the PPB split (`status/ppbr_az_investigation.md`) and the
   `metabolism__cls` leakage decision (`next_steps.md`, 2026-09-20). Session notes then listed "Option A" next to the HIA floor and it was read as an HIA
   item. **Lesson: name decisions by arm and topic (`metabolism__cls` leakage-safe pool), not by a bare option letter.** Clarified in `decisions.md` D5.
@@ -28,7 +29,8 @@
 - **A single-seed aggregate silently reports zero variance.** `aggregate_seed_metrics` (`ml/eval/metrics.py:221`) sets
   `<metric>_std = 0.0` when there is one valid seed. Under the breadth-first strategy (`decisions.md` 2026-09-28) that
   would print "± 0.000" for every Pass-1 arm, which reads as perfect stability. **Lesson: n=1 has no standard
-  deviation — return None/NaN, and label single-seed numbers provisional.** Not fixed (out of scope for the preflight).
+  deviation — return None/NaN, and label single-seed numbers provisional.** Fixed 2026-10-01: `aggregate_seed_metrics` returns `None` for `<metric>_std` below two valid
+  values, and `tier0_present.py` refuses partial arms.
 
 ## Held-out evaluation + readiness (2026-09-21, later) — five traps
 

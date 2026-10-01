@@ -20,9 +20,10 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   (leakage-safe pool) confirmed,
   D6 DILI = base-pool variant (label it; pool-match before comparing). Guard: protocol-critical files must equal `ae5d28d`, each
   run must pass `s_protocol.py`.
-  - **Reporting gaps to close before any Pass-1/partial number goes in a table (P1, do not block Pass 2):** `aggregate_seed_metrics`
-    prints `std = 0.0` for one seed (`ml/eval/metrics.py:221`); `s_agg.py` refuses < 5 seeds (workstation helper, not in repo);
-    `tier0_present.py` hard-codes "5 seeds"; regression arms report MAE only (M6).
+  - **Reporting gaps (P1, do not block Pass 2):** single-seed `std` — *fixed 2026-10-01* (`aggregate_seed_metrics` returns `None` for `_std` below two valid values);
+    `tier0_present.py` — *now refuses* partial, multi-endpoint and regression input, and its DILI-only text is conditional on the DILI arm (still single-endpoint classification only);
+    saved-epoch reporting in `tier0_artifacts.py` — *fixed 2026-10-01* (`ml/eval/kermt_log.py`; packages generated earlier must be regenerated); still open: `s_agg.py` refuses
+    < 5 seeds (workstation helper, not in repo) and regression arms report MAE only (M6).
   - **Laptop baseline 2026-09-30 (read-only audit):** clean tree at `ad6eaf1`; ml tests 633 passed / 5 failed (the known
     `test_acquisition_lockfile.py` failures) / 15 skipped; root `contracts`+`api` tests 21 passed / 23 skipped (Redis/Postgres down);
     `ruff`: 12 findings, all in `ml/eval/tier0_artifacts.py` (8) and `tier0_present.py` (4) — none new.

@@ -164,8 +164,10 @@ only: HIA N=47; nothing else is expected — anything else is reported); `s_prot
 <launch log>` = 0; `run.json` `completed`; the **saved epoch** (`N` of the last `Saving model at epoch N` line in
 `finetune.log`; that wording comes from the 2026-09-30 session note and has not been seen on the laptop — if the line is absent, STOP, §12) recorded —
 **never** the epoch on the final `best validation … on epoch` line (KERMT logging bug; `decisions.md` 2026-09-30 D1) — and its val score equal to
-KERMT's logged best score within 1e-3. **Do not use the "selected epoch" that `ml/eval/tier0_artifacts.py` / `tier0_present.py` produce** — they parse the misleading
-final line (`decisions.md` D1) until that is fixed. Read numbers from `lab_summary.json`.
+KERMT's logged best score within 1e-3. `ml/eval/tier0_artifacts.py` now reports the **saved epoch** (`seed_summary.json` → `saved_epoch_resolution`, from `ml/eval/kermt_log.py`: derived from the per-epoch
+`auc_val` rows and cross-checked against the logged best score and any `Saving model` line); `tier0_present.py` refuses summaries that lack it. Packages generated before
+2026-10-01 carry KERMT's misleading epoch — regenerate them (read-only, no GPU). The derivation rests on an assumption not yet confirmed on a real log: on the first Pass-2
+run, `saved_epoch_resolution.consistent_with_logged_best_score` must be `true`. Read numbers from `lab_summary.json`.
 
 **P-8 Record artifacts (in the gitignored area, so the tree stays clean for every launch).** Per run, collect into
 `ml/runs/lab_logs/` the same set as the Pass-1 records: `lab_summary.json`, `config.json`, `run.json`, `provenance.json`, the
@@ -1251,9 +1253,9 @@ Then:
 7. **Document what succeeded/failed** — write the outcome of each numbered step above (PASS / FAIL /
    not reached, with the run ids and numbers) into the session note for the maintainer; the AIMS
    files are updated by the maintainer's session, not blindly from here.
-8. **Prepare next-session tasks** — carry over: remaining Pass-2 arms/seeds (P-6 table, minus what ran); the reporting fixes that must
-   land before any table (`aggregate_seed_metrics` single-seed std, `tier0_present.py` "5 seeds" wording, regression metrics beyond
-   MAE); pool-matching for the DILI comparison (`decisions.md` 2026-09-30 D6); the missing W&B test-metric logging; recording the
+8. **Prepare next-session tasks** — carry over: remaining Pass-2 arms/seeds (P-6 table, minus what ran); the reporting work still
+   open before any table (regression metrics beyond MAE; `tier0_present.py` covers single-endpoint classification arms only — the single-seed std and the partial-arm
+   refusal landed 2026-10-01); regenerating pre-2026-10-01 tier-0 packages; pool-matching for the DILI comparison (`decisions.md` 2026-09-30 D6); the missing W&B test-metric logging; recording the
    effective KERMT hyperparameters and the Docker image digest in the run record; adding `s_upload.py`/`s_wandb_verify.py` to the repo;
    the missing sweep CLI and CYP single-task baselines; served-XGBoost-calibrator degradation; Tier-1 implementation (G1–G4); and the
    laptop-side KERMT-vs-XGBoost comparison using the carried aggregate JSONs against `ml/runs/test_evaluations/`. The protocol

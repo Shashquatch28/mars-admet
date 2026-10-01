@@ -48,7 +48,9 @@ in raw units (classification multi-task aggregation was not checked).
 - Repo (added 2026-10-01): `ml/eval/tier0_artifacts.py:69` (`BEST_EPOCH_LINE`) parses the final `best validation auc = … on epoch N` line into `best_epoch`,
   which feeds `seed_summary.json`, the "selected epoch" plot lines and `tier0_present.py`'s "selected epoch per seed" chart. So the repo itself confirms the
   format of the *misleading* line, and those post-hoc outputs currently carry the misleading epoch. No committed record contains `best_epoch` (grep), so the
-  exposure is limited to workstation-only, gitignored packages (for example the DILI presentation package); the fix is a tracked P1 item.
+  exposure is limited to workstation-only, gitignored packages (for example the DILI presentation package). The code fix landed 2026-10-01: `ml/eval/kermt_log.py` (used by `tier0_artifacts.py`) derives the saved epoch from
+  the per-epoch `auc_val` rows and cross-checks it against the logged best score and any `Saving model` line; packages generated earlier must be regenerated
+  (read-only, no GPU). That derivation is an assumption not yet confirmed on a real log — `consistent_with_logged_best_score` must be `true` on the first Pass-2 run.
 - Laptop recomputation from session evidence: the mean of the per-task val MAE in the committed `lab_summary.json` for `absorption_distribution__reg` seed 0
   (a 2026-09-30 session record) is (0.7028 + 0.4179 + 0.4134 + 10.9189)/4 = 3.1133. The 3.113 "logged best score" it is compared with comes from the
   2026-09-30 session note; the log itself was not seen here. So both inputs are session evidence; the agreement is consistent with `model.pt` being the
@@ -221,7 +223,8 @@ established by this guard, not by the SHA. The comparison logic in `s_protocol.p
 file requires a new decision entry first, because all five seeds of an arm share one protocol.
 
 **Not decided here (none gates Pass 2):** M6 regression metrics beyond MAE (computable post hoc from saved predictions); M7 single-seed
-std (`ml/eval/metrics.py:221`) and the "5 seeds" wording in `tier0_present.py` (fix before any table); W&B test-metric logging; Docker
+std and the `tier0_present.py` "5 seeds" wording (**fixed 2026-10-01**: `_std` is `None` below two valid seeds; the presenter refuses partial, multi-endpoint
+and regression input); W&B test-metric logging; Docker
 image pinning by digest; recording effective hyperparameters in `config.json`; CYP single-task baselines; DILI pool matching (§D6);
 served-XGBoost-calibrator degradation; the 5 lockfile test failures; 12 ruff findings.
 
