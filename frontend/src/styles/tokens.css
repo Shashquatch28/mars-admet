@@ -38,6 +38,15 @@
   /* applicability-domain gauge covered zone (pass 2.1, F5) */
   --ad-covered: #4a5558;
 
+  /* conformer viewport — ELEMENT palette, not UI semantics. These colour atoms
+     and bonds in the structure view and must never carry interface meaning.
+     Kept separate so the semantic tokens above stay one-meaning-each; 3Dmol.js
+     will own these once Module 7 is wired. */
+  --viewer-bond: #3a4549;
+  --viewer-atom: #4a5558;
+  --viewer-hetero: #c19a5b;
+  --viewer-atom-focus: var(--accent);
+
   /* textures / effects */
   --hatch-unreal: repeating-linear-gradient(
     135deg,

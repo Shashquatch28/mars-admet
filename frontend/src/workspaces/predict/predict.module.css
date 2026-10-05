@@ -153,6 +153,22 @@
   background: var(--surface-void);
   overflow: hidden;
 }
+
+/* Placeholder conformer geometry. SVG presentation attributes do not resolve
+   var(), so the element palette is applied through CSS rather than fill=""
+   attributes — which is also what keeps raw hex out of the component. */
+.vbond {
+  stroke: var(--viewer-bond);
+}
+.vatom {
+  fill: var(--viewer-atom);
+}
+.vatomHetero {
+  fill: var(--viewer-hetero);
+}
+.vatomFocus {
+  fill: var(--viewer-atom-focus);
+}
 .vhd {
   display: flex;
   align-items: center;

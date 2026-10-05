@@ -24,19 +24,22 @@ export function StructureViewer() {
         </div>
       </div>
       <div className={styles.vstage}>
-        <svg width="200" height="150" viewBox="0 0 200 150" fill="none" stroke="#3A4549" strokeWidth="3" aria-hidden="true">
-          <path d="M62 95 42 108M62 95 60 72M60 72 82 60M82 60 104 72M104 72 102 96M102 96 80 108M80 108 62 95M104 72 128 66M128 66 146 80M128 66 132 44M132 44 116 30" />
-          <circle cx="62" cy="95" r="6" fill="#4A5558" stroke="none" />
-          <circle cx="60" cy="72" r="6" fill="#4A5558" stroke="none" />
-          <circle cx="82" cy="60" r="6" fill="#4A5558" stroke="none" />
-          <circle cx="104" cy="72" r="7" fill="#49AEC4" stroke="none" />
-          <circle cx="102" cy="96" r="6" fill="#4A5558" stroke="none" />
-          <circle cx="80" cy="108" r="6" fill="#4A5558" stroke="none" />
-          <circle cx="42" cy="108" r="6" fill="#4A5558" stroke="none" />
-          <circle cx="128" cy="66" r="6" fill="#4A5558" stroke="none" />
-          <circle cx="146" cy="80" r="6" fill="#C19A5B" stroke="none" />
-          <circle cx="132" cy="44" r="6" fill="#4A5558" stroke="none" />
-          <circle cx="116" cy="30" r="6" fill="#C19A5B" stroke="none" />
+        <svg width="200" height="150" viewBox="0 0 200 150" fill="none" strokeWidth="3" aria-hidden="true">
+          <path
+            className={styles.vbond}
+            d="M62 95 42 108M62 95 60 72M60 72 82 60M82 60 104 72M104 72 102 96M102 96 80 108M80 108 62 95M104 72 128 66M128 66 146 80M128 66 132 44M132 44 116 30"
+          />
+          <circle className={styles.vatom} cx="62" cy="95" r="6" stroke="none" />
+          <circle className={styles.vatom} cx="60" cy="72" r="6" stroke="none" />
+          <circle className={styles.vatom} cx="82" cy="60" r="6" stroke="none" />
+          <circle className={styles.vatomFocus} cx="104" cy="72" r="7" stroke="none" />
+          <circle className={styles.vatom} cx="102" cy="96" r="6" stroke="none" />
+          <circle className={styles.vatom} cx="80" cy="108" r="6" stroke="none" />
+          <circle className={styles.vatom} cx="42" cy="108" r="6" stroke="none" />
+          <circle className={styles.vatom} cx="128" cy="66" r="6" stroke="none" />
+          <circle className={styles.vatomHetero} cx="146" cy="80" r="6" stroke="none" />
+          <circle className={styles.vatom} cx="132" cy="44" r="6" stroke="none" />
+          <circle className={styles.vatomHetero} cx="116" cy="30" r="6" stroke="none" />
         </svg>
       </div>
       <div className={styles.vcap}>ETKDGv3 · MMFF94 · −42.8 kcal/mol</div>
