@@ -1,0 +1,740 @@
+/* Batch — the high-density triage matrix. Molecules down, the full endpoint
+   roster across. Same grammar as Predict: hairlines not cards, reliability on a
+   2px edge, values mono/tabular/primary and never recoloured. */
+
+.batch {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-void);
+}
+
+/* --- header ---------------------------------------------------------------- */
+
+.bhd {
+  flex: none;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line-subtle);
+}
+.bTitle {
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.recon {
+  font-size: 10.5px;
+  color: var(--text-quiet);
+  white-space: nowrap;
+}
+.recon b {
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.reconOod {
+  color: var(--caution) !important;
+}
+.reconD {
+  color: var(--line-default);
+  margin: 0 2px;
+}
+
+.filterbar {
+  flex: none;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line-default);
+  background: var(--surface-chrome);
+}
+.search {
+  width: 210px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 7px;
+  background: var(--surface-void);
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-quiet);
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  color: var(--text-primary);
+  font-size: 10.5px;
+  font-family: var(--mono);
+}
+.search input:focus {
+  outline: none;
+}
+.search:focus-within {
+  border-color: var(--accent);
+}
+
+.chip {
+  height: 22px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.chip:hover {
+  background: var(--surface-panel);
+}
+.chipOn {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  color: var(--text-primary);
+}
+.chipCt {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-quiet);
+}
+.chipMark {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 1px;
+}
+.markOod {
+  background: var(--caution);
+}
+.markStub {
+  border: 1px solid var(--caution-line);
+  background-image: var(--hatch-unreal);
+}
+.markFail {
+  background: var(--error);
+}
+
+.sortnote {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-quiet);
+  white-space: nowrap;
+}
+.sortnote b {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.clearsort {
+  background: none;
+  border: 0;
+  padding: 0 2px;
+  color: var(--accent);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+/* --- grid ----------------------------------------------------------------- */
+
+.gridwrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* One template drives the group bar, the column head and every row, so the
+   three can never drift out of alignment. */
+.gridrow {
+  display: grid;
+  grid-template-columns: 186px repeat(15, minmax(52px, 1fr));
+  min-width: 1056px;
+}
+
+.groupbar {
+  flex: none;
+  height: 20px;
+  background: var(--surface-chrome);
+  border-bottom: 1px solid var(--line-hairline);
+}
+.groupbar > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-quiet);
+  border-left: 1px solid var(--line-subtle);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.groupbar > span:first-child {
+  border-left: 0;
+}
+.groupbarCt {
+  font-family: var(--mono);
+  letter-spacing: 0;
+  color: var(--text-disabled);
+}
+
+.colhead {
+  flex: none;
+  height: 26px;
+  background: var(--surface-chrome);
+  border-bottom: 1px solid var(--line-default);
+}
+.colhead > span,
+.colhead > button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  padding: 0 7px;
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-quiet);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.colhead > span:first-child {
+  justify-content: flex-start;
+  cursor: default;
+}
+.colhead > button:hover {
+  color: var(--text-primary);
+  background: var(--surface-panel);
+}
+.colheadOn {
+  color: var(--text-primary) !important;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.sortcaret {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--accent);
+}
+
+.vscroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+}
+.vscroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* The heads live INSIDE the scroll container so horizontal scrolling moves them
+   with the cells and vertical scrolling pins them. Keeping them outside would
+   desync the columns the moment the matrix is narrower than its content. */
+.stickyhead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.vsizer {
+  position: relative;
+  width: 100%;
+  min-width: 1056px;
+}
+
+.row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--row-h);
+  border-bottom: 1px solid var(--line-hairline);
+  background: var(--surface-void);
+}
+.rowHover {
+  background: var(--surface-panel);
+  border-bottom-color: var(--line-subtle);
+}
+.rowSel {
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1px var(--accent), inset 0 2px 0 -1px rgba(255, 255, 255, 0.045);
+}
+
+/* molecule row header */
+.mol {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px;
+  min-width: 0;
+  border-right: 1px solid var(--line-subtle);
+  cursor: pointer;
+}
+.molIx {
+  flex: none;
+  width: 26px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-disabled);
+}
+.molSmiles {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.molFlags {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 9px;
+}
+.flagOod {
+  color: var(--caution);
+}
+.flagStub {
+  color: var(--caution);
+  opacity: 0.8;
+}
+.flagMissing {
+  color: var(--text-disabled);
+}
+
+/* cells */
+.cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  padding: 0 7px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "zero" 1;
+  color: var(--text-primary);
+  border-right: 1px solid var(--line-hairline);
+  overflow: hidden;
+}
+/* reliability edge — the model's channel, never the value's colour */
+.cellOod::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--caution);
+}
+.cellStub {
+  background-image: var(--hatch-unreal);
+}
+.cellMissing {
+  color: var(--unavailable);
+}
+.cellFocus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* a shape as well as a colour, so OOD survives greyscale and CVD */
+.oodMark {
+  flex: none;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--caution);
+}
+
+/* failed row */
+.failrow {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 9px;
+  overflow: hidden;
+}
+.failEdge {
+  position: absolute;
+  left: 186px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--error);
+}
+.failLabel {
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--error);
+  flex: none;
+}
+.failMsg {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- footer --------------------------------------------------------------- */
+
+.bfoot {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 14px 11px;
+  border-top: 1px solid var(--line-subtle);
+  background: var(--surface-chrome);
+}
+.bfoot svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--text-quiet);
+}
+.bfoot p {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--text-tertiary);
+}
+
+/* --- entry state ---------------------------------------------------------- */
+
+.entry {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.entrybox {
+  width: 520px;
+  max-width: 100%;
+}
+.entryhd {
+  font-family: var(--cond);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+.drop {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-panel);
+  padding: 22px 20px;
+  text-align: center;
+}
+.drop p {
+  margin: 0 0 4px;
+  font-size: 11.5px;
+  color: var(--text-primary);
+}
+.drop span {
+  font-size: 10px;
+  color: var(--text-quiet);
+}
+.droprow {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.btn {
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-primary);
+  font-size: 11px;
+  cursor: pointer;
+}
+.btn:hover {
+  background: var(--surface-raised);
+}
+.btnPrimary {
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #07191d;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.limits {
+  margin-top: 14px;
+  border-top: 1px solid var(--line-subtle);
+  padding-top: 12px;
+}
+.limits dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  font-size: 10px;
+}
+.limits dt {
+  color: var(--text-quiet);
+}
+.limits dd {
+  margin: 0;
+  font-family: var(--mono);
+  color: var(--text-secondary);
+}
+.authnote {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  padding: 9px 10px;
+  border-left: 2px solid var(--caution);
+  background: var(--caution-wash);
+}
+.authnote p {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* --- running state -------------------------------------------------------- */
+
+.progress {
+  flex: none;
+  padding: 10px 14px 12px;
+  border-bottom: 1px solid var(--line-subtle);
+  background: var(--surface-chrome);
+}
+.progresshd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.progressDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.progressLabel {
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+.progressCt {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-quiet);
+}
+.track {
+  height: 2px;
+  background: var(--line-hairline);
+}
+.fill {
+  height: 2px;
+  background: var(--accent);
+}
+
+/* --- inspector ------------------------------------------------------------ */
+
+.inspector {
+  flex: none;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface-panel);
+  border-left: 1px solid var(--line-default);
+}
+.insphd {
+  flex: none;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line-subtle);
+}
+.inspbody {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.inspsec {
+  padding: 12px 14px 13px;
+  border-bottom: 1px solid var(--line-subtle);
+}
+.inspsec dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 10px;
+  font-size: 10px;
+}
+.inspsec dt {
+  color: var(--text-quiet);
+}
+.inspsec dd {
+  margin: 0;
+  font-family: var(--mono);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+.inspSmiles {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  margin: 0 0 8px;
+}
+.nostate {
+  margin: 0;
+  padding: 18px 14px;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--text-quiet);
+}
+.minilist {
+  display: flex;
+  flex-direction: column;
+}
+.minirow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 14px 0 12px;
+  border-bottom: 1px solid var(--line-hairline);
+  position: relative;
+}
+.miniEdgeOod::before,
+.miniEdgeStub::before,
+.miniEdgeMissing::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+}
+.miniEdgeOod::before {
+  background: var(--caution);
+}
+.miniEdgeStub::before {
+  background: var(--caution);
+  opacity: 0.55;
+}
+.miniEdgeMissing::before {
+  background: var(--line-strong);
+}
+.miniName {
+  flex: 1;
+  min-width: 0;
+  font-size: 10.5px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.miniVal {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.miniValMissing {
+  color: var(--unavailable);
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.minihd {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 22px;
+  padding: 0 14px 0 12px;
+  background: var(--surface-chrome);
+  border-bottom: 1px solid var(--line-hairline);
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.panelTitle {
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.inspfoot {
+  flex: none;
+  display: flex;
+  gap: 7px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--line-subtle);
+}
+.inspfoot button {
+  flex: 1;
+  height: 26px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-primary);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.inspfoot button:hover {
+  background: var(--surface-raised);
+}

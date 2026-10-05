@@ -136,3 +136,26 @@ export const DISPLAY_UNIT: Record<Endpoint, string> = {
   dili_liver_injury: "probability",
   synthetic_accessibility: "SA score",
 };
+
+// Short column labels for the Batch matrix, where an endpoint gets ~58px and the
+// full key will not fit. These are the conventional field abbreviations a
+// computational chemist already reads (logP, P-gp, hERG, 3A4), not invented
+// shorthand — the full key stays in the column header's title and in the
+// inspector, so nothing is only available abbreviated.
+export const SHORT_LABEL: Record<Endpoint, string> = {
+  solubility_logs: "logS",
+  lipophilicity_logp: "logP",
+  caco2_permeability: "Caco-2",
+  hia_absorption: "HIA",
+  pgp_inhibition: "P-gp",
+  bbb_permeability: "BBB",
+  ppb_binding: "PPB",
+  cyp3a4_inhibition: "3A4",
+  cyp2d6_inhibition: "2D6",
+  cyp2c9_inhibition: "2C9",
+  clearance_microsomal: "CLint",
+  herg_cardiotoxicity: "hERG",
+  ames_mutagenicity: "AMES",
+  dili_liver_injury: "DILI",
+  synthetic_accessibility: "SA",
+};

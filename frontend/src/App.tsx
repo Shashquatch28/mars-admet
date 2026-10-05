@@ -5,6 +5,7 @@ import { UiStateProvider } from "./app/uiState";
 import { AppShell } from "./shell/AppShell";
 import { PredictWorkspace } from "./workspaces/predict/PredictWorkspace";
 import { StubWorkspace } from "./workspaces/StubWorkspace";
+import { BatchWorkspace } from "./workspaces/batch/BatchWorkspace";
 
 export function App() {
   return (
@@ -15,7 +16,7 @@ export function App() {
             <Route element={<AppShell />}>
               <Route index element={<Navigate to="/predict" replace />} />
               <Route path="/predict" element={<PredictWorkspace />} />
-              <Route path="/batch" element={<StubWorkspace name="Batch" />} />
+              <Route path="/batch" element={<BatchWorkspace />} />
               <Route path="/compare" element={<StubWorkspace name="Compare" />} />
               <Route path="/library" element={<StubWorkspace name="Library" />} />
               <Route path="/settings" element={<StubWorkspace name="Settings" />} />
