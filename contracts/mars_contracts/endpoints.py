@@ -1,5 +1,6 @@
 """
-Canonical list of the 14 MARS ADMET endpoints.
+Canonical list of the MARS ADMET endpoints: 14 ML endpoints (ML_ENDPOINTS) plus the
+rule-based synthetic-accessibility score, 15 enum members in all.
 This is the single source of truth for endpoint keys used across
 ml/, api/, and frontend/ — never hardcode endpoint names elsewhere.
 """

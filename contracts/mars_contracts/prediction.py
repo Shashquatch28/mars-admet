@@ -16,7 +16,7 @@ class PredictionRequest(BaseModel):
     smiles: str = Field(..., description="Input SMILES string, not yet standardized")
     endpoints: list[Endpoint] | None = Field(
         default=None,
-        description="Subset of endpoints to predict. None = all 14.",
+        description="Subset of endpoints to predict. None = all 14 ML endpoints, plus the rule-based SA score when the server can compute it.",
     )
 
 

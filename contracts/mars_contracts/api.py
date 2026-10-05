@@ -27,7 +27,7 @@ class BatchPredictOptions(BaseModel):
         description="Column name holding SMILES in a CSV upload. None = auto-detect / SDF.",
     )
     endpoints: list[Endpoint] | None = Field(
-        default=None, description="Subset to predict. None = all 14."
+        default=None, description="Subset to predict. None = all 14 ML endpoints, plus the rule-based SA score when the server can compute it."
     )
     retrain_opt_in: bool = Field(
         default=False,
