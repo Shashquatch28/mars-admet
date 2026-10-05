@@ -1,0 +1,108 @@
+/* MARS design tokens — the single source of truth, mirrored from
+   documentation/frontend/DESIGN_SYSTEM.md. No component may use a raw hex value;
+   reference these custom properties. Dark is the only theme (ADR-004). */
+:root {
+  color-scheme: dark;
+
+  /* surfaces */
+  --surface-void: #0b0d0e;
+  --surface-chrome: #0e1112;
+  --surface-panel: #101315;
+  --surface-raised: #15191b;
+  --surface-overlay: #1f2528;
+  --shadow-overlay: 0 12px 28px rgba(0, 0, 0, 0.55);
+
+  /* borders */
+  --line-hairline: #14181a;
+  --line-subtle: #1e2427;
+  --line-default: #272f33;
+  --line-strong: #384347;
+
+  /* text */
+  --text-primary: #e9edee;
+  --text-secondary: #a8b2b5;
+  --text-tertiary: #859093;
+  --text-quiet: #6e797c;
+  --text-disabled: #5c6669;
+
+  /* semantic colour — one meaning each */
+  --accent: #49aec4;
+  --caution: #d99a3c;
+  --error: #d9615a;
+  --success: #6fa860;
+  --unavailable: #859093;
+  --accent-wash: rgba(73, 174, 196, 0.14);
+  --caution-wash: rgba(217, 154, 60, 0.1);
+  --caution-line: rgba(217, 154, 60, 0.4);
+
+  /* applicability-domain gauge covered zone (pass 2.1, F5) */
+  --ad-covered: #4a5558;
+
+  /* textures / effects */
+  --hatch-unreal: repeating-linear-gradient(
+    135deg,
+    rgba(217, 154, 60, 0.22) 0 3px,
+    transparent 3px 6px
+  );
+  --highlight-machined: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  /* radius */
+  --radius-sm: 2px;
+  --radius: 3px;
+
+  /* motion */
+  --dur-fast: 80ms;
+  --dur-base: 140ms;
+  --dur-enter: 200ms;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* type families */
+  --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --cond: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* density (user choice) */
+  --row-h: 30px;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: var(--surface-void);
+  color: var(--text-primary);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  line-height: 1.35;
+  font-feature-settings: "zero" 1;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+button {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
