@@ -1,0 +1,27 @@
+{
+  "calibration_stability_across_seeds": {
+    "clearance_microsomal": {
+      "n_fitted": 0,
+      "n_seeds": 5,
+      "statuses": [
+        "skipped_regression"
+      ]
+    }
+  },
+  "prep_id": "20260918T090433Z",
+  "subgroup": "metabolism__reg",
+  "test_metrics_across_seeds": {
+    "clearance_microsomal": {
+      "calibrated": null,
+      "n_calibrated_seeds": 0,
+      "n_seeds": 5,
+      "raw": {
+        "mae_mean": 24.51021966805904,
+        "mae_std": 0.6499698014703515,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "task_type": "regression"
+    }
+  }
+}

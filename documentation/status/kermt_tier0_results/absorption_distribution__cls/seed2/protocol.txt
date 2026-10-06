@@ -1,0 +1,1 @@
+PROTOCOL: MATCH (config + KERMT command identical to absorption_distribution__cls seed 0 except seed)

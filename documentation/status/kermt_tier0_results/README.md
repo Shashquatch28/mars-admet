@@ -8,12 +8,17 @@ Layout: `<arm>/seed<N>/` holds the small files copied from `ml/runs/<run_id>/` (
 `run.json`, `provenance.json`, `<endpoint>__calibration_diagnostics.json`, `<endpoint>__temperature_scaler.json`,
 `verify.txt` = `s_verify.py` output), plus `artifact_metadata.json` (the exact `metadata.json` stored inside the W&B
 artifact) and `wandb_artifact.json` (artifact reference, digest, hashes). `dili_standalone__cls/aggregate_5seeds.json`
-is the DILI five-seed aggregate produced on 2026-09-22. No `toxicity__cls` aggregate exists yet (seeds 2–4 not run).
+is the DILI five-seed aggregate produced on 2026-09-22. No `toxicity__cls` aggregate exists yet (seeds 2–4 not run); `metabolism__reg` and `absorption_distribution__cls` aggregates exist (2026-10-06).
 Since 2026-09-30 the four breadth-first Pass-1 arms (`metabolism__reg`, `absorption_distribution__cls`,
 `absorption_distribution__reg`, `metabolism__cls`) have `seed0/` records in the same layout (regression arms have no
 `temperature_scaler.json`: none is produced). Session record: `../kermt_gpu_session_2026-09-30.md`.
+Pass 2 (2026-10-06, `c1f0f04`, session note `../kermt_gpu_session_2026-10-06.md`) added `seed1`–`seed4/` for `metabolism__reg` and
+`absorption_distribution__cls` in the same layout plus `protocol.txt` (`s_protocol.py` output), and `aggregate_5seeds.json` for both
+arms (raw `s_agg.py` output: mean ± std over **test** metrics, raw and calibrated). In `absorption_distribution__cls/aggregate_5seeds.json`
+the HIA *calibrated* block is present but **not reportable** (D4). `metabolism__cls`, `absorption_distribution__reg` (seeds 1–4) and
+`toxicity__cls` (seeds 2–4) are still to run; those arms remain single-seed/provisional (toxicity: two seeds).
 
-## Model artifacts (uploaded and verified 2026-09-24; Pass-1 seed-0 rows added 2026-09-30)
+## Model artifacts (uploaded and verified 2026-09-24; Pass-1 seed-0 rows added 2026-09-30; Pass-2 rows added 2026-10-06)
 
 Every artifact (type `model`, version `v0`, aliases `latest`, `final`) contains `model.pt` (the final trained model =
 best-validation KERMT checkpoint, byte-identical to `ckpt/fold_0/model_0/model.pt`; `last_checkpoint.pt` was
@@ -34,6 +39,14 @@ download to a temporary directory on `CL502-18` had SHA-256 equal to the local `
 | absorption_distribution__cls | 0 | `kermt_mtsub_absorption_distribution__cls_seed0_20260930T063831Z` | `ae5d28d` (False) | 203,512,002 | `3b7d2be6f1e8fdd7e82a6c9f6f4c7d81024d7b2663a2f45e887517f8f007abc6` | `shashquatch/mars-admet/kermt-absorption-distribution-cls-seed0:v0` |
 | absorption_distribution__reg | 0 | `kermt_mtsub_absorption_distribution__reg_seed0_20260930T065737Z` | `ae5d28d` (False) | 203,514,686 | `10e3553eede7bd187e1bb9c3d258b39d9ec3a62868663a3c10250862cda1c04a` | `shashquatch/mars-admet/kermt-absorption-distribution-reg-seed0:v0` |
 | metabolism__cls | 0 | `kermt_mtsub_metabolism__cls_seed0_20260930T080420Z` | `ae5d28d` (False) | 203,512,002 | `35ce5318e51fddce72c3061ba6f4b7a9cbc0e2a9e1fa6652203c8b9833caca00` | `shashquatch/mars-admet/kermt-metabolism-cls-seed0:v0` |
+| metabolism__reg | 1 | `kermt_st_metabolism__reg_seed1_20261006T062005Z` | `c1f0f04` (False) | 203,152,142 | `7e7916b478c9289c8d151158a841dac1e6fe10f5038053eca6304daadf8221b4` | `shashquatch/mars-admet/kermt-metabolism-reg-seed1:v0` |
+| metabolism__reg | 2 | `kermt_st_metabolism__reg_seed2_20261006T064018Z` | `c1f0f04` (False) | 203,152,142 | `3706e743868cb3170dd652fe3d3408cdf6a43374c675c32bccaf5532eba85fb9` | `shashquatch/mars-admet/kermt-metabolism-reg-seed2:v0` |
+| metabolism__reg | 3 | `kermt_st_metabolism__reg_seed3_20261006T064839Z` | `c1f0f04` (False) | 203,152,142 | `da033c067a04afd74d8d87465c30d6308d97c032417961ba00b73ad3b984bfd2` | `shashquatch/mars-admet/kermt-metabolism-reg-seed3:v0` |
+| metabolism__reg | 4 | `kermt_st_metabolism__reg_seed4_20261006T065650Z` | `c1f0f04` (False) | 203,152,142 | `8f579ace07ec949d986eea7e3de81883ab1497c51edd3d85753befef8d8c3fa7` | `shashquatch/mars-admet/kermt-metabolism-reg-seed4:v0` |
+| absorption_distribution__cls | 1 | `kermt_mtsub_absorption_distribution__cls_seed1_20261006T070452Z` | `c1f0f04` (False) | 203,512,002 | `701e4e7efe40947541d818b1b29c2e519d74ea15e20bf6f5d72aba3100b0ec4c` | `shashquatch/mars-admet/kermt-absorption-distribution-cls-seed1:v0` |
+| absorption_distribution__cls | 2 | `kermt_mtsub_absorption_distribution__cls_seed2_20261006T075522Z` | `c1f0f04` (False) | 203,512,002 | `e44c3792e41ffe0694b700b6186145d12d1d80e170026f36236244ccd2200563` | `shashquatch/mars-admet/kermt-absorption-distribution-cls-seed2:v0` |
+| absorption_distribution__cls | 3 | `kermt_mtsub_absorption_distribution__cls_seed3_20261006T081414Z` | `c1f0f04` (False) | 203,512,002 | `3a8ee1b4d86a8176e36e34d673886f34f7a94ace5860abb2926b5acc460f11f4` | `shashquatch/mars-admet/kermt-absorption-distribution-cls-seed3:v0` |
+| absorption_distribution__cls | 4 | `kermt_mtsub_absorption_distribution__cls_seed4_20261006T083321Z` | `c1f0f04` (False) | 203,512,002 | `6711b70f431cd779a4f45499b1cb71cb1361114589b41a24b0a79806859e861a` | `shashquatch/mars-admet/kermt-absorption-distribution-cls-seed4:v0` |
 
 **Run-record artifacts (2026-09-30 runs only).** Each Pass-1 seed-0 run also has a type-`run-record` artifact
 `kermt-<arm>-seed0-record:v0` with configs, `metrics.jsonl`, `finetune.log` (per-epoch history), KERMT `run.json`
@@ -73,13 +86,16 @@ Requires `wandb login` for the `shashquatch` account. After download compare `sh
 - Uploading attached each artifact to its original W&B run (resume) and set that run's `job_type` to `model-upload`;
   run config, summary and state were unchanged (checked on toxicity seed 1).
 
+- `ml/eval/tier0_artifacts.py` cannot be run on regression arms (it unconditionally loads `calibration/<endpoint>/temperature_scaler.json`, which
+  regression runs do not produce), so no artifact packages exist for `metabolism__reg`; their saved epoch was read from the `Saving model` line.
+
 ## Reading rules (added 2026-09-30; authoritative text: `../../AIMS/decisions.md` 2026-09-30)
 
 No record in this folder was changed by these rules; they say how to read them.
 
 - **Provisional until 5 seeds.** An arm with fewer than five seeds has provisional single-seed numbers — no "± std", no ranking.
 - **Epoch.** Where an epoch is quoted, it is the **saved** epoch (last `Saving model at epoch N` line of `finetune.log`, i.e. the epoch
-  of `model.pt`; that wording is from the 2026-09-30 session note and was not verified against KERMT source or a log on the laptop). KERMT's final `best validation … on epoch N` line was wrong on all three runs checked (per the 2026-09-30 session note) and must not be used. `model.pt` (SHA-256 in the table
+  of `model.pt`; that wording was confirmed in `finetune.log` on all eight Pass-2 runs of 2026-10-06; `eval/kermt_log.py` derivation confirmed consistent with KERMT's logged best score on four classification runs). KERMT's final `best validation … on epoch N` line was wrong on all three runs checked on 2026-09-30 and again on `absorption_distribution__cls` seeds 1, 2 and 4 of 2026-10-06 (saved epochs 20, 21, 9 vs logged 29, 29, 25) and must not be used. `model.pt` (SHA-256 in the table
   above) — not any epoch number — identifies the model.
 - **HIA calibration.** `absorption_distribution__cls`: HIA's calibration set is N=47 (46 positive / 1 negative), below the blueprint
   floor of 50. The run is valid; HIA AUROC/AUPRC and raw Brier/ECE stand. HIA **calibrated** metrics and the HIA temperature are
