@@ -1,6 +1,6 @@
 # next_steps.md
 
-_Last updated: 2026-09-30 (**Pass 1 of the KERMT Tier-0 breadth-first plan is COMPLETE; the Pass-2 protocol is frozen** —
+_Last updated: 2026-10-06 (Pass 2 in progress — see the STATE 2026-10-06 bullet; earlier text: **Pass 1 of the KERMT Tier-0 breadth-first plan is COMPLETE; the Pass-2 protocol is frozen** —
 `decisions.md` 2026-09-30). Active milestone: M2 (KERMT/GNN track). M3 is locally/container complete.
 Branch: `milestone/m2-kermt`; laptop synced to `origin` @ `ad6eaf1` on 2026-09-30 (fast-forward; no local-only commits). The Pass-1
 training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6eaf1`. The lab checklist is `lab_session_tasks.md`
@@ -8,6 +8,14 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
 
 ## Immediately
 
+- **STATE 2026-10-06 (Pass 2, session 1).** On `c1f0f04`: `metabolism__reg` seeds 1–4 and `absorption_distribution__cls` seeds 1–4 done — **both arms now have 5 seeds**
+  and aggregates (`status/kermt_tier0_results/<arm>/aggregate_5seeds.json`): `clearance_microsomal` raw test MAE 24.510 ± 0.650; `absorption_distribution__cls` test AUROC
+  BBB 0.941 ± 0.003, P-gp 0.932 ± 0.004, HIA 0.926 ± 0.017 (HIA calibrated not reportable, D4). All runs `VERDICT: PASS` + `PROTOCOL: MATCH`; **19 KERMT models in W&B**.
+  Saved-epoch derivation (`kermt_log.py`) confirmed consistent on four classification runs (D1: KERMT's final "best … epoch" line again wrong on 3 of 4).
+  Session note: `status/kermt_gpu_session_2026-10-06.md`. Driver 595.91.07 (Pass 1: 580.173.02), host Python 3.11.17 (3.11.15), image id unchanged.
+  **Remaining:** `metabolism__cls` 1–4 (≈ 3.8 h), `absorption_distribution__reg` 1–4 (≈ 3.8 h), `toxicity__cls` 2–4 (≈ 4.75 h).
+  **Open (needs a decision/code, no training impact):** `ml/eval/tier0_artifacts.py:197` unconditionally loads `temperature_scaler.json` and crashes on regression arms
+  (`metabolism__reg`, `absorption_distribution__reg`), so no artifact packages exist for them.
 - **STATE 2026-09-30.** Pass 1 done: seed 0 of `metabolism__reg`, `absorption_distribution__cls`, `absorption_distribution__reg`,
   `metabolism__cls` (all `VERDICT: PASS`, ≈ 2.3 h GPU) on top of DILI seeds 0–4 and `toxicity__cls` seeds 0–1 = **11 KERMT models**, all
   in W&B (`shashquatch/mars-admet`, model + run-record artifacts). Records: `status/kermt_tier0_results/`; session note:

@@ -12,6 +12,9 @@ document — for context, decisions and history see `context.md`, `decisions.md`
 > (never write "± std" for one seed — `aggregate_seed_metrics` would print 0.0); (c) `toxicity__cls` seeds 2–4
 > (≈ 4.75 h) are deferred to Pass 2. Everything else (verification, STOP rules, no git writes) is unchanged.
 >
+> **UPDATE 2026-10-06.** Pass-2 session 1 on `c1f0f04` finished `metabolism__reg` and `absorption_distribution__cls` (seeds 1–4, both 5-seed complete). **Resume at P-6 order 3,
+> `metabolism__cls` seeds 1–4**, then `absorption_distribution__reg`, then `toxicity__cls` 2–4. See `status/kermt_gpu_session_2026-10-06.md`. Known: `tier0_artifacts.py` fails on regression arms.
+>
 > **CURRENT STATE (2026-09-30).** **Pass 1 is COMPLETE** and verified (session `status/kermt_gpu_session_2026-09-30.md`):
 > seed 0 of all four remaining arms plus DILI seeds 0–4 and `toxicity__cls` seeds 0–1 — 11 KERMT models, all in W&B.
 > Repository baseline: `origin/milestone/m2-kermt` @ `ad6eaf1`; the code that trained Pass 1 is `ae5d28d` (identical `ml/`
