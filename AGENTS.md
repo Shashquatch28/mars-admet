@@ -45,6 +45,32 @@ it.
    bento grids, one-card-per-row, or any shadow outside a true overlay. Radius
    ≤ 3px. Dark theme only.
 
+## Shared dev environment — several sessions use this checkout at once
+
+Other chats run against this same working tree, the same Docker daemon, and the
+same gitignored config. On 2026-10-07 one session pointed the shared
+`frontend/.env.local` at its own API container; every Vite server then proxied to
+that older container and a correct fix looked like it had not worked. Do not
+repeat it.
+
+- **Canonical ports.** API `8000` (`docker compose up -d api`, container
+  `mars_api`), Vite `5173`. Do not move or repurpose them.
+- **Never edit shared, untracked config for a private experiment**: `.env`,
+  `frontend/.env.local`, `.claude/launch.json`. Every session reads them. Edit the
+  `.example` files only when the change is meant for everyone.
+- **Need your own API or dev server?** Use a different port *and* a name that
+  says whose it is, and aim only your own process at it:
+  `docker run --name mars_api_<topic> -p 18000:8000 …`, then
+  `MARS_API_PROXY_TARGET=http://localhost:18000 npx vite --port 5174 --strictPort`
+  (a process variable beats `.env.local`; verified). Do not write it into a file.
+- **Look before you start**, and clean up what you started: `docker ps`, and
+  `Get-NetTCPConnection -State Listen -LocalPort 5173,8000`. Stop only containers
+  and servers you created.
+- **If the UI disagrees with `curl localhost:8000`**, suspect a different backend
+  before suspecting the code: POST the same SMILES to
+  `localhost:8000/predict` and `localhost:5173/api/predict` and compare
+  `model_version` (`v0.2.0-dev` on the current image) and `served_at`.
+
 ## Roster (resolved 2026-10-01)
 
 14 ML endpoints across 5 ADMET categories (ABSORPTION 5, DISTRIBUTION 2,
@@ -64,7 +90,8 @@ computed rule, not a model prediction. Headline count is **14**.
   prompt), then **audit against the "Never do" list above before merge.**
 - Contract types mirror `contracts/mars_contracts`; drift is a build failure
   (ADR-009). `frontend/src/types/contracts.ts` now includes
-  `EndpointPrediction.model_id` (ADR-017); the CI drift check is still unwritten.
+  `EndpointPrediction.model_id` (ADR-017); the CI drift check is
+  `contracts/tests/test_frontend_drift.py` (field and enum names, not types).
 
 Full rationale for every rule: `documentation/frontend/` (UX_PRINCIPLES,
 DECISIONS ADR-001…020, COMPONENTS, DESIGN_SYSTEM, CRAFT_AND_INTERACTION).
