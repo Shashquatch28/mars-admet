@@ -25,10 +25,10 @@ Brier for calibration). 13 ML-trained + SA rule-based = 14.
 
 ## Clusters (multi-task, shared pretrained backbone, masked loss)
 
-- **absorption_distribution** — 7 tasks (4 reg + 3 clf). Kendall uncertainty
-  weighting.
-- **metabolism** — 4 tasks (3 clf CYP + 1 reg Clearance). Kendall weighting.
-  Clearance is the sparse task (1,102 vs 12k+) — watch its logσ_t.
+- **absorption_distribution** — the blueprint's original 7-task cluster (4 reg + 3 clf). **Shipped since 2026-10-07 as two Tier-0 subgroups:**
+  `absorption_distribution__reg` (logS, logP, Caco-2, PPB) and `absorption_distribution__cls` (HIA, P-gp, BBB). Equal weighting.
+- **metabolism** — the original 4-task cluster (3 clf CYP + 1 reg Clearance). **Shipped since 2026-10-07 as** `metabolism__cls` (3 CYPs) and `metabolism__reg`
+  (Clearance alone, single task). Equal weighting.
 - **toxicity** — hERG + AMES (2 clf). Weighting choice matters less (2 tasks).
 - **dili_standalone** — DILI only. Re-test joining toxicity cluster once
   DILIst-augmented (blueprint flags this as an empirical question).
@@ -95,13 +95,13 @@ through the encoder.
   endpoints cannot be jointly finetuned against the stock CLI. Inherited from
   its Chemprop/GROVER lineage, not a KERMT bug. Resolved 2026-09-20 by the
   **three-tier ladder** below.
-- **Tier 0 / path (a)** — type-homogeneous subgroups (`metabolism__cls`,
+- **Tier 0 / path (a)** — **the shipped design (2026-10-07).** Type-homogeneous subgroups (`metabolism__cls`,
   `absorption_distribution__reg`, …) trained by the **stock** KERMT CLI.
   `model_family` = `kermt_multitask_subgroup`. Same design ADMET-AI ships.
-- **Tier 1 / path (b)** — MARS-owned mixed-type trainer that **imports KERMT as
+- **Tier 1 / path (b)** — **DEFERRED 2026-10-07 (Future Scope; never built).** MARS-owned mixed-type trainer that **imports KERMT as
   a library** inside its container. `model_family` = `kermt_mixed`. The only
   path that satisfies Module 11's mixed-cluster loss-balancing ablation axis.
-- **Tier 2 / path (c)** — ordinal-CDF homogenization: a regression endpoint
+- **Tier 2 / path (c)** — **DEFERRED 2026-10-07 (Future Scope; GPU gate not run).** Ordinal-CDF homogenization: a regression endpoint
   encoded as M binary `y > quantile_m` columns so a mixed cluster becomes one
   all-classification **stock-CLI** run; scalar decoded from the survival
   function. `model_family` = `kermt_ordinal`. (Frank & Hall 2001; Li & Lin 2007.)
@@ -113,9 +113,9 @@ through the encoder.
   (= the blueprint's mandatory fixed/equal baseline). All three loss-balancing
   arms come from Tier 1. See decisions.md 2026-09-20 finding 2.
 - **GradNorm** (Chen et al. 2018) — gradient-magnitude-equalizing alternative to
-  Kendall weighting. Blueprint-mandated **ablation arm only**, never the default.
+  Kendall weighting. **Deferred 2026-10-07** (was a blueprint ablation arm); not part of the shipped system.
 - **Kendall weighting** — homoscedastic uncertainty multi-task loss balancing
-  (Kendall, Gal & Cipolla 2018); learnable per-task logσ_t.
+  (Kendall, Gal & Cipolla 2018); learnable per-task logσ_t. **Deferred 2026-10-07** — shipped models use equal weighting.
 - **ECE / Brier** — calibration metrics. **Temperature scaling** — 1-param
   logit rescale for GNN calibration. **Platt** — for the XGBoost baseline.
 - **MMP** — Matched Molecular Pairs (novelty feature, `mmpdb` engine, Post-MVP).

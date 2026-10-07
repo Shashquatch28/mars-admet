@@ -13,6 +13,62 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-07 — Scope decision: MARS ships on Tier 0; Tier 1 and Tier 2 are deferred to Future Scope
+
+**Status:** decided 2026-10-07 by the maintainer (explicit instruction in chat: defer Tier 1 and Tier 2 to future scope, amend
+the blueprint and all other documentation, proceed with Tier 0 for the platform). Changes documents only: no code, data,
+checkpoint, run record or protocol file is touched. **Supersedes** the 2026-09-20 "three-tier ladder approved" plan as the
+delivery plan (that entry stays as the record of the options and the findings; its Tier 1 / Tier 2 work items are now deferred),
+and supersedes the blueprint rule that mixed-type clusters use Kendall weighting (blueprint Module 4, now rewritten).
+
+**Decision.**
+
+1. **Tier 0 is the shipped KERMT design.** Stock KERMT, unforked and pinned, on type-homogeneous subgroups with equal task
+   weighting. The six arms are `metabolism__reg`, `metabolism__cls`, `absorption_distribution__cls`,
+   `absorption_distribution__reg`, `toxicity__cls` and `dili_standalone__cls`; together they cover all 14 roster endpoints.
+2. **Tier 1 is deferred** (MARS-owned mixed-type trainer, `ml/train/kermt_mixed/`, gates G1–G4). Nothing was built. It is not
+   scheduled in M2–M5.
+3. **Tier 2 is deferred** (ordinal-CDF homogenization). Its codec and zero-GPU ceiling test stay in the tree as finished,
+   unused work; its GPU gate is not run.
+4. **Loss weighting.** Kendall, GradNorm, stratified batches, log σₜ monitoring and the fixed-weight fallback are deferred with
+   Tier 1. The shipped models are equal-weighted; no result may be called uncertainty-weighted or gradient-balanced.
+5. **Module 11 §6 loses the loss-balancing ablation axis** and the matching row of the Post-MVP-parallel budget.
+   "Multi-task subgroup vs. single-task, per endpoint" stays and is now the main multi-task ablation.
+
+**Why.** Tier 1 needs about 45–50 GPU-hours (11–13 workstation sessions at about 4 usable hours each) plus a trainer that does not
+exist yet, and it only becomes executable after Tier 0 and the four equivalence gates pass. Tier 0 already covers every endpoint
+the product serves. Tier 2 is gated behind Tier 1 by the 2026-09-20 decision. (Cost figures are the 2026-10-07 estimate, derived
+from measured Tier-0 per-seed times: about 57 min for the CYP cluster and A&D regression, 18 min for A&D classification, 7 min
+for Clearance, about 95 min for `toxicity__cls`. Mixed-cluster costs and the 1.4× GradNorm factor were never measured.)
+
+**Blueprint changes made (`documentation/mars-blueprint_v4.md`).** Module 4 cluster table replaced by the Tier-0 subgroup
+table (Metabolism and Absorption & Distribution each split by task type; Clearance trains alone as `metabolism__reg`); "Multi-
+task loss balancing" rewritten as a deferred-scope section, original text moved verbatim to `FUTURE_SCOPE.md`; Module 8
+serving text (a full request now touches six models; A&D and Metabolism each need two forward passes); Module 10 compute
+budget recomputed (MVP about 100 → about 86 GPU-h, Post-MVP-parallel about 85–90 → about 44–49, grand total about 185–190 →
+about 130–135) using measured Tier-0 per-seed costs; Module 11 §6 ablation list; M2 milestone scope. **Not re-costed:** the
+pretrained-vs-non-pretrained ablation row (still "15 runs, 3 clusters"; 25 runs if scoped to all five subgroups). **Not touched:**
+the archived blueprints v1–v3 (history).
+
+**Consequences.**
+
+- **Limitations to state in the paper:** (a) cross-type transfer inside a cluster is gone (Clearance no longer trains with the
+  CYPs); (b) no loss-balancing result exists, because uncertainty weighting was never tested, so the scope cut must not be
+  presented as a finding; (c) the equal-weighting arm is no longer "a baseline beside a better method", it is the method.
+- **Serving:** the routing table maps each endpoint to its subgroup model. Absorption & Distribution and Metabolism need two
+  inference calls each. M3's routing table and the frontend's "full roster" reconciliation do not change (the roster is
+  unchanged), but any code that assumed one model per cluster must be checked when KERMT models are wired in.
+- **Still owed, unchanged by this decision:** the remaining Tier-0 seeds (`absorption_distribution__reg` 1–4,
+  `toxicity__cls` 2–4, about 8.5 h), the single-task CYP baselines on their full original splits (needed before any
+  KERMT-vs-XGBoost claim, because `metabolism__cls` uses the Option A pool, D5), regression reporting for the regression arms
+  (open P1, see 2026-10-06), and the KERMT-vs-XGBoost promotion decision per endpoint.
+- **Reversible:** the whole design is preserved in `FUTURE_SCOPE.md` (2026-10-07) and in the 2026-09-20 entry below. Reviving
+  Tier 1 would need a new entry here first.
+
+**Open follow-ups.** None blocking. The paper's multi-task claims should be re-read against the new limitations before drafting.
+
+---
+
 ## 2026-10-06 — `tier0_artifacts.py` is classification-only; regression arms are refused, not packaged
 
 **Status:** decided 2026-10-06 from repository evidence. Changes code (a guard and a test), no data, checkpoints or run records.
@@ -562,6 +618,8 @@ quoted on 2026-09-18 match. Verify on the workstation before comparing KERMT to 
 ---
 
 ## 2026-09-20 — RESOLVED: KERMT mixed-type cluster limitation. Three-tier ladder approved; option (b) fork rejected
+
+> **2026-10-07 update:** Tier 1 and Tier 2 below are **deferred to Future Scope**; MARS ships on Tier 0 (see the 2026-10-07 entry at the top). The findings in this entry (cross-endpoint split leakage, Kendall unreachable through the stock CLI, KERMT's uniform `MTLLoss` precision being an exact reparameterization) stay valid and are the starting point if Tier 1 is ever revived.
 
 **This closes the 2026-09-18 "Not decided" item.** Literature review + a direct read of
 KERMT's own source settled it. Maintainer decision taken on two axes: **build the full

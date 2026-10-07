@@ -16,7 +16,7 @@ Paste, in this order:
 4. `documentation/status/mars-status_M1.md` (M1 matrix + Run status).
    `documentation/status/mars-status_M0.md` only if the work touches M0.
    `documentation/status/kermt_integration_status.md` if the work touches KERMT.
-5. `documentation/FUTURE_SCOPE.md` if the work is near a deferred item.
+5. `documentation/FUTURE_SCOPE.md` if the work is near a deferred item (it holds the deferred Tier 1 / Tier 2 mixed-type design, 2026-10-07).
 6. `documentation/AIMS/lab_session_tasks.md` if the work is a GPU lab session — a sequential,
    operational checklist (pull, GPU/data/W&B verification, smoke test, first real run, Tier-0, stop
    conditions). It supersedes the ordered checklist in `next_steps.md` for lab use.

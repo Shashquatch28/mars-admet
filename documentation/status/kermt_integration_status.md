@@ -20,7 +20,7 @@ is the point-in-time status snapshot; those two are the process record._
 
 - `github.com/NVIDIA-BioNeMo/KERMT`, tag `v2.0.0`, commit `e402473376ace30fa0092dad0578a88bf7f67287`.
 - Vendored **outside** the mars-admet git tree at `~/mars-work/kermt-src/` (sibling checkout — it's a third-party tool dependency, not MARS source). Referenced via `MARS_KERMT_REPO` env var.
-- Includes an "agent skill suite" (`agent/skills/kermt-*`) purpose-built for LLM-agent-driven workflows (Claude Code, Codex, Nemotron) — this integration follows that suite's documented CLI contracts exactly (no invented flags).
+- Includes an "agent skill suite" (`agent/skills/kermt-*`) purpose-built for LLM-agent-driven workflows (coding agents such as Codex and Nemotron) — this integration follows that suite's documented CLI contracts exactly (no invented flags).
 
 ## 3. Checkpoint identifier + hashes
 
@@ -90,7 +90,7 @@ Three real bugs were found and fixed in `ml/models/kermt_model.py` (not in KERMT
 
 ## 10. Known limitations
 
-- **Mixed-type multi-task clusters unsupported by the stock CLI.** Still true of the *stock CLI* and always will be — but **no longer an open question for MARS as of 2026-09-20**: resolved by the three-tier ladder in `decisions.md`'s 2026-09-20 entry (stock KERMT on type-homogeneous subgroups; a MARS-owned mixed-type trainer importing KERMT as a library; ordinalized all-classification runs). Stock KERMT stays unforked and pinned. See `next_steps.md` for the live work breakdown.
+- **Mixed-type multi-task clusters unsupported by the stock CLI.** Still true of the *stock CLI* and always will be — but **no longer an open question for MARS as of 2026-09-20**: resolved by the three-tier ladder in `decisions.md`'s 2026-09-20 entry (stock KERMT on type-homogeneous subgroups; a MARS-owned mixed-type trainer importing KERMT as a library; ordinalized all-classification runs). Stock KERMT stays unforked and pinned. See `next_steps.md` for the live work breakdown. **Update 2026-10-07:** MARS ships on the stock-CLI path only (Tier 0); the MARS-owned mixed-type trainer and ordinalized runs are deferred to `FUTURE_SCOPE.md` (`decisions.md` 2026-10-07).
 - **CPU inference latency still unmeasured** (B-7/CF-8) — orthogonal to this GPU work.
 - **Calibration interface (`TemperatureScaler`) not yet exercised** — `KermtModel.predict()` returns probabilities, not the raw pre-sigmoid logits `fit_temperature_scaler` expects. **Resolution chosen 2026-09-20:** `KermtModel.predict_logits()` returns `logit(p)` of the served two-view mean (clipped to ±12) — a well-defined monotone recalibration of exactly the quantity that serving emits, and precisely what `fit_temperature_scaler` needs. This unblocks temperature scaling for **every** KERMT classification run and does not depend on the mixed-type trainer. (The Tier-1 trainer additionally exposes true pre-sigmoid logits, since `KermtFinetuneTask.forward()` returns logits in training mode.)
 - **No gradient-checkpointing, AMS/mixed-precision, or gradient-accumulation flag exists** in KERMT's finetune CLI — confirmed by grepping `kermt/util/parsing.py` for `fp16|bf16|amp|precision|accum|grad_checkpoint` (zero matches). The only VRAM lever is `--batch_size` itself.
@@ -164,6 +164,6 @@ Full training log: `ml/runs/kermt_smoke_ames/logs/finetune.log`. Finetuned check
 | Inference (finetuned ckpt) | **Demonstrated** | Smoke 6: real `predict()` call on 80 real molecules, no NaNs, reload-consistent. |
 | Single-task finetuning | **Demonstrated at small scale (300 mol, 3 epochs, batch 16)** | Real loss/AUC improvement across epochs; peak VRAM ~1.5GB above baseline — comfortable headroom on 16GB. **Not yet demonstrated at the endpoint's full scale** (5,802 train_val) or at larger batch sizes — no claim made either way beyond what was actually run. |
 | Multi-task (same-type) finetuning | **Not yet demonstrated** | Wrapper supports it (`ffn_num_task_specific_layers`, KERMT's native `MTLLoss`), but no run attempted this session. |
-| Multi-task (mixed-type, e.g. Metabolism) | **Blocked, not a VRAM question** | Stock CLI architectural limitation — see §10 / decisions.md. |
+| Multi-task (mixed-type, e.g. Metabolism) | **Not supported; deferred 2026-10-07** (Tier 1, Future Scope) — shipped as type-homogeneous subgroups | Stock CLI architectural limitation — see §10 / decisions.md. |
 
 No claim of "full 14-endpoint training viable" is made — only what was actually run and measured above.

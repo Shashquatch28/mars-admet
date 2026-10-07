@@ -159,6 +159,8 @@ Where a higher-quality/larger public dataset exists for a specific endpoint beyo
 ## Module 4: Models
 `LAUNCH SCOPE: MVP` — clusters, baselines, and empirical winner selection all ship in v1; design status is still open, launch scope is not.
 
+> **Revision 2026-10-07 — scope decision.** The MARS product ships on **Tier 0** (stock KERMT on type-homogeneous subgroups, equal weighting). The MARS-owned mixed-type trainer (Tier 1) and ordinal-CDF homogenization (Tier 2), with Kendall / GradNorm loss weighting and its Module 11 ablation axis, are **deferred to `FUTURE_SCOPE.md`**. Decision record: `documentation/AIMS/decisions.md`, 2026-10-07.
+
 **Guiding evidence (from literature review, not just heuristic):**
 - Multi-task learning (MT) with a shared *pretrained* encoder rarely underperforms single-task (ST) models, and the MT benefit **grows with data size** when tasks are correlated — contrary to the intuition that only small-data endpoints need help (Adrian et al., Merck & NVIDIA, 2025, KERMT study).
 - Pretrained MT models outperform non-pretrained MT (e.g., plain Chemprop) specifically when trained on **>5 correlated tasks and >50,000 combined datapoints**; below that, benefit is marginal or reverses.
@@ -170,38 +172,28 @@ Where a higher-quality/larger public dataset exists for a specific endpoint beyo
 
 **Shared backbone:** One pretrained molecular graph encoder (GROVER/KERMT-style checkpoint, publicly available — not pretrained from scratch) shared across all clusters below.
 
-**Correlation-informed multi-task clusters (fine-tuned jointly, masked loss for missing labels):**
+**Type-homogeneous multi-task subgroups, stock KERMT (Tier 0 — the shipped design, decided 2026-10-07).** Each subgroup is fine-tuned jointly with masked loss for missing labels. Stock KERMT takes one task type per run, so **no subgroup mixes classification and regression**, and tasks are equally weighted.
 
-| Cluster | Endpoints | Rationale |
-|---|---|---|
-| Metabolism | CYP3A4, CYP2D6, CYP2C9, Clearance (microsomal) | Strongest literature-validated joint-training case; same enzyme family, clearance mechanistically caused by CYP activity |
-| Absorption & Distribution | logS, logP, Caco-2, HIA, P-gp, BBB, PPB | Shared physicochemical drivers (lipophilicity, TPSA, H-bonding) |
-| Toxicity (large-data) | hERG, AMES | Both large enough to test jointly; correlation weaker/mechanistically distinct — empirically validate, don't assume |
+| Subgroup (arm) | Endpoints | Type | Rationale |
+|---|---|---|---|
+| `metabolism__cls` | CYP3A4, CYP2D6, CYP2C9 | classification | Strongest literature-validated joint-training case; same enzyme family |
+| `metabolism__reg` | Clearance (microsomal) | regression, single task | The only regression endpoint in the original Metabolism cluster, so it trains alone |
+| `absorption_distribution__cls` | HIA, P-gp, BBB | classification | Shared physicochemical drivers (lipophilicity, TPSA, H-bonding) |
+| `absorption_distribution__reg` | logS, logP, Caco-2, PPB | regression | Same drivers; regression half of the original A&D cluster |
+| `toxicity__cls` | hERG, AMES | classification | Both large enough to test jointly; correlation weaker/mechanistically distinct — empirically validate, don't assume |
+
+**Change from the earlier blueprint (2026-10-07).** The two mixed-type clusters were each split by task type: Metabolism (3 CYP classification + Clearance) into `metabolism__cls` + `metabolism__reg`, and Absorption & Distribution (4 regression + 3 classification) into `absorption_distribution__reg` + `absorption_distribution__cls`. The reason is that the stock KERMT CLI cannot train a mixed-type cluster, and the MARS-owned mixed-type trainer that could (Tier 1) is deferred — see *Multi-task loss balancing* below. Consequence for serving: the 7 A&D endpoints now need two forward passes (one per subgroup), not one. The roster is unchanged: the six arms (these five plus DILI standalone) cover all 14 endpoints.
 
 ### Multi-task loss balancing
-`LAUNCH SCOPE: MVP`
+`LAUNCH SCOPE: DEFERRED — Future Scope (decided 2026-10-07)`
 
-**Which clusters actually need this:** two of the three clusters mix task types — Metabolism (3 classification: CYP3A4/2D6/2C9 + 1 regression: Clearance) and Absorption & Distribution (4 regression: logS/logP/Caco-2/PPB + 3 classification: HIA/P-gp/BBB). Toxicity (hERG, AMES) is classification-only. This matters because it changes which method is actually well-matched to the problem — see below.
+**Decision.** MARS ships on **Tier 0 only**: stock KERMT, one task type per subgroup, **equal weighting** of the tasks in a subgroup. This is the "fixed/equal weighting" arm this section used to call the mandatory *baseline*; it is now the only shipped method. Because no shipped subgroup mixes classification and regression, the mixed-loss problem that motivated Kendall weighting and GradNorm does not arise on the shipped path.
 
-**Evidence base:** The most directly domain-matched paper found (QW-MTL, Zhang et al. 2025 — the first systematic multi-task study across all 13 TDC ADMET classification tasks, built on Chemprop-RDKit) uses a learnable, data-scale-aware exponential weighting scheme and outperforms single-task baselines on 12/13 tasks, with the largest gains (≈7%) on the smallest datasets (DILI, CYP2C9/2D6 Substrate). **However, it explicitly excludes regression tasks from its scope** ("tasks related to excretion... are primarily regression tasks, and thus are excluded from the scope of this study") — meaning the one paper that matches our domain doesn't actually solve our specific problem, since two of our three clusters mix MAE and BCE losses. This is a real gap in the literature, not just in our own doc, and worth being explicit about rather than citing QW-MTL as if it settles the question.
+**Deferred to Future Scope** (not in the MVP, not in the Post-MVP-parallel plan, no GPU budget): the MARS-owned mixed-type trainer that imports KERMT as a library (Tier 1), Kendall homoscedastic uncertainty weighting, GradNorm, stratified-batch composition, per-task log σₜ monitoring, the fixed-weight fallback for an unstable sparse task, and ordinal-CDF homogenization of regression endpoints (Tier 2). The full evidence base and the layered design that were here are preserved verbatim in `FUTURE_SCOPE.md` (2026-10-07 entry), so a later decision starts from the same reasoning.
 
-For the actual mixed regression/classification case, the standard reference is **Kendall, Gal & Cipolla 2018** (homoscedastic uncertainty weighting) — notably, this method was originally developed and validated on exactly this kind of mix (depth regression + semantic segmentation classification, jointly), not adapted to it after the fact. Each task gets a learnable log-variance parameter σₜ; regression losses are weighted by 1/(2σₜ²), classification losses by 1/σₜ², with a log σₜ regularization term that prevents the trivial solution of driving all weights to zero. Simple to implement (a handful of extra learnable scalars, no architecture change), well-established (1,000+ citations, used across vision/robotics/molecular domains per the broader search), and directly applicable to Metabolism and A&D as specified without modification.
+**What this removes from the plan.** (1) The "loss-balancing method" ablation axis in Module 11 §6 and its row in the compute budget. (2) Any Kendall / GradNorm result. This is a scope decision, **not a finding that uncertainty weighting would not help** — it was never tested. No MARS result may be described as uncertainty-weighted or gradient-balanced; the shipped models are equal-weighted.
 
-**Alternative — GradNorm** (Chen et al. 2018): dynamically reweights by equalizing gradient magnitudes/training rates across tasks rather than assuming a likelihood form. More robust to tasks with pathologically different loss scales, but requires an extra backward pass through a shared layer per step and more tuning (an asymmetry hyperparameter α). Worth keeping as the empirical alternative given Module 4's existing "empirical winner selection" philosophy, but not the default.
-
-**Decision:**
-- **Metabolism, Absorption & Distribution (mixed-type clusters):** Kendall uncertainty weighting as the default method — directly matches the problem shape, low implementation cost, strong precedent.
-- **Toxicity (hERG, AMES — classification-only):** either uncertainty weighting (consistent with the other two clusters) or QW-MTL's simpler data-scale exponential weighting (directly domain-validated for pure-classification ADMET) are both reasonable; since Toxicity is only two tasks, the choice matters less than for the 4-7 task clusters.
-- **Fixed/equal weighting** stays in as the mandatory baseline comparison, not the shipped method — Module 11 already treats "multi-task cluster vs. single-task" as an ablation axis; loss-balancing method (fixed vs. uncertainty-weighted vs. GradNorm) should be added as an additional ablation axis given how much this choice can affect results, rather than picked once and left untested.
-
-**Kendall weighting under masked/sparse labels.** MARS's clusters use masked loss for missing labels (a compound isn't necessarily labeled for every endpoint in its cluster), and the interaction between that masking and Kendall's learned per-task $\log\sigma_t$ hadn't been worked through. The combination itself isn't novel risk — recent multi-task work (a 2026 wireless-channel-modeling paper) uses exactly this pattern, computing a presence-masked per-task loss (only labeled entries contribute) and then applying Kendall weighting on top of the resulting per-task scalars. The actual risk sits one level down: **batch-level label sparsity**, not the masking mechanism itself. If a given training batch happens to contain few or no labeled examples for a sparse task (e.g. Clearance inside the Metabolism cluster, given its 1,102-compound size against CYP3A4/CYP2D6/CYP2C9's 12,000+), that task's masked loss estimate for the batch is noisy — and since $\log\sigma_t$ is updated from these noisy per-batch values, its learned uncertainty can drift or become unstable for the sparsest task in a cluster, independent of whether the overall method is theoretically sound.
-
-**Decision — layered mitigation, not a single fix:**
-1. **Monitor by default (mandatory, cheap):** log each task's $\log\sigma_t$ trajectory during training as a standard diagnostic, not just a debugging afterthought — visible instability (oscillation, divergence) on a sparse endpoint is the concrete signal that the risk described above is actually occurring, rather than staying a theoretical concern.
-2. **Stratified batch composition (primary preventive fix):** construct training batches to guarantee a minimum number of labeled examples per task within a cluster (oversampling compounds carrying the sparser labels) — this addresses the mechanism directly, rather than only detecting it after the fact.
-3. **Fallback — fixed weight for a persistently unstable task:** if monitoring under #1 shows a specific task's $\log\sigma_t$ isn't stabilizing even with #2 in place, that task drops to a fixed (non-learned) weight within its cluster rather than forcing uncertainty weighting to work where the data doesn't support it — a targeted exception, not an abandonment of Kendall weighting for the cluster as a whole.
-
-This is written in as a layered decision (do #1 always, apply #2 as the default engineering practice, reserve #3 as an evidence-gated escape hatch) rather than picking one option in isolation, since #1 costs nothing and #3 is only meaningful once #1 has actually surfaced a problem.
+**Known limitation to state in the paper.** Splitting the two mixed clusters by task type removes cross-type transfer inside a cluster (for example, Clearance no longer trains jointly with the CYP endpoints it is mechanistically downstream of).
 
 **Single-task (standalone fine-tune of pretrained backbone):**
 
@@ -321,7 +313,7 @@ An "explain this prediction" action automatically dims everything except the sub
 `/predict` returns only tabular predictions + basic ensembling confidence bands — stays fast, matches the Module 12 core/novelty split. **3D conformers and explainability attribution are computed on-demand**, only when the user opens that specific view, keeping the default path cheap.
 
 ### Model serving logic
-Module 4's multi-task clusters (Metabolism, Absorption/Distribution, Toxicity) plus standalone DILI model mean a single forward pass through a cluster model yields multiple endpoint predictions at once. The API layer maintains a **routing table** (endpoint → serving model/cluster, plus which variant won empirically per Module 11's ablation) so overlapping-cluster requests trigger one inference call, not several.
+Module 4's Tier-0 subgroups (`metabolism__cls`, `metabolism__reg`, `absorption_distribution__cls`, `absorption_distribution__reg`, `toxicity__cls`) plus the standalone DILI model mean a single forward pass through a subgroup model yields multiple endpoint predictions at once. The API layer maintains a **routing table** (endpoint → serving model/subgroup, plus which variant won empirically per Module 11's ablation) so requests for endpoints in the same subgroup trigger one inference call, not several. A full request touches six models; Absorption & Distribution and Metabolism each need two (classification and regression).
 
 ### Caching
 Redis cache keyed on (standardized SMILES + requested endpoint set + **serving model version**) for `/predict` results, **and** on lazily-computed 3D conformers and explainability attributions once generated — avoids recomputation on repeat views, not just repeat predictions. **Model version is part of the key, not just the response:** without this, deploying a new model would silently serve stale predictions labeled with the new version — a worse failure mode than no caching at all, in a tool where provenance matters. Deploying a new model naturally invalidates old cache entries by producing new keys; no explicit cache-flush step needed.
@@ -433,7 +425,7 @@ Every response includes which model version served the prediction — extends Mo
 - **Session-sized planning:** given A100's speed, most single-task fine-tunes (the smaller/medium datasets especially) should plausibly complete within one lab session. Multi-task cluster runs and the larger single-task endpoints (CYP series, hERG, AMES) are the ones most likely to span multiple sessions — budget those as the checkpoint/resume-dependent runs, and prioritize starting them early in a session rather than as the last thing before a class kicks you out.
 - **Worth a quick check, not a blocker:** confirm with the lab/department that personal-research (not directly coursework-assigned) GPU use is permitted under their policy — this varies by institution and is a five-minute question, not a redesign.
 
-**Fallback: free-tier cloud notebooks (Kaggle / Colab), free.** Use when lab access doesn't line up with a deadline or to absorb ablation-matrix workload if lab time runs short. Kaggle's 30 GPU-hr/week quota means the ~100 GPU-hr MVP budget fits inside ~3–4 weeks of Kaggle alone, and far faster combined with lab A100 sessions. Trade-off vs. a paid card: free-tier sessions are time-boxed and pre-emptible (so the checkpoint/resume + RNG-state discipline below is doubly load-bearing), and the 16 GB VRAM ceiling forces memory optimisation for KERMT finetuning. A run that genuinely needs a single uninterrupted multi-hour block waits for a lab A100 session; it does not get a paid card.
+**Fallback: free-tier cloud notebooks (Kaggle / Colab), free.** Use when lab access doesn't line up with a deadline or to absorb ablation-matrix workload if lab time runs short. Kaggle's 30 GPU-hr/week quota means the ~86 GPU-hr MVP budget (revised 2026-10-07) fits inside ~3 weeks of Kaggle alone, and far faster combined with lab A100 sessions. Trade-off vs. a paid card: free-tier sessions are time-boxed and pre-emptible (so the checkpoint/resume + RNG-state discipline below is doubly load-bearing), and the 16 GB VRAM ceiling forces memory optimisation for KERMT finetuning. A run that genuinely needs a single uninterrupted multi-hour block waits for a lab A100 session; it does not get a paid card.
 
 **MVP budget (mandatory baselines + primary shipped models — Module 4):**
 
@@ -441,11 +433,11 @@ Every response includes which model version served the prediction — extends Mo
 |---|---|---|---|
 | XGBoost baseline (14 endpoints × 5 seeds) | 70 | 0 (local, CPU) | 0 |
 | Single-task GNN fine-tune (14 endpoints × 5 seeds) | 70 | ~0.3-1.5 (dataset-size dependent: DILI/HIA small, CYP/hERG/AMES large) | ~49 |
-| Multi-task cluster GNN (3 clusters × 5 seeds) | 15 | ~2 (larger combined dataset, masked loss) | ~30 |
-| **Subtotal** | | | **~79** |
-| +25% buffer (debugging, false starts, reruns — realistic for first-time complex multi-task setups) | | | **~99, round to ~100** |
+| Tier-0 KERMT subgroup fine-tunes (5 arms × 5 seeds; DILI standalone counted under single-task) | 25 | per seed, from measured/runbook costs: ~0.1 (`metabolism__reg`), ~0.3 (A&D cls), ~0.95 (`metabolism__cls`), ~0.95 (A&D reg), ~1.6 (`toxicity__cls`) | ~19.5 |
+| **Subtotal** | | | **~69** |
+| +25% buffer (debugging, false starts, reruns — realistic for first-time complex multi-task setups) | | | **~86** |
 
-**MVP compute cost: $0.** ~100 GPU-hours, all on free infrastructure (lab A100s + free-tier notebooks). The number that matters is GPU-hours against the 30/week free-tier quota and lab-session availability, not dollars.
+**MVP compute cost: $0.** ~86 GPU-hours (revised 2026-10-07 from ~100 after the Tier-0 decision, using measured per-seed costs), all on free infrastructure (lab A100s + free-tier notebooks). The number that matters is GPU-hours against the 30/week free-tier quota and lab-session availability, not dollars.
 
 **Post-MVP-parallel budget (full ablation matrix — Module 11 §6, plus §5.5's robustness check):**
 
@@ -453,16 +445,16 @@ Every response includes which model version served the prediction — extends Mo
 |---|---|---|---|
 | DILI augmented vs. non-augmented (extra: non-augmented version) | 5 | ~0.3 | ~1.5 |
 | Pretrained vs. non-pretrained backbone | 15 (scoped to the 3 multi-task clusters only, not all 85 single/multi-task runs — see note) | ~2.5 (non-pretrained needs more epochs to converge) | ~37.5 |
-| Loss-balancing method (2 extra methods × Metabolism + A&D × 5 seeds) | 20 | ~2 | ~40 |
+| ~~Loss-balancing method (2 extra methods × Metabolism + A&D × 5 seeds)~~ — **deferred to Future Scope 2026-10-07** (needs the Tier-1 trainer; was ~40 GPU-hr) | 0 | — | 0 |
 | Calibration method comparison | — | ~0 (CPU-only post-processing — temperature scaling is a single scalar fit on frozen model outputs, minutes not hours) | ~0 |
 | Scaffold-split robustness check (§5.5, BBB priority) | ~5-10 | ~1 | ~5-10 |
-| **Subtotal** | | | **~84-89** |
+| **Subtotal** | | | **~44-49** |
 
-**Post-MVP-parallel compute cost: $0** (~85-90 GPU-hours, same free infrastructure).
+**Post-MVP-parallel compute cost: $0** (~44-49 GPU-hours, same free infrastructure).
 
-**Grand total: ~185-190 GPU-hours, $0.** All on free infrastructure (lab A100s primary, free-tier notebooks fallback). The only real constraint is schedule/attention — 100+ discrete runs, checkpoint discipline, and session planning around lab availability + the free-tier weekly quota — never cost.
+**Grand total: ~130-135 GPU-hours, $0** (revised 2026-10-07 from ~185-190). All on free infrastructure (lab A100s primary, free-tier notebooks fallback). The only real constraint is schedule/attention — 100+ discrete runs, checkpoint discipline, and session planning around lab availability + the free-tier weekly quota — never cost.
 
-**Scope note on the pretrained-vs-non-pretrained ablation:** rather than doubling the entire 85-run single-task + multi-task matrix (which would roughly double the whole budget for one ablation axis), this is deliberately scoped to just the 3 multi-task clusters. This is a real narrowing of the ablation's completeness, not a free simplification — worth revisiting if reviewers at the target venue (MLSB/AI4Science) push for the full comparison.
+**Scope note on the pretrained-vs-non-pretrained ablation:** rather than doubling the entire 85-run single-task + multi-task matrix (which would roughly double the whole budget for one ablation axis), this is deliberately scoped to just the 3 multi-task clusters. This is a real narrowing of the ablation's completeness, not a free simplification — worth revisiting if reviewers at the target venue (MLSB/AI4Science) push for the full comparison. **Not re-costed after the 2026-10-07 Tier-0 decision:** the "15 runs, 3 multi-task clusters" figure predates the move from 3 clusters to 5 Tier-0 subgroups (25 runs if scoped to all of them).
 
 **Practical workflow to avoid wasting GPU-hours:** write and sanity-check training scripts locally against a tiny data subset (a few dozen molecules, 1-2 epochs) before consuming a lab A100 session or free-tier quota for the real run. Bugs caught locally cost nothing; bugs caught mid-run burn a scarce lab session or a chunk of the 30-hr weekly free-tier quota.
 
@@ -501,7 +493,7 @@ Rather than build the full structural-frontier methodology from scratch (a paper
 - DILI: augmented (DILIst) vs. non-augmented (TDC-only)
 - Pretrained backbone vs. non-pretrained
 - Classical ML (XGBoost) vs. GNN, per endpoint
-- Loss-balancing method for mixed-type clusters (Metabolism, A&D): fixed/equal weighting vs. Kendall uncertainty weighting vs. GradNorm (Module 4) — this choice materially affects results and shouldn't be picked once and left untested
+- ~~Loss-balancing method for mixed-type clusters~~ — **removed from the MVP and Post-MVP-parallel plan; deferred to Future Scope (decided 2026-10-07).** It needs the Tier-1 mixed-type trainer, which is not being built. Shipped models use stock KERMT equal weighting, and no loss-balancing claim is made. See `FUTURE_SCOPE.md`.
 - Calibration method: temperature scaling vs. Platt scaling vs. isotonic regression, per model type (GNN vs. XGBoost baseline) (Module 4) — given the 2026 finding that Platt/isotonic can degrade tabular-model calibration while temperature scaling targets GNN-specific overconfidence
 
 **7. Baseline comparison table format**
@@ -661,7 +653,7 @@ Five milestones, sequential, covering full MVP + the publication/portfolio-credi
 |---|---|---|
 | **M0 — Contracts & Scaffolding** | Aug 25 – Aug 26 | Phase 0 contracts written (prediction response, API route, conformer/3D). Monorepo skeleton, docker-compose, CI/CD skeleton, `.env` template, W&B project set up. |
 | **M1 — Data & Featurization** | Aug 27 – Sep 2 | Module 1: acquire all 14 TDC datasets, standardize, dedup (tiered conflict resolution), scaffold split (80/20, 5-seed), lockfile with dataset hashes, DILIst augmentation. Module 3: full featurization pipeline (standardization, graph repr, ECFP, RDKit descriptors, 3D conformers), vectorized/batched. |
-| **M2 — Modeling** | Sep 3 – Sep 13 | Module 4: XGBoost baselines + single-task GNN fine-tunes (14 endpoints × 5 seeds) + multi-task cluster models (Absorption/Distribution, Metabolism, Toxicity, DILI standalone), checkpointing + RNG-state restoration throughout. Module 5: probability calibration, k-NN applicability domain (core). This is the GPU-bound, least-interruptible stretch — sequence lab A100 sessions here first. |
+| **M2 — Modeling** | Sep 3 – Sep 13 | Module 4: XGBoost baselines + single-task GNN fine-tunes (14 endpoints × 5 seeds) + Tier-0 stock-KERMT subgroup models (type-homogeneous Metabolism, Absorption/Distribution and Toxicity subgroups, plus DILI standalone — see Module 4; no mixed-type trainer), checkpointing + RNG-state restoration throughout. Module 5: probability calibration, k-NN applicability domain (core). This is the GPU-bound, least-interruptible stretch — sequence lab A100 sessions here first. |
 | **M3 — Serving & Infra** | Sep 14 – Sep 19 | Module 8: API skeleton → real routes, routing table wired to trained models (swap out any stub), Redis caching (model-version-keyed), Cloud Tasks → Cloud Run worker batch queue + SSE progress, auth/rate limiting, retention policy enforcement. Module 13: accounts, saved molecules/reports (snapshot-on-save), account deletion. Module 10: deploy to Cloud Run / Neon / Upstash / R2, monitoring (Sentry, UptimeRobot). |
 | **M4 — Frontend, Explainability & Novelty Track** | Sep 20 – Sep 26 | Module 9: design system, molecule input, prediction panel, batch triage grid, comparison mode, report export, auth UI. Module 7: 3D viewer (both tracks) wired to real conformer data. Module 6: Integrated Gradients explainability + dual validation. Module 12 novelty track: `mmpdb` MMP suggestions + chemical-space map, wired to the explainability output. |
 | **M5 — Evaluation, Polish, Launch** | Sep 27 – Sep 30 | Module 11: full ablation matrix (baseline/single-task/multi-task × 5 seeds × ablation axes), significance testing, self-audit, TDC leaderboard comparison tables. Final QA, WCAG/accessibility pass, smoke tests, production promotion. |

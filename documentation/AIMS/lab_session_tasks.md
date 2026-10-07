@@ -1,8 +1,14 @@
 # MARS — GPU Lab Session Tasks
 
 _Written 2026-09-21 for the next KERMT GPU lab session (RTX A4000 workstation). Operational
-checklist for Claude Code, to be followed **top to bottom**. It is not a general project
+checklist for the lab-session agent, to be followed **top to bottom**. It is not a general project
 document — for context, decisions and history see `context.md`, `decisions.md`, `next_steps.md`._
+
+> **UPDATE 2026-10-07 (newest).** Pass-2 session 2 on `3d32817` finished `metabolism__cls` seeds 1–4 (5/5; 4 runs, none removed; see `status/kermt_gpu_session_2026-10-07.md`). **Resume at
+> P-6 order 4, `absorption_distribution__reg` seeds 1–4** (regression: no calibration, no `tier0_artifacts` package, `tier0_artifacts.py` refuses regression by design), then `toxicity__cls` 2–4;
+> about 8.5 h in total. **Scope:** by maintainer decision 2026-10-07 MARS ships on Tier 0 and Tiers 1–2 are deferred (`decisions.md` 2026-10-07); this runbook only ever covered Tier 0, so its procedure
+> is unchanged. P-0 applies again: the maintainer must supply the new 40-character `EXPECTED_SHA` of the pushed tip, which will include the 2026-10-07 documentation commit.
+> The 2026-10-06 update below is superseded by this one.
 
 > **STRATEGY CHANGE 2026-09-28 — read this before §10.** Training is now **breadth-first**: seed 0 of every Tier-0 arm
 > first (**Pass 1**), then seeds 1–4 (**Pass 2**) — not five seeds of one arm in a row. Rationale, blueprint tie-in and
@@ -12,7 +18,7 @@ document — for context, decisions and history see `context.md`, `decisions.md`
 > (never write "± std" for one seed — `aggregate_seed_metrics` would print 0.0); (c) `toxicity__cls` seeds 2–4
 > (≈ 4.75 h) are deferred to Pass 2. Everything else (verification, STOP rules, no git writes) is unchanged.
 >
-> **UPDATE 2026-10-06.** Pass-2 session 1 on `c1f0f04` finished `metabolism__reg` and `absorption_distribution__cls` (seeds 1–4, both 5-seed complete). **Resume at P-6 order 3,
+> **UPDATE 2026-10-06 (superseded by the 2026-10-07 update above).** Pass-2 session 1 on `c1f0f04` finished `metabolism__reg` and `absorption_distribution__cls` (seeds 1–4, both 5-seed complete). **Resume at P-6 order 3,
 > `metabolism__cls` seeds 1–4**, then `absorption_distribution__reg`, then `toxicity__cls` 2–4. See `status/kermt_gpu_session_2026-10-06.md`. Known: `tier0_artifacts.py` fails on regression arms.
 >
 > **CURRENT STATE (2026-09-30).** **Pass 1 is COMPLETE** and verified (session `status/kermt_gpu_session_2026-09-30.md`):
@@ -876,7 +882,7 @@ $PY "$LAB/s_wandb.py"
 Expect: `logged-in user: shashquatch28`, `teams: ['shashquatch']` **[ran here on the laptop; the
 workstation's login is unverified]**, and `WANDB_ENTITY env: shashquatch`, `WANDB_PROJECT env:
 mars-admet`. If credentials are missing (`wandb.errors` / "not logged in"), **STOP and ask the
-maintainer to run `wandb login` themselves** — Claude never enters credentials.
+maintainer to run `wandb login` themselves** — the agent never enters credentials.
 
 Do **not** create a throwaway W&B run: project convention is "no W&B runs for debugging iterations".
 The first real run (section 8) is the first W&B run; it is launched with `WANDB=1`, and W&B init/log
@@ -1297,7 +1303,7 @@ Then:
    caller sets it); `s_run.py` sets it. Do not call `train_one_seed` by hand without doing the same.
 5. `KermtModel.predict()` names its scratch dir `predict_<hash of the inputs>`, and `fit`/`predict`
    trust `run.json` in it — never point a new run at an old directory.
-6. `ml/train/kermt_gpu_benchmark.py` hard-codes `/tmp/claude-1001/...` input and output paths. It is
+6. `ml/train/kermt_gpu_benchmark.py` hard-codes absolute `/tmp/...` input and output paths. It is
    not part of this runbook; do not run it as-is.
 7. The Docker image id is not pinned anywhere and is **not** captured in run provenance (only the
    checkpoint sha and KERMT commit come from the lockfile) — the session log is its only record.

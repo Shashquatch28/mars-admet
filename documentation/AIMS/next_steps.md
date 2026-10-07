@@ -1,6 +1,6 @@
 # next_steps.md
 
-_Last updated: 2026-10-06 (Pass 2 in progress — see the STATE 2026-10-06 bullet; earlier text: **Pass 1 of the KERMT Tier-0 breadth-first plan is COMPLETE; the Pass-2 protocol is frozen** —
+_Last updated: 2026-10-07 (scope decision: Tier 1 and Tier 2 deferred, MARS ships on Tier 0 — `decisions.md` 2026-10-07; `metabolism__cls` now 5/5 seeds; see the two newest bullets under *Immediately*; earlier text: **Pass 1 of the KERMT Tier-0 breadth-first plan is COMPLETE; the Pass-2 protocol is frozen** —
 `decisions.md` 2026-09-30). Active milestone: M2 (KERMT/GNN track). M3 is locally/container complete.
 Branch: `milestone/m2-kermt`; laptop synced to `origin` @ `ad6eaf1` on 2026-09-30 (fast-forward; no local-only commits). The Pass-1
 training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6eaf1`. The lab checklist is `lab_session_tasks.md`
@@ -8,6 +8,17 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
 
 ## Immediately
 
+- **SCOPE 2026-10-07.** Maintainer decision (`decisions.md` 2026-10-07): **MARS ships on Tier 0** — stock KERMT, type-homogeneous subgroups, equal
+  weighting. **Tier 1** (MARS-owned mixed-type trainer, gates G1–G4) and **Tier 2** (ordinal homogenization), with Kendall / GradNorm weighting and the
+  Module 11 loss-balancing ablation axis, are **deferred to `FUTURE_SCOPE.md`**. Blueprint Module 4, Module 8, Module 10 budget, Module 11 §6 and the M2
+  milestone row were amended the same day. The Tier 1 / Tier 2 sections further down are kept as design reference only — they are **not live work**.
+- **STATE 2026-10-07 (Pass 2, session 2).** On `3d32817`: `metabolism__cls` seeds 1–4 done (launched 10:45–13:38 IST, 56.5–56.9 min each, about 3.8 h GPU, about
+  3 h 55 min on the clock; **4 models trained, none removed, no crashed or re-run runs**). **The arm now has 5 seeds** and an aggregate
+  (`status/kermt_tier0_results/metabolism__cls/aggregate_5seeds.json`); test AUROC raw: CYP3A4 0.895 ± 0.001, CYP2D6 0.879 ± 0.003, CYP2C9 0.893 ± 0.001
+  (Option A pool, D5: about 29% of each CYP's training labels removed). All runs `VERDICT: PASS` + `PROTOCOL: MATCH`; **23 KERMT models in W&B**; driver, host Python,
+  `kermt:latest` image and checkpoint unchanged. Session note: `status/kermt_gpu_session_2026-10-07.md`. **Tier-0 progress: 23 of 30 seeds.**
+  **Remaining Tier-0 work:** `absorption_distribution__reg` 1–4 (≈ 3.8 h; regression, no `tier0_artifacts` package by design) and `toxicity__cls` 2–4 (≈ 4.75 h) — about
+  8.5 h, which is the whole of the remaining GPU training. Also owed: the single-task CYP KERMT baselines on full original splits, and regression reporting for the regression arms.
 - **STATE 2026-10-06 (Pass 2, session 1).** On `c1f0f04`: `metabolism__reg` seeds 1–4 and `absorption_distribution__cls` seeds 1–4 done — **both arms now have 5 seeds**
   and aggregates (`status/kermt_tier0_results/<arm>/aggregate_5seeds.json`): `clearance_microsomal` raw test MAE 24.510 ± 0.650; `absorption_distribution__cls` test AUROC
   BBB 0.941 ± 0.003, P-gp 0.932 ± 0.004, HIA 0.926 ± 0.017 (HIA calibrated not reportable, D4). All runs `VERDICT: PASS` + `PROTOCOL: MATCH`; **19 KERMT models in W&B**.
@@ -20,7 +31,7 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   `metabolism__cls` (all `VERDICT: PASS`, ≈ 2.3 h GPU) on top of DILI seeds 0–4 and `toxicity__cls` seeds 0–1 = **11 KERMT models**, all
   in W&B (`shashquatch/mars-admet`, model + run-record artifacts). Records: `status/kermt_tier0_results/`; session note:
   `status/kermt_gpu_session_2026-09-30.md`. Every number is a provisional single-seed result until an arm has 5 seeds.
-- **NEXT: Pass 2** — seeds 1–4 of the four Pass-1 arms (`metabolism__reg` → `absorption_distribution__cls` → `metabolism__cls` →
+- **NEXT (written 2026-09-30; the STATE bullets above give current progress): Pass 2** — seeds 1–4 of the four Pass-1 arms (`metabolism__reg` → `absorption_distribution__cls` → `metabolism__cls` →
   `absorption_distribution__reg`; ≈ 9.3 h) then `toxicity__cls` 2–4 (≈ 4.75 h). Order, per-launch checks and costs: `lab_session_tasks.md`
   P-6. It needs **no code change and no further decision** — the §4.4 items are closed (`decisions.md` 2026-09-30):
   D1 epoch reporting/selection (report the saved epoch; stock selection rule kept), D2 `holdout_calibration=True` for all arms,
@@ -253,12 +264,12 @@ Each x 5 seeds. **Also required, not in that list:** the single-task KERMT basel
 the 3 CYPs on their full original splits (Option A) — `KermtModel` supports them but no
 harness path builds them yet.
 
-**6. Equivalence gates G1-G4** — all need the Tier-1 trainer (`ml/train/kermt_mixed/`,
+**6. ~~Equivalence gates G1-G4~~ — DEFERRED 2026-10-07 (Future Scope).** They all need the Tier-1 trainer (`ml/train/kermt_mixed/`,
 `models/kermt_mixed_model.py`), which **does not exist yet**. G1/G2/G3 are GPU-dependent;
 G4 (Kendall math) is CPU-only and can be written first. Tier 1 becomes executable only
 after Tier 0 completes and G1-G4 pass.
 
-**7. Tier 2** — codec and zero-GPU ceiling gate are done (`n_bins=16`). Remaining, all
+**7. ~~Tier 2~~ — DEFERRED 2026-10-07 (Future Scope).** Codec and zero-GPU ceiling gate are done (`n_bins=16`). Remaining, all
 GPU: the ordinal-encoded stock-CLI runs and the decoded-MAE-within-15% gate. Postpone
 until Tier 1 lands.
 
@@ -577,6 +588,9 @@ SMILES (they are canonical fixed-points).
 
 ### M2 — mixed-type clusters (live work breakdown, opened 2026-09-20)
 
+> **2026-10-07: only path (a) / Tier 0 is being delivered.** Paths (b) and (c) below are **deferred to `FUTURE_SCOPE.md`** (`decisions.md` 2026-10-07) and are kept here as
+> design reference, not as live work. Do not start them without a new `decisions.md` entry.
+
 Decision + rationale: `decisions.md` 2026-09-20. **Three paths, kept strictly
 distinct in code, run names and results tables — never conflate them:**
 
@@ -660,7 +674,7 @@ decision** (accept the loss / keep CYPs single-task / regenerate a cluster-level
 split and forfeit leaderboard comparability). Do not start `metabolism__cls` on
 the GPU until that is decided; the other arms need no such call.
 
-#### Tier 1 (path b) — MARS-owned mixed-type trainer, KERMT as a library
+#### Tier 1 (path b) — MARS-owned mixed-type trainer, KERMT as a library — DEFERRED 2026-10-07 (Future Scope; nothing built)
 
 Staged into the run's `--data` bind mount (`/data/_mars_trainer/`) and run with
 `import kermt` inside the container. **Do not extend `kermt_container.sh`** — it
@@ -706,7 +720,7 @@ system). Host side: `ml/models/kermt_mixed_model.py` — a **separate**
 Then: `fixed` / `kendall` / `gradnorm` arms on both mixed clusters — the Module 11
 mandated ablation axis.
 
-#### Tier 2 (path c) — ordinal-CDF homogenization
+#### Tier 2 (path c) — ordinal-CDF homogenization — DEFERRED 2026-10-07 (Future Scope; GPU gate not run)
 
 **Investigated only after Tier 1.** `ml/featurize/ordinal.py` — `OrdinalCdfCodec`
 (quantile thresholds fit on the train fold only); `encode` → M binary
@@ -730,7 +744,9 @@ targets, which is impractical. Full table in `decisions.md`; raw numbers in
 Only then the remaining (GPU) gate: val-fold decoded MAE within 15% of the direct
 single-task regression MAE for the same endpoint and seed.
 
-#### Final comparison (all tiers)
+#### Final comparison (Tier 0 only since 2026-10-07)
+
+With Tier 1 and Tier 2 deferred, the three arms are XGBoost, single-task KERMT and the Tier-0 multi-task subgroup. The text below was written for all tiers.
 
 Per endpoint, on the held-out scaffold test set, against **both** mandatory
 baselines: the completed XGBoost runs and single-task KERMT. **XGBoost's side of this table is

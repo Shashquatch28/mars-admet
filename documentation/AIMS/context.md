@@ -176,6 +176,9 @@ StarDrop (enterprise).
       both cache hit and miss. Container-verified end-to-end: real ETKDGv3 +
       MMFF94 coordinates and Gasteiger partial charges returned for ethanol;
       unknown id → 404.
+- **2026-10-07 scope decision: MARS ships on Tier 0** (stock KERMT, type-homogeneous subgroups, equal weighting). Tier 1 (mixed-type trainer) and Tier 2
+  (ordinalization), with Kendall / GradNorm weighting and the Module 11 loss-balancing ablation, are deferred to `FUTURE_SCOPE.md`; the blueprint was amended
+  (`decisions.md` 2026-10-07). **The next bullet is the 2026-09-20 record of the options, kept for history.** Tier-0 status: 23 of 30 seeds trained, 23 models in W&B.
 - **Active: M2 KERMT/GNN track — mixed-type cluster blocker RESOLVED 2026-09-20.**
   KERMT's stock CLI takes one `--dataset_type` per run, so the two mixed-type
   clusters (`metabolism`, `absorption_distribution`) can't be jointly finetuned
@@ -294,7 +297,7 @@ ml/          data/ — acquire.py, dataset_registry.py, snapshot.py, eda.py,
              featurize/ordinal.py, train/train_kermt_cluster.py,
              train/preflight_clusters.py, eval/heldout_evaluation.py, train/evaluate_xgboost_test.py,
              data/compare_prep.py, utils/rng_state.py, train/readiness_report.py. Tier-1 trainer (ml/train/kermt_mixed/,
-             models/kermt_mixed_model.py) does NOT exist yet.
+             models/kermt_mixed_model.py) does NOT exist and is deferred (Future Scope, 2026-10-07).
 frontend/    package.json + src/types/contracts.ts ONLY. NOT runnable (no Vite
              entry). React 18 + Vite + 3dmol planned. M4.
 infra/       empty (infra/docker/.gitkeep). M3/M10.
@@ -391,14 +394,13 @@ docker compose up -d postgres redis minio
 - Calibration split: carved from train_val before CV; 10% or 50-compound floor.
 - DILIst augments DILI (train/val pool only; dedup vs TDC test; re-check scaffold
   overlap post-merge).
-- Clusters (multi-task, masked loss): `absorption_distribution` (logS, logP,
-  Caco2, HIA, Pgp, BBB, PPB), `metabolism` (CYP3A4, CYP2D6, CYP2C9, Clearance),
-  `toxicity` (hERG, AMES), `dili_standalone` (DILI).
+- Subgroups (Tier 0, multi-task, masked loss, one task type each; **since 2026-10-07 the shipped design**): `absorption_distribution__cls` (HIA, Pgp, BBB),
+  `absorption_distribution__reg` (logS, logP, Caco2, PPB), `metabolism__cls` (CYP3A4, CYP2D6, CYP2C9), `metabolism__reg` (Clearance, single task),
+  `toxicity__cls` (hERG, AMES), `dili_standalone__cls` (DILI). The blueprint's earlier mixed-type clusters (`absorption_distribution`, `metabolism`) were split by task type.
 - Backbone: **KERMT `nvidia/NV-KERMT-70M-v2`** (NVIDIA Open Model License).
   GROVER (MIT) is the pre-vetted fallback.
-- Loss balancing for mixed clusters: Kendall homoscedastic uncertainty weighting.
-  Mandatory: log per-task logσ_t trajectory. Preventive: stratified batches.
-  Fallback: fixed weight for a persistently unstable task.
+- Loss balancing: **equal weighting (stock KERMT, Tier 0)** since 2026-10-07. Kendall weighting, GradNorm, stratified batches, per-task logσ_t monitoring and the
+  fixed-weight fallback (the earlier blueprint's plan for mixed clusters) are deferred to `FUTURE_SCOPE.md`. No result may be called uncertainty-weighted.
 - Calibration: temperature scaling (GNN), Platt (XGBoost baseline). **Tier-0 KERMT protocol frozen 2026-09-30** (`decisions.md`): one fixed
   calibration split, `holdout_calibration=True` for every arm, HIA calibrated metrics not reportable, Option A for `metabolism__cls`.
 - Uncertainty CORE: 5-seed ensemble bands + k-NN AD (5-NN Tanimoto ECFP4,

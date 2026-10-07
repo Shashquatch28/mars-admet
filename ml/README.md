@@ -14,7 +14,7 @@ data/        Module 1 — acquire.py (TDC, runs in an isolated Linux venv),
 featurize/   Module 3 — standardize, scaffold, graph, fingerprints, descriptors,
              conformers, pipeline (featurize_batch), cache (FeatureCache),
              kermt_adapter (SMILES/CSV contract for KERMT),
-             ordinal.py (Tier-2 ordinal/CDF codec).
+             ordinal.py (Tier-2 ordinal/CDF codec; unused, Tier 2 deferred 2026-10-07).
 models/      Module 4 — base.py (MARSModel ABC), xgboost_model.py,
              kermt_model.py (stock KERMT CLI path).
 train/       Training loops + sweep drivers. train_xgboost, run_xgboost_baseline,
@@ -68,11 +68,14 @@ cd ml && PYTHONPATH=. ./.venv/Scripts/python.exe train/preflight_clusters.py
 - **XGBoost baseline complete** — 70/70 production runs (14 endpoints × 5 seeds),
   artifacts promoted, evaluation reports in `runs/evaluations/`.
 - **KERMT integrated and GPU-validated at smoke-test scale** (tiny AMES fine-tune,
-  2026-09-18); the mixed-type cluster limitation is resolved by a three-tier design —
-  see `../documentation/AIMS/decisions.md` (2026-09-20). The Tier-0 harness now
-  calibrates and scores the test set (2026-09-21, CPU-tested with a test double).
-  **No production KERMT training run has happened, and no real KERMT logits have been
-  calibrated.**
+  2026-09-18); the mixed-type cluster limitation was resolved on 2026-09-20 by a three-tier
+  design, and **on 2026-10-07 the project decided to ship on Tier 0 only** (stock KERMT,
+  type-homogeneous subgroups, equal weighting) — Tiers 1 and 2 are deferred to
+  `../documentation/FUTURE_SCOPE.md`; see `../documentation/AIMS/decisions.md` (2026-10-07).
+  **Tier-0 production training is under way:** 23 of 30 seeds trained as of 2026-10-07
+  (`metabolism__reg`, `absorption_distribution__cls`, `metabolism__cls`, DILI complete at 5 seeds;
+  `toxicity__cls` 2 of 5; `absorption_distribution__reg` 1 of 5), with real KERMT logits
+  calibrated (since 2026-09-22). Status: `../documentation/status/kermt_gpu_session_2026-10-07.md`.
 - **XGBoost test-set evaluation done (2026-09-21):** `runs/test_evaluations/` holds the held-out
   numbers; the old `runs/evaluations/` are validation-fold and differ by up to +0.26 AUROC.
   Compare KERMT to the test set.
