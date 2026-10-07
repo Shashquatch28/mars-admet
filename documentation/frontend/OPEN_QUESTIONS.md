@@ -61,7 +61,14 @@ the list, which contradicts the contract. Either the contract's category should
 change, or the UI should follow the contract and accept the oddity. This needs
 your call, not mine.
 
-### Q3 — Per-endpoint display domain for regression intervals
+### Q3 — Per-endpoint display domain for regression intervals — **RESOLVED 2026-10-07: (a), accept the asymmetry**
+
+**Resolution.** Regression intervals stay printed, not drawn. `AGENTS.md` never-do #4 already decides this ("Regression
+endpoints print the interval as text"; `IntervalTrack` takes a required `domain` with no default). Live responses
+confirm there is no common axis: ppb_binding spans 63.1 … 71.0 while caco2_permeability spans −4.55 … −4.49. Option (b)
+is rejected for the reason this entry already gave (a display range is read as a reference range) and because it would
+reintroduce an invented scale. Option (c), the range as real API metadata, is the only legitimate route and waits for a
+validated range to exist. Original text below.
 
 ADR-005: regression intervals are printed, not drawn, because no validated
 display range exists for logS, logP, Caco-2, PPB or clearance. This makes
@@ -127,7 +134,12 @@ Compact (30px) or comfortable (36px) as the shipped default? Compact fits all
 vendored — `package.json` has only `3dmol`. Is a sketcher (Ketcher, JSME) in
 MVP scope, or should that affordance be removed from the design until it is?
 
-### Q10 — Contract drift fix and CI check
+### Q10 — Contract drift fix and CI check — **RESOLVED 2026-10-07**
+
+`model_id` was fixed in ADR-017; `ad_threshold` followed (ADR-020). The ADR-009 check is now written:
+`contracts/tests/test_frontend_drift.py` compares enum members and interface field names in
+`frontend/src/types/contracts.ts` against the Pydantic models, and runs in the existing `pytest contracts/tests` CI
+step. Verified to fail when a field is removed from the mirror. It checks names, not types.
 
 `frontend/src/types/contracts.ts` is missing `EndpointPrediction.model_id`,
 which ADR-008's stub detection depends on. Not fixed here, because this pass

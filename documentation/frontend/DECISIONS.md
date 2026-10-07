@@ -547,3 +547,21 @@ out-of-domain explanation in words still show. The fixtures keep an illustrative
 promoted endpoint ever lacks an AD index, `predict_endpoint` returns `in_domain=False` with a NaN distance, which the
 UI would read as "outside applicability domain"; all currently promoted endpoints have an index.
 
+## ADR-021 — Status dots are circles; the radius cap governs surfaces
+
+**Date:** 2026-10-07 · **Status:** accepted (M4)
+
+**Decision.** `border-radius: 50%` is permitted on 6px status indicators (`.dot` in `shell.module.css` and
+`batch.module.css`). The ≤3px radius rule (`--radius`, `--radius-sm`) governs *surfaces*: panels, buttons, inputs,
+rows, tags.
+
+**Rationale.** The rule exists to keep the product from reading as a soft consumer app (rounded-xl cards, pills). A
+6px indicator is not a surface; at 3px radius it renders as a rounded square, which is a different mark from the
+circle the locked design drew. HANDOFF §3.4 flagged these as "probably not a violation" and asked for the exception
+to be recorded rather than the dots "fixed".
+
+**Rejected.** *Squaring the dots* — changes a locked design to satisfy a rule's letter. *A general `50%` allowance* —
+would let any element opt out of the cap.
+
+**Consequences.** `tests/cssGuard.test.ts` checks colour literals only, not radius. If a stylelint radius rule is
+ever added, allowlist `.dot`.

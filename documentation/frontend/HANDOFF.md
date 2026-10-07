@@ -95,14 +95,23 @@ stubs.
 5. First `/predict` after an API restart took ~20 s (model load). The UI shows
    Running… throughout; there is no cold-start affordance.
 6. Top-level `model_version` was `"stub-v0"` even with every row served by a real
-   model. A working-tree change to `api/app/services/prediction_service.py` by
-   another session addresses this; it was uncommitted when this was written.
+   model. **Fixed and verified 2026-10-07** in `prediction_service._route_to_models`
+   (it now stamps `settings.model_version` once a real model has served a row;
+   per-row truth stays in `model_id`).
 7. A fresh `docker compose build api` failed at import: `sqlalchemy>=2.0` without
-   `[asyncio]` (no `greenlet`). The working tree also carries a one-line fix to
-   `api/requirements.txt` from another session; **not verified by this session**.
-   Until it is committed and the image rebuilt, `docker compose up -d api` reuses
-   an image whose `ml/serve` predates `rule_based.py`, which serves **stub-v0 for
-   every endpoint and no SA row**.
+   `[asyncio]` (no `greenlet`). **Fixed and verified 2026-10-07**: the same one-line
+   change as `df4baa5` on `fix/ci-sqlalchemy-asyncio`, applied to
+   `api/requirements.txt` (identical, so merging that branch is clean), image
+   rebuilt, container healthy, all 14 endpoints served by the real model plus the SA row.
+   An image built before `rule_based.py` existed serves **stub-v0 for every endpoint
+   and no SA row, with nothing in the logs**. It now logs a warning at startup
+   (`app.main` reads `prediction_service.ml_import_error`).
+8. **The prediction cache key did not change when the response did.** The key is
+   `predict_cache:{smiles}:{endpoints}:{MODEL_VERSION}` and `MODEL_VERSION` was a
+   static `v0.1.0-dev`, so stub, SA-less responses survived the rebuild for 48 h.
+   Bumped to `v0.2.0-dev` (`config.py`, `.env.example`). **Bump it whenever the
+   response shape or routing changes.** A better fix (derive the tag from the
+   promoted-artifact set so it cannot be forgotten) is not done.
 
 ## 3. What is broken or missing — read before touching anything
 
@@ -150,7 +159,12 @@ anonymous `/predict` call only; (c) backend: explicit origin list +
 `allow_credentials=True` (needed for auth and prod anyway — the code comment says
 "tighten before prod deploy"). (c) touches `api/`, which is your call.
 
-### 3.4 CSS is entirely unguarded
+### 3.4 ~~CSS is entirely unguarded~~ Resolved 2026-10-07 (no stylelint needed)
+`frontend/tests/cssGuard.test.ts` fails the build on any hex / `rgb()` / `hsl()` literal in a `.module.css`.
+New tokens: `--track`, `--band`, `--on-accent`, `--scrim`, `--highlight-selected`; every literal listed below is
+replaced. The two near-identical ink colours (`#07191d`, `#06181d`) are now one token. The 50% status dots are
+recorded as ADR-021. The guard lives in `tests/` because it reads the filesystem and the project has no
+`@types/node`. Original note:
 
 ESLint does not read `.module.css`, so the "no raw hex" rule only covers TS/TSX.
 Current violations, verified by grep:
@@ -178,11 +192,9 @@ Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
 - ~~**3Dmol is installed but unused.**~~ Wired 2026-10-07 (see "3D viewer" in §2a).
   Fixture mode still shows the placeholder geometry, labelled as illustrative.
 - **Compare, Library, Settings, auth UI** are `StubWorkspace`.
-- **ADR-009 CI drift check** is unwritten. `ad_threshold` just changed the
-  contract in three places at once; nothing would have caught a miss.
-- **Bump `MODEL_VERSION` on release.** `/predict` caches 48 h; responses cached
-  before ADR-019/020 lack the SA row and `ad_threshold`. (The gauge hides on
-  them rather than being wrong.)
+- ~~**ADR-009 CI drift check** is unwritten.~~ Written 2026-10-07:
+  `contracts/tests/test_frontend_drift.py` (names only, not types).
+- ~~**Bump `MODEL_VERSION` on release.**~~ Done (`v0.2.0-dev`); see §2a item 8.
 - **ADR-020 known gap:** a promoted endpoint with no AD index returns
   `in_domain=False` with a NaN distance, which the UI would read as "outside
   domain". All currently promoted endpoints have an index.
@@ -198,9 +210,10 @@ Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
    **Wire the endpoint-subset selector and the remaining Predict buttons
    (§3.1) next** — the subset selector is also the only way to see NOT RETURNED
    live.
-4. **Close the CSS guard** (§3.4).
-5. **Batch live**: needs Q7 answered first; then upload + SSE hook.
-6. **ADR-009 drift check.**
+4. ~~Close the CSS guard~~ — done.
+5. **Batch live**: needs Q7 answered **and an auth UI built** (nothing exists; every
+   `/batch/*` route needs a session). Then upload + SSE hook.
+6. ~~ADR-009 drift check~~ — done.
 7. ~~3Dmol~~ — done. Then Compare, Library, auth.
 
 Do not build more surfaces on fixtures before 1–3.
@@ -236,11 +249,21 @@ alternatives recorded.
   10 `documentation/AIMS/`, blueprint and `FUTURE_SCOPE` files here. `m2-kermt`
   carries the same content (`5da3091`) and the 10 files are **byte-identical
   today**. They exist as adds on both branches because `documentation/` was
-  gitignored on `main`. This is harmless now and becomes an **add/add merge
-  conflict** as soon as `m2-kermt` edits any of them during training — which it
-  will. Cheapest fix is `git revert f7a41db` on this branch (non-destructive),
-  after which `m2-kermt` supplies those files at merge time. Not done here;
-  your call.
+  gitignored on `main`. **Re-checked 2026-10-07:** `main` now carries the same
+  files too (`c8269b7`), and all copies are byte-identical, so merging this branch
+  to `main` is clean. The only remaining conflict is `m2-kermt` → `main` *after*
+  `m2-kermt` edits one of them, and it is trivial (take `m2-kermt`'s version).
+  Reverting `f7a41db` is no longer worth doing.
+- **Two sessions once shared `frontend/.env.local` and port 5173 — fixed
+  2026-10-08, rules now in `AGENTS.md` ("Shared dev environment").** One session had
+  set `MARS_API_PROXY_TARGET=http://localhost:18000` in that shared file (a
+  `mars_api_real` container built from older code, still returning
+  `model_version: "stub-v0"`), so every Vite server on the tree proxied to it. The
+  line is removed; `.env.local` now holds only `VITE_API_BASE=/api`. A `mars_api_real`
+  container may still exist in Docker (Docker Desktop was off when this was fixed, so
+  it could not be inspected or stopped): check `docker ps -a` when Docker is back.
+  Rule of thumb: private experiments use a process variable and their own port, never
+  a shared file.
 - **Concurrent sessions.** Other chats edit this repo. Files change under you
   ("changed on disk" notices are real). `git status` before and after any task.
 - **Python envs are separate** (three of them). `rdkit` lives in `ml/.venv`; the
