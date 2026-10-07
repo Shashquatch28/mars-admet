@@ -1,6 +1,18 @@
 # MARS frontend architecture
 
-Status: **proposed, not implemented.** `frontend/` is still the M4 scaffold.
+Status: **partly implemented (2026-10-07).** This document is the original
+architecture *proposal* and is kept for its reasoning. Where the build diverged,
+the divergence is recorded below and in `DECISIONS.md`; read `HANDOFF.md` for
+current state.
+
+> **Superseded in part — styling.** The sections below propose Tailwind v4.
+> That was **not adopted**: ADR-016 chose CSS Modules over the token layer in
+> `src/styles/tokens.css`, and Tailwind is not installed. Read every "Tailwind"
+> reference below as "CSS Modules + tokens". The no-raw-values rule is unchanged
+> and still the point. `@tanstack/react-table` and `radix-ui` are also not
+> installed yet; `@tanstack/react-query` and `@tanstack/react-virtual` are.
+> The "What already exists" section describes the *pre-build* scaffold and is
+> historical.
 
 ## What already exists
 

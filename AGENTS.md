@@ -67,4 +67,5 @@ computed rule, not a model prediction. Headline count is **14**.
   `EndpointPrediction.model_id` (ADR-017); the CI drift check is still unwritten.
 
 Full rationale for every rule: `documentation/frontend/` (UX_PRINCIPLES,
-DECISIONS ADR-001…015, COMPONENTS, DESIGN_SYSTEM, CRAFT_AND_INTERACTION).
+DECISIONS ADR-001…020, COMPONENTS, DESIGN_SYSTEM, CRAFT_AND_INTERACTION).
+Current state, verified gaps and next steps: `documentation/frontend/HANDOFF.md`.

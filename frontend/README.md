@@ -29,13 +29,21 @@ with npm 11 (`npx npm@11 install`). Installing from the committed
   applicability-domain gauge; the inspector; full keyboard roving (↑↓ / Home /
   End / Enter), hover, focus and selection as distinct channels; density toggle;
   reduced-motion support.
-- **Batch / Compare / Library**: routed placeholders — same shell, built later.
+- **Batch workspace**: a virtualized molecules × endpoints matrix (240-molecule
+  fixture), `role="grid"` with one Tab stop and 2-D arrow navigation, raw
+  numeric sort, filters, molecule inspector. Fixture-only — no upload, no SSE.
+- **Compare / Library / Settings**: routed placeholders — same shell, built later.
 
 Values are an **illustrative fixture** (`src/domain/fixtures.ts`), not model
-output; the app shows a "design prototype" strip accordingly. Going live is one
-change: swap the fixture for a real `/predict` response. The roster, state
-derivation and reconciliation already come from `ENDPOINT_METADATA`, never the
-response (ADR-008).
+output; the app shows a "design prototype" strip accordingly.
+
+> **Going live is not one change.** Predict hard-codes its SMILES and has no
+> working Run button; the status bar and API badge show literal values; and the
+> browser will likely be blocked by CORS. See
+> `../documentation/frontend/HANDOFF.md` §3 before attempting it.
+
+The roster, state derivation and reconciliation come from `ENDPOINT_METADATA`,
+never the response (ADR-008).
 
 ## Architecture
 
@@ -57,9 +65,11 @@ src/
   shell/          AppShell, NavRail, TopBar, StatusBar, CommandPalette
   workspaces/
     predict/      PredictWorkspace + EndpointList/Row/Detail, StructureViewer
-    StubWorkspace (batch/compare/library/settings)
+    batch/        BatchWorkspace + BatchGrid (virtualized)
+    StubWorkspace (compare/library/settings)
   components/dataviz/  BoundedTrack scale, IntervalTrack, ADGauge, NumericInterval, ReliabilityTag
-  domain/         endpoints, rowState, reconcile, format, fixtures
+  domain/         endpoints, rowState, reconcile, format, fixtures, batch
+  data/           client, usePrediction (single-molecule /predict only)
   types/          contracts.ts (contract mirror)
   styles/         tokens.css
 ```
@@ -72,8 +82,15 @@ npm run test:watch
 ```
 
 Covers the load-bearing pure functions: `deriveRowState` (the single trust
-decision), `reconcile` (roster + counts, SA excluded) and the formatters. 18
-tests. Extend these against the same fixtures the API tests use.
+decision), `reconcile` (roster + counts, SA excluded), the formatters, and the
+Batch build / sort / filter logic. 31 tests in 4 files. Every fixture so far was
+written by us, so they test our assumptions — capture real API responses and
+add them (HANDOFF.md §4).
+
+```bash
+npm run lint    # eslint — TS/TSX only; does NOT read .module.css
+npx tsc --noEmit
+```
 
 ## Running against the real API
 
@@ -99,5 +116,6 @@ and the AD-gauge threshold is read from the response (`ad_threshold`). It is
 
 ## Open before this goes live
 
-- The API is real (`docker compose up -d api`) — wire `/predict` and replace the
-  fixture.
+See `../documentation/frontend/HANDOFF.md` §3–4. In short: Predict needs real
+input and a working Run; the status bar and API badge must stop showing literals;
+CORS must be settled; and the CSS needs a lint guard.

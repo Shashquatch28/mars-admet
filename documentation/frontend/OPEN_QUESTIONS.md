@@ -267,7 +267,7 @@ that is the other coherent way to resolve it.
 
 # M4 scaffold — 2026-10-01
 
-### Q19 — The AD-gauge threshold is not in the prediction response
+### Q19 — The AD-gauge threshold is not in the prediction response — **RESOLVED 2026-10-06 (ADR-020)**
 
 **RESOLVED 2026-10-06 (ADR-020): option (a), `ad_threshold` is now in `EndpointPrediction`. The text below is the original question.**
 
