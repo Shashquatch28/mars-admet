@@ -1,7 +1,10 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./shell.module.css";
 import { useUiState } from "../app/uiState";
 import { usePredictSession } from "../app/predictSession";
+import { useAuthSession } from "../app/authSession";
+import { USING_API } from "../data/client";
+import { accountInitial } from "../domain/session";
 import { useApiHealth, type ApiHealth } from "../data/useApiHealth";
 
 const WORKSPACE_SUB: Record<string, string> = {
@@ -24,6 +27,8 @@ export function TopBar() {
   const { result } = usePredictSession();
   const health = useApiHealth();
   const badge = API_BADGE[health];
+  const { status, user, busy, signOut } = useAuthSession();
+  const navigate = useNavigate();
   const { pathname } = useLocation();
   const base = "/" + (pathname.split("/")[1] || "predict");
   const label = (base.slice(1) || "predict").toUpperCase();
@@ -66,7 +71,23 @@ export function TopBar() {
         <span className={`${styles.dot} ${badge.dot}`} />
         <span className={styles.apistatLbl}>{badge.label}</span>
       </div>
-      <div className={styles.acct}>SK</div>
+      {/* Driven by the session (ADR-022). Absent with no API (nothing to sign in to) and while the
+          first /auth/me is still unanswered; never a placeholder identity. */}
+      {USING_API && status === "anonymous" && (
+        <button className={styles.signin} onClick={() => navigate("/settings")}>
+          Sign in
+        </button>
+      )}
+      {USING_API && status === "signed_in" && user && (
+        <>
+          <button className={styles.acct} aria-label={`Account: ${user.email}`} onClick={() => navigate("/settings")}>
+            {accountInitial(user.email)}
+          </button>
+          <button className={styles.signout} onClick={signOut} disabled={busy}>
+            Sign out
+          </button>
+        </>
+      )}
     </header>
   );
 }

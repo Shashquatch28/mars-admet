@@ -39,7 +39,7 @@ stubs.
 | Batch | `src/workspaces/batch/`, `src/domain/batch.ts` | 240-molecule deterministic fixture, virtualized `role="grid"`, raw numeric sort, filters, molecule inspector. |
 | Data-viz | `src/components/dataviz/` | `ADGauge`, `IntervalTrack` (both require an explicit `domain`, no default), `NumericInterval`, `ReliabilityTag`. |
 | Domain | `src/domain/` | `rowState` (the one trust decision), `reconcile` (full roster every time), `format`, `endpoints`, `fixtures`, `batch`. This is the tested layer. |
-| Data | `src/data/` | `client.ts` + `usePrediction.ts` — single-molecule `/predict` only. No batch client. |
+| Data | `src/data/` | `client.ts` (predict, conformer, health, auth) + hooks. No batch client. |
 | Tooling | `.eslintrc.cjs`, `vitest.config.ts` | ESLint enforces two AGENTS.md rules in **TS/TSX only**. |
 | Backend (this branch) | `ml/serve/rule_based.py`, `contracts/…/prediction.py` | API now serves the SA score (ADR-019) and `ad_threshold` per prediction (ADR-020). |
 
@@ -194,7 +194,7 @@ Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
   from `emptyResponse`. I did not verify any dedicated empty-state view exists.
 - ~~**3Dmol is installed but unused.**~~ Wired 2026-10-07 (see "3D viewer" in §2a).
   Fixture mode still shows the placeholder geometry, labelled as illustrative.
-- **Compare, Library, Settings, auth UI** are `StubWorkspace`.
+- **Compare and Library** are `StubWorkspace` (Library is behind the sign-in gate). Settings holds the Account section only.
 - ~~**ADR-009 CI drift check** is unwritten.~~ Written 2026-10-07:
   `contracts/tests/test_frontend_drift.py` (names only, not types).
 - ~~**Bump `MODEL_VERSION` on release.**~~ Done (`v0.2.0-dev`); see §2a item 8.
@@ -214,11 +214,20 @@ Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
    unreachable live from the UI by design: it now means only "asked for, service
    did not answer". Remaining Predict buttons (§3.1) wait on Compare/Library.
 4. ~~Close the CSS guard~~ — done.
-5. **Auth UI, then Batch live** (ADR-022; Q7 resolved 2026-10-08). Phase 1: `GET /auth/me` +
-   `MeResponse`, session context (unknown / anonymous / signed in), lock glyphs on Batch and
-   Library, in-workspace sign-in state, a real top-bar account readout (replaces the
-   hard-coded "SK"), global 401 handling, tests. Then the upload + SSE hook, Library, and the
-   Settings account section.
+5. **Auth UI (ADR-022 Phase 1) — done 2026-10-08; then Batch live.** Built: `GET /auth/me` +
+   `MeResponse` (contract, route, `API_ROUTES.md`, `contracts.ts`, drift test, API tests);
+   `AuthSessionProvider` (unknown / anonymous / signed in); lock glyphs on Batch and Library
+   (with "account required" in their accessible names); an in-workspace sign-in state
+   (`src/auth/Gated.tsx`) explaining why, what stays free, with sign-in and create-account
+   forms; a real top-bar readout (Sign in / initial + Sign out) replacing the hard-coded "SK";
+   a Settings Account section; a global 401 handler (`setUnauthorizedHandler`, not fired for
+   `/auth/*`); fixture mode never gates. Create-account signs in straight away. Real auth
+   responses are fixtures (`real-responses/auth-*`). **Not built:** password reset (ADR-022 item
+   7), Turnstile, delete-account modal (Phase 2). **Known limit:** nothing in the UI makes a
+   gated call yet, so the 401-drops-to-anonymous path is covered by unit tests only; a session
+   that expires (or an account deleted) while the app is open is noticed on the first gated call
+   or a reload. Next: the batch client + SSE hook, Library, delete-account. When the upload
+   exists, keep the user's selected file across a 401 (ADR-022 item 3).
 6. ~~ADR-009 drift check~~ — done.
 7. ~~3Dmol~~ — done. Then Compare, Library.
 8. **Relabel classification units as `score`** (ADR-023; Q21 resolved 2026-10-08). Small and

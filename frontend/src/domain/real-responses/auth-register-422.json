@@ -1,0 +1,1 @@
+{"detail":[{"type":"string_too_short","loc":["body","password"],"msg":"String should have at least 8 characters","input":"abc","ctx":{"min_length":8}}]}

@@ -568,7 +568,7 @@ ever added, allowlist `.dot`.
 
 ## ADR-022 — Auth boundary: gate the capability, not the app (resolves Q7)
 
-**Date:** 2026-10-08 · **Status:** accepted (design; implementation pending)
+**Date:** 2026-10-08 · **Status:** accepted · Phase 1 implemented 2026-10-08 (items 1-8); Phase 2 pending
 
 **Decision.**
 

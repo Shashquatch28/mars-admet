@@ -8,7 +8,14 @@
 // and allow_credentials (CORS_ALLOW_ORIGINS) — never `*`, which browsers reject
 // together with credentials. Cookies are SameSite=Lax, so the SPA and API must
 // be same-site (e.g. app.x.com and api.x.com).
-import type { ConformerResponse, Endpoint, PredictionResponse } from "../types/contracts";
+import type {
+  ConformerResponse,
+  Endpoint,
+  LoginResponse,
+  MeResponse,
+  PredictionResponse,
+  RegisterResponse,
+} from "../types/contracts";
 
 export const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -35,6 +42,15 @@ function describeDetail(detail: unknown, fallback: string): string {
   return fallback;
 }
 
+// Called when a gated route answers 401: the session is gone, so the app drops to
+// anonymous and the workspace shows its sign-in state in place (ADR-022). /auth/*
+// 401s are answers to the auth calls themselves (wrong password, no session) and
+// are handled by their callers, not here.
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(fn: (() => void) | null): void {
+  onUnauthorized = fn;
+}
+
 async function request(path: string, init?: RequestInit): Promise<Response> {
   if (!API_BASE) throw new ApiError(0, "No API base configured");
   let res: Response;
@@ -45,6 +61,7 @@ async function request(path: string, init?: RequestInit): Promise<Response> {
     throw new ApiError(0, "API unreachable");
   }
   if (!res.ok) {
+    if (res.status === 401 && !path.startsWith("/auth/")) onUnauthorized?.();
     let detail = res.statusText;
     try {
       detail = describeDetail(((await res.json()) as { detail?: unknown })?.detail, detail);
@@ -85,6 +102,38 @@ export async function fetchPrediction(
 export async function fetchConformer(moleculeId: string): Promise<ConformerResponse> {
   const res = await request(`/molecule/${encodeURIComponent(moleculeId)}/3d`);
   return (await res.json()) as ConformerResponse;
+}
+
+const jsonPost = (body: unknown): RequestInit => ({
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+});
+
+// Who the session cookie belongs to, or null when there is no valid session (401).
+// Any other failure (unreachable, 5xx) throws.
+export async function fetchMe(): Promise<MeResponse | null> {
+  try {
+    return (await (await request("/auth/me")).json()) as MeResponse;
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) return null;
+    throw e;
+  }
+}
+
+export async function login(email: string, password: string): Promise<LoginResponse> {
+  return (await (await request("/auth/login", jsonPost({ email, password }))).json()) as LoginResponse;
+}
+
+// Turnstile is not wired in the client (ADR-022 item 6): the server skips verification
+// when its secret is unset, and this placeholder satisfies the required field.
+export async function register(email: string, password: string): Promise<RegisterResponse> {
+  const body = { email, password, turnstile_token: "unset" };
+  return (await (await request("/auth/register", jsonPost(body))).json()) as RegisterResponse;
+}
+
+export async function logout(): Promise<void> {
+  await request("/auth/logout", { method: "POST" });
 }
 
 // Liveness only (`/health`). Readiness (`/health/ready`) reports Postgres/Redis

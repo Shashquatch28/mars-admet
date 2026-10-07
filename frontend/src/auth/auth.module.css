@@ -1,0 +1,194 @@
+/* Sign-in and account surfaces. Tokens only; no shadow (nothing here is an overlay); no animation. */
+.slot {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  place-items: start center;
+  overflow-y: auto;
+  background: var(--surface-void);
+  padding: 48px 24px;
+}
+.panel {
+  width: min(760px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+  gap: 0;
+  background: var(--surface-panel);
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius);
+}
+.single {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(420px, 100%);
+}
+.why {
+  padding: 22px 24px;
+  border-right: 1px solid var(--line-default);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.formcol {
+  padding: 22px 24px;
+}
+.kicker {
+  font-family: var(--cond);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.kicker svg {
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+.title {
+  margin: 0;
+  font-family: var(--cond);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+.body {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.free {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-void);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.free b {
+  font-family: var(--cond);
+  font-weight: 400;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: block;
+  margin-bottom: 3px;
+}
+.seg {
+  display: flex;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.seg button {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.segOn {
+  background: var(--surface-raised);
+  color: var(--text-primary) !important;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.label {
+  font-family: var(--cond);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.input {
+  height: 32px;
+  background: var(--surface-void);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+  color: var(--text-primary);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+.input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+.hint {
+  font-size: 10px;
+  color: var(--text-quiet);
+}
+.submit {
+  width: 100%;
+  height: 32px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  font-size: 11.5px;
+  border-radius: var(--radius-sm);
+}
+.submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.error {
+  margin: 0 0 14px;
+  padding: 9px 11px;
+  border: 1px solid var(--error);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.note {
+  margin: 12px 0 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-quiet);
+}
+.who {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+.secondary {
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.secondary:hover {
+  border-color: var(--text-tertiary);
+}
+.secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .why {
+    border-right: 0;
+    border-bottom: 1px solid var(--line-default);
+  }
+}

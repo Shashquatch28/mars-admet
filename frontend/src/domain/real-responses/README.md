@@ -12,9 +12,19 @@ assumed it would (`../realResponses.test.ts`). Do not hand-edit them; re-capture
 | `celecoxib-stub-only.json` | same request against an API container **without** the ml stack (every row `stub-v0`) |
 | `celecoxib-3d.json` | `GET /molecule/{id}/3d` for celecoxib's `molecule_id` (explicit hydrogens, 40 atoms, MMFF94 energy +60.0 kcal/mol) |
 | `unknown-molecule-404.json` | `GET /molecule/0000000000000000/3d` — the "normal" 404 |
+| `auth-me-401.json` | `GET /auth/me` with no session (the same body follows a logout) |
+| `auth-me-200.json` | `GET /auth/me` after a login: `{user_id, email}` |
+| `auth-login-200.json` | `POST /auth/login` (the session itself travels in an HttpOnly `Set-Cookie`, not the body) |
+| `auth-login-401.json` | `POST /auth/login`, unknown email. A *wrong password* returns the byte-identical body, so the API does not reveal which emails exist |
+| `auth-register-201.json` | `POST /auth/register` (returns no session: sign in next) |
+| `auth-register-409.json` | duplicate email |
+| `auth-register-422.json` | password shorter than 8: `detail` is a list |
+| `auth-register-bad-email-422.json` | malformed email: `detail` is a list |
 | `invalid-smiles-422.json` | `{smiles: "not_a_smiles(("}` — `detail` is a string |
 | `empty-422.json` | `{smiles: "  "}` — `detail` is a string |
 | `missing-field-422.json` | `{}` — `detail` is a list of validation errors |
+
+The auth captures used a throwaway `@example.com` account on the dev database, deleted afterwards.
 
 ## Provenance caveats
 

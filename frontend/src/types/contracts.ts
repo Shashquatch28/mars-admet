@@ -107,3 +107,26 @@ export interface CompareResponse {
   // (ADR-007): direction-of-good is unresolved. Typed for completeness only.
   per_endpoint_winner?: Record<Endpoint, number> | null;
 }
+
+// --- auth (auth.py) ---
+// Session strategy is an HttpOnly cookie: no response body carries a token.
+export interface RegisterRequest {
+  email: string;
+  password: string; // min 8 characters
+  turnstile_token: string; // not wired in the client yet (ADR-022 item 6): the server skips verification when unset
+}
+export interface RegisterResponse {
+  user_id: string;
+}
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+export interface LoginResponse {
+  user_id: string;
+}
+// GET /auth/me. 401 means there is no valid session (ADR-022).
+export interface MeResponse {
+  user_id: string;
+  email: string;
+}

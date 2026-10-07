@@ -1,6 +1,9 @@
 import { NavLink } from "react-router-dom";
 import styles from "./shell.module.css";
 import type { ReactNode } from "react";
+import { useAuthSession } from "../app/authSession";
+import { USING_API } from "../data/client";
+import { isGatedPath, showsLock } from "../domain/session";
 
 interface Dest {
   to: string;
@@ -48,23 +51,39 @@ const DESTS: Dest[] = [
   { to: "/library", label: "Library", icon: archive },
 ];
 
-function item({ icon, label }: Dest) {
+// Shown on a destination that needs an account while the user is anonymous (ADR-022).
+// It is a glyph plus words for assistive tech; the reason is given in the workspace itself.
+const lock = (
+  <svg className={styles.navLock} width="10" height="10" viewBox="0 0 16 16" aria-hidden="true">
+    <rect x="3" y="7" width="10" height="7" rx="1" />
+    <path d="M5 7V5a3 3 0 0 1 6 0v2" />
+  </svg>
+);
+
+function item({ icon, label }: Dest, locked: boolean) {
   return (
     <>
       {icon}
       <span className={styles.navLabel}>{label}</span>
+      {locked && (
+        <>
+          {lock}
+          <span className={styles.srOnly}>, account required</span>
+        </>
+      )}
     </>
   );
 }
 
 export function NavRail() {
+  const { status } = useAuthSession();
   const cls = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.navitem} ${styles.navActive}` : styles.navitem;
   return (
     <nav className={styles.rail} aria-label="Workspaces">
       {DESTS.map((d) => (
         <NavLink key={d.to} to={d.to} className={cls}>
-          {item(d)}
+          {item(d, showsLock({ usingApi: USING_API, status, gated: isGatedPath(d.to) }))}
         </NavLink>
       ))}
       <span className={styles.grow} />

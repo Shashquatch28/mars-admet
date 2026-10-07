@@ -185,6 +185,32 @@
   font-size: 9px;
   color: var(--text-secondary);
 }
+.signin {
+  height: 26px;
+  padding: 0 10px;
+  margin: 0 14px 0 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--cond);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-size: 9px;
+  color: var(--text-secondary);
+}
+.signin:hover {
+  border-color: var(--text-tertiary);
+}
+.signout {
+  margin: 0 14px 0 -6px;
+  font-family: var(--cond);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-size: 9px;
+  color: var(--text-tertiary);
+}
+.signout:hover {
+  color: var(--text-secondary);
+}
 .acct {
   display: grid;
   place-items: center;
@@ -237,6 +263,23 @@
   letter-spacing: 0.09em;
   text-transform: uppercase;
   font-size: 9px;
+}
+.navLock {
+  position: absolute;
+  top: 9px;
+  right: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+  color: var(--text-quiet);
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 .navActive {
   color: var(--text-primary);
