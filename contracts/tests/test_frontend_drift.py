@@ -20,8 +20,13 @@ from mars_contracts import (
     Endpoint,
     EndpointCategory,
     EndpointPrediction,
+    LoginRequest,
+    LoginResponse,
+    MeResponse,
     PredictionRequest,
     PredictionResponse,
+    RegisterRequest,
+    RegisterResponse,
     TaskType,
 )
 
@@ -62,6 +67,11 @@ def test_enum_members_match(ts_name, enum):
         ("BatchRowResult", BatchRowResult),
         ("BatchPredictResponse", BatchPredictResponse),
         ("CompareResponse", CompareResponse),
+        ("MeResponse", MeResponse),
+        ("LoginRequest", LoginRequest),
+        ("LoginResponse", LoginResponse),
+        ("RegisterRequest", RegisterRequest),
+        ("RegisterResponse", RegisterResponse),
     ],
 )
 def test_interface_fields_match(ts_name, model):

@@ -60,6 +60,7 @@ container); 501 in an environment without it.
 |---|---|---|---|---|
 | `/auth/register` | POST | none (Turnstile-gated) | `RegisterRequest` | `RegisterResponse` (201) |
 | `/auth/login` | POST | none | `LoginRequest` | `LoginResponse` (200) + `Set-Cookie: mars_session=<token>` |
+| `/auth/me` | GET | session cookie | — | `MeResponse` (200), 401 without a valid session (ADR-022) |
 | `/auth/logout` | POST | session cookie | — | 204 |
 | `/auth/password-reset/request` | POST | none | `PasswordResetRequestModel` | 202 (always, whether or not the email exists — no account enumeration) |
 | `/auth/password-reset/confirm` | POST | none | `PasswordResetConfirmRequest` | 204 |
