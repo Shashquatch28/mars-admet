@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.routers import account, auth, batch, compare, health, molecule, molecules, predict, reports
+from app.services import prediction_service
 
 logger = logging.getLogger("mars.startup")
 
@@ -18,6 +19,14 @@ def _warn_on_insecure_config() -> None:
     itself ships (`Settings.secret_key`) that would quietly make every
     password-reset token forgeable if left unchanged."""
     settings = get_settings()
+    if prediction_service.ml_import_error is not None:
+        # Falling back to stubs is deliberate for local dev (no rdkit), but an image that
+        # *should* have the ml stack and doesn't — e.g. built before ml/serve gained a
+        # module — otherwise serves stub-v0 for every endpoint with nothing in the logs.
+        logger.warning(
+            "Real ML stack unavailable (%s) — every endpoint is served by the stub.",
+            prediction_service.ml_import_error,
+        )
     if settings.secret_key == "mars-dev-secret-change-me":
         warnings.warn(
             "SECRET_KEY is at its insecure development default — password-reset "

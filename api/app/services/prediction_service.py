@@ -47,6 +47,7 @@ from app.core.config import get_settings
 from app.services.stub_predictor import predict_stub
 
 _ml_available = False
+ml_import_error: ImportError | None = None  # surfaced at startup (app.main); never silent
 try:
     # ml/ is not a package (no top-level __init__.py) — its subpackages
     # (serve/, featurize/, models/, eval/) are imported as if ml/ were on
@@ -61,8 +62,8 @@ try:
     from serve.rule_based import SA_MODEL_ID, SA_UNIT, compute_sa_score  # noqa: E402
 
     _ml_available = True
-except ImportError:
-    pass
+except ImportError as exc:
+    ml_import_error = exc
 
 
 @lru_cache
@@ -125,6 +126,12 @@ def _route_to_models(response: PredictionResponse, targets: list[Endpoint]) -> P
         )
 
     response.predictions = [by_endpoint[ep] for ep in targets if ep in by_endpoint]
+    if any(real is not None for real in real_results.values()):
+        # `predict_stub` stamps "stub-v0"; once a promoted model has served any
+        # endpoint the response belongs to the deployed routing table, which is
+        # what `model_version` (and the cache key) names. Per-row truth stays in
+        # `EndpointPrediction.model_id`.
+        response.model_version = get_settings().model_version
     return response
 
 

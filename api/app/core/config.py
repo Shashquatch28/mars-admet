@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     batch_interactive_threshold: int = Field(default=1_000)
     batch_upload_retention_hours: int = Field(default=24)
 
-    model_version: str = Field(default="v0.1.0-dev")
+    model_version: str = Field(default="v0.2.0-dev")  # bump when the response shape or routing changes: it is part of the 48 h cache key
     model_artifact_dir: str = Field(default="./ml/artifacts")
     ml_data_cache_dir: str = Field(default="./ml/data/cache")
     prediction_cache_ttl_seconds: int = Field(default=172_800)
