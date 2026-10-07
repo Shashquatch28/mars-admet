@@ -120,6 +120,7 @@ def _route_to_models(response: PredictionResponse, targets: list[Endpoint]) -> P
             confidence_high=real.confidence_high,
             in_domain=real.in_domain,
             knn_distance=real.knn_distance,
+            ad_threshold=real.ad_threshold,
             model_id=real.model_id,
         )
 

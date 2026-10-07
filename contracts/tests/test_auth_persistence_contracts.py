@@ -51,6 +51,22 @@ def test_endpoint_prediction_model_id_can_be_overridden():
     assert pred.model_id == "mars-xgboost-ecfp-desc-v1"
 
 
+def test_endpoint_prediction_ad_threshold_defaults_to_none():
+    pred = EndpointPrediction(
+        endpoint=Endpoint.BBB, value=0.5, confidence_low=0.4, confidence_high=0.6,
+        in_domain=True, knn_distance=0.1,
+    )
+    assert pred.ad_threshold is None
+
+
+def test_endpoint_prediction_ad_threshold_survives_cache_round_trip():
+    pred = EndpointPrediction(
+        endpoint=Endpoint.HIA, value=0.9, confidence_low=0.9, confidence_high=0.9,
+        in_domain=True, knn_distance=0.31, ad_threshold=0.47,
+    )
+    assert EndpointPrediction.model_validate_json(pred.model_dump_json()).ad_threshold == 0.47
+
+
 def test_register_request_rejects_short_password():
     RegisterRequest(email="a@b.com", password="longenough1", turnstile_token="tok")
     with pytest.raises(ValueError):

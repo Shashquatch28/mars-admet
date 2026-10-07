@@ -34,6 +34,8 @@ class RealPrediction:
     knn_distance: float
     model_id: str
     n_seeds: int
+    # The cutoff in_domain was judged against; None when the endpoint has no AD index.
+    ad_threshold: float | None = None
 
 
 def standardize_or_raise(smiles: str) -> str:
@@ -78,9 +80,11 @@ def predict_endpoint(
         ad_results = query_ad(ad_index, [smiles_standardized])
         in_domain = ad_results[0].in_domain if ad_results else False
         knn_distance = ad_results[0].knn_mean_distance if ad_results else float("nan")
+        ad_threshold = ad_index.threshold
     else:
         in_domain = False
         knn_distance = float("nan")
+        ad_threshold = None
 
     return RealPrediction(
         endpoint=endpoint_key,
@@ -91,6 +95,7 @@ def predict_endpoint(
         knn_distance=knn_distance,
         model_id=models[0].model_id,
         n_seeds=len(models),
+        ad_threshold=ad_threshold,
     )
 
 
