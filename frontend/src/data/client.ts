@@ -1,5 +1,11 @@
 // Typed API client. Talks to the real FastAPI service (API_ROUTES.md). When
 // VITE_API_BASE is unset the app never calls this — it runs on the fixture.
+//
+// In dev VITE_API_BASE is "/api": Vite proxies it to the API (vite.config.ts), so
+// the browser only ever makes same-origin requests and CORS never applies. No
+// request sets `credentials`; the default (same-origin) is what the future
+// HttpOnly session cookie needs through the proxy. A cross-origin production
+// deploy would need an explicit origin list + allow_credentials on the API.
 import type { Endpoint, PredictionResponse } from "../types/contracts";
 
 export const API_BASE = import.meta.env.VITE_API_BASE;
@@ -14,26 +20,69 @@ export class ApiError extends Error {
   }
 }
 
-export async function fetchPrediction(
-  smiles: string,
-  endpoints?: Endpoint[] | null,
-): Promise<PredictionResponse> {
+// FastAPI sends `detail` as a string for HTTPException and as a list of
+// {loc, msg, …} objects for request-validation failures.
+function describeDetail(detail: unknown, fallback: string): string {
+  if (typeof detail === "string" && detail) return detail;
+  if (Array.isArray(detail)) {
+    const msgs = detail
+      .map((d) => (d && typeof d === "object" && "msg" in d ? String((d as { msg: unknown }).msg) : ""))
+      .filter(Boolean);
+    if (msgs.length) return msgs.join("; ");
+  }
+  return fallback;
+}
+
+async function request(path: string, init?: RequestInit): Promise<Response> {
   if (!API_BASE) throw new ApiError(0, "No API base configured");
-  const res = await fetch(`${API_BASE}/predict`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include", // session cookie is HttpOnly (Module 13)
-    body: JSON.stringify({ smiles, endpoints: endpoints ?? null }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, init);
+  } catch {
+    // fetch rejects (TypeError) when the server is unreachable or the request is blocked
+    throw new ApiError(0, "API unreachable");
+  }
   if (!res.ok) {
     let detail = res.statusText;
     try {
-      const body = (await res.json()) as { detail?: string };
-      if (body?.detail) detail = body.detail;
+      detail = describeDetail(((await res.json()) as { detail?: unknown })?.detail, detail);
     } catch {
-      /* non-JSON error body */
+      /* non-JSON error body (e.g. a proxy 502) */
     }
-    throw new ApiError(res.status, detail);
+    throw new ApiError(res.status, detail || `HTTP ${res.status}`);
   }
-  return (await res.json()) as PredictionResponse;
+  return res;
 }
+
+export interface TimedPrediction {
+  response: PredictionResponse;
+  latencyMs: number; // measured round trip as the browser saw it
+  // What was sent. The service's `smiles_input` is not the raw input: it comes
+  // back already standardized, so it cannot tell us whether the string was rewritten.
+  submitted: string;
+}
+
+export async function fetchPrediction(
+  smiles: string,
+  endpoints?: Endpoint[] | null,
+): Promise<TimedPrediction> {
+  const t0 = performance.now();
+  const res = await request("/predict", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ smiles, endpoints: endpoints ?? null }),
+  });
+  const response = (await res.json()) as PredictionResponse;
+  return { response, latencyMs: Math.round(performance.now() - t0), submitted: smiles };
+}
+
+// Liveness only (`/health`). Readiness (`/health/ready`) reports Postgres/Redis
+// connectivity, which the badge does not claim.
+// Resolves `true` on a 2xx (React Query rejects `undefined` as query data); any
+// failure throws.
+export async function fetchHealth(): Promise<true> {
+  await request("/health");
+  return true;
+}
+
+export const USING_API = !!API_BASE;

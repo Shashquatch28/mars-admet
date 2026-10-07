@@ -1,6 +1,8 @@
 import { useLocation } from "react-router-dom";
 import styles from "./shell.module.css";
 import { useUiState } from "../app/uiState";
+import { usePredictSession } from "../app/predictSession";
+import { useApiHealth, type ApiHealth } from "../data/useApiHealth";
 
 const WORKSPACE_SUB: Record<string, string> = {
   "/predict": "Single molecule",
@@ -10,8 +12,18 @@ const WORKSPACE_SUB: Record<string, string> = {
   "/settings": "",
 };
 
+const API_BADGE: Record<ApiHealth, { label: string; dot: string }> = {
+  ready: { label: "API Ready", dot: "" },
+  checking: { label: "API Checking", dot: styles.dotIdle },
+  unreachable: { label: "API Unreachable", dot: styles.dotDown },
+  unconfigured: { label: "No API", dot: styles.dotIdle },
+};
+
 export function TopBar() {
   const { setPaletteOpen } = useUiState();
+  const { result } = usePredictSession();
+  const health = useApiHealth();
+  const badge = API_BADGE[health];
   const { pathname } = useLocation();
   const base = "/" + (pathname.split("/")[1] || "predict");
   const label = (base.slice(1) || "predict").toUpperCase();
@@ -47,12 +59,12 @@ export function TopBar() {
       </button>
       <div className={styles.serving} role="button" tabIndex={0}>
         <span className={styles.servingLbl}>Serving</span>
-        <span className={styles.servingVal}>mars-routing@v0.3.1</span>
+        <span className={styles.servingVal}>{result?.response.model_version ?? "—"}</span>
         <span className={styles.chev} aria-hidden="true">▾</span>
       </div>
       <div className={styles.apistat}>
-        <span className={styles.dot} />
-        <span className={styles.apistatLbl}>API Ready</span>
+        <span className={`${styles.dot} ${badge.dot}`} />
+        <span className={styles.apistatLbl}>{badge.label}</span>
       </div>
       <div className={styles.acct}>SK</div>
     </header>

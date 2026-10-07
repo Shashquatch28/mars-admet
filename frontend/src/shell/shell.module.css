@@ -172,6 +172,12 @@
   border-radius: 50%;
   background: var(--success);
 }
+.dotIdle {
+  background: var(--text-quiet);
+}
+.dotDown {
+  background: var(--error);
+}
 .apistatLbl {
   font-family: var(--cond);
   letter-spacing: 0.09em;

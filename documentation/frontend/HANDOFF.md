@@ -1,6 +1,7 @@
 # Frontend session handoff
 
-**Written 2026-10-07. Branch `milestone/m4-frontend`, verified at `f7a41db`.**
+**Written 2026-10-07; §1–§4 updated later the same day after Predict went live.
+Branch `milestone/m4-frontend`.**
 Everything below was checked against the repository on that date, not recalled.
 Where a claim could not be verified it says so.
 
@@ -12,15 +13,18 @@ broken or missing, and what to do next.
 
 ## 1. Where things stand
 
-The design is **locked** (passes 1–2.1, 2026-10-01). The M4 frontend is **built
-on fixture data**: shell, Predict workspace, and a Batch triage matrix. Nothing
-runs against the live API yet, and **it cannot yet** — see §3.
+The design is **locked** (passes 1–2.1, 2026-10-01). **Predict is live**: with
+`VITE_API_BASE=/api` it takes a typed SMILES, Run submits it to `/predict`
+through a Vite dev proxy, and the status bar and top bar read the real response
+and a real `/health` check. It was exercised in a browser against the real model
+path (see §2a). Batch is still fixture-only (§3.5); Compare/Library/Settings are
+stubs.
 
 | Gate (run 2026-10-07) | Result |
 |---|---|
 | `npx tsc --noEmit` | clean |
 | `npm run lint` | 0 errors, 1 warning (`uiState.tsx` fast-refresh, accepted) |
-| `npm test` | 31 / 31 passed, 4 files |
+| `npm test` | 51 / 51 passed, 5 files (20 new, against real captured responses) |
 | `npm run build` | succeeds |
 | `npm audit` | 0 vulnerabilities |
 | API + contract tests | 52 passed, 1 skipped (root `.venv`) |
@@ -39,11 +43,61 @@ runs against the live API yet, and **it cannot yet** — see §3.
 | Tooling | `.eslintrc.cjs`, `vitest.config.ts` | ESLint enforces two AGENTS.md rules in **TS/TSX only**. |
 | Backend (this branch) | `ml/serve/rule_based.py`, `contracts/…/prediction.py` | API now serves the SA score (ADR-019) and `ad_threshold` per prediction (ADR-020). |
 
+### 2a. Predict going live — what was done and learned
+
+- **State** lives above the router (`src/app/predictSession.tsx`): the SMILES
+  draft, the last result (response + measured latency + the string submitted),
+  running/error. Run is a mutation, not a query — the server owns the 48 h cache
+  and reports it via `cache_hit`, so the client keeps no second cache.
+- **Shell readouts** come from that result: `served_at`, `CACHE HIT/MISS`, measured
+  ms, and `model_version`. Absent until a request exists (`no request yet`). The
+  fabricated "computed now · cached for 48 h" and "rate 7/60 per min" are gone —
+  the service sends neither (no rate-limit headers).
+- **API badge** (`src/data/useApiHealth.ts`): `No API` (unset) · `Checking` ·
+  `Ready` · `Unreachable`, polled every 30 s against `/health` (liveness only).
+- **CORS**: confirmed in a browser that `credentials: "include"` against `*` is
+  rejected. Dev now goes through a same-origin proxy (`/api` → `localhost:8000`,
+  override with `MARS_API_PROXY_TARGET`); `credentials` is no longer set. A
+  cross-origin production deploy still needs explicit origins +
+  `allow_credentials` on the API (item (c) in §3.3 — not done, needs approval).
+- **Also fabricated in live mode, now gated**: the Structure panel (fixed
+  geometry + a fixed "−42.8 kcal/mol" for any molecule) renders a plain
+  "not connected yet" note; the Identity panel's "Rewritten by standardizer" is
+  derived rather than constant; a live session with nothing run shows quiet
+  placeholder rows and "No request yet", not NOT RETURNED rows and not the
+  "design prototype" strip (nothing on screen is illustrative).
+- **Real responses** are saved in `src/domain/real-responses/` (README there has
+  provenance) and tested in `src/domain/realResponses.test.ts`.
+
+**What the real responses showed that our fixtures hid**
+
+1. `unit` is `null` on all 14 model rows. The 1-dp rule for `% bound` was keyed on
+   `unit === "% bound"` and silently didn't apply; now `decimalPlaces(endpoint)`.
+2. `smiles_input` comes back already standardized, so it can't tell you whether
+   the input was rewritten. The client keeps what was submitted.
+3. A cache hit returns the **original** `served_at`, so the status-bar timestamp
+   is "computed at", not "requested at".
+4. Celecoxib is out of domain on 5 of 14 endpoints; the design fixture had 2.
+5. First `/predict` after an API restart took ~20 s (model load). The UI shows
+   Running… throughout; there is no cold-start affordance.
+6. Top-level `model_version` was `"stub-v0"` even with every row served by a real
+   model. A working-tree change to `api/app/services/prediction_service.py` by
+   another session addresses this; it was uncommitted when this was written.
+7. A fresh `docker compose build api` failed at import: `sqlalchemy>=2.0` without
+   `[asyncio]` (no `greenlet`). The working tree also carries a one-line fix to
+   `api/requirements.txt` from another session; **not verified by this session**.
+   Until it is committed and the image rebuilt, `docker compose up -d api` reuses
+   an image whose `ml/serve` predates `rule_based.py`, which serves **stub-v0 for
+   every endpoint and no SA row**.
+
 ## 3. What is broken or missing — read before touching anything
 
 These are ordered by how badly they would bite.
 
-### 3.1 Predict cannot take input. "Going live" is not one change.
+### 3.1 ~~Predict cannot take input.~~ Resolved 2026-10-07 for SMILES + Run + Clear
+Still inert: **Compare molecule, Save to library, Export, the endpoint-subset
+selector** (they have no handlers; the subset selector is why NOT RETURNED rows
+only appear in tests today, from a subset request made by hand). Original note:
 
 `PredictWorkspace.tsx` hard-codes `const smiles = CELECOXIB_SMILES`. The textarea
 has only a `defaultValue`; **Run prediction, Clear, Compare molecule, Save to
@@ -54,7 +108,8 @@ library, Export and the endpoint-subset selector have no handlers.** Setting
 > described going live as "swap the fixture for a real response". That
 > understated the work and has been corrected.
 
-### 3.2 The status bar and top bar show fabricated values in live mode
+### 3.2 ~~The status bar and top bar show fabricated values~~ Resolved 2026-10-07
+Original note:
 
 - `StatusBar.tsx` reads `FIXTURE_RESPONSE` directly: the timestamp, `CACHE MISS`,
   `412 ms`, `rate 7/60 per min` and `cached for 48 h` are all literals. Against a
@@ -67,7 +122,8 @@ Fix: drive the status bar from the actual response (`served_at`, `cache_hit`,
 measured latency, `model_version`) and the API badge from a real `/health`
 check. Until a value has a source, render it as absent, not as a plausible number.
 
-### 3.3 The first live browser request will probably fail on CORS
+### 3.3 ~~CORS~~ Settled for dev 2026-10-07 (proxy); production origin list still open
+Confirmed in a browser. Original note:
 
 `api/app/main.py` sets `allow_origins=["*"]` with **no** `allow_credentials`.
 `client.ts` sends `credentials: "include"`. Browsers reject a credentialed
@@ -119,15 +175,15 @@ Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
 
 ## 4. Recommended order
 
-1. **Make Predict real** (§3.1): controlled SMILES input, Run submits it, loading
-   / error / invalid-SMILES states, fixture fallback kept for no-API-base.
-2. **Remove the fabricated readouts** (§3.2) in the same change — they would
-   otherwise sit next to real data.
-3. **Settle CORS** (§3.3), then run the API (`docker compose up -d api`) and
-   exercise the real states in a browser: SA row, `ad_threshold`, stub-served,
-   out-of-domain, NOT RETURNED, cache hit vs miss. **Save real responses as
-   vitest fixtures** — every fixture so far was written by us, so they only test
-   our assumptions.
+1. ~~Make Predict real~~ — done.
+2. ~~Remove the fabricated readouts~~ — done.
+3. ~~Settle CORS; exercise real states; save real responses~~ — done, with two
+   gaps: no mixed real+stub response could be captured (every promoted
+   endpoint was served by a real model), so the stub-served *row* state is
+   covered only by the all-stub capture; and the browser pass was manual.
+   **Wire the endpoint-subset selector and the remaining Predict buttons
+   (§3.1) next** — the subset selector is also the only way to see NOT RETURNED
+   live.
 4. **Close the CSS guard** (§3.4).
 5. **Batch live**: needs Q7 answered first; then upload + SSE hook.
 6. **ADR-009 drift check.**

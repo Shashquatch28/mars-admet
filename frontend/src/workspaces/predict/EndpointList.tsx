@@ -8,7 +8,15 @@ import { useUiState } from "../../app/uiState";
 import type { Reconciliation, Row } from "../../domain/reconcile";
 import { EndpointRow } from "./EndpointRow";
 
-export function EndpointList({ recon, loading }: { recon: Reconciliation; loading?: boolean }) {
+export function EndpointList({
+  recon,
+  loading,
+  idle,
+}: {
+  recon: Reconciliation;
+  loading?: boolean;
+  idle?: boolean; // live session, nothing run yet — there is no request to reconcile
+}) {
   const { selectedEndpoint, setSelectedEndpoint, density, setDensity } = useUiState();
   const rows = recon.rows;
 
@@ -73,9 +81,19 @@ export function EndpointList({ recon, loading }: { recon: Reconciliation; loadin
       <div className={styles.reshd}>
         <span className={styles.resTitle}>Predictions</span>
         <span className={styles.recon}>
-          <b>{c.requested}</b> requested <span className={styles.reconD}>·</span> <b>{c.returned}</b> returned{" "}
-          <span className={styles.reconD}>·</span> <b className={styles.reconOod}>{c.outOfDomain}</b> out of domain{" "}
-          <span className={styles.reconD}>·</span> <b>{c.stubServed}</b> stub-served
+          {idle ? (
+            "No request yet"
+          ) : loading ? (
+            <>
+              <b>{c.requested}</b> requested
+            </>
+          ) : (
+            <>
+              <b>{c.requested}</b> requested <span className={styles.reconD}>·</span> <b>{c.returned}</b> returned{" "}
+              <span className={styles.reconD}>·</span> <b className={styles.reconOod}>{c.outOfDomain}</b> out of domain{" "}
+              <span className={styles.reconD}>·</span> <b>{c.stubServed}</b> stub-served
+            </>
+          )}
         </span>
         <span style={{ flex: 1 }} />
         <button className={styles.exp}>

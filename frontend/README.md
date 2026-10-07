@@ -95,15 +95,22 @@ npx tsc --noEmit
 ## Running against the real API
 
 ```bash
-cp .env.example .env
-# set VITE_API_BASE=http://localhost:8000  (docker compose up -d api)
+docker compose up -d --build api   # from the repo root; --build when ml/serve changed
+cp .env.example .env.local
+# set VITE_API_BASE=/api  (the dev server proxies /api -> http://localhost:8000)
 npm run dev
 ```
 
 With `VITE_API_BASE` unset the UI runs on the fixture and shows the "design
-prototype" strip. With it set, `/predict` drives the result, the strip clears,
-and the AD-gauge threshold is read from the response (`ad_threshold`). It is
-`null` for stub-served and rule-based rows, and the gauge is then not drawn (ADR-020).
+prototype" strip; Run is disabled. With it set, you type a SMILES and Run submits
+it to `/predict`; the strip clears, the status bar shows the real `served_at`,
+cache hit/miss and measured latency, the top bar shows the response's
+`model_version` and a live `/health` check, and the AD-gauge threshold is read
+from the response (`ad_threshold`). It is `null` for stub-served and rule-based
+rows, and the gauge is then not drawn (ADR-020).
+
+The `/api` proxy exists only in the dev server. A cross-origin deploy needs the
+API to list origins explicitly and set `allow_credentials` (not done yet).
 
 ## Read first
 

@@ -5,7 +5,7 @@ import styles from "./predict.module.css";
 import type { Row } from "../../domain/reconcile";
 import type { PredictionResponse } from "../../types/contracts";
 import { DISPLAY_UNIT, PROB_DOMAIN } from "../../domain/endpoints";
-import { fmtValue, fmtInterval, fmtDateTime, fmtNum } from "../../domain/format";
+import { decimalPlaces, fmtValue, fmtInterval, fmtDateTime, fmtNum } from "../../domain/format";
 import { ADGauge } from "../../components/dataviz/ADGauge";
 
 function Rule() {
@@ -85,9 +85,9 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
         <div className={styles.isec}>
           <dl className={styles.ikv}>
             <dt>Interval</dt>
-            <dd>{fmtInterval(prediction.confidence_low, prediction.confidence_high, prediction.unit === "% bound" ? 1 : 2)}</dd>
+            <dd>{fmtInterval(prediction.confidence_low, prediction.confidence_high, decimalPlaces(prediction.endpoint))}</dd>
             <dt>Interval width</dt>
-            <dd>{fmtNum(Math.abs(prediction.confidence_high - prediction.confidence_low), prediction.unit === "% bound" ? 1 : 2)}</dd>
+            <dd>{fmtNum(Math.abs(prediction.confidence_high - prediction.confidence_low), decimalPlaces(prediction.endpoint))}</dd>
             <dt>Derived from</dt>
             <dd className={styles.ddDerived}>Spread across the 5 cross-validation seeds, not a coverage guarantee.</dd>
           </dl>

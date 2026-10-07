@@ -1,11 +1,25 @@
 // Conformer viewer host. The 3Dmol.js wiring is Module 7; this is the shell and
 // its hero/analysis toggle, with a placeholder geometry. A 404 here is a normal
-// state, not an error.
+// state, not an error. The placeholder geometry and its energy caption are fixed
+// literals, so against a live response (`placeholderOnly`) they are not drawn:
+// a structure that is not this molecule would be a fabricated readout.
 import { useState } from "react";
 import styles from "./predict.module.css";
 
-export function StructureViewer() {
+export function StructureViewer({ placeholderOnly = false }: { placeholderOnly?: boolean }) {
   const [mode, setMode] = useState<"hero" | "analysis">("hero");
+  if (placeholderOnly) {
+    return (
+      <div className={styles.viewer}>
+        <div className={styles.vhd}>
+          <span className={styles.panelTitle}>Structure</span>
+        </div>
+        <div className={styles.vstage}>
+          <p className={styles.nostate}>Structure view is not connected yet.</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={styles.viewer}>
       <div className={styles.vhd}>

@@ -6,7 +6,7 @@
 import styles from "./predict.module.css";
 import type { Row } from "../../domain/reconcile";
 import { DISPLAY_UNIT, PROB_DOMAIN, STUB_MODEL_ID } from "../../domain/endpoints";
-import { fmtValue } from "../../domain/format";
+import { decimalPlaces, fmtValue } from "../../domain/format";
 import { IntervalTrack } from "../../components/dataviz/IntervalTrack";
 import { NumericInterval } from "../../components/dataviz/NumericInterval";
 import { ReliabilityTag } from "../../components/dataviz/ReliabilityTag";
@@ -83,7 +83,7 @@ export function EndpointRow({ row, selected, focused, loading, onSelect, rowRef,
       <NumericInterval
         low={prediction.confidence_low}
         high={prediction.confidence_high}
-        dp={prediction.unit === "% bound" ? 1 : 2}
+        dp={decimalPlaces(prediction.endpoint)}
       />
     );
   } else {
