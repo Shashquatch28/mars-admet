@@ -108,7 +108,7 @@ export function PredictWorkspace() {
               <dd className={styles.idId}>{response?.molecule_id || "—"}</dd>
             </dl>
           </div>
-          <StructureViewer placeholderOnly={usingApi} />
+          <StructureViewer live={usingApi} moleculeId={response?.molecule_id} />
           <p className={styles.vnote}>
             Conformer is generated on demand and expires with the prediction cache. A 404 here is a normal
             state, not an error.

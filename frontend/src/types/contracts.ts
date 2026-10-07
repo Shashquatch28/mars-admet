@@ -63,6 +63,27 @@ export interface PredictionResponse {
   cache_hit: boolean;
 }
 
+// --- conformer (conformer.py) ---
+export interface ConformerAtom {
+  element: string;
+  x: number;
+  y: number;
+  z: number;
+  partial_charge: number | null;
+}
+export interface ConformerBond {
+  atom_index_1: number;
+  atom_index_2: number;
+  order: number; // 1, 1.5 (aromatic), 2, 3
+}
+export interface ConformerResponse {
+  molecule_id: string;
+  atoms: ConformerAtom[];
+  bonds: ConformerBond[];
+  energy_kcal_mol: number; // MMFF94 energy of the returned (lowest-energy) conformer
+  sdf_block: string; // full SDF, handed to 3Dmol as-is
+}
+
 // --- batch (api.py) ---
 export interface BatchRowResult {
   row_index: number;

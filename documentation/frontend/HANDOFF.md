@@ -63,12 +63,23 @@ stubs.
   `credentials: "include"` is back and works cross-origin too. Cookies are
   `SameSite=Lax`: SPA and API must be same-site; a fully cross-site deploy would
   also need `SameSite=None; Secure` (not done).
-- **Also fabricated in live mode, now gated**: the Structure panel (fixed
-  geometry + a fixed "−42.8 kcal/mol" for any molecule) renders a plain
-  "not connected yet" note; the Identity panel's "Rewritten by standardizer" is
+- **Also fabricated in live mode, now fixed**: the Structure panel drew fixed
+  geometry and a fixed "−42.8 kcal/mol" for any molecule. It now renders the real
+  `/molecule/{id}/3d` conformer with 3Dmol (see "3D viewer" below); the Identity panel's "Rewritten by standardizer" is
   derived rather than constant; a live session with nothing run shows quiet
   placeholder rows and "No request yet", not NOT RETURNED rows and not the
   "design prototype" strip (nothing on screen is illustrative).
+- **3D viewer** (`StructureViewer`, `useConformer`, `domain/conformer.ts`): live mode
+  fetches `/molecule/{id}/3d` and draws the SDF with 3Dmol (lazy-loaded). States are
+  derived in one pure function: idle / loading / ready / unavailable (404, a normal
+  state: the id expires with the prediction cache) / unsupported (501) / error.
+  Atoms use the `--viewer-*` element tokens, nothing animates. The caption is the
+  service's own energy (`ETKDG · MMFF94 · 60.0 kcal/mol` for celecoxib; the old
+  literal said −42.8). **Hero** = ball-and-stick, heavy atoms; **Analysis** = all
+  atoms as sticks plus heavy-atom index labels. The written docs never define what
+  Analysis shows, so that is my reading; confirm or correct it. The 404/501
+  *panel states* are verified by tests, not in a browser (no way to force them
+  without editing Redis).
 - **Real responses** are saved in `src/domain/real-responses/` (README there has
   provenance) and tested in `src/domain/realResponses.test.ts`.
 
@@ -164,8 +175,8 @@ Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
 - **No empty/entry state.** The *Predict — entry state* artboard (draw/upload/
   recents, "what MARS does not do") is not implemented; the roster merely renders
   from `emptyResponse`. I did not verify any dedicated empty-state view exists.
-- **3Dmol is installed but unused.** `StructureViewer` is placeholder geometry
-  with a toggle that only changes local state. No `/molecule/{id}/3d` call.
+- ~~**3Dmol is installed but unused.**~~ Wired 2026-10-07 (see "3D viewer" in §2a).
+  Fixture mode still shows the placeholder geometry, labelled as illustrative.
 - **Compare, Library, Settings, auth UI** are `StubWorkspace`.
 - **ADR-009 CI drift check** is unwritten. `ad_threshold` just changed the
   contract in three places at once; nothing would have caught a miss.
@@ -190,7 +201,7 @@ Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
 4. **Close the CSS guard** (§3.4).
 5. **Batch live**: needs Q7 answered first; then upload + SSE hook.
 6. **ADR-009 drift check.**
-7. Then 3Dmol, Compare, Library, auth.
+7. ~~3Dmol~~ — done. Then Compare, Library, auth.
 
 Do not build more surfaces on fixtures before 1–3.
 

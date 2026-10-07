@@ -8,7 +8,7 @@
 // and allow_credentials (CORS_ALLOW_ORIGINS) — never `*`, which browsers reject
 // together with credentials. Cookies are SameSite=Lax, so the SPA and API must
 // be same-site (e.g. app.x.com and api.x.com).
-import type { Endpoint, PredictionResponse } from "../types/contracts";
+import type { ConformerResponse, Endpoint, PredictionResponse } from "../types/contracts";
 
 export const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -76,6 +76,12 @@ export async function fetchPrediction(
   });
   const response = (await res.json()) as PredictionResponse;
   return { response, latencyMs: Math.round(performance.now() - t0), submitted: smiles };
+}
+
+// 404: unknown or expired molecule_id (a normal state); 501: the API has no RDKit.
+export async function fetchConformer(moleculeId: string): Promise<ConformerResponse> {
+  const res = await request(`/molecule/${encodeURIComponent(moleculeId)}/3d`);
+  return (await res.json()) as ConformerResponse;
 }
 
 // Liveness only (`/health`). Readiness (`/health/ready`) reports Postgres/Redis

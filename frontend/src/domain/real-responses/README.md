@@ -10,6 +10,8 @@ assumed it would (`../realResponses.test.ts`). Do not hand-edit them; re-capture
 | `celecoxib-hit.json` | the identical request again (`cache_hit: true`) |
 | `celecoxib-subset.json` | `endpoints: [solubility_logs, herg_cardiotoxicity, synthetic_accessibility]` |
 | `celecoxib-stub-only.json` | same request against an API container **without** the ml stack (every row `stub-v0`) |
+| `celecoxib-3d.json` | `GET /molecule/{id}/3d` for celecoxib's `molecule_id` (explicit hydrogens, 40 atoms, MMFF94 energy +60.0 kcal/mol) |
+| `unknown-molecule-404.json` | `GET /molecule/0000000000000000/3d` — the "normal" 404 |
 | `invalid-smiles-422.json` | `{smiles: "not_a_smiles(("}` — `detail` is a string |
 | `empty-422.json` | `{smiles: "  "}` — `detail` is a string |
 | `missing-field-422.json` | `{}` — `detail` is a list of validation errors |
