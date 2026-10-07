@@ -14,8 +14,8 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   Saved-epoch derivation (`kermt_log.py`) confirmed consistent on four classification runs (D1: KERMT's final "best … epoch" line again wrong on 3 of 4).
   Session note: `status/kermt_gpu_session_2026-10-06.md`. Driver 595.91.07 (Pass 1: 580.173.02), host Python 3.11.17 (3.11.15), image id unchanged.
   **Remaining:** `metabolism__cls` 1–4 (≈ 3.8 h), `absorption_distribution__reg` 1–4 (≈ 3.8 h), `toxicity__cls` 2–4 (≈ 4.75 h).
-  **Open (needs a decision/code, no training impact):** `ml/eval/tier0_artifacts.py:197` unconditionally loads `temperature_scaler.json` and crashes on regression arms
-  (`metabolism__reg`, `absorption_distribution__reg`), so no artifact packages exist for them.
+  **Resolved 2026-10-06 (decisions.md):** `ml/eval/tier0_artifacts.py` is classification-only; `RunBundle` now refuses regression arms up front (`require_classification`)
+  instead of crashing on the missing `temperature_scaler.json`. `metabolism__reg` and `absorption_distribution__reg` get no artifact package until regression reporting (separate P1) exists.
 - **STATE 2026-09-30.** Pass 1 done: seed 0 of `metabolism__reg`, `absorption_distribution__cls`, `absorption_distribution__reg`,
   `metabolism__cls` (all `VERDICT: PASS`, ≈ 2.3 h GPU) on top of DILI seeds 0–4 and `toxicity__cls` seeds 0–1 = **11 KERMT models**, all
   in W&B (`shashquatch/mars-admet`, model + run-record artifacts). Records: `status/kermt_tier0_results/`; session note:

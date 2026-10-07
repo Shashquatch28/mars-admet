@@ -9,6 +9,10 @@ retraining, no additional container/GPU inference calls, no test-set
 influence on training/epoch-selection/calibration — this module only reads
 and plots what the training run already produced.
 
+Classification arms only. A regression arm (``*__reg``) has no temperature scaler by design
+(decisions.md D2, ``skipped_regression``) and none of the artifacts below apply to it, so
+``RunBundle`` refuses it up front; regression reporting is a separate open P1 item.
+
 Handles both single-endpoint arms (e.g. ``dili_standalone__cls``) and
 multi-task subgroup arms (e.g. ``toxicity__cls`` = herg + ames): every
 per-endpoint artifact (ROC/PR/confusion matrix/probability distributions/
@@ -155,6 +159,16 @@ def _read_multi_input_csv(path: Path, endpoints: list[str]) -> tuple[list[str], 
     return all_smiles, per_ep
 
 
+def require_classification(subgroup_key: str, spec) -> None:
+    """Refuse a regression arm before any classification-only artifact is read or written."""
+    if spec.task_type is not TaskType.CLASSIFICATION:
+        raise NotImplementedError(
+            f"{subgroup_key} is a {spec.task_type.value} arm; tier0_artifacts is classification-only "
+            "(regression arms have no temperature scaler by design, decisions.md D2; "
+            "regression reporting is a separate P1 item)"
+        )
+
+
 class RunBundle:
     def __init__(self, run_id: str):
         self.run_id = run_id
@@ -169,6 +183,7 @@ class RunBundle:
 
         self.subgroup_key = self.config["endpoint"]
         self.spec = all_subgroups()[self.subgroup_key]
+        require_classification(self.subgroup_key, self.spec)
         self.endpoint_keys = list(self.spec.endpoints)
         self.multi = len(self.endpoint_keys) > 1
         self.seed = self.config["seed"]

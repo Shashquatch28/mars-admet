@@ -13,6 +13,31 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-06 — `tier0_artifacts.py` is classification-only; regression arms are refused, not packaged
+
+**Status:** decided 2026-10-06 from repository evidence. Changes code (a guard and a test), no data, checkpoints or run records.
+
+**Finding.** `RunBundle` loaded `calibration/<endpoint>/temperature_scaler.json` for every member endpoint. A regression arm
+(`metabolism__reg`, `absorption_distribution__reg`) never has one: §D2 fixed regression calibration as unused by design
+(`status: skipped_regression`, only `calibration_diagnostics.json` is written). The script therefore died on the first
+regression arm with a bare `FileNotFoundError`. Nothing after that point is meaningful for regression either: it builds
+ROC/PR curves, confusion matrices and probability reliability from integer labels and calls `compute_metrics(..., TaskType.CLASSIFICATION)`.
+
+**Decision.** `tier0_artifacts.py` stays classification-only, matching `tier0_present.py` (which already refuses regression
+input). `RunBundle` now raises `NotImplementedError` as soon as the subgroup spec says `task_type != CLASSIFICATION`, before any
+file is read or any plot written, so no partial package is left behind. Regression reporting (regression metrics beyond the
+stock epoch-selection MAE, parity and residual plots) is the separate open P1 item already named in `lab_session_tasks.md`
+and §D7; it is **not** invented here.
+
+**Consequence.** `absorption_distribution__reg` and `metabolism__reg` get no `tier0_artifacts` package until the regression
+reporting item is built. Training, `s_verify.py`, `s_agg.py` and the run records / aggregates in `status/kermt_tier0_results/`
+do not use this script (it is an optional post-run step), so Pass 2 is not blocked.
+
+**Code:** `ml/eval/tier0_artifacts.py` (`require_classification`), `ml/tests/test_tier0_artifacts.py` (skipped where matplotlib
+is absent, like the sibling tier0 tests; the guard itself was also checked against all six real subgroup specs with matplotlib stubbed).
+
+---
+
 ## 2026-09-30 — Tier-0 Pass-2 protocol frozen: resolution of the §4.4 items from `status/kermt_gpu_session_2026-09-30.md`
 
 **Status:** decided 2026-09-30 from repository evidence, on the maintainer's instruction to resolve on evidence rather
