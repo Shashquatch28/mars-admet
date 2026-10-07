@@ -29,6 +29,7 @@ describe("fmtValue", () => {
     in_domain: true,
     knn_distance: 0.41,
     model_id: "mars-xgboost-ecfp-v1",
+    ad_threshold: 0.58,
   };
 
   it("formats classification probability to 2dp", () => {

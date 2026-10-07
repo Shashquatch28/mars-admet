@@ -4,7 +4,7 @@
 import styles from "./predict.module.css";
 import type { Row } from "../../domain/reconcile";
 import type { PredictionResponse } from "../../types/contracts";
-import { AD_THRESHOLD, DISPLAY_UNIT, PROB_DOMAIN } from "../../domain/endpoints";
+import { DISPLAY_UNIT, PROB_DOMAIN } from "../../domain/endpoints";
 import { fmtValue, fmtInterval, fmtDateTime, fmtNum } from "../../domain/format";
 import { ADGauge } from "../../components/dataviz/ADGauge";
 
@@ -63,9 +63,9 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
 
   if (!prediction) return <div className={styles.inspbody}>{header}</div>;
 
-  // Prefer the threshold the response carries (Q19); fall back to the local
-  // table until the contract supplies it.
-  const threshold = prediction.ad_threshold ?? AD_THRESHOLD[endpoint];
+  // The cutoff comes from the response only (Q19). null means the endpoint has no
+  // applicability-domain index: draw no tick rather than invent one.
+  const threshold = prediction.ad_threshold;
   const showGauge =
     (state.kind === "ok" || state.kind === "out_of_domain") && threshold != null;
 

@@ -13,6 +13,7 @@ function pred(over: Partial<EndpointPrediction>): EndpointPrediction {
     in_domain: true,
     knn_distance: 0.3,
     model_id: "mars-xgboost-ecfp-v1",
+    ad_threshold: 0.58,
     ...over,
   };
 }

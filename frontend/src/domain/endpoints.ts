@@ -91,28 +91,6 @@ export function displayGroupOf(e: Endpoint): DisplayGroup {
 // The classification probability axis MARS treats as genuinely bounded.
 export const PROB_DOMAIN: readonly [number, number] = [0, 1];
 
-// Applicability-domain gauge threshold per endpoint: the 90th-percentile of the
-// training set's own internal 5-NN distances (blueprint Module 5). This is real,
-// validated per-endpoint metadata that is NOT yet in the prediction response —
-// it must be sourced from the ML artifacts (or added to the API). The values
-// below are placeholders for the prototype. See OPEN_QUESTIONS Q19.
-export const AD_THRESHOLD: Partial<Record<Endpoint, number>> = {
-  solubility_logs: 0.58,
-  lipophilicity_logp: 0.58,
-  caco2_permeability: 0.58,
-  hia_absorption: 0.58,
-  pgp_inhibition: 0.58,
-  bbb_permeability: 0.58,
-  ppb_binding: 0.58,
-  cyp3a4_inhibition: 0.58,
-  cyp2d6_inhibition: 0.58,
-  cyp2c9_inhibition: 0.58,
-  clearance_microsomal: 0.58,
-  herg_cardiotoxicity: 0.58,
-  ames_mutagenicity: 0.58,
-  dili_liver_injury: 0.58,
-};
-
 export const STUB_MODEL_ID = "stub-v0";
 
 // Display unit per endpoint for the results column. Classification carries no

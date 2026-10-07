@@ -252,7 +252,7 @@ export function makeBatchFixture(n = 240, seed = 20261006): BatchPredictResponse
         in_domain: inDomain,
         knn_distance: Math.round((inDomain ? 0.2 + rnd() * 0.3 : 0.6 + rnd() * 0.3) * 100) / 100,
         model_id: stub ? STUB_MODEL_ID : "mars-xgboost-ecfp-v1",
-        ad_threshold: 0.58,
+        ad_threshold: stub ? null : 0.58,
       });
     }
 

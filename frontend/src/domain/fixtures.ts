@@ -2,8 +2,9 @@
 // a full-width "design prototype" strip whenever a fixture is in use (ADR-010).
 // Celecoxib, matching the design comps. clearance_microsomal is intentionally
 // absent so the roster shows a not_returned row; cyp2c9 is stub-served.
-// ad_threshold is the proposed additive field (Q19) — present here so the gauge
-// renders from the response; real values come from the Module 5 evaluation.
+// ad_threshold mirrors the contract field (Q19): a number where the endpoint has an
+// applicability-domain index, null for stub-served and rule-based rows. The 0.58 below
+// is an illustrative fixture value, not a measured Module 5 cutoff.
 import type { PredictionResponse } from "../types/contracts";
 
 export const CELECOXIB_SMILES =
@@ -13,7 +14,7 @@ export const CELECOXIB_STD =
 
 const REAL = "mars-xgboost-ecfp-v1";
 const REAL_DESC = "mars-xgboost-ecfp-desc-v1";
-const THR = 0.58; // placeholder AD threshold (Q19)
+const THR = 0.58; // illustrative fixture value
 
 export const FIXTURE_RESPONSE: PredictionResponse = {
   smiles_input: CELECOXIB_SMILES,
@@ -32,12 +33,12 @@ export const FIXTURE_RESPONSE: PredictionResponse = {
     { endpoint: "ppb_binding", value: 96.4, unit: "% bound", confidence_low: 94.8, confidence_high: 98.0, in_domain: true, knn_distance: 0.44, model_id: REAL_DESC, ad_threshold: THR },
     { endpoint: "cyp3a4_inhibition", value: 0.68, unit: null, confidence_low: 0.6, confidence_high: 0.76, in_domain: true, knn_distance: 0.39, model_id: REAL, ad_threshold: THR },
     { endpoint: "cyp2d6_inhibition", value: 0.12, unit: null, confidence_low: 0.06, confidence_high: 0.19, in_domain: true, knn_distance: 0.33, model_id: REAL, ad_threshold: THR },
-    { endpoint: "cyp2c9_inhibition", value: 0.85, unit: null, confidence_low: 0.78, confidence_high: 0.92, in_domain: true, knn_distance: 0.0, model_id: "stub-v0" },
+    { endpoint: "cyp2c9_inhibition", value: 0.85, unit: null, confidence_low: 0.78, confidence_high: 0.92, in_domain: true, knn_distance: 0.0, model_id: "stub-v0", ad_threshold: null },
     // clearance_microsomal omitted -> not_returned
     { endpoint: "herg_cardiotoxicity", value: 0.41, unit: null, confidence_low: 0.33, confidence_high: 0.49, in_domain: true, knn_distance: 0.36, model_id: REAL, ad_threshold: THR },
     { endpoint: "ames_mutagenicity", value: 0.07, unit: null, confidence_low: 0.03, confidence_high: 0.13, in_domain: true, knn_distance: 0.3, model_id: REAL, ad_threshold: THR },
     { endpoint: "dili_liver_injury", value: 0.55, unit: null, confidence_low: 0.47, confidence_high: 0.63, in_domain: true, knn_distance: 0.48, model_id: REAL, ad_threshold: THR },
-    { endpoint: "synthetic_accessibility", value: 2.84, unit: "SA score", confidence_low: 2.84, confidence_high: 2.84, in_domain: true, knn_distance: 0.0, model_id: "rdkit-sascore" },
+    { endpoint: "synthetic_accessibility", value: 2.84, unit: "SA score", confidence_low: 2.84, confidence_high: 2.84, in_domain: true, knn_distance: 0.0, model_id: "rdkit-sascore", ad_threshold: null },
   ],
 };
 

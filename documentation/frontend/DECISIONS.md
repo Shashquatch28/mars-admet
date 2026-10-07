@@ -487,7 +487,8 @@ choice. *Always hit the API* — breaks the offline/demo path and every test.
 real response yet) rather than always on. Loading renders placeholder rows at the
 roster's known heights (no reflow, no shimmer); a failed request shows an inline
 error with the status code. The `ad_threshold` the gauge needs is read from the
-response when present and falls back to a local table (Q19).
+response when present and falls back to a local table (Q19). *Superseded by ADR-020: the field is in the
+contract and the local table is gone.*
 
 ## ADR-019 — The API computes the rule-based SA score; the UI keeps NOT RETURNED honest
 
@@ -519,4 +520,30 @@ placeholders; the UI keys off the endpoint's `RULE_BASED` task type and never
 draws an interval or domain for it. **Deploy note:** cached `/predict` responses
 are keyed by `MODEL_VERSION`; bump it (or flush Redis) on release or 14-entry
 responses are served for up to 48 h.
+
+## ADR-020 — The AD threshold travels with the prediction (resolves Q19)
+
+**Date:** 2026-10-06 · **Status:** accepted (M4)
+
+**Decision.** `EndpointPrediction` gains `ad_threshold: float | None` (additive, default `None`). It is the cutoff
+`in_domain` was judged against: the 90th percentile of the endpoint's training set's own leave-one-out 5-NN distances
+(Module 5), read from the endpoint's AD index (`ADIndex.threshold`) at serve time, so `in_domain == (knn_distance <=
+ad_threshold)` holds by construction. It is `null` for stub-served and rule-based rows, which have no AD index.
+`contracts.ts` mirrors it as `number | null` (required, since the API always sends it). The local `AD_THRESHOLD`
+table in `domain/endpoints.ts` is deleted.
+
+**Rationale.** Q19 option (a): the number travels with the value it describes, cannot drift from the index that
+produced the flag, and needs no second request or pinned table. The ML side already held the real value.
+
+**Rejected.** *A `/metadata` endpoint* — a second source that can disagree with the response it annotates. *A pinned
+threshold table* — drifts from the deployed artifacts, which is the exact failure the table was a stand-in for.
+*Keeping the 0.58 fallback "just in case"* — on a live response it would draw the gauge tick at an invented position,
+which AGENTS.md rule 4 forbids; absence of the number means absence of the tick.
+
+**Consequences.** When `ad_threshold` is `null` the gauge is not drawn; the real `in_domain` boolean and the
+out-of-domain explanation in words still show. The fixtures keep an illustrative `0.58` for numeric rows only and say so.
+**Deploy note:** `/predict` responses cached before this release lack the field and revalidate to `null` for up to 48 h
+(the gauge is hidden on them, never wrong); bump `MODEL_VERSION` on release, as for ADR-019. **Not addressed:** if a
+promoted endpoint ever lacks an AD index, `predict_endpoint` returns `in_domain=False` with a NaN distance, which the
+UI would read as "outside applicability domain"; all currently promoted endpoints have an index.
 

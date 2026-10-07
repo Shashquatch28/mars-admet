@@ -269,6 +269,8 @@ that is the other coherent way to resolve it.
 
 ### Q19 — The AD-gauge threshold is not in the prediction response
 
+**RESOLVED 2026-10-06 (ADR-020): option (a), `ad_threshold` is now in `EndpointPrediction`. The text below is the original question.**
+
 **Blocking for a *live* gauge, not for the scaffold.** `EndpointPrediction`
 carries `in_domain` and `knn_distance`, but **not** the per-endpoint threshold
 the gauge draws its tick at. That threshold is the 90th-percentile of the

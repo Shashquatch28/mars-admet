@@ -45,11 +45,12 @@ export interface EndpointPrediction {
   // "stub-v0" means no promoted model. Defaults to the stub so older
   // callers are unaffected (prediction.py).
   model_id: string;
-  // PROPOSED additive field (OPEN_QUESTIONS Q19): the per-endpoint
-  // applicability-domain threshold (90th-pct of the training set's own 5-NN
-  // distances, Module 5) the gauge draws its tick at. Not in the contract yet;
-  // the UI reads it when present and falls back to a local table otherwise.
-  ad_threshold?: number | null;
+  // Additive field (Q19). The cutoff in_domain was judged against: the 90th
+  // percentile of the training set's own 5-NN distances (Module 5), so
+  // in_domain === (knn_distance <= ad_threshold). null when the endpoint has no
+  // applicability-domain index (stub-served, rule-based): there is no tick to
+  // draw and the client must not invent one.
+  ad_threshold: number | null;
 }
 
 export interface PredictionResponse {

@@ -85,8 +85,8 @@ npm run dev
 
 With `VITE_API_BASE` unset the UI runs on the fixture and shows the "design
 prototype" strip. With it set, `/predict` drives the result, the strip clears,
-and the AD-gauge threshold is read from the response (`ad_threshold`) when
-present, falling back to the local table until the contract supplies it (Q19).
+and the AD-gauge threshold is read from the response (`ad_threshold`). It is
+`null` for stub-served and rule-based rows, and the gauge is then not drawn (ADR-020).
 
 ## Read first
 
@@ -99,8 +99,5 @@ present, falling back to the local table until the contract supplies it (Q19).
 
 ## Open before this goes live
 
-- **Q19** — the AD-gauge threshold is not in the prediction response; it uses a
-  placeholder table. Needs real Module-5 thresholds (preferably added to the
-  contract) before the gauge is shown on real predictions.
 - The API is real (`docker compose up -d api`) — wire `/predict` and replace the
   fixture.
