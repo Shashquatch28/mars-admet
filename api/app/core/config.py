@@ -22,6 +22,13 @@ class Settings(BaseSettings):
         description="Signs password-reset tokens (itsdangerous). MUST be overridden in prod via env var.",
     )
 
+    cors_allow_origins: str = Field(
+        default="http://localhost:5173,http://127.0.0.1:5173",
+        description="Comma-separated browser origins allowed to make credentialed requests (the SPA's "
+        "origin). Defaults are the Vite dev server. Set the deployed frontend origin in prod; a bare '*' "
+        "is accepted but disables credentials, because browsers reject '*' with cookies.",
+    )
+
     session_ttl_days: int = Field(default=7)
     session_cookie_name: str = Field(default="mars_session")
     session_cookie_secure: bool = Field(default=False)

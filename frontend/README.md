@@ -109,8 +109,10 @@ cache hit/miss and measured latency, the top bar shows the response's
 from the response (`ad_threshold`). It is `null` for stub-served and rule-based
 rows, and the gauge is then not drawn (ADR-020).
 
-The `/api` proxy exists only in the dev server. A cross-origin deploy needs the
-API to list origins explicitly and set `allow_credentials` (not done yet).
+The `/api` proxy exists only in the dev server. A deployed SPA talks to the API
+cross-origin: set the API's `CORS_ALLOW_ORIGINS` to the SPA's origin (explicit
+list, credentials allowed; `*` is not valid with cookies) and keep both on the
+same site, because the session cookie is `SameSite=Lax`.
 
 ## Read first
 

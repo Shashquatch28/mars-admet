@@ -45,9 +45,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+def cors_policy() -> tuple[list[str], bool]:
+    """(allowed origins, allow_credentials) from `Settings.cors_allow_origins`.
+
+    Credentials need an explicit origin list: a browser rejects a credentialed
+    request answered with `Access-Control-Allow-Origin: *`. If someone configures
+    a bare `*` anyway it still works for anonymous calls, with credentials off.
+    """
+    origins = [o.strip().rstrip("/") for o in get_settings().cors_allow_origins.split(",") if o.strip()]
+    return origins, "*" not in origins
+
+
+_cors_origins, _cors_credentials = cors_policy()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten before prod deploy
+    allow_origins=_cors_origins,
+    allow_credentials=_cors_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )

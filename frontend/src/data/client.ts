@@ -2,10 +2,12 @@
 // VITE_API_BASE is unset the app never calls this — it runs on the fixture.
 //
 // In dev VITE_API_BASE is "/api": Vite proxies it to the API (vite.config.ts), so
-// the browser only ever makes same-origin requests and CORS never applies. No
-// request sets `credentials`; the default (same-origin) is what the future
-// HttpOnly session cookie needs through the proxy. A cross-origin production
-// deploy would need an explicit origin list + allow_credentials on the API.
+// the browser only ever makes same-origin requests and CORS never applies.
+// Requests send `credentials: "include"` for the HttpOnly session cookie. That
+// also works cross-origin because the API answers with an explicit origin list
+// and allow_credentials (CORS_ALLOW_ORIGINS) — never `*`, which browsers reject
+// together with credentials. Cookies are SameSite=Lax, so the SPA and API must
+// be same-site (e.g. app.x.com and api.x.com).
 import type { Endpoint, PredictionResponse } from "../types/contracts";
 
 export const API_BASE = import.meta.env.VITE_API_BASE;
@@ -37,7 +39,7 @@ async function request(path: string, init?: RequestInit): Promise<Response> {
   if (!API_BASE) throw new ApiError(0, "No API base configured");
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, init);
+    res = await fetch(`${API_BASE}${path}`, { credentials: "include", ...init });
   } catch {
     // fetch rejects (TypeError) when the server is unreachable or the request is blocked
     throw new ApiError(0, "API unreachable");

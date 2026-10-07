@@ -56,10 +56,13 @@ stubs.
 - **API badge** (`src/data/useApiHealth.ts`): `No API` (unset) · `Checking` ·
   `Ready` · `Unreachable`, polled every 30 s against `/health` (liveness only).
 - **CORS**: confirmed in a browser that `credentials: "include"` against `*` is
-  rejected. Dev now goes through a same-origin proxy (`/api` → `localhost:8000`,
-  override with `MARS_API_PROXY_TARGET`); `credentials` is no longer set. A
-  cross-origin production deploy still needs explicit origins +
-  `allow_credentials` on the API (item (c) in §3.3 — not done, needs approval).
+  rejected. Dev goes through a same-origin proxy (`/api` → `localhost:8000`,
+  override with `MARS_API_PROXY_TARGET`). The API now also allows an explicit
+  origin list with credentials (`CORS_ALLOW_ORIGINS`, default the Vite dev
+  origin; approved and done 2026-10-07, `api/tests/test_cors.py`), so
+  `credentials: "include"` is back and works cross-origin too. Cookies are
+  `SameSite=Lax`: SPA and API must be same-site; a fully cross-site deploy would
+  also need `SameSite=None; Secure` (not done).
 - **Also fabricated in live mode, now gated**: the Structure panel (fixed
   geometry + a fixed "−42.8 kcal/mol" for any molecule) renders a plain
   "not connected yet" note; the Identity panel's "Rewritten by standardizer" is
@@ -122,7 +125,7 @@ Fix: drive the status bar from the actual response (`served_at`, `cache_hit`,
 measured latency, `model_version`) and the API badge from a real `/health`
 check. Until a value has a source, render it as absent, not as a plausible number.
 
-### 3.3 ~~CORS~~ Settled for dev 2026-10-07 (proxy); production origin list still open
+### 3.3 ~~CORS~~ Resolved 2026-10-07 (dev proxy + explicit origin list with credentials)
 Confirmed in a browser. Original note:
 
 `api/app/main.py` sets `allow_origins=["*"]` with **no** `allow_credentials`.
