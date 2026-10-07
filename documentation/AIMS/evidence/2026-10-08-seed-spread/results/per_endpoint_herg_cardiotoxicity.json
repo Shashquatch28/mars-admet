@@ -1,0 +1,140 @@
+{
+ "endpoint": "herg_cardiotoxicity",
+ "task": "TaskType.CLASSIFICATION",
+ "n_test": 2627,
+ "n_seeds": 5,
+ "dropped": 0,
+ "frac_in_domain": 0.8930338789493719,
+ "variants": {
+  "raw": {
+   "auroc": 0.8795848871614406,
+   "err_rate": 0.20784164446136277,
+   "std_median": 0.035992460126809275,
+   "std_p90": 0.07236432805747472,
+   "spearman_std_vs_abserr": 0.6644253828635647,
+   "auroc_std_predicts_misclass": 0.6758263760906722,
+   "frac_interval_outside_01": 0.0,
+   "quartiles_abserr": [
+    {
+     "q": 1,
+     "n": 657,
+     "spread_med": 0.01316441822921599,
+     "err_mean": 0.11735477362365336
+    },
+    {
+     "q": 2,
+     "n": 656,
+     "spread_med": 0.0278088017673508,
+     "err_mean": 0.26956940304328936
+    },
+    {
+     "q": 3,
+     "n": 657,
+     "spread_med": 0.04570018340063645,
+     "err_mean": 0.3879906105850022
+    },
+    {
+     "q": 4,
+     "n": 657,
+     "spread_med": 0.06762011613625726,
+     "err_mean": 0.43132915063966715
+    }
+   ],
+   "quartiles_misclass": [
+    {
+     "q": 1,
+     "n": 657,
+     "spread_med": 0.01316441822921599,
+     "err_mean": 0.0532724505327245
+    },
+    {
+     "q": 2,
+     "n": 656,
+     "spread_med": 0.0278088017673508,
+     "err_mean": 0.19054878048780488
+    },
+    {
+     "q": 3,
+     "n": 657,
+     "spread_med": 0.04570018340063645,
+     "err_mean": 0.289193302891933
+    },
+    {
+     "q": 4,
+     "n": 657,
+     "spread_med": 0.06762011613625726,
+     "err_mean": 0.2983257229832572
+    }
+   ],
+   "std_median_in_domain": 0.034847706359665304,
+   "std_median_out_domain": 0.04953855401108298,
+   "abserr_in_domain": 0.2931691657673196,
+   "abserr_out_domain": 0.37173606726553066
+  },
+  "served(calibrated)": {
+   "auroc": 0.8794874263937765,
+   "err_rate": 0.19680243623905597,
+   "std_median": 0.027786633358460208,
+   "std_p90": 0.06684196808863505,
+   "spearman_std_vs_abserr": 0.6691908571821029,
+   "auroc_std_predicts_misclass": 0.702564466893397,
+   "frac_interval_outside_01": 0.0,
+   "quartiles_abserr": [
+    {
+     "q": 1,
+     "n": 657,
+     "spread_med": 0.006409862412306287,
+     "err_mean": 0.1568064831263232
+    },
+    {
+     "q": 2,
+     "n": 656,
+     "spread_med": 0.019612560250237256,
+     "err_mean": 0.3018309590871954
+    },
+    {
+     "q": 3,
+     "n": 657,
+     "spread_med": 0.03787905938495798,
+     "err_mean": 0.4028153357664703
+    },
+    {
+     "q": 4,
+     "n": 657,
+     "spread_med": 0.06282609739033429,
+     "err_mean": 0.43315544245027243
+    }
+   ],
+   "quartiles_misclass": [
+    {
+     "q": 1,
+     "n": 657,
+     "spread_med": 0.006409862412306287,
+     "err_mean": 0.0441400304414003
+    },
+    {
+     "q": 2,
+     "n": 656,
+     "spread_med": 0.019612560250237256,
+     "err_mean": 0.14176829268292682
+    },
+    {
+     "q": 3,
+     "n": 657,
+     "spread_med": 0.03787905938495798,
+     "err_mean": 0.2861491628614916
+    },
+    {
+     "q": 4,
+     "n": 657,
+     "spread_med": 0.06282609739033429,
+     "err_mean": 0.3150684931506849
+    }
+   ],
+   "std_median_in_domain": 0.02618146901325455,
+   "std_median_out_domain": 0.042896204257129034,
+   "abserr_in_domain": 0.31900674899793335,
+   "abserr_out_domain": 0.3625122303005089
+  }
+ }
+}

@@ -13,6 +13,106 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-08 — AIMS is shared project guidance and is kept identical on every branch
+
+**Status:** decided 2026-10-08 by the maintainer (chat). Process rule only.
+
+**Decision.** `documentation/AIMS/` is project guidance, not branch work. An edit made on any branch is committed on
+`milestone/m4-frontend` and `milestone/m2-kermt` the same day. `main` receives it through the normal merges. This
+replaces the earlier frontend-handoff rule "do not commit AIMS or training notes here". Training notes, run records and
+anything under `ml/` beyond `ml/serve/` stay on `m2-kermt`.
+
+**Rationale.** The AIMS files were already byte-identical on the branches (HANDOFF section 7), and a decision recorded
+on only one branch is invisible to the session working on the other.
+
+**Open follow-up.** `mistakes.md` exists on `m2-kermt` only (560 lines at the time of this entry); copying it to the
+other branches is the maintainer's call.
+
+---
+
+## 2026-10-08 — Seed spread is not an uncertainty interval; a held-out-error band is planned (evidence for frontend ADR-024)
+
+**Status:** decided 2026-10-08 by the maintainer (chat). Changes documents only: no code, data, checkpoint, artifact or run
+record is touched. Frontend side: `frontend/DECISIONS.md` ADR-024 (Q4).
+
+**Decision.** The served `confidence_low` / `confidence_high` are `mean ± 1 std` across the promoted seeds
+(`ml/serve/predictor.py`; on classification, over the Platt-calibrated per-seed values). They are a measure of seed
+agreement, not an error range, and are not flagged or described as an interval. For regression endpoints a held-out-error
+band (pooled out-of-fold absolute residuals, one per-endpoint half-width) is the planned replacement; rough effort 1-2
+working days, not measured. Classification gets no spread range until a validated method exists (ties to ADR-023 C1).
+
+**Evidence.** Held-out test sets, five promoted XGBoost seeds per endpoint, ensemble mean as served. Regression:
+
+| Endpoint | n test | printed ±1σ contains truth | ±1.96σ | 80% band | 90% band | rank corr. (spread, abs err) | MAE / median spread |
+|---|---|---|---|---|---|---|---|
+| caco2_permeability | 180 | 0.12 | 0.27 | 0.81 | 0.93 | 0.25 | 4.7 |
+| clearance_microsomal | 221 | 0.11 | 0.21 | 0.71 | 0.86 | 0.53 | 6.5 |
+| lipophilicity_logp | 840 | 0.09 | 0.21 | 0.81 | 0.90 | 0.10 | 6.1 |
+| ppb_binding | 323 | 0.14 | 0.28 | 0.81 | 0.87 | 0.62 | 6.1 |
+| solubility_logs | 1960 | 0.11 | 0.22 | 0.78 | 0.90 | 0.15 | 6.4 |
+
+- Median spread in-domain vs out-of-domain: caco2 0.060 / 0.064, solubility 0.124 / 0.127, logP 0.088 / 0.107, clearance
+  3.87 / 5.48, ppb 1.17 / 4.09. Seed agreement is not evidence of being in-domain.
+- The band undercovers out-of-domain molecules at the 80% target: logP 0.83 in / 0.67 out (about 105 out), clearance
+  0.73 / 0.55 (about 20), ppb 0.82 / 0.43 (about 7: too few to read), solubility 0.79 / 0.74, caco2 0.82 / 0.77. Keep the
+  applicability-domain flag beside any band.
+- Classification (nine endpoints): rank correlation of spread with distance from 0.5 is -0.72 to -0.97 on eight (DILI
+  -0.35). With that removed, spread predicts misclassification at AUROC 0.43-0.63, so it adds nothing beyond the score.
+
+**Method.** Each seed trains on its own scaffold partition (`five_seed_train_val_folds`). The band takes each promoted seed's
+absolute residuals on its own validation fold (regenerated with that function), pools them (450-4,700 residuals per
+endpoint), and uses the ceil((n+1)(1-alpha))-th smallest as a constant half-width, scored on the test set against the
+ensemble mean. Leakage sanity: validation MAE is close to test MAE (caco2 0.336 / 0.284, clearance 19.2 / 25.8, logP
+0.519 / 0.539, ppb 7.49 / 7.25, solubility 0.726 / 0.802).
+
+**Caveats.** One test split, no confidence intervals on the coverage figures (the smaller test sets carry a few points of
+sampling error). The analysis ran in a scratch environment (Python 3.10 with shims, xgboost 3.2.0), not the pinned one;
+before relying on it the pipeline reproduced the recorded test metrics exactly (HIA AUROC 0.9721, solubility MAE 0.8098).
+The scripts and raw outputs are in `documentation/AIMS/evidence/2026-10-08-seed-spread/` (its README says how they were run and what to edit to re-run them).
+
+**Blueprint tie-in.** Module 5 (uncertainty and applicability domain; conformal prediction deferred with no milestone slot).
+The band is a minimal split-conformal-style construction and does not replace full conformal prediction.
+
+**Open follow-ups.** Commit the analysis script and its outputs. Choose the band level (80% or 90%) and the contract field
+names. Decide whether the spread range stays on classification rows (frontend design question). Out-of-domain coverage
+needs a larger sample than ppb and clearance have.
+
+---
+
+## 2026-10-08 — Served XGBoost calibration policy: UI says "score" now; stop applying the Platt calibrators (C0), then recalibrate (C1)
+
+**Status:** decided 2026-10-08 by the maintainer (chat). Changes documents only: no code, data, checkpoint, artifact or
+run record is touched. Resolves the OPEN item "served XGBoost Platt calibrators degrade held-out calibration" in
+`next_steps.md`. Frontend side: `frontend/DECISIONS.md` ADR-023 (Q21).
+
+**Decision.**
+
+1. The UI labels the nine classification endpoints `score`, not `probability`, until each endpoint's calibration is
+   validated.
+2. **C0 (next):** stop applying the served Platt calibrators in `ml/serve/predictor.py` (it applies
+   `registry.load_calibrator` to each seed's raw prediction, then averages) and serve the raw ensemble, behind a
+   switch. Regenerate the held-out numbers for raw vs calibrated per endpoint.
+3. **C1 (after C0):** recalibrate the XGBoost side on label-representative data using cross-validated out-of-fold
+   predictions. The calibration split itself stays frozen (D3). Validate against raw with ECE, Brier and reliability
+   curves on the held-out test set, with a per-endpoint pass bar fixed before the numbers are seen. An endpoint
+   returns to `probability` in the UI only when it passes.
+4. **C2 (not scheduled):** KERMT temperature scaling stays GPU-gated and was never run on real logits. It is not on the
+   critical path while the API serves XGBoost.
+
+**Rationale.** Like-for-like on the calibrator's own seed 4 (`next_steps.md`): the served calibrators are worse than raw
+on Brier for 9 of 9 endpoints and on ECE for 7 of 9 (worst `hia_absorption`, 0.045 to 0.209). Cause: the calibration
+split's positive rate differs from the test set's (CYP3A4 0.409 train_val vs 0.113 calibration). The `hia_absorption`
+calibrator was fit on 49 positives and 1 negative. Only one calibrator exists per endpoint (fit on seed 4) and it is
+applied to all five seeds.
+
+**Blueprint tie-in.** Module 5 (probability calibration, Platt for XGBoost); Module 9 (prediction panel).
+
+**Open follow-ups.** The pass bar for C1. Whether HIA (N=47), DILI (50 rows) and hERG can ever be validated; if not, they
+stay `score`. Whether any calibration-split change is wanted is still an M1 data decision and is not taken here.
+Effort is a rough estimate, not measured: C0 half a day to a day, C1 two to four working days, C2 weeks of calendar time.
+
+---
+
 ## 2026-10-07 — Scope decision: MARS ships on Tier 0; Tier 1 and Tier 2 are deferred to Future Scope
 
 **Status:** decided 2026-10-07 by the maintainer (explicit instruction in chat: defer Tier 1 and Tier 2 to future scope, amend

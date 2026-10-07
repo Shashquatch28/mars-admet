@@ -1,0 +1,48 @@
+{
+ "endpoint": "clearance_microsomal",
+ "task": "TaskType.REGRESSION",
+ "n_test": 221,
+ "n_seeds": 5,
+ "dropped": 0,
+ "frac_in_domain": 0.9095022624434389,
+ "rmse": 37.47665305613063,
+ "mae": 25.791770000965485,
+ "std_median": 3.9909013517683256,
+ "std_p90": 8.135840526810286,
+ "cover_1sigma": 0.11312217194570136,
+ "cover_196sigma": 0.21266968325791855,
+ "median_abs_err_over_median_std": 4.077885095858716,
+ "spearman_std_vs_abserr": 0.5313073254249724,
+ "quartiles_abserr": [
+  {
+   "q": 1,
+   "n": 55,
+   "spread_med": 1.874943618382904,
+   "err_mean": 15.482233287120406
+  },
+  {
+   "q": 2,
+   "n": 55,
+   "spread_med": 3.4182062744933206,
+   "err_mean": 20.120975636872377
+  },
+  {
+   "q": 3,
+   "n": 55,
+   "spread_med": 4.844954873826951,
+   "err_mean": 27.949925237829028
+  },
+  {
+   "q": 4,
+   "n": 56,
+   "spread_med": 7.519371187649105,
+   "err_mean": 39.367121273449484
+  }
+ ],
+ "std_median_in_domain": 3.866274041038211,
+ "std_median_out_domain": 5.477204872820718,
+ "abserr_in_domain": 24.712370122357534,
+ "abserr_out_domain": 36.63973878097535,
+ "cover_1sigma_in_domain": 0.11940298507462686,
+ "cover_1sigma_out_domain": 0.05
+}
