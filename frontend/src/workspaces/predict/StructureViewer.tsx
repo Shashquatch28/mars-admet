@@ -13,8 +13,9 @@ type Mode = "hero" | "analysis";
 
 const cssVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-// Hero: ball-and-stick, heavy atoms only. Analysis: every atom as sticks, with
-// heavy-atom index labels (the SDF atom number) for cross-referencing.
+// Hero: ball-and-stick, heavy atoms only. Analysis: every atom as sticks, hydrogens
+// included, and no labels (atom numbering would be a claim nothing cites yet; labels
+// can return with Q11, when something refers to them).
 async function drawConformer(host: HTMLElement, c: ConformerResponse, mode: Mode) {
   const $3Dmol = await import("3dmol");
   const viewer = $3Dmol.createViewer(host, { backgroundAlpha: 0 });
@@ -30,17 +31,6 @@ async function drawConformer(host: HTMLElement, c: ConformerResponse, mode: Mode
   } else {
     viewer.setStyle({}, stick(0.1, carbon));
     viewer.setStyle({ not: { elem: ["C", "H"] as unknown as string } }, stick(0.1, hetero));
-    const labelColor = cssVar("--text-tertiary");
-    c.atoms.forEach((a, i) => {
-      if (a.element === "H") return;
-      viewer.addLabel(String(i + 1), {
-        position: { x: a.x, y: a.y, z: a.z },
-        fontSize: 10,
-        fontColor: labelColor,
-        backgroundOpacity: 0,
-        showBackground: false,
-      });
-    });
   }
   viewer.zoomTo();
   viewer.render();

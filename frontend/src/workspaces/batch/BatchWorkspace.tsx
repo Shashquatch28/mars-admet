@@ -196,14 +196,16 @@ export function BatchWorkspace() {
                         ? styles.miniEdgeOod
                         : k === "stub_served"
                           ? styles.miniEdgeStub
-                          : k === "not_returned"
+                          : k === "not_returned" || k === "not_requested"
                             ? styles.miniEdgeMissing
                             : "";
                     return (
                       <div key={cell.endpoint} className={`${styles.minirow} ${edge}`}>
                         <span className={styles.miniName}>{cell.endpoint}</span>
-                        {k === "not_returned" ? (
-                          <span className={styles.miniValMissing}>not returned</span>
+                        {k === "not_returned" || k === "not_requested" ? (
+                          <span className={styles.miniValMissing}>
+                            {k === "not_requested" ? "not requested" : "not returned"}
+                          </span>
                         ) : (
                           <span className={styles.miniVal}>{fmtValue(cell.prediction!, cell.meta)}</span>
                         )}

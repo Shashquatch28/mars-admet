@@ -8,14 +8,20 @@ export type EndpointRowState =
   | { kind: "ok" }
   | { kind: "out_of_domain"; knnDistance: number }
   | { kind: "stub_served"; modelId: string }
-  | { kind: "not_returned" }
+  | { kind: "not_returned" } // asked for, the service did not answer: a service-side absence
+  | { kind: "not_requested" } // left out of the request by the user: a choice, never a failure (ADR-028)
   | { kind: "rule_based" };
 
 export function deriveRowState(
   meta: EndpointMeta,
   prediction: EndpointPrediction | undefined,
+  requested = true,
 ): EndpointRowState {
-  if (!prediction) return { kind: "not_returned" };
+  // Absence has two causes and they must never share a word: NOT RETURNED means the
+  // service failed to answer a question we asked (ADR-019 relies on that); NOT
+  // REQUESTED means we did not ask. A prediction that is present is described as
+  // such whatever was requested.
+  if (!prediction) return requested ? { kind: "not_returned" } : { kind: "not_requested" };
   if (meta.taskType === "rule_based") return { kind: "rule_based" };
   // A stub value is "not a real prediction" — a more fundamental fact than
   // applicability domain, which does not apply without a promoted model.
@@ -28,7 +34,7 @@ export function deriveRowState(
 
 // Reliability is a single visual channel (the left edge + a tag). It never
 // touches the value cell (ADR-006). `null` = no edge, no tag.
-export type Reliability = "ood" | "stub" | "notreturned" | "rule" | null;
+export type Reliability = "ood" | "stub" | "notreturned" | "notrequested" | "rule" | null;
 
 export function reliabilityOf(state: EndpointRowState): Reliability {
   switch (state.kind) {
@@ -38,6 +44,8 @@ export function reliabilityOf(state: EndpointRowState): Reliability {
       return "stub";
     case "not_returned":
       return "notreturned";
+    case "not_requested":
+      return "notrequested";
     case "rule_based":
       return "rule";
     default:

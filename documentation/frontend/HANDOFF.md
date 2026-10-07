@@ -35,7 +35,7 @@ stubs.
 | Area | Files | Notes |
 |---|---|---|
 | Shell | `src/shell/` | AppShell, NavRail, TopBar, StatusBar, CommandPalette. Keys 1–4 switch workspace, ⌘K opens the palette. |
-| Predict | `src/workspaces/predict/` | Roster of 15 rows (14 ML + rule-based SA), six derived row states, inspector, AD gauge, keyboard roving. Viewer is a placeholder SVG. |
+| Predict | `src/workspaces/predict/` | Roster of 15 rows (14 ML + rule-based SA), seven derived row states (incl. NOT REQUESTED, ADR-028), endpoint-subset selector, inspector, AD gauge, keyboard roving, live 3D viewer (placeholder SVG in fixture mode). |
 | Batch | `src/workspaces/batch/`, `src/domain/batch.ts` | 240-molecule deterministic fixture, virtualized `role="grid"`, raw numeric sort, filters, molecule inspector. |
 | Data-viz | `src/components/dataviz/` | `ADGauge`, `IntervalTrack` (both require an explicit `domain`, no default), `NumericInterval`, `ReliabilityTag`. |
 | Domain | `src/domain/` | `rowState` (the one trust decision), `reconcile` (full roster every time), `format`, `endpoints`, `fixtures`, `batch`. This is the tested layer. |
@@ -76,8 +76,9 @@ stubs.
   Atoms use the `--viewer-*` element tokens, nothing animates. The caption is the
   service's own energy (`ETKDG · MMFF94 · 60.0 kcal/mol` for celecoxib; the old
   literal said −42.8). **Hero** = ball-and-stick, heavy atoms; **Analysis** = all
-  atoms as sticks plus heavy-atom index labels. The written docs never define what
-  Analysis shows, so that is my reading; confirm or correct it. The 404/501
+  atoms as sticks with hydrogens visible, no labels (the maintainer's choice,
+  2026-10-08: Hero hides hydrogens so the modes really differ, and atom numbering
+  would be a claim nothing cites yet — labels can return with Q11). The 404/501
   *panel states* are verified by tests, not in a browser (no way to force them
   without editing Redis).
 - **Real responses** are saved in `src/domain/real-responses/` (README there has
@@ -118,9 +119,10 @@ stubs.
 These are ordered by how badly they would bite.
 
 ### 3.1 ~~Predict cannot take input.~~ Resolved 2026-10-07 for SMILES + Run + Clear
-Still inert: **Compare molecule, Save to library, Export, the endpoint-subset
-selector** (they have no handlers; the subset selector is why NOT RETURNED rows
-only appear in tests today, from a subset request made by hand). Original note:
+**Endpoint-subset selector: done 2026-10-08** (popover; a deselected endpoint is a
+`NOT REQUESTED` row, ADR-028). Still inert: **Compare molecule, Save to library,
+Export** (no handlers; Compare/Save depend on those workspaces and on ADR-022).
+Original note:
 
 `PredictWorkspace.tsx` hard-codes `const smiles = CELECOXIB_SMILES`. The textarea
 has only a `defaultValue`; **Run prediction, Clear, Compare molecule, Save to
@@ -208,9 +210,9 @@ Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
    gaps: no mixed real+stub response could be captured (every promoted
    endpoint was served by a real model), so the stub-served *row* state is
    covered only by the all-stub capture; and the browser pass was manual.
-   **Wire the endpoint-subset selector and the remaining Predict buttons
-   (§3.1) next** — the subset selector is also the only way to see NOT RETURNED
-   live.
+   The endpoint-subset selector is now wired (ADR-028). NOT RETURNED is still
+   unreachable live from the UI by design: it now means only "asked for, service
+   did not answer". Remaining Predict buttons (§3.1) wait on Compare/Library.
 4. ~~Close the CSS guard~~ — done.
 5. **Auth UI, then Batch live** (ADR-022; Q7 resolved 2026-10-08). Phase 1: `GET /auth/me` +
    `MeResponse`, session context (unknown / anonymous / signed in), lock glyphs on Batch and

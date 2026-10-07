@@ -137,3 +137,9 @@ export const SHORT_LABEL: Record<Endpoint, string> = {
   dili_liver_injury: "DILI",
   synthetic_accessibility: "SA",
 };
+
+/** The selector trigger's text: "All 14 endpoints" or "N of 14 endpoints". */
+export function endpointSelectionLabel(selected: Endpoint[]): string {
+  const total = ML_ENDPOINTS.length;
+  return selected.length === total ? `All ${total} endpoints` : `${selected.length} of ${total} endpoints`;
+}

@@ -789,3 +789,43 @@ system, a longer install and Docker build stage.
 
 **Consequences.** Measure the lazy chunk and the install and build time on first integration. Run the never-do #7/#8
 audit and the CSS-guard check then. The empty-state spec gains the entry point; `PredictEmpty` is not built yet.
+
+---
+
+## ADR-028 — NOT REQUESTED is its own row state, distinct from NOT RETURNED
+
+**Date:** 2026-10-08 · **Status:** accepted (the maintainer chose it; implemented the same day)
+
+**Decision.** When the user runs a subset of the 14 ML endpoints, each endpoint left out stays in the roster as a row
+reading `NOT REQUESTED`. `deriveRowState` returns `{ kind: "not_requested" }` for an endpoint with no prediction that
+was not in the request, and `{ kind: "not_returned" }` only when it *was* requested. The two are told apart in words
+(the value cell) and by edge: NOT RETURNED keeps the solid muted edge, NOT REQUESTED gets a dashed one. Neither has a
+tag. The inspector for a NOT REQUESTED row says the user left it out, that this is not a failure, and how to get it.
+The rule-based SA score is not selectable, is always part of a request, and is therefore never NOT REQUESTED.
+
+**Rationale.** ADR-008 says every endpoint is rendered, and the subset selector (COMPONENTS: `MoleculeInput`) makes it
+possible to ask for fewer. Without a second state the omitted rows would read "requested but the service did not
+return it", which is false and would present a user's choice as a service failure. Keeping NOT RETURNED to mean "we
+asked and it did not answer" is what ADR-019 relies on: its honesty argument is that NOT RETURNED is never shown for an
+absence the service did not cause.
+
+**Rejected.** *Reword NOT RETURNED so it covers both causes* — the one fact worth knowing, why it is absent, is
+exactly what is lost. *Hide the omitted rows* — breaks ADR-008 and never-do #5. *Treat every absence as NOT RETURNED
+and rely on the header count* — the count says how many, not which. ADR-019 rejected a "not computed" state because
+the backend could simply remove that absence; this one differs: the absence is the user's choice and nothing the
+backend does can remove it.
+
+**Consequences.**
+- `reconcile(response, requested)` derives the state from the request that was made. `PredictSession` records
+  what each run sent (`TimedPrediction.sent`), so the roster follows the last run, not the selector's current ticks;
+  changing the selector never relabels a result already on screen. `requested` is a fact about the request, not a
+  presentational prop (never-do #2 still holds: `EndpointRow` has no `variant`, `tone`, `severity`, `status` or
+  `highlight`).
+- The header counts already reconcile: `requested` is the number asked for. A subset of 2 reads
+  "2 requested · 2 returned".
+- `Reliability` gains `notrequested`; `ReliabilityTag` is an exhaustive switch, so a further state cannot be added
+  without deciding its tag.
+- Edge style is a structural channel, not a colour: the dashed edge uses the same `--line-strong` as NOT RETURNED and
+  survives greyscale.
+- Docs changed with it: COMPONENTS (`ReliabilityTag` row, `EndpointRow` states), ACCESSIBILITY (both lists),
+  UX_PRINCIPLES §3, DESIGN_SYSTEM (`--unavailable`).

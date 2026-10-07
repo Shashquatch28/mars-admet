@@ -50,7 +50,9 @@ export function EndpointRow({ row, selected, focused, loading, onSelect, rowRef,
       ? `${styles.edge} ${styles.edgeAmber}`
       : reliability === "notreturned"
         ? `${styles.edge} ${styles.edgeMuted}`
-        : styles.edge;
+        : reliability === "notrequested"
+          ? `${styles.edge} ${styles.edgeUnrequested}`
+          : styles.edge;
 
   const cls = [styles.erow, focused ? styles.focused : "", selected ? styles.selected : ""]
     .filter(Boolean)
@@ -60,6 +62,8 @@ export function EndpointRow({ row, selected, focused, loading, onSelect, rowRef,
   let valueCell;
   if (state.kind === "not_returned") {
     valueCell = <span className={styles.evalNa}>not returned</span>;
+  } else if (state.kind === "not_requested") {
+    valueCell = <span className={styles.evalNa}>not requested</span>;
   } else if (prediction) {
     const text = fmtValue(prediction, meta);
     valueCell =
@@ -76,7 +80,7 @@ export function EndpointRow({ row, selected, focused, loading, onSelect, rowRef,
 
   // interval cell
   let intervalCell;
-  if (!prediction || state.kind === "not_returned" || meta.taskType === "rule_based") {
+  if (!prediction || state.kind === "not_returned" || state.kind === "not_requested" || meta.taskType === "rule_based") {
     intervalCell = <span className={styles.eunit}>not applicable</span>;
   } else if (meta.taskType === "regression") {
     intervalCell = (
@@ -103,7 +107,7 @@ export function EndpointRow({ row, selected, focused, loading, onSelect, rowRef,
   const isReal =
     !!prediction && prediction.model_id !== STUB_MODEL_ID && meta.taskType !== "rule_based";
   const sourceCell =
-    state.kind === "not_returned" ? (
+    state.kind === "not_returned" || state.kind === "not_requested" ? (
       <span className={`${styles.esource} ${styles.esourceDash}`}>—</span>
     ) : isReal ? (
       <span className={styles.esource}>v1</span>

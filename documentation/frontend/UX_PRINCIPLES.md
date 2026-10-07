@@ -25,16 +25,19 @@ merging them is the single most damaging thing this UI could do.
 
 - Magnitude lives in the value cell: mono, tabular, `--text-primary`, always.
 - Reliability lives in the row's 2px left edge and a tag: out-of-domain,
-  stub-served, not-returned.
+  stub-served, not-returned, not-requested.
 - A reliability marker **never** restyles the value.
 
 ## 3. Absence is a state, not a gap
 
 The full endpoint roster is rendered on every result, in every workspace,
 whether or not the service returned each one. An endpoint that is missing from
-`predictions[]` gets a row reading `NOT RETURNED` with a muted edge. An
-endpoint is never silently dropped, and the count in the workspace header
-always reconciles: *requested · returned · out of domain · stub-served*.
+`predictions[]` gets a row. If the service was asked for it and did not answer,
+the row reads `NOT RETURNED` with a solid muted edge. If the user left it out of
+the run, it reads `NOT REQUESTED` with a dashed edge (ADR-028): the two causes
+are never described by the same word. An endpoint is never silently dropped,
+and the count in the workspace header always reconciles: *requested · returned ·
+out of domain · stub-served*.
 
 This also makes the empty state informative: before any molecule is entered,
 the roster is already visible, so the shape of a result is legible in advance

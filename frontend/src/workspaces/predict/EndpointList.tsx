@@ -171,7 +171,8 @@ export function EndpointList({
         </svg>
         <p>
           Every endpoint MARS can serve is listed on every result, whether or not the service returned it. An
-          endpoint the model did not return is shown as a marked row, never omitted. MARS applies no risk
+          endpoint the model did not return, or that you left out of the run, is shown as a marked row (NOT RETURNED,
+          NOT REQUESTED), never omitted. MARS applies no risk
           threshold and defines no direction of good — no value on this screen is styled as good or bad.
         </p>
       </div>

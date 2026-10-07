@@ -40,6 +40,28 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
     </>
   );
 
+  if (state.kind === "not_requested") {
+    return (
+      <div className={styles.inspbody}>
+        {header}
+        <div className={styles.headline}>
+          <span className={styles.headlineV} style={{ fontSize: 18, color: "var(--text-tertiary)" }}>
+            NOT REQUESTED
+          </span>
+          <span className={styles.headlineU}>{DISPLAY_UNIT[endpoint]}</span>
+        </div>
+        <Rule />
+        <div className={styles.isec}>
+          <p className={styles.nostate}>
+            You left this endpoint out of the last run, so the service was not asked for it. This is not a
+            failure. The row stays listed so the roster is complete. Tick it in the endpoint selector and run
+            again to get a prediction.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (state.kind === "not_returned") {
     return (
       <div className={styles.inspbody}>

@@ -61,6 +61,10 @@ anywhere in MARS.
 | `--success` | `#6FA860` | a named operation completed: saved, exported, ready | a favourable prediction |
 | `--unavailable` | `#859093` | requested but not returned, or not applicable | anything hidden |
 
+`NOT REQUESTED` (ADR-028) takes no semantic colour: it is the user's choice, not an unavailable state. Its words use
+`--text-tertiary` and its edge is dashed `--line-strong`; the dashing, not the hue, is what separates it from the solid
+edge of NOT RETURNED.
+
 Derived washes: `--accent-wash: rgba(73,174,196,0.14)`,
 `--caution-wash: rgba(217,154,60,0.10)`,
 `--caution-line: rgba(217,154,60,0.40)`.

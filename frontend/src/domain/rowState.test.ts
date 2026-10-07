@@ -23,6 +23,15 @@ describe("deriveRowState", () => {
     expect(deriveRowState(ENDPOINT_METADATA.hia_absorption, undefined)).toEqual({ kind: "not_returned" });
   });
 
+  it("is not_requested (not not_returned) when the endpoint was left out of the request", () => {
+    expect(deriveRowState(ENDPOINT_METADATA.hia_absorption, undefined, false)).toEqual({ kind: "not_requested" });
+    expect(deriveRowState(ENDPOINT_METADATA.hia_absorption, undefined, true)).toEqual({ kind: "not_returned" });
+  });
+
+  it("describes a prediction that is present as such, whatever was requested", () => {
+    expect(deriveRowState(ENDPOINT_METADATA.hia_absorption, pred({}), false)).toEqual({ kind: "ok" });
+  });
+
   it("is rule_based for a rule-based endpoint regardless of the prediction", () => {
     const s = deriveRowState(ENDPOINT_METADATA.synthetic_accessibility, pred({ endpoint: "synthetic_accessibility" }));
     expect(s).toEqual({ kind: "rule_based" });
@@ -57,5 +66,12 @@ describe("reliabilityOf", () => {
     expect(reliabilityOf({ kind: "stub_served", modelId: "stub-v0" })).toBe("stub");
     expect(reliabilityOf({ kind: "not_returned" })).toBe("notreturned");
     expect(reliabilityOf({ kind: "rule_based" })).toBe("rule");
+  });
+});
+
+describe("reliabilityOf for the two absences", () => {
+  it("keeps NOT RETURNED and NOT REQUESTED distinct so they can get different edges", () => {
+    expect(reliabilityOf({ kind: "not_returned" })).toBe("notreturned");
+    expect(reliabilityOf({ kind: "not_requested" })).toBe("notrequested");
   });
 });

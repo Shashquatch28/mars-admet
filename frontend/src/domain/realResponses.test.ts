@@ -94,7 +94,9 @@ describe("reconcile() on a full real response", () => {
   });
 });
 
-describe("reconcile() on a subset response", () => {
+// Read against a FULL request (the default), an endpoint the service did not return is a
+// service-side absence. When the user chose the subset, see notRequested.test.ts.
+describe("reconcile() on a subset response read as a full request", () => {
   const recon = reconcile(SUBSET);
 
   it("keeps the full roster: omitted endpoints become NOT RETURNED rows, not gaps", () => {

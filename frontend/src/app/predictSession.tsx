@@ -6,11 +6,17 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { CELECOXIB_SMILES } from "../domain/fixtures";
+import { ML_ENDPOINTS } from "../domain/endpoints";
+import { endpointsForRequest } from "../domain/reconcile";
+import type { Endpoint } from "../types/contracts";
 import { USING_API, fetchPrediction, type TimedPrediction } from "../data/client";
 
 interface PredictSession {
   smiles: string;
   setSmiles: (s: string) => void;
+  /** ML endpoints the next run will ask for (roster order). Rule-based SA is not selectable. */
+  selected: Endpoint[];
+  setSelected: (e: Endpoint[]) => void;
   /** Last successful response; null before the first run, while a new run is in flight, and after an error. */
   result: TimedPrediction | null;
   running: boolean;
@@ -25,14 +31,24 @@ const Ctx = createContext<PredictSession | null>(null);
 export function PredictSessionProvider({ children }: { children: ReactNode }) {
   // Without an API the workspace shows the illustrative fixture, whose molecule is celecoxib.
   const [smiles, setSmiles] = useState(USING_API ? "" : CELECOXIB_SMILES);
-  const mutation = useMutation({ mutationFn: (s: string) => fetchPrediction(s) });
+  const [selected, setSelectedRaw] = useState<Endpoint[]>(ML_ENDPOINTS);
+  const mutation = useMutation({
+    mutationFn: ({ s, endpoints }: { s: string; endpoints: Endpoint[] | null }) => fetchPrediction(s, endpoints),
+  });
 
-  const canRun = USING_API && smiles.trim().length > 0 && !mutation.isPending;
+  // Keep roster order whatever order the boxes were ticked in.
+  const setSelected = useCallback(
+    (e: Endpoint[]) => setSelectedRaw(ML_ENDPOINTS.filter((m) => e.includes(m))),
+    [],
+  );
+
+  const canRun = USING_API && smiles.trim().length > 0 && selected.length > 0 && !mutation.isPending;
   const { mutate, reset } = mutation;
 
   const run = useCallback(() => {
-    if (canRun) mutate(smiles.trim());
-  }, [canRun, mutate, smiles]);
+    if (!canRun) return;
+    mutate({ s: smiles.trim(), endpoints: endpointsForRequest(selected) });
+  }, [canRun, mutate, smiles, selected]);
 
   const clear = useCallback(() => {
     reset();
@@ -43,6 +59,8 @@ export function PredictSessionProvider({ children }: { children: ReactNode }) {
     () => ({
       smiles,
       setSmiles,
+      selected,
+      setSelected,
       result: mutation.data ?? null,
       running: mutation.isPending,
       error: mutation.error,
@@ -50,7 +68,7 @@ export function PredictSessionProvider({ children }: { children: ReactNode }) {
       run,
       clear,
     }),
-    [smiles, mutation.data, mutation.isPending, mutation.error, canRun, run, clear],
+    [smiles, selected, setSelected, mutation.data, mutation.isPending, mutation.error, canRun, run, clear],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

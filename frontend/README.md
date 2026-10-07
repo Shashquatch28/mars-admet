@@ -25,7 +25,7 @@ with npm 11 (`npx npm@11 install`). Installing from the committed
   commands; reliability tags travel into the results).
 - **Predict workspace**: molecule input + identity + structure-viewer shell; the
   full 15-row endpoint roster reconciled from the contract (14 ML + the
-  rule-based SA score in its own group); the six derived row states; the
+  rule-based SA score in its own group); the seven derived row states; the
   applicability-domain gauge; the inspector; full keyboard roving (↑↓ / Home /
   End / Enter), hover, focus and selection as distinct channels; density toggle;
   reduced-motion support.

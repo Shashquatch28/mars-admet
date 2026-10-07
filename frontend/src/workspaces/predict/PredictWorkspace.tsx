@@ -7,10 +7,12 @@ import { useEffect, useMemo, type KeyboardEvent } from "react";
 import styles from "./predict.module.css";
 import { useUiState } from "../../app/uiState";
 import { usePredictSession } from "../../app/predictSession";
-import { reconcile } from "../../domain/reconcile";
+import { reconcile, requestedMlEndpoints } from "../../domain/reconcile";
+import { ML_ENDPOINTS } from "../../domain/endpoints";
 import { FIXTURE_RESPONSE, emptyResponse } from "../../domain/fixtures";
 import { USING_API, ApiError } from "../../data/client";
 import { EndpointList } from "./EndpointList";
+import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
 import { StructureViewer } from "./StructureViewer";
 
@@ -28,7 +30,7 @@ function requestFailure(error: Error): { title: string; detail: string } {
 
 export function PredictWorkspace() {
   const { selectedEndpoint, setIsSample } = useUiState();
-  const { smiles, setSmiles, result, running, error, canRun, run, clear } = usePredictSession();
+  const { smiles, setSmiles, selected, setSelected, result, running, error, canRun, run, clear } = usePredictSession();
   const usingApi = USING_API;
 
   // The prototype strip is shown only while the values on screen are the fixture.
@@ -40,7 +42,16 @@ export function PredictWorkspace() {
   const response = usingApi ? (result?.response ?? null) : FIXTURE_RESPONSE;
   const idle = usingApi && !result && !running && !error;
   const placeholders = running || idle; // roster known, values not: quiet placeholder rows
-  const recon = useMemo(() => reconcile(response ?? emptyResponse(smiles)), [response, smiles]);
+  // Rows follow what the *last run* asked for, not the selector's current ticks, so
+  // editing the selector never relabels results that were already produced.
+  const requested = useMemo(
+    () => (usingApi && result ? requestedMlEndpoints(result.sent) : ML_ENDPOINTS),
+    [usingApi, result],
+  );
+  const recon = useMemo(
+    () => reconcile(response ?? emptyResponse(smiles), requested),
+    [response, smiles, requested],
+  );
 
   const selectedRow = recon.rows.find((r) => r.endpoint === selectedEndpoint) ?? recon.rows[0];
 
@@ -83,9 +94,7 @@ export function PredictWorkspace() {
             <button className={styles.btnPrimary} onClick={run} disabled={!canRun}>
               {running ? "Running…" : "Run prediction"}
             </button>
-            <button className={styles.selbtn}>
-              All 14 endpoints <span style={{ color: "var(--text-quiet)" }}>▾</span>
-            </button>
+            <EndpointSelector selected={selected} onChange={setSelected} disabled={!usingApi || running} />
             <kbd className={styles.kbd}>⌘⏎</kbd>
           </div>
           {!usingApi && (

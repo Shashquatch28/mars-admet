@@ -43,6 +43,8 @@ function cellLabel(row: BatchRow, endpoint: Endpoint, cell: BatchRow["cells"][nu
   switch (cell.state.kind) {
     case "not_returned":
       return `${name}: not returned`;
+    case "not_requested":
+      return `${name}: not requested`;
     case "out_of_domain":
       return `${name}: ${fmtValue(cell.prediction!, cell.meta)}, outside applicability domain`;
     case "stub_served":
@@ -236,7 +238,7 @@ export function BatchGrid({
                 ALL_ENDPOINTS.map((e, i) => {
                   const cell = row.cells[i];
                   const k = cell.state.kind;
-                  const isMissing = k === "not_returned";
+                  const isMissing = k === "not_returned" || k === "not_requested";
                   const cls = [
                     styles.cell,
                     k === "out_of_domain" ? styles.cellOod : "",

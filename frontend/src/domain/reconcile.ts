@@ -1,6 +1,7 @@
 // Reconcile a response against the canonical roster (ADR-008). Every endpoint
 // gets a row whether or not the service returned it; absence becomes a
-// not_returned row, never a gap. Counts reconcile over the ML endpoints only —
+// not_returned row (we asked, it did not answer) or a not_requested row (the user
+// left it out of the request, ADR-028), never a gap. Counts reconcile over the ML endpoints only —
 // the rule-based synthetic-accessibility score is shown but not counted, because
 // it is computed, not predicted (maintainer decision, Q1/Q2).
 import type { Endpoint, EndpointPrediction, PredictionResponse } from "../types/contracts";
@@ -54,10 +55,13 @@ export function reconcile(
   const byEndpoint = new Map<Endpoint, EndpointPrediction>();
   for (const p of response.predictions) byEndpoint.set(p.endpoint, p);
 
+  const requestedSet = new Set<Endpoint>(requested);
   const rowFor = (endpoint: Endpoint): Row => {
     const meta = ENDPOINT_METADATA[endpoint];
     const prediction = byEndpoint.get(endpoint);
-    const state = deriveRowState(meta, prediction);
+    // The rule-based SA score is computed, not selectable: it is always part of a request.
+    const wasRequested = meta.taskType === "rule_based" || requestedSet.has(endpoint);
+    const state = deriveRowState(meta, prediction, wasRequested);
     return { endpoint, meta, prediction, state, reliability: reliabilityOf(state) };
   };
 
@@ -87,4 +91,19 @@ export function reconcile(
   };
 
   return { groups, rows: allRows, counts };
+}
+
+/** The ML endpoints a request asked for. `null` (no `endpoints` field) means all of them;
+ *  the rule-based SA score is never selectable and is not counted. */
+export function requestedMlEndpoints(sent: Endpoint[] | null | undefined): Endpoint[] {
+  if (!sent) return ML_ENDPOINTS;
+  return ML_ENDPOINTS.filter((e) => sent.includes(e));
+}
+
+/** The `endpoints` field to send for a selection. Everything selected = no subset (`null`), so
+ *  the request, and the server's cache key for it, is the plain one. A subset also asks for the
+ *  rule-based SA score, which is computed, not selectable, and always part of a request. */
+export function endpointsForRequest(selected: Endpoint[]): Endpoint[] | null {
+  if (selected.length === ML_ENDPOINTS.length) return null;
+  return [...selected, "synthetic_accessibility"];
 }

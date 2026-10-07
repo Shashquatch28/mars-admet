@@ -62,6 +62,9 @@ export interface TimedPrediction {
   // What was sent. The service's `smiles_input` is not the raw input: it comes
   // back already standardized, so it cannot tell us whether the string was rewritten.
   submitted: string;
+  // The `endpoints` field of the request: null = no subset (all). Rows the user left
+  // out are NOT REQUESTED rather than NOT RETURNED, so the request must be remembered.
+  sent: Endpoint[] | null;
 }
 
 export async function fetchPrediction(
@@ -75,7 +78,7 @@ export async function fetchPrediction(
     body: JSON.stringify({ smiles, endpoints: endpoints ?? null }),
   });
   const response = (await res.json()) as PredictionResponse;
-  return { response, latencyMs: Math.round(performance.now() - t0), submitted: smiles };
+  return { response, latencyMs: Math.round(performance.now() - t0), submitted: smiles, sent: endpoints ?? null };
 }
 
 // 404: unknown or expired molecule_id (a normal state); 501: the API has no RDKit.
