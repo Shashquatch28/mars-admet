@@ -143,8 +143,10 @@ Q16, Q18, Q20.
 Only these affect the next steps:
 - **Q7** (auth boundary in the shell) blocks Batch upload, rail gating, Library.
 - **Q8** (default density) and **Q12** (accent) are confirmations, not blockers.
-- **Q3/Q4** (regression interval axis, narrow-CI flagging) are non-blocking: the
-  current behaviour (print the interval, don't flag width) is the honest default.
+- **Q3/Q4** (regression interval axis, narrow-CI flagging): `OPEN_QUESTIONS.md`
+  files these under *Blocking*. They do not block the next steps here, because the
+  build already took the honest default (print the interval, don't flag width) —
+  but that is a judgment, and the maintainer has not signed off on it.
 
 ## 6. Hard rules
 
