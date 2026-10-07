@@ -1,0 +1,48 @@
+{
+ "endpoint": "ppb_binding",
+ "task": "TaskType.REGRESSION",
+ "n_test": 323,
+ "n_seeds": 5,
+ "dropped": 0,
+ "frac_in_domain": 0.978328173374613,
+ "rmse": 11.22152085728568,
+ "mae": 7.253951582775765,
+ "std_median": 1.194684694497284,
+ "std_p90": 3.0484677100655184,
+ "cover_1sigma": 0.1393188854489164,
+ "cover_196sigma": 0.2755417956656347,
+ "median_abs_err_over_median_std": 3.3720907479888105,
+ "spearman_std_vs_abserr": 0.6150563687510905,
+ "quartiles_abserr": [
+  {
+   "q": 1,
+   "n": 81,
+   "spread_med": 0.5688249840454508,
+   "err_mean": 2.161796042359905
+  },
+  {
+   "q": 2,
+   "n": 80,
+   "spread_med": 0.9412436435656827,
+   "err_mean": 4.0119372100830075
+  },
+  {
+   "q": 3,
+   "n": 81,
+   "spread_med": 1.6048375517417588,
+   "err_mean": 8.554168038073879
+  },
+  {
+   "q": 4,
+   "n": 81,
+   "spread_med": 2.8936532249980313,
+   "err_mean": 14.24788017178759
+  }
+ ],
+ "std_median_in_domain": 1.1726204684293782,
+ "std_median_out_domain": 4.092929305707979,
+ "abserr_in_domain": 7.097903309109845,
+ "abserr_out_domain": 14.2984165082659,
+ "cover_1sigma_in_domain": 0.13924050632911392,
+ "cover_1sigma_out_domain": 0.14285714285714285
+}

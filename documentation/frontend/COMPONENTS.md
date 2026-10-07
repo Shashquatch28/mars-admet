@@ -13,7 +13,7 @@ variant does not exist.
 |---|---|---|
 | `AppShell` | the 1440×900 frame: rail, top bar, workspace slot, status bar | the only component that positions regions; workspaces never set their own chrome |
 | `NavRail` | 68px primary nav, 4 destinations + settings | icon + 8px condensed caps label; active = accent left edge + raised surface + `aria-current="page"` |
-| `TopBar` | workspace label, command input, serving generation, API status, account | the serving generation (`model_version`) is **permanent** here, not per-panel |
+| `TopBar` | workspace label, command input, serving generation, API status, account | the serving generation (`model_version`) is **permanent** here, not per-panel; a plain readout while the API reports one generation, a picker only when it reports several (ADR-026) |
 | `CommandPalette` | ⌘K search over molecules, endpoints, commands | overlay; the only shell component using `--surface-overlay` + shadow |
 | `StatusBar` | served_at, latency, cache state, rate budget, keyboard hints | readouts only; never the sole home of information |
 

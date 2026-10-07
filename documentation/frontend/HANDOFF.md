@@ -146,7 +146,8 @@ measured latency, `model_version`) and the API badge from a real `/health`
 check. Until a value has a source, render it as absent, not as a plausible number.
 
 ### 3.3 ~~CORS~~ Resolved 2026-10-07 (dev proxy + explicit origin list with credentials)
-Confirmed in a browser. Original note:
+Confirmed in a browser. **Production:** an explicit origin list is not enough, because the session cookie is
+`SameSite=Lax` and does not travel on cross-site `fetch()`. Production serves one origin (ADR-025, Q22). Original note:
 
 `api/app/main.py` sets `allow_origins=["*"]` with **no** `allow_credentials`.
 `client.ts` sends `credentials: "include"`. Browsers reject a credentialed
@@ -183,8 +184,8 @@ Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
 
 ### 3.5 Smaller gaps
 
-- **Batch is fixture-only.** No upload (`POST /batch/predict` needs an account —
-  **Q7**), no SSE progress for the >1000 async tier, no multi-select, "Open in
+- **Batch is fixture-only.** No upload (`POST /batch/predict` needs an account and
+  the auth UI, ADR-022), no SSE progress for the >1000 async tier, no multi-select, "Open in
   Predict" / "Export row" are inert.
 - **No empty/entry state.** The *Predict — entry state* artboard (draw/upload/
   recents, "what MARS does not do") is not implemented; the roster merely renders
@@ -211,25 +212,44 @@ Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
    (§3.1) next** — the subset selector is also the only way to see NOT RETURNED
    live.
 4. ~~Close the CSS guard~~ — done.
-5. **Batch live**: needs Q7 answered **and an auth UI built** (nothing exists; every
-   `/batch/*` route needs a session). Then upload + SSE hook.
+5. **Auth UI, then Batch live** (ADR-022; Q7 resolved 2026-10-08). Phase 1: `GET /auth/me` +
+   `MeResponse`, session context (unknown / anonymous / signed in), lock glyphs on Batch and
+   Library, in-workspace sign-in state, a real top-bar account readout (replaces the
+   hard-coded "SK"), global 401 handling, tests. Then the upload + SSE hook, Library, and the
+   Settings account section.
 6. ~~ADR-009 drift check~~ — done.
-7. ~~3Dmol~~ — done. Then Compare, Library, auth.
+7. ~~3Dmol~~ — done. Then Compare, Library.
+8. **Relabel classification units as `score`** (ADR-023; Q21 resolved 2026-10-08). Small and
+   user-visible: `DISPLAY_UNIT` and `unitLabel`. Do it before any demo.
+9. **Rename `ENSEMBLE INTERVAL` to `SEED SPREAD ±1σ`** (ADR-024). Text only; do it with item 8.
+10. **Production topology** (ADR-025; Q22): API under `/api`, frontend served from the API
+    container, secure cookie. Before the first deploy, verify the client address the rate
+    limiter sees behind Cloud Run.
+11. **Top-bar serving readout** (ADR-026 part 1): drop the button role, tab stop and chevron; show the
+    deployed generation from the API. Small; do it with items 8-9.
+12. **Structure sketcher** (ADR-027): Ketcher standalone, lazy-loaded, in a bordered panel on Predict.
+    Measure the chunk and audit never-do #7/#8 on first integration.
+13. **Generation switching** (ADR-026 parts 2-5): `GET /generations`, request `model_version`, versioned
+    routing table. Blocked until a second generation exists; build against two fixture registries.
 
 Do not build more surfaces on fixtures before 1–3.
 
 ## 5. Open questions
 
-All 20 live in `OPEN_QUESTIONS.md`. Resolved: Q1, Q2, Q14, Q15, Q17, Q19 (ADR-020). Open: Q3–Q13,
-Q16, Q18, Q20.
+All 22 live in `OPEN_QUESTIONS.md`. Resolved: Q1, Q2, Q3, Q4 (ADR-024), Q7 (ADR-022), Q10, Q14,
+Q6 (ADR-026), Q9 (ADR-027), Q15, Q17, Q19 (ADR-020), Q21 (ADR-023), Q22 (ADR-025). Open: Q5, Q8,
+Q11, Q12, Q13 (resolved, confirm), Q16, Q18, Q20.
 
 Only these affect the next steps:
-- **Q7** (auth boundary in the shell) blocks Batch upload, rail gating, Library.
+- **Q7** resolved 2026-10-08 (ADR-022): the auth UI, not a decision, now blocks Batch upload,
+  rail gating and Library.
 - **Q8** (default density) and **Q12** (accent) are confirmations, not blockers.
-- **Q3/Q4** (regression interval axis, narrow-CI flagging): `OPEN_QUESTIONS.md`
-  files these under *Blocking*. They do not block the next steps here, because the
-  build already took the honest default (print the interval, don't flag width) —
-  but that is a judgment, and the maintainer has not signed off on it.
+- **Q3** resolved 2026-10-07 (printed intervals, per AGENTS.md never-do #4). **Q4**
+  resolved 2026-10-08 (ADR-024): never flag narrow spread; rename it `SEED SPREAD ±1σ`.
+- **Q21** resolved 2026-10-08 (ADR-023): relabel as `score` now; stop applying the served Platt
+  calibrators (C0) and recalibrate (C1) later.
+- **Q6** resolved 2026-10-08 (ADR-026): real generation switching; the control is a readout until
+  a second generation exists. **Q9** resolved 2026-10-08 (ADR-027): Ketcher in the MVP.
 
 ## 6. Hard rules
 
@@ -242,9 +262,12 @@ alternatives recorded.
 
 ## 7. Repository and branch hazards
 
-- **Push only to `milestone/m4-frontend`.** `milestone/m2-kermt` is the KERMT
+- **Push to `milestone/m4-frontend`.** `milestone/m2-kermt` is the KERMT
   training branch and is in use by a separate session. Do not touch `ml/` beyond
-  `ml/serve/`, and do not commit AIMS or training notes here.
+  `ml/serve/`, and keep training notes off this branch. The one exception is
+  `documentation/AIMS/`: it is shared project guidance (AIMS decision, 2026-10-08),
+  so an AIMS edit is committed on both branches the same day. Push that single
+  commit to `m2-kermt` without checking the branch out.
 - **Duplicate docs on this branch.** Commit `f7a41db` ("ship on Tier 0…") added
   10 `documentation/AIMS/`, blueprint and `FUTURE_SCOPE` files here. `m2-kermt`
   carries the same content (`5da3091`) and the 10 files are **byte-identical

@@ -565,3 +565,227 @@ would let any element opt out of the cap.
 
 **Consequences.** `tests/cssGuard.test.ts` checks colour literals only, not radius. If a stylelint radius rule is
 ever added, allowlist `.dot`.
+
+## ADR-022 — Auth boundary: gate the capability, not the app (resolves Q7)
+
+**Date:** 2026-10-08 · **Status:** accepted (design; implementation pending)
+
+**Decision.**
+
+1. Predict and Compare stay anonymous. Batch and Library require a session, as the API already enforces
+   (`/batch/*`, `/molecules` and `/reports` depend on `get_current_user`).
+2. All four rail destinations stay visible. Gated ones (Batch, Library) carry a lock glyph. An anonymous user who
+   opens one lands in the workspace, which renders an in-workspace sign-in state: why an account is needed, what
+   stays free, and the sign-in and create-account forms. No modal, no hidden rail item; keys 1-4 keep navigating.
+3. Session state is a frontend context with three values: unknown, anonymous, signed in. The rail is neutral while
+   the state is unknown. Any 401 from a gated call drops the app to anonymous and shows the sign-in state in place,
+   keeping the user's selected file.
+4. Add `GET /auth/me` (returns `user_id` and `email`; 401 without a session), a `MeResponse` model in
+   `mars_contracts/auth.py`, a row in `API_ROUTES.md`, and the mirror in `contracts.ts` (ADR-009). The cookie is
+   HttpOnly and no whoami route exists, so the client cannot otherwise know whether a session exists.
+5. The top-bar account readout is driven by session state. The hard-coded "SK" is removed: anonymous shows
+   "Sign in"; signed in shows the user's initial and a sign-out control.
+6. Turnstile is not wired in the client for now. The server skips verification when
+   `CLOUDFLARE_TURNSTILE_SECRET_KEY` is unset, and the register request sends a placeholder token. If the app is
+   ever deployed publicly: honeypot field and a register rate limit first, then Turnstile (free).
+7. Password-reset UI is deferred. `/auth/password-reset/request` issues a token but Resend delivery is not wired,
+   so a form would promise an email that is never sent.
+8. Fixture mode (no API configured): Batch keeps working on its sample data, labelled as sample (`isSample`).
+9. Phase 1 = items 1-8 plus tests. Phase 2, which depends on Phase 1 = live Batch upload and SSE progress, Library,
+   and a Settings account section with delete-account behind a confirmation modal (the one modal use that
+   INTERACTIONS.md allows).
+
+**Rationale.** The anonymous path is what makes the tool easy to try; accounts exist for the expensive and stored
+paths (blueprint Modules 8 and 13). Maintainer context, 2026-10-08: MARS stays a college project with no public
+users and no paid services, so abuse and cost controls (Turnstile, rate-limit tuning, budget alerts) are not needed
+now. Never-do #8 requires the reason a workspace is gated to be explained in the workspace, not only in a tooltip.
+Never-do #5 is about endpoints the service did not return and applies here by analogy only: a gated destination
+is shown, not hidden. The top-bar "SK" implied an identity the app did not have.
+
+**Rejected.** *A hard login wall* - contradicts Module 8 (anonymous `/predict`), adds friction for anyone trying the
+tool, and still needs session state and 401 handling. *Hiding gated rail items* - the rail would differ by login
+state, and keys 2 and 4 (`WS_KEYS` in `AppShell.tsx`) would point at pages the rail does not show. *A modal on
+entry* - interrupts the user and is likely to fight the global 1-4 shortcuts.
+
+**Consequences.** One contract addition (`MeResponse`); the drift test covers names. `ARCHITECTURE.md` no longer
+calls MARS an "authenticated" workstation, which contradicted Module 8. The anonymous per-IP limit
+(`rate_limit_anon_per_minute`, 60) and the blueprint's Module 8 "$7/mo instance" wording are untouched; the latter
+is stale against Module 10 ($0 on Cloud Run) and is not corrected here.
+
+## ADR-023 — Classification values are labelled "score" until calibration is validated (resolves Q21)
+
+**Date:** 2026-10-08 · **Status:** accepted (implementation pending)
+
+**Decision.**
+
+1. Now (option a): the unit text for the nine classification endpoints changes from `probability` to `score` in
+   `DISPLAY_UNIT` (`domain/endpoints.ts`) and the fallback in `unitLabel` (`domain/format.ts`). The unit stays
+   per endpoint, so each one can return to `probability` on its own. The 0-1 axis (`PROB_DOMAIN`) is unchanged: a
+   score is still bounded.
+2. Later (option c), in order. **C0**: stop applying the served Platt calibrators (`ml/serve/predictor.py` applies
+   `registry.load_calibrator` to each seed) and serve the raw ensemble, behind a switch. **C1**: recalibrate the
+   XGBoost side on label-representative data (cross-validated out-of-fold predictions; the frozen calibration
+   split is not changed) and validate against raw with ECE, Brier and reliability curves, with a pass bar per
+   endpoint. An endpoint returns to `probability` only when it passes. **C2** (KERMT temperature scaling) stays
+   GPU-gated and is not on the critical path while the API serves XGBoost.
+
+**Rationale.** The calibration split is not label-representative (CYP3A4: 0.409 positive in train_val vs 0.113 in
+calibration), and the `hia_absorption` calibrator was fit on 49 positives and 1 negative. The repo's own
+like-for-like comparison on seed 4 (`AIMS/next_steps.md`) finds the served calibrators worse than the raw output on
+Brier for 9 of 9 endpoints and on ECE for 7 of 9 (HIA ECE 0.045 to 0.209). Calling the output a probability implies
+a calibration MARS has not shown, which is the project's top rule. The live aspirin value of 0.98 is directionally
+right (aspirin is well absorbed) but cannot be read as a 98% likelihood.
+
+**Rejected.** *(b) Keep "probability" with per-row caveats* - caveating only the two known cases implies the other
+seven are fine; caveating all nine puts a warning on every row. *Fixing the calibrators before relabelling* - leaves
+the unsupported claim on screen for the duration of the ML work.
+
+**Consequences.** User-visible text changes in Predict and Batch. The contract description at
+`contracts/mars_contracts/prediction.py:25` still says "classification probability [0,1]"; that is a contract
+change and is not made here. Some endpoints (HIA with N=47, DILI with 50 calibration rows, hERG) may never pass the
+C1 bar and would then stay `score`. Whether the endpoint detail panel also carries a one-line explanation is left to
+implementation. ML-side record: `AIMS/decisions.md`, 2026-10-08. Rough effort, not measured: C0 half a day to a day,
+C1 two to four working days, C2 weeks of calendar time.
+
+## ADR-024 — Seed spread is not an interval: never flag it, and rename it (resolves Q4)
+
+**Date:** 2026-10-08 · **Status:** accepted (wording now; replacement band planned)
+
+**Decision.**
+
+1. Seed spread is never flagged as a reliability signal, in either direction (narrow as suspicious, narrow as
+   reassuring). This is permanent, not "until conformal prediction lands".
+2. The label `ENSEMBLE INTERVAL` becomes `SEED SPREAD ±1σ`. Text only; this also answers Q4's wording question.
+3. Planned replacement for the five regression endpoints: a held-out-error band, with a per-endpoint half-width taken
+   from the pooled out-of-fold residuals of the five seeds (their scaffold-held-out validation folds), served as new
+   contract fields (names to be chosen) and labelled with what was measured, for example "90% of held-out errors fell
+   within ±X". This is an optional upgrade: the claims are honest without it. Rough effort, not measured: 1-2 working
+   days.
+4. Not decided: whether the spread range is hidden on classification rows. The measurements below show it carries no
+   information beyond the score, but hiding it touches the locked design (`IntervalTrack` on classification rows), so
+   it stays open.
+
+**Rationale.** On the five regression endpoints the printed mean ± 1σ range contained the true value for 9-14% of
+held-out test molecules (a 1σ range would be expected to contain about 68%), and the typical error was about 4.7-6.5
+times the median printed spread. Spread ranked errors only weakly (rank correlation 0.10-0.62), and in-domain and
+out-of-domain molecules had almost the same median spread on three of the five endpoints, so agreement between seeds
+is not evidence of being in-domain. On the nine classification endpoints spread is largely a function of the score
+itself, and once the score is removed it predicts misclassification at AUROC 0.43-0.63 (chance is 0.5). A band built
+from held-out residuals contained 86-93% of test errors at a 90% target. Full tables, method and caveats:
+`AIMS/decisions.md`, 2026-10-08.
+
+**Rejected.** *A per-endpoint reference distribution of interval widths* (Q4's first option) - it would describe how
+much seeds agree, and the measurements show that is not how large the error is. *Flagging narrow spread as reassuring
+or as suspicious* - both claim a calibration that does not exist. *Keeping the `ENSEMBLE INTERVAL` label* - an
+"interval" next to a value reads as an error range.
+
+**Consequences.** The original Q4 text says the seeds are "fit to the same ... training set". Each seed trains on a
+different scaffold partition of the same train_val pool (`five_seed_train_val_folds`), so the spread includes
+partition variance and is still far too narrow. The contract names `confidence_low` and `confidence_high` stay
+misleading; renaming them is a breaking contract change and is not made here.
+
+## ADR-025 — Production serves the frontend and the API from one origin (resolves Q22)
+
+**Date:** 2026-10-08 · **Status:** accepted (design; implementation pending)
+
+**Decision.**
+
+1. In production the API container serves the built Vite bundle, with an `index.html` fallback for client routes. The
+   browser makes no cross-origin calls.
+2. The API is mounted under `/api` in every environment, and the dev proxy stops stripping the prefix, so development
+   and production share one path. The prefix is required because four SPA routes (`/predict`, `/batch`, `/compare`,
+   `/library`) collide with API routes of the same names. This changes the health-check paths, `API_ROUTES.md`, the
+   tests and the CI smoke test.
+3. Production settings: `SESSION_COOKIE_SECURE=true`; `CORS_ALLOW_ORIGINS` empty. The cookie stays HttpOnly and
+   `SameSite=Lax`. The explicit-origin CORS policy stays for development and for any future split deployment.
+4. This departs from blueprint Module 10, which names Vercel for the frontend. The blueprint amendment is the
+   maintainer's and is pending.
+5. Before the first deploy, verify which client address the anonymous rate limiter sees behind Cloud Run: it keys on
+   `request.client.host` and the Dockerfile starts uvicorn without proxy flags. Unverified; uvicorn's default trust
+   setting could not be confirmed from its documentation.
+
+**Rationale.** The CORS configuration (explicit origins plus credentials) is correct for a cross-origin deployment,
+but it is not sufficient. The session cookie is `SameSite=Lax`, and MDN states that Lax cookies are not sent on
+cross-site `fetch()` requests. A Vercel frontend and a Cloud Run API are different sites, so login would appear to
+succeed while every gated call returned 401. One origin removes the whole class of problem (CORS drift, cookie site
+mismatch, vendor proxy limits) at $0, and ADR-001 already anticipated serving the bundle from the API container.
+
+**Rejected.** *`SameSite=None; Secure` cross-site cookie* - valid, but MDN notes Safari and Firefox restrict
+third-party cookies by default. *Vercel rewrite to the API* - documented and same-origin to the browser, but its
+documentation says nothing about timeouts, streaming or cookie handling, so batch progress (SSE) is unverified.
+*Firebase Hosting rewrite to Cloud Run* - documented 60-second request timeout. *Custom domain with subdomains* - needs
+a purchased domain.
+
+**Consequences.** The first page load can include a Cloud Run cold start (the blueprint already accepts 1-3 s). The
+Dockerfile becomes multi-stage. CI does not deploy yet, so nothing needs migrating. The comment at the top of
+`client.ts` (SPA and API must be same-site) remains true and is satisfied by construction.
+
+## ADR-026 — The serving generation is a real, switchable setting (resolves Q6)
+
+**Date:** 2026-10-08 · **Status:** accepted (design). Part 1 ships now. Parts 2-5 are blocked until a second
+generation exists.
+
+**Decision.**
+
+1. The top-bar control states only what exists. While the API reports one generation it is a plain readout: no button
+   role, no tab stop, no chevron. It becomes a picker only when `GET /generations` lists more than one.
+2. Its value is the deployed generation reported by the API, not the last prediction's `model_version`, so it is
+   populated before the first run. In fixture mode it shows the fixture label and says it is a fixture.
+3. The generation is a session-wide setting held in the shell. Switching it re-runs the open Predict molecule against
+   the chosen generation, as an explicit action. It does not filter history. Saved molecules keep the version frozen at
+   save time (blueprint Module 13). Batch jobs record the generation they ran against. Compare uses the active
+   generation for every column.
+4. API: `GET /generations` returns `{active, available}`. `/predict` takes an optional `model_version`; a value not in
+   `available` is a 422, and the default is `active`. `build_cache_key` takes the requested version instead of reading
+   the deployed setting.
+5. A generation becomes data: a versioned routing table plus its artifact root. Today it is one settings string and one
+   `model_artifact_dir`.
+
+**Evidence (checked 2026-10-08).** `ml/artifacts/` holds 14 endpoint directories. The metadata read
+(`caco2_permeability`) names one model, `mars-xgboost-ecfp-desc-v1`, seeds 0-4. The registry layout is
+`<endpoint_key>/seed_<n>/` with no generation dimension (`ml/serve/registry.py`). `model_version` is one settings value
+stamped onto every response (`prediction_service.py:134`), and the artifacts directory is git-ignored.
+
+**Why this was chosen over the readout-only option.** The maintainer chose it. The cost is accepted: there is no second
+generation to switch to. The first candidates are KERMT (GPU-gated, ADR-023 C2) and a retrained XGBoost set, and
+neither exists. Parts 2-5 can be tested against two fixture registries, but not against real data.
+
+**Rejected.** *A picker with one disabled entry* - implies a feature that does not exist (never-do #5).
+
+**Consequences.** Touches `ml/serve/registry.py`, `prediction_service.py`, `prediction_cache.py`, a new route,
+`API_ROUTES.md`, a new `GenerationsResponse` and a request field in `mars_contracts` and its frontend mirror (the drift
+test covers both). The fixtures' `mars-routing@v0.3.1` disagrees with the API default `v0.2.0-dev`; neither is
+authoritative until part 2 lands.
+
+## ADR-027 — Predict gets a structure sketcher: Ketcher, standalone mode (resolves Q9)
+
+**Date:** 2026-10-08 · **Status:** accepted (design; implementation pending)
+
+**Decision.**
+
+1. Predict offers "Draw a structure". It opens Ketcher in its own bordered panel (blueprint MVP item 10: a specialised
+   instrument, not a re-skin). The SMILES textarea stays the source of truth: accepting a drawing writes SMILES into
+   it, and the user still presses Run. Server-side standardisation is unchanged.
+2. Standalone mode: Indigo runs as WebAssembly in the browser, so there is no Indigo Service to host.
+   `ketcher-core`, `ketcher-react` and `ketcher-standalone` are pinned together.
+3. Loaded by dynamic import, so the first load of the app does not pay for it. If WebAssembly is unavailable the panel
+   says so (never-do #5) and the textarea still works.
+4. The panel interior is third-party. AGENTS never-do #7 (no animation) and #8 (no tooltip-only state) bind MARS's own
+   UI; whether Ketcher's interior breaks them is unaudited. Audit when built. Any exception is scoped to the panel
+   interior and recorded here.
+
+**Evidence (npm registry and the Ketcher README, 2026-10-08).** Apache-2.0. `ketcher-react` 3.18.0 has peer
+`react ^18.2.0 || ^19.0.0`; the project is on 18.3.1. `ketcher-standalone` 3.17.2 depends on `indigo-ketcher` 1.45.1
+(WASM), and the README says standalone uses Indigo WASM client-side and that the WASM bundle is larger. Unpacked npm
+sizes: `ketcher-react` 29.8 MB, `ketcher-standalone` 109.7 MB. These are tarball sizes, not shipped bundle size, which
+is unmeasured. `ketcher-react` depends on `@mui/material` and `@emotion`, a second styling system beside CSS Modules,
+and it is not checked against the CSS guard (HANDOFF 3.4).
+
+**Why this was chosen over deferral.** The maintainer chose it. The recommendation was to defer, because the API takes
+SMILES and a sketcher can be added without a backend change. The costs are accepted: a heavy dependency, a second UI
+system, a longer install and Docker build stage.
+
+**Rejected.** *Deferral to post-MVP.* *JSME* - not evaluated; its licence and size were not checked.
+
+**Consequences.** Measure the lazy chunk and the install and build time on first integration. Run the never-do #7/#8
+audit and the CSS-guard check then. The empty-state spec gains the entry point; `PredictEmpty` is not built yet.

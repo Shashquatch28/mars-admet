@@ -1,0 +1,48 @@
+{
+ "endpoint": "lipophilicity_logp",
+ "task": "TaskType.REGRESSION",
+ "n_test": 840,
+ "n_seeds": 5,
+ "dropped": 0,
+ "frac_in_domain": 0.875,
+ "rmse": 0.695884961812685,
+ "mae": 0.5386865223328183,
+ "std_median": 0.08932266802032497,
+ "std_p90": 0.148340860731857,
+ "cover_1sigma": 0.0880952380952381,
+ "cover_196sigma": 0.20595238095238094,
+ "median_abs_err_over_median_std": 4.855506431111478,
+ "spearman_std_vs_abserr": 0.10131488284249843,
+ "quartiles_abserr": [
+  {
+   "q": 1,
+   "n": 210,
+   "spread_med": 0.05195868304701359,
+   "err_mean": 0.5095353841219276
+  },
+  {
+   "q": 2,
+   "n": 210,
+   "spread_med": 0.0762514997743936,
+   "err_mean": 0.4762223603030046
+  },
+  {
+   "q": 3,
+   "n": 210,
+   "spread_med": 0.10377788783295203,
+   "err_mean": 0.5514868358803825
+  },
+  {
+   "q": 4,
+   "n": 210,
+   "spread_med": 0.14186593637839995,
+   "err_mean": 0.6175015090259589
+  }
+ ],
+ "std_median_in_domain": 0.08781736214785556,
+ "std_median_out_domain": 0.10655304448514379,
+ "abserr_in_domain": 0.5118526788567301,
+ "abserr_out_domain": 0.7265234266654367,
+ "cover_1sigma_in_domain": 0.09115646258503401,
+ "cover_1sigma_out_domain": 0.06666666666666667
+}

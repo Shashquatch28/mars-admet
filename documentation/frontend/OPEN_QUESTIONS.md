@@ -82,7 +82,21 @@ meaning; (c) add the range to the API response as real metadata.
 (b) is the cheapest and the most dangerous — a display range is read as a
 reference range whether or not it is labelled as one.
 
-### Q4 — Interval labelling and the narrow-CI case
+### Q4 — Interval labelling and the narrow-CI case — **RESOLVED 2026-10-08 (ADR-024)**
+
+**Resolution:** never flag narrow seed spread; rename `ENSEMBLE INTERVAL` to `SEED SPREAD ±1σ`. Measured on the held-out
+test sets, the printed ±1σ range contained the truth for 9-14% of regression molecules, and on classification the spread
+adds nothing beyond the score. A held-out-error band is the planned regression replacement; hiding the spread on
+classification rows is left open. Correction to the recommendation below: the seeds do not share one training set (each
+uses its own scaffold partition). Original text below for the record.
+
+**Recommendation: stay unflagged.** The interval is the spread of 5 seeds, and the inspector already says so ("not a
+coverage guarantee"). A narrow spread means the seeds agree, which says nothing about whether they are right: five
+models fit to the same features and training set can agree confidently on a molecule far outside the domain. Flagging
+narrow intervals (as suspicious or as reassuring) would claim a calibration that does not exist, which is the project's
+top rule. Conformal prediction is Post-MVP and has no milestone slot (`AIMS/module_milestone_map.md`). **Wording:**
+`ENSEMBLE INTERVAL` is what the live column header shows. This departs from your earlier "surface narrow CIs"
+constraint, which is why it is a recommendation and not a resolution. Original text below.
 
 You named "unusually narrow confidence intervals" as a constraint the UI should
 surface. There is currently no validated per-endpoint reference distribution of
@@ -108,7 +122,12 @@ client consumes is a standing invitation for a future client to consume it.
 Recommend deprecating it in `mars_contracts/api.py` until direction-of-good is
 validated. Contract change, so it is your call and out of scope here.
 
-### Q6 — Model-generation selector behaviour
+### Q6 — Model-generation selector behaviour — **RESOLVED 2026-10-08 (ADR-026)**
+
+**Resolution: build real generation switching (ADR-026).** Until the API reports more than one generation the control is
+a plain readout. It becomes a picker when `GET /generations` lists several. Switching re-runs the open molecule
+explicitly and does not filter history. Blocked on a second generation existing (KERMT or a retrained set). Original
+text below.
 
 The top bar carries a permanent serving-generation readout
 (`mars-routing@v0.3.1`) drawn as a picker. Unspecified: does switching
@@ -116,7 +135,20 @@ generations re-run the prediction, filter saved history, or both? This matters
 for the "multiple model generations" goal and shapes whether the control
 belongs in the shell or in the workspace.
 
-### Q7 — Auth boundary in the shell
+### Q7 — Auth boundary in the shell — **RESOLVED 2026-10-08 (ADR-022)**
+
+**Resolution: gate the capability, not the app (ADR-022).** Predict and Compare stay anonymous. Batch and Library keep
+their rail items with a lock glyph and open to an in-workspace sign-in state. `GET /auth/me`, the session context and
+the auth UI are built first (Phase 1). Turnstile is not wired for now; the server skips it when its secret is unset.
+Evidence and original text below for the record.
+
+Verified: every `/batch/*` route depends on `get_current_user` (`api/app/routers/batch.py`); `/auth/register`,
+`/login`, `/logout` and password reset exist, and registration calls Turnstile verification (skipped when
+`CLOUDFLARE_TURNSTILE_SECRET_KEY` is unset). The frontend has **no auth UI and no session handling at all**, so
+Batch cannot go live until one exists: this is a build task, not just a design choice. **Recommendation:** keep all
+four rail destinations visible, mark gated ones with a lock glyph, and explain the state in the workspace itself
+(never-do #8: not in a tooltip) with an in-workspace sign-in state on entry, rather than a modal or a hidden rail
+item. This matches never-do #5 (absence is shown, not hidden). Original text below.
 
 `/predict` and `/compare` are anonymous; `/batch/*`, `/molecules`, `/reports`
 require a session. So two of the four rail destinations are gated. Currently
@@ -128,7 +160,10 @@ marked in the rail, or should sign-in be prompted on entry?
 Compact (30px) or comfortable (36px) as the shipped default? Compact fits all
 15 endpoints at 1440×900 without scrolling, which is the argument for it.
 
-### Q9 — Structure sketcher
+### Q9 — Structure sketcher — **RESOLVED 2026-10-08 (ADR-027)**
+
+**Resolution: build it in the MVP with Ketcher in standalone mode (ADR-027).** It opens in a bordered panel, loads by
+dynamic import, and writes SMILES into the existing textarea. Original text below.
 
 `PredictEmpty` offers "Draw a structure" as an entry point, but no sketcher is
 vendored — `package.json` has only `3dmol`. Is a sketcher (Ketcher, JSME) in
@@ -306,3 +341,31 @@ The scaffold uses CSS Modules over the token layer, not Tailwind v4 utilities �
 see ADR-016 for the reasoning. This narrows the Tailwind half of ADR-001. Confirm
 you are happy with that, or say the word and the token layer can be re-expressed
 as a Tailwind `@theme` with utilities on the layout surfaces.
+
+
+---
+
+# 2026-10-07: raised while verifying the live stack
+
+### Q21 — Classification values are labelled "probability"; calibration is not validated for every endpoint — **RESOLVED 2026-10-08 (ADR-023): (a) now, (c) later**
+
+**Resolution:** relabel the nine classification endpoints as `score` now (unit text only). Later, stop applying the
+served Platt calibrators (C0) and recalibrate on label-representative data (C1); an endpoint returns to `probability`
+only when it passes a per-endpoint bar. Original text below for the record.
+
+The Predict table prints classification values with the unit `probability`. `AIMS/module_milestone_map.md` records
+that the Platt calibration split is **not label-representative** (CYP3A4: train 0.409 positive vs calibration 0.113)
+and that `hia_absorption`'s promoted calibrator was **fit on 49 positives and 1 negative**. A live aspirin request
+returned `hia_absorption` 0.98. Calling that a probability implies a calibration MARS has not shown, which is the
+project's top rule. Options: (a) relabel classification values as a model *score* (unit text only, no layout change)
+until calibration is validated per endpoint; (b) keep "probability" and add a per-endpoint caveat on the affected rows;
+(c) fix the calibrators (ML side, `m2-kermt`'s territory). **Recommend (a) now, (c) later.** Not changed here: it alters
+a user-visible claim, so it is your call.
+
+### Q22 — CORS and cookies in production — **RESOLVED 2026-10-08 (ADR-025)**
+
+**Resolution: one origin.** The dev proxy only solves development. An explicit origin list with credentials is correct for a
+cross-origin deployment but does not make the `SameSite=Lax` session cookie travel on cross-site `fetch()`, which is what a
+Vercel frontend plus Cloud Run API would need. Production serves the built frontend from the API container, with the API
+under `/api`. See ADR-025 for the options considered and the one unverified item (the rate limiter's client address behind
+Cloud Run).

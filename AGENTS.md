@@ -94,5 +94,5 @@ computed rule, not a model prediction. Headline count is **14**.
   `contracts/tests/test_frontend_drift.py` (field and enum names, not types).
 
 Full rationale for every rule: `documentation/frontend/` (UX_PRINCIPLES,
-DECISIONS ADR-001…020, COMPONENTS, DESIGN_SYSTEM, CRAFT_AND_INTERACTION).
+DECISIONS ADR-001…027, COMPONENTS, DESIGN_SYSTEM, CRAFT_AND_INTERACTION).
 Current state, verified gaps and next steps: `documentation/frontend/HANDOFF.md`.

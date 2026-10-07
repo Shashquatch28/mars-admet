@@ -109,11 +109,12 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   seeds, 0 blocked; `artifacts/` and `runs/evaluations/` proven byte-unchanged). The KERMT
   comparison must use these **test** numbers, not the old validation-fold reports — they differ by
   up to +0.263 AUROC. Table in `decisions.md` 2026-09-21 (later).
-- **OPEN — served XGBoost Platt calibrators degrade held-out calibration** (like-for-like on the
-  calibrator's own seed 4: ECE worse on 7/9 endpoints, Brier worse on 9/9; worst hia .045→.209).
-  They are what the API applies. Cause: calibration-split prior ≠ test prior. Also only ONE
-  calibrator exists per endpoint (fit on seed 4). Calibration policy is out of scope so **not
-  fixed** — needs a maintainer call (the API is serving these).
+- **DECIDED 2026-10-08 (`decisions.md` 2026-10-08) — served XGBoost Platt calibrators degrade held-out calibration**
+  (like-for-like on the calibrator's own seed 4: ECE worse on 7/9 endpoints, Brier worse on 9/9;
+  worst hia .045→.209). They are what the API applies. Cause: calibration-split prior ≠ test prior.
+  Also only ONE calibrator exists per endpoint (fit on seed 4). **Policy:** the UI says `score` now;
+  C0 = stop applying the calibrators and serve raw; C1 = recalibrate on label-representative data and
+  validate per endpoint; C2 (KERMT) stays GPU-gated. **Not yet implemented.**
 - **OPEN — shared cluster fold leaves tiny per-task validation sets.** `toxicity__cls` val =
   18–24 hERG labels vs ~1,810 AMES; `ppb` 42–50; `hia` 46. Epoch selection for those tasks is
   effectively unmeasured. Design decision; not changed.
@@ -162,7 +163,7 @@ current function signatures but has not run against real KERMT. Workstation path
   **[ran here]**. Nothing below works on the workstation until the new modules
   (`ml/eval/cluster_calibration.py`, `ml/train/train_kermt_cluster.py`, ...) are there.
 - Decide the OPEN items above (esp. HIA floor, `holdout_calibration` default, DILI pool, and what
-  to do about the served calibrators). *(All but the served calibrators were decided 2026-09-30.)* The XGBoost test evaluation is already done.
+  to do about the served calibrators). *(All decided: the rest on 2026-09-30, the served calibrators on 2026-10-08.)* The XGBoost test evaluation is already done.
 - **Commit first.** The readiness report WARNs that a dirty tree makes each run's recorded git SHA
   not describe the code that ran.
 - `cd ml && PYTHONPATH=. ./.venv/Scripts/python.exe train/readiness_report.py` — expect

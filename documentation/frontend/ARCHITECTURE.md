@@ -37,7 +37,8 @@ components over Radix primitives. Do not adopt Next.js.**
 
 ### Why Vite, not Next.js
 
-MARS is an authenticated desktop workstation talking to a FastAPI service. It
+MARS is a desktop workstation talking to a FastAPI service (Predict and Compare are
+anonymous; Batch and Library need a session, ADR-022). It
 has no public surface to index, no marketing pages, no content to render on a
 server. Sessions are opaque server-side tokens in an HttpOnly cookie
 (`contracts/API_ROUTES.md`, Module 13) — there is no JWT for a Node layer to
