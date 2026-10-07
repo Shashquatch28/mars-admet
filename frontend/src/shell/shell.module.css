@@ -292,7 +292,7 @@
 .scrim {
   position: fixed;
   inset: 0;
-  background: rgba(5, 7, 8, 0.5);
+  background: var(--scrim);
   z-index: 50;
 }
 .palette {
@@ -393,7 +393,7 @@
 }
 .palSel {
   background: var(--surface-raised);
-  box-shadow: inset 0 0 0 1px var(--accent), inset 0 2px 0 -1px rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 1px var(--accent), var(--highlight-selected);
 }
 .palSel::before {
   content: "";
@@ -472,3 +472,4 @@
     display: grid;
   }
 }
+

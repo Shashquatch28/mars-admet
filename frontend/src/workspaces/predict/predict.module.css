@@ -77,7 +77,7 @@
   height: 32px;
   padding: 0 16px;
   background: var(--accent);
-  color: #06181d;
+  color: var(--on-accent);
   font-weight: 600;
   font-size: 11.5px;
   border-radius: var(--radius-sm);
@@ -384,7 +384,7 @@
 }
 .selected {
   background: var(--surface-raised);
-  box-shadow: inset 0 0 0 1px var(--accent), inset 0 2px 0 -1px rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 1px var(--accent), var(--highlight-selected);
 }
 .ename {
   font-size: 11.5px;

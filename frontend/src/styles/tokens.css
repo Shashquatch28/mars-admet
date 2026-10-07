@@ -11,6 +11,11 @@
   --surface-raised: #15191b;
   --surface-overlay: #1f2528;
   --shadow-overlay: 0 12px 28px rgba(0, 0, 0, 0.55);
+  --scrim: rgba(5, 7, 8, 0.5);
+
+  /* data-viz track and interval band — graphical fills, not text */
+  --track: #2a3236;
+  --band: #3a4549;
 
   /* borders */
   --line-hairline: #14181a;
@@ -27,6 +32,7 @@
 
   /* semantic colour — one meaning each */
   --accent: #49aec4;
+  --on-accent: #07191d; /* ink on an --accent fill */
   --caution: #d99a3c;
   --error: #d9615a;
   --success: #6fa860;
@@ -54,6 +60,7 @@
     transparent 3px 6px
   );
   --highlight-machined: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --highlight-selected: inset 0 2px 0 -1px rgba(255, 255, 255, 0.045); /* selected row / cell, drawn over the accent ring (ADR-011) */
 
   /* radius */
   --radius-sm: 2px;

@@ -10,13 +10,13 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: #2a3236;
+  background: var(--track);
 }
 .band {
   position: absolute;
   top: 4px;
   height: 4px;
-  background: #3a4549;
+  background: var(--band);
   border-radius: 1px;
 }
 .tick {
