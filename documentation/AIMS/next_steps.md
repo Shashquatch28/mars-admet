@@ -12,6 +12,8 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   weighting. **Tier 1** (MARS-owned mixed-type trainer, gates G1–G4) and **Tier 2** (ordinal homogenization), with Kendall / GradNorm weighting and the
   Module 11 loss-balancing ablation axis, are **deferred to `FUTURE_SCOPE.md`**. Blueprint Module 4, Module 8, Module 10 budget, Module 11 §6 and the M2
   milestone row were amended the same day. The Tier 1 / Tier 2 sections further down are kept as design reference only — they are **not live work**.
+- **STATE 2026-10-08 (Pass 2, session 3).** On `e6c3dee`: `absorption_distribution__reg` seeds 1–3 done (launched 11:57–13:49 IST, 55.8–56.1 min each; **3 models trained, none removed, no crashed or re-run runs**). Seed 4 was not started (would have ended after the session window). All runs `VERDICT: PASS` + `PROTOCOL: MATCH`; **26 KERMT models in W&B** (independently re-downloaded and SHA-checked); driver, host Python, `kermt:latest` image and checkpoint unchanged. Session note: `status/kermt_gpu_session_2026-10-08.md`. **Tier-0 progress: 26 of 30 seeds.**
+  **Remaining Tier-0 work:** `absorption_distribution__reg` seed 4 (≈ 57 min) then its 5-seed aggregate, and `toxicity__cls` 2–4 (≈ 4.75 h).
 - **STATE 2026-10-07 (Pass 2, session 2).** On `3d32817`: `metabolism__cls` seeds 1–4 done (launched 10:45–13:38 IST, 56.5–56.9 min each, about 3.8 h GPU, about
   3 h 55 min on the clock; **4 models trained, none removed, no crashed or re-run runs**). **The arm now has 5 seeds** and an aggregate
   (`status/kermt_tier0_results/metabolism__cls/aggregate_5seeds.json`); test AUROC raw: CYP3A4 0.895 ± 0.001, CYP2D6 0.879 ± 0.003, CYP2C9 0.893 ± 0.001

@@ -1,0 +1,37 @@
+{
+  "at_boundary": null,
+  "calibration_positive_rate": null,
+  "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+  "ece_after": null,
+  "ece_before": null,
+  "ece_improved": null,
+  "endpoint_key": "solubility_logs",
+  "model_id": "mars-kermt-multitask-v1",
+  "n_calibration_labeled": 0,
+  "n_fit_samples": null,
+  "n_negative": null,
+  "n_positive": null,
+  "n_test_labeled": 1960,
+  "nll_after": null,
+  "nll_before": null,
+  "nll_improved": null,
+  "optimizer_success": null,
+  "positive_rate": null,
+  "prep_id": "20260918T090433Z",
+  "provenance": {
+    "checkpoint_hf_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+    "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287"
+  },
+  "reason": "regression endpoint has no probability to calibrate",
+  "seed": 3,
+  "status": "skipped_regression",
+  "task_type": "regression",
+  "temperature": null,
+  "test_metrics_calibrated": null,
+  "test_metrics_raw": {
+    "mae": 0.826078999546504,
+    "n_samples": 1960
+  },
+  "train_val_positive_rate": null,
+  "version": "mars-cluster-calibration-v1"
+}
