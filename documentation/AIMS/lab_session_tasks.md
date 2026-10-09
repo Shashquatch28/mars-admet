@@ -4,7 +4,10 @@ _Written 2026-09-21 for the next KERMT GPU lab session (RTX A4000 workstation). 
 checklist for the lab-session agent, to be followed **top to bottom**. It is not a general project
 document — for context, decisions and history see `context.md`, `decisions.md`, `next_steps.md`._
 
-> **UPDATE 2026-10-08 (newest).** Pass-2 session 3 on `e6c3dee` finished `absorption_distribution__reg` seeds 1–3 (4/5; 3 runs, none removed; see `status/kermt_gpu_session_2026-10-08.md`). **Resume at P-6 order 4, `absorption_distribution__reg` seed 4** (≈ 57 min), aggregate the arm, then `toxicity__cls` 2–4 (≈ 4.75 h). P-0 applies again: the maintainer supplies the new `EXPECTED_SHA`.
+> **UPDATE 2026-10-09 (newest).** Pass-2 session 4 on `26c63cc` finished `absorption_distribution__reg` seed 4 (5/5; 1 run, none removed; 5-seed aggregate written; see `status/kermt_gpu_session_2026-10-09.md`). **Resume at P-6 order 5, `toxicity__cls` seeds 2, 3, 4** (≈ 95 min each; one per session unless the window is ≥ 3.3 h). P-0 applies again: the maintainer supplies the new `EXPECTED_SHA`.
+> The 2026-10-08 update below is superseded by this one.
+>
+> **UPDATE 2026-10-08.** Pass-2 session 3 on `e6c3dee` finished `absorption_distribution__reg` seeds 1–3 (4/5; 3 runs, none removed; see `status/kermt_gpu_session_2026-10-08.md`). **Resume at P-6 order 4, `absorption_distribution__reg` seed 4** (≈ 57 min), aggregate the arm, then `toxicity__cls` 2–4 (≈ 4.75 h). P-0 applies again: the maintainer supplies the new `EXPECTED_SHA`.
 > The 2026-10-07 update below is superseded by this one.
 >
 > **UPDATE 2026-10-07.** Pass-2 session 2 on `3d32817` finished `metabolism__cls` seeds 1–4 (5/5; 4 runs, none removed; see `status/kermt_gpu_session_2026-10-07.md`). **Resume at

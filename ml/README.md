@@ -72,10 +72,10 @@ cd ml && PYTHONPATH=. ./.venv/Scripts/python.exe train/preflight_clusters.py
   design, and **on 2026-10-07 the project decided to ship on Tier 0 only** (stock KERMT,
   type-homogeneous subgroups, equal weighting) — Tiers 1 and 2 are deferred to
   `../documentation/FUTURE_SCOPE.md`; see `../documentation/AIMS/decisions.md` (2026-10-07).
-  **Tier-0 production training is under way:** 26 of 30 seeds trained as of 2026-10-08
-  (`metabolism__reg`, `absorption_distribution__cls`, `metabolism__cls`, DILI complete at 5 seeds;
-  `toxicity__cls` 2 of 5; `absorption_distribution__reg` 4 of 5), with real KERMT logits
-  calibrated (since 2026-09-22). Status: `../documentation/status/kermt_gpu_session_2026-10-08.md`.
+  **Tier-0 production training is under way:** 27 of 30 seeds trained as of 2026-10-09
+  (`metabolism__reg`, `absorption_distribution__cls`, `metabolism__cls`, `absorption_distribution__reg`, DILI complete at 5 seeds;
+  `toxicity__cls` 2 of 5), with real KERMT logits
+  calibrated (since 2026-09-22). Status: `../documentation/status/kermt_gpu_session_2026-10-09.md`.
 - **XGBoost test-set evaluation done (2026-09-21):** `runs/test_evaluations/` holds the held-out
   numbers; the old `runs/evaluations/` are validation-fold and differ by up to +0.26 AUROC.
   Compare KERMT to the test set.
