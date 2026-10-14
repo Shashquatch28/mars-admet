@@ -88,30 +88,33 @@ export function displayGroupOf(e: Endpoint): DisplayGroup {
   return meta.category;
 }
 
-// The classification probability axis MARS treats as genuinely bounded.
+// The classification score axis MARS treats as genuinely bounded (0-1). A score is
+// bounded; whether it is a calibrated probability is a separate claim (ADR-023).
 export const PROB_DOMAIN: readonly [number, number] = [0, 1];
 
 export const STUB_MODEL_ID = "stub-v0";
 
 // Display unit per endpoint for the results column. Classification carries no
-// unit in the contract (null) — the axis is labelled "probability" in the UI.
+// unit in the contract (null) — the axis is labelled "score" in the UI until
+// calibration is validated per endpoint (ADR-023). The unit stays per endpoint so
+// each can return to "probability" on its own.
 // Used for the not_returned row too, where there is no prediction to read a unit
 // from.
 export const DISPLAY_UNIT: Record<Endpoint, string> = {
   solubility_logs: "logS",
   lipophilicity_logp: "logP",
   caco2_permeability: "log cm/s",
-  hia_absorption: "probability",
-  pgp_inhibition: "probability",
-  bbb_permeability: "probability",
+  hia_absorption: "score",
+  pgp_inhibition: "score",
+  bbb_permeability: "score",
   ppb_binding: "% bound",
-  cyp3a4_inhibition: "probability",
-  cyp2d6_inhibition: "probability",
-  cyp2c9_inhibition: "probability",
+  cyp3a4_inhibition: "score",
+  cyp2d6_inhibition: "score",
+  cyp2c9_inhibition: "score",
   clearance_microsomal: "mL/min/kg",
-  herg_cardiotoxicity: "probability",
-  ames_mutagenicity: "probability",
-  dili_liver_injury: "probability",
+  herg_cardiotoxicity: "score",
+  ames_mutagenicity: "score",
+  dili_liver_injury: "score",
   synthetic_accessibility: "SA score",
 };
 

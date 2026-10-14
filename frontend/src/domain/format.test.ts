@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { fmtNum, fmtInterval, fmtValue } from "./format";
-import { ENDPOINT_METADATA } from "./endpoints";
+import { fmtNum, fmtInterval, fmtValue, unitLabel } from "./format";
+import { DISPLAY_UNIT, ENDPOINT_METADATA, ML_ENDPOINTS } from "./endpoints";
 import type { EndpointPrediction } from "../types/contracts";
 
 const MINUS = "−";
@@ -32,8 +32,20 @@ describe("fmtValue", () => {
     ad_threshold: 0.58,
   };
 
-  it("formats classification probability to 2dp", () => {
+  it("formats a classification score to 2dp", () => {
     expect(fmtValue(base, ENDPOINT_METADATA.hia_absorption)).toBe("0.94");
+  });
+
+  // ADR-023: calibration is not validated, so no classification value is called a probability.
+  it("labels every classification endpoint's unit as a score, not a probability", () => {
+    expect(unitLabel(base, ENDPOINT_METADATA.hia_absorption)).toBe("score");
+    for (const e of ML_ENDPOINTS) {
+      if (ENDPOINT_METADATA[e].taskType === "classification") {
+        expect(DISPLAY_UNIT[e], e).toBe("score");
+      } else {
+        expect(DISPLAY_UNIT[e], e).not.toBe("score");
+      }
+    }
   });
 
   it("formats % bound regression to 1dp", () => {

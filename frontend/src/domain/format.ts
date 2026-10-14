@@ -28,10 +28,11 @@ export function fmtInterval(low: number, high: number, dp = 2): string {
 }
 
 // The column label shown for a row's unit. Classification carries no unit in the
-// contract (null); the UI labels the axis "probability".
+// contract (null); the UI labels the axis "score" (ADR-023), not "probability":
+// the served calibration is not validated.
 export function unitLabel(p: EndpointPrediction, meta: EndpointMeta): string {
   if (p.unit) return p.unit;
-  if (meta.taskType === "classification") return "probability";
+  if (meta.taskType === "classification") return "score";
   return "";
 }
 
