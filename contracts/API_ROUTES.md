@@ -20,6 +20,7 @@ Base URL (local): `http://localhost:8000`
 |---|---|---|---|---|---|
 | `/health` | GET | none | — | `{"status": "ok"}` | M0 ✅ |
 | `/health/ready` | GET | none | — | `{"status", "checks": {"database", "redis"}}` | M3 ✅ (not in original Module 8 table; readiness vs. liveness split) |
+| `/generations` | GET | none | — | `GenerationsResponse` (`{"active", "available"}`; `active` is the configured `model_version`, `available` is `[active]` until a second generation exists; frontend ADR-026) | M4 ✅ (not in original Module 8 table) |
 | `/predict` | POST | none (IP rate-limited) | `PredictionRequest` | `PredictionResponse` | M3 ✅ (real per-endpoint routing + stub fallback; M0 shipped the stub-only version) |
 | `/batch/predict` | POST | account | multipart file (CSV or SDF) + `smiles_column`/`endpoints` query params | `BatchPredictResponse` | M3 ✅ |
 | `/batch/progress/{job_id}` | GET (SSE) | account | — | `text/event-stream` of `BatchJobStatus`-shaped JSON | M3 ✅ |

@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routers import account, auth, batch, compare, health, molecule, molecules, predict, reports
+from app.routers import account, auth, batch, compare, generations, health, molecule, molecules, predict, reports
 from app.services import prediction_service
 
 logger = logging.getLogger("mars.startup")
@@ -75,6 +75,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+app.include_router(generations.router)
 app.include_router(predict.router, prefix="/predict", tags=["predict"])
 app.include_router(compare.router, prefix="/compare", tags=["compare"])
 app.include_router(molecule.router, prefix="/molecule", tags=["molecule"])

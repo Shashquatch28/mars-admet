@@ -130,3 +130,11 @@ export interface MeResponse {
   user_id: string;
   email: string;
 }
+
+// --- generations (api.py) ---
+// GET /generations (ADR-026). `available` is [active] until a second generation exists,
+// so a picker built from it never offers a choice that is not real.
+export interface GenerationsResponse {
+  active: string;
+  available: string[];
+}
