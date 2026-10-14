@@ -4,7 +4,18 @@ _Written 2026-09-21 for the next KERMT GPU lab session (RTX A4000 workstation). 
 checklist for the lab-session agent, to be followed **top to bottom**. It is not a general project
 document — for context, decisions and history see `context.md`, `decisions.md`, `next_steps.md`._
 
-> **UPDATE 2026-10-07 (newest).** Pass-2 session 2 on `3d32817` finished `metabolism__cls` seeds 1–4 (5/5; 4 runs, none removed; see `status/kermt_gpu_session_2026-10-07.md`). **Resume at
+> **UPDATE 2026-10-14 (newest).** Tier 1 was revived and Tier 2 made conditional on the budget left after Tier 1 (`decisions.md` 2026-10-14). **This runbook
+> still covers Tier 0 only and is unchanged for it.** Tier-1 gates, the tuning protocol and the arms are in `lab_session_tier1.md`. Tier-0 training stays on
+> `milestone/m2-kermt`; the Tier-1 code is on `milestone/m2-kermt-tier1` and is not on the branch a Tier-0 session pins (P-2 compares a fixed file list to
+> `ae5d28d`; Tier 1 adds files and edits none of them). Remaining Tier-0 work is unchanged from the 2026-10-09 update below: `toxicity__cls` seeds 2–4.
+>
+> **UPDATE 2026-10-09.** Pass-2 session 4 on `26c63cc` finished `absorption_distribution__reg` seed 4 (5/5; 1 run, none removed; 5-seed aggregate written; see `status/kermt_gpu_session_2026-10-09.md`). **Resume at P-6 order 5, `toxicity__cls` seeds 2, 3, 4** (≈ 95 min each; one per session unless the window is ≥ 3.3 h). P-0 applies again: the maintainer supplies the new `EXPECTED_SHA`.
+> The 2026-10-08 update below is superseded by this one.
+>
+> **UPDATE 2026-10-08.** Pass-2 session 3 on `e6c3dee` finished `absorption_distribution__reg` seeds 1–3 (4/5; 3 runs, none removed; see `status/kermt_gpu_session_2026-10-08.md`). **Resume at P-6 order 4, `absorption_distribution__reg` seed 4** (≈ 57 min), aggregate the arm, then `toxicity__cls` 2–4 (≈ 4.75 h). P-0 applies again: the maintainer supplies the new `EXPECTED_SHA`.
+> The 2026-10-07 update below is superseded by this one.
+>
+> **UPDATE 2026-10-07.** Pass-2 session 2 on `3d32817` finished `metabolism__cls` seeds 1–4 (5/5; 4 runs, none removed; see `status/kermt_gpu_session_2026-10-07.md`). **Resume at
 > P-6 order 4, `absorption_distribution__reg` seeds 1–4** (regression: no calibration, no `tier0_artifacts` package, `tier0_artifacts.py` refuses regression by design), then `toxicity__cls` 2–4;
 > about 8.5 h in total. **Scope:** by maintainer decision 2026-10-07 MARS ships on Tier 0 and Tiers 1–2 are deferred (`decisions.md` 2026-10-07); this runbook only ever covered Tier 0, so its procedure
 > is unchanged. P-0 applies again: the maintainer must supply the new 40-character `EXPECTED_SHA` of the pushed tip, which will include the 2026-10-07 documentation commit.
@@ -33,8 +44,8 @@ document — for context, decisions and history see `context.md`, `decisions.md`
 ## Pass-2 procedure (authoritative — follow in order)
 
 Standing rules unchanged: one run at a time, `s_verify.py` PASS before the next launch; a crashed run is never re-run over or
-deleted; the test set is never used for selection, tuning or calibration; **no AI git writes** (no add/commit/push/reset/
-checkout) — the maintainer commits; no code, data, config or hyperparameter change (a change needs a new `decisions.md` entry
+deleted; the test set is never used for selection, tuning or calibration; **no AI git writes during a launch sequence** (HEAD must equal `EXPECTED_SHA` at every launch; no add/commit/push/reset/
+checkout) — committing the finished run records afterwards is allowed under the 2026-10-14 rule (no push, no attribution trailer); no code, data, config or hyperparameter change (a change needs a new `decisions.md` entry
 first, because all five seeds of an arm share one protocol).
 
 **P-0 Preconditions (maintainer, before leaving the laptop).** `decisions.md` 2026-09-30 and this runbook are committed and
