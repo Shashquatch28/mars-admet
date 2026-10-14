@@ -16,8 +16,8 @@ Paste, in this order:
 4. `documentation/status/mars-status_M1.md` (M1 matrix + Run status).
    `documentation/status/mars-status_M0.md` only if the work touches M0.
    `documentation/status/kermt_integration_status.md` if the work touches KERMT.
-5. `documentation/FUTURE_SCOPE.md` if the work is near a deferred item (it holds the deferred Tier 1 / Tier 2 mixed-type design, 2026-10-07).
-6. `documentation/AIMS/lab_session_tasks.md` if the work is a GPU lab session — a sequential,
+5. `documentation/FUTURE_SCOPE.md` if the work is near a deferred item (it keeps the 2026-10-07 deferral text and the original loss-balancing design as history; Tier 1 was revived and Tier 2 made conditional on 2026-10-14 — see `decisions.md`).
+6. `documentation/AIMS/lab_session_tier1.md` if the work is Tier 1 / Tier 2 (gates G1–G4, tuning protocol, arms). `documentation/AIMS/lab_session_tasks.md` if the work is a Tier-0 GPU lab session — a sequential,
    operational checklist (pull, GPU/data/W&B verification, smoke test, first real run, Tier-0, stop
    conditions). It supersedes the ordered checklist in `next_steps.md` for lab use.
 
@@ -47,8 +47,12 @@ than letting it accumulate. Do not paste code diffs here — link to files.
 
 - `mars-blueprint_v4.md` is source of truth. Do not weaken/reinterpret
   requirements to make the code look compliant. Report conflicts explicitly.
-- **No git write operations.** No commit / add / push / rebase / reset /
-  cherry-pick / branch changes. Inspect only. The user commits manually.
+- **Git write operations are allowed (2026-10-14), with a condition: leave no trace of the tool.** Branch, worktree,
+  commit and merge are fine; no `Co-Authored-By` / "generated with" trailer, no tool name in commit messages, files or docs;
+  commits carry the maintainer's configured identity. **Push, branch deletion and history rewriting are not covered — ask.** Before
+  a merge, verify it is a fast-forward or conflict-free and say what was checked. Never commit hunks another session left
+  uncommitted in a shared checkout. (Lab sessions: HEAD must equal `EXPECTED_SHA` at every launch, so commit finished records only
+  after the launch sequence.)
 - Work milestone-by-milestone in dependency order. Don't jump ahead.
 - Verify before claiming done. Smallest tests first. Distinguish
   "code verified locally" / "smoke-tested" / "trained on GPU" / "fully evaluated".

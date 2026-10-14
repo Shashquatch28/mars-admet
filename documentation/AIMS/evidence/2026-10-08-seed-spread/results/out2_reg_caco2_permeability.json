@@ -1,0 +1,78 @@
+[
+ {
+  "endpoint": "caco2_permeability",
+  "n_resid": 450,
+  "val_mae": 0.3359691291460097,
+  "test_mae": 0.28381720201202404,
+  "std_median": 0.06119436683945944,
+  "conf_80": {
+   "halfwidth": 0.4883856917785643,
+   "cover": 0.8055555555555556,
+   "cover_in_domain": 0.8235294117647058,
+   "cover_out_domain": 0.7704918032786885
+  },
+  "conf_90": {
+   "halfwidth": 0.6149587854003906,
+   "cover": 0.9277777777777778,
+   "cover_in_domain": 0.9243697478991597,
+   "cover_out_domain": 0.9344262295081968
+  }
+ },
+ {
+  "endpoint": "clearance_microsomal",
+  "n_resid": 550,
+  "val_mae": 19.211560701647674,
+  "test_mae": 25.791770000965485,
+  "std_median": 3.9909013517683256,
+  "conf_80": {
+   "halfwidth": 29.55034637451172,
+   "cover": 0.7149321266968326,
+   "cover_in_domain": 0.7313432835820896,
+   "cover_out_domain": 0.55
+  },
+  "conf_90": {
+   "halfwidth": 51.206871032714844,
+   "cover": 0.8642533936651584,
+   "cover_in_domain": 0.8706467661691543,
+   "cover_out_domain": 0.8
+  }
+ },
+ {
+  "endpoint": "lipophilicity_logp",
+  "n_resid": 2100,
+  "val_mae": 0.5187776668818402,
+  "test_mae": 0.5386865223328183,
+  "std_median": 0.08932266802032497,
+  "conf_80": {
+   "halfwidth": 0.8578976154327389,
+   "cover": 0.8095238095238095,
+   "cover_in_domain": 0.8299319727891157,
+   "cover_out_domain": 0.6666666666666666
+  },
+  "conf_90": {
+   "halfwidth": 1.1033429908752441,
+   "cover": 0.9047619047619048,
+   "cover_in_domain": 0.9197278911564626,
+   "cover_out_domain": 0.8
+  }
+ },
+ {
+  "endpoint": "ppb_binding",
+  "n_resid": 805,
+  "val_mae": 7.490482745626698,
+  "test_mae": 7.253951582775765,
+  "std_median": 1.194684694497284,
+  "conf_80": {
+   "halfwidth": 11.490938110351564,
+   "cover": 0.8142414860681114,
+   "cover_in_domain": 0.8227848101265823,
+   "cover_out_domain": 0.42857142857142855
+  },
+  "conf_90": {
+   "halfwidth": 18.06532653808594,
+   "cover": 0.8699690402476781,
+   "cover_in_domain": 0.879746835443038,
+   "cover_out_domain": 0.42857142857142855
+  }
+ }
+]

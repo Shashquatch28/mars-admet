@@ -1,0 +1,140 @@
+{
+ "endpoint": "dili_liver_injury",
+ "task": "TaskType.CLASSIFICATION",
+ "n_test": 96,
+ "n_seeds": 5,
+ "dropped": 0,
+ "frac_in_domain": 0.9270833333333334,
+ "variants": {
+  "raw": {
+   "auroc": 0.9230434782608696,
+   "err_rate": 0.40625,
+   "std_median": 0.031129225356919383,
+   "std_p90": 0.05212523223343792,
+   "spearman_std_vs_abserr": 0.15089527943570266,
+   "auroc_std_predicts_misclass": 0.5641025641025641,
+   "frac_interval_outside_01": 0.0,
+   "quartiles_abserr": [
+    {
+     "q": 1,
+     "n": 24,
+     "spread_med": 0.017431492754772876,
+     "err_mean": 0.39196516374746954
+    },
+    {
+     "q": 2,
+     "n": 24,
+     "spread_med": 0.027091560531630088,
+     "err_mean": 0.42449533318479854
+    },
+    {
+     "q": 3,
+     "n": 24,
+     "spread_med": 0.0351480989496117,
+     "err_mean": 0.423934517800808
+    },
+    {
+     "q": 4,
+     "n": 24,
+     "spread_med": 0.049931571208153114,
+     "err_mean": 0.4509921051561832
+    }
+   ],
+   "quartiles_misclass": [
+    {
+     "q": 1,
+     "n": 24,
+     "spread_med": 0.017431492754772876,
+     "err_mean": 0.2916666666666667
+    },
+    {
+     "q": 2,
+     "n": 24,
+     "spread_med": 0.027091560531630088,
+     "err_mean": 0.5
+    },
+    {
+     "q": 3,
+     "n": 24,
+     "spread_med": 0.0351480989496117,
+     "err_mean": 0.375
+    },
+    {
+     "q": 4,
+     "n": 24,
+     "spread_med": 0.049931571208153114,
+     "err_mean": 0.4583333333333333
+    }
+   ],
+   "std_median_in_domain": 0.030507257940152518,
+   "std_median_out_domain": 0.04319969715325847,
+   "abserr_in_domain": 0.42436937957667237,
+   "abserr_out_domain": 0.4034880135740552
+  },
+  "served(calibrated)": {
+   "auroc": 0.9230434782608696,
+   "err_rate": 0.3854166666666667,
+   "std_median": 0.009449795385333241,
+   "std_p90": 0.01576260340402115,
+   "spearman_std_vs_abserr": 0.16524688008681496,
+   "auroc_std_predicts_misclass": 0.543747136967476,
+   "frac_interval_outside_01": 0.0,
+   "quartiles_abserr": [
+    {
+     "q": 1,
+     "n": 24,
+     "spread_med": 0.005237106634077702,
+     "err_mean": 0.46800430861545256
+    },
+    {
+     "q": 2,
+     "n": 24,
+     "spread_med": 0.008182655137110277,
+     "err_mean": 0.47319304539546136
+    },
+    {
+     "q": 3,
+     "n": 24,
+     "spread_med": 0.010437478154242815,
+     "err_mean": 0.48123297204311005
+    },
+    {
+     "q": 4,
+     "n": 24,
+     "spread_med": 0.015097137223954334,
+     "err_mean": 0.4846618040785822
+    }
+   ],
+   "quartiles_misclass": [
+    {
+     "q": 1,
+     "n": 24,
+     "spread_med": 0.005237106634077702,
+     "err_mean": 0.2916666666666667
+    },
+    {
+     "q": 2,
+     "n": 24,
+     "spread_med": 0.008182655137110277,
+     "err_mean": 0.4583333333333333
+    },
+    {
+     "q": 3,
+     "n": 24,
+     "spread_med": 0.010437478154242815,
+     "err_mean": 0.4166666666666667
+    },
+    {
+     "q": 4,
+     "n": 24,
+     "spread_med": 0.015097137223954334,
+     "err_mean": 0.375
+    }
+   ],
+   "std_median_in_domain": 0.009247885515844562,
+   "std_median_out_domain": 0.01296595767781307,
+   "abserr_in_domain": 0.47722405565672,
+   "abserr_out_domain": 0.47103859567635226
+  }
+ }
+}

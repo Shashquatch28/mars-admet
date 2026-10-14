@@ -13,7 +13,248 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-14 — AI sessions may perform git write operations; no AI attribution is left behind
+
+**Status:** decided 2026-10-14 by the maintainer (chat). Process rule; changes no code or data.
+
+**Decision.** An AI coding session working in this repo **may perform git write operations** (create branches and
+worktrees, commit, merge) when the task calls for it. **Condition: no trace of the tool is left behind** — no
+`Co-Authored-By:` or "Generated with …" trailer on commits or pull-request text, no tool name in commit messages, file
+headers or documentation. Commits are authored under the maintainer's configured identity. This replaces the earlier
+rule ("the user commits manually; the AI must not run git write commands").
+
+**Not covered.** Pushing to a remote, deleting branches, and rewriting published history were not discussed. They stay with
+the maintainer until said otherwise, because they are outward-facing. Before any merge the session verifies it is a
+fast-forward or conflict-free and states what it checked.
+
+**Why.** The Oct 8 rule that AIMS is identical on every branch cannot be kept by hand across five live branches.
+
+---
+
+## 2026-10-14 — Tier 1 is revived; Tier 2 is conditional on the budget left after Tier 1; no Tier-1/2 hyperparameter is fixed in advance
+
+**Status:** decided 2026-10-14 by the maintainer (chat). **Supersedes the 2026-10-07 entry** for Tiers 1 and 2 and for
+loss weighting; the rest of that entry (the six Tier-0 arms, the measured per-seed costs, the limitation list) stands.
+Blueprint Modules 4, 8, 10, 11 §6 and the M2 row were brought back into line the same day.
+
+**Decision.**
+
+1. **Tier 1 is live work.** The MARS-owned mixed-type trainer (path b) is built and CPU-verified; it runs after Tier 0
+   completes and **no mixed result is believed before gates G1–G4 pass** (definitions in `glossary.md`). Tier 0 training
+   stays on `milestone/m2-kermt`; the Tier-1 code lives on `milestone/m2-kermt-tier1`.
+2. **Tier 2 is not deferred and not scheduled.** Maintainer, 2026-10-14: whether it is trained depends on how much
+   GPU-time budget remains at the end of Tier 1. The driver and gate evaluator exist
+   (`ml/train/train_kermt_ordinal.py`) so that decision is purely about hours.
+3. **The Kendall / GradNorm loss-balancing ablation (Module 11 §6) is restored**, with the mixed Metabolism and
+   Absorption & Distribution clusters. Tier 0 remains the comparator and the shipped baseline; a Tier-1 result is
+   reported beside the Tier-0 number, never as a silent replacement.
+4. **No hyperparameter of Tier 1 or Tier 2 is fixed by this log.** They are decided by experiment, under the protocol
+   below. (A first version of this entry, written the same day, listed "proposed defaults" — `min_per_task = 2`, GradNorm
+   α = 1.5 and lr = 0.025, an epoch-selection rule — with no MARS evidence behind them. The maintainer's objection stands:
+   fixing them before any experiment would be an amateur decision. The entry was rewritten and the code that carried
+   those values was changed so that **none exist**: see "What changed in the code" below.)
+
+**Settings that change a Tier-1/2 number — what is known, and how each will be decided (as of 2026-10-14).**
+
+| Setting | Value | Evidence available now | How decided |
+|---|---|---|---|
+| `epochs` | none | KERMT's own `defaults_finetune.json` sets 30 and describes it as "a faster default; raise via `--epochs` for a real training run". It also sets the length of the Noam learning-rate schedule, so it is not just early stopping. Tier-0 saved epochs were 9–18 of 30 for `absorption_distribution__reg`. No MARS experiment varied it. | tuning-protocol axis |
+| `init_lr`, `max_lr`, `final_lr`, `batch_size`, `dropout`, `bond_drop_rate`, FFN sizes | stock values only for the parity gates | Stock values are generic ("a scaffold-balanced single-task regression finetune"). Never tuned for ADMET or for a mixed run. | protocol axes; the maintainer picks which |
+| `dist_coff` | from the stock argv (KERMT default 0.15) | KERMT default | stock for gates; optional axis |
+| `min_per_task` (stratified-batch floor) | none | None. The blueprint mandates the mitigation, not a number. `0` reproduces stock shuffling. | protocol axis, reference `0` |
+| GradNorm `alpha` | none | Chen et al. 2018: optimum near **1.5 on NYUv2** (scene understanding), **0.12 on their synthetic regression task**; any `0 < alpha < 3` beat equal weighting on NYUv2 and `alpha ≳ 3` pushed weights toward zero. A 12× spread across two problems, neither of them ADMET. | protocol axis |
+| GradNorm weight learning rate | none | The paper used 0.025 on NYUv2. | protocol axis |
+| Kendall `log σ` init and lr | init 0, task-head lr | Follows KERMT's own `MTLLoss` placement, which the parity gates need. | fixed by parity; not proposed as an axis |
+| Epoch-selection rule | summed per-task validation loss on scaled targets (an implementation choice, not a result) | Stock's rule averages AUROC and MAE, which a mixed run cannot; raw-unit MAE is PPB-dominated (D1). | **Every epoch's validation views are saved** (`logs/val_views.npz`), so any other rule can be applied afterwards without retraining. The rule behind reported numbers is registered with the protocol. |
+| Regression scaler fit on the train fold only | decided | Not tunable: it is the leakage-safety rule and what stock does. | n/a |
+| Calibration score = `logit` of the mean of the two sigmoids | decided | Comparability with every Tier-0 calibration record. | n/a |
+| Ablation "fixed" arm = `fixed_task` (equal per task) | decided | Arithmetic, not a result: stock `fixed` gives a sparse task `n_t / Σn` of the objective (Clearance ≈ 5/105 in the unit test). | n/a |
+| Tier 2 `n_bins`, strategy | none | The zero-GPU discretization ceiling (2026-09-20) is *necessary* — it bounds what no model can beat — not evidence that any bin count trains well. | protocol axis |
+
+**The tuning protocol (rules; the numbers are the maintainer's).** Implemented in `ml/train/kermt_mixed/tuning.py`.
+
+- A protocol states, **before any trial runs**: the search space, a reference configuration (trial 0, always run), the number
+  of trials, the tuning seeds (≥ 2, otherwise there is no noise estimate), the objective, its direction and the evidence
+  threshold for leaving the reference. Every field is required; the module supplies no default. It is written with its
+  sha256 and cannot be edited afterwards (`preregister`); a run records `hyperparameter_source =
+  "tuning:<hash prefix>:<trial>"`.
+- **Validation only.** Trial runs use `calibrate=False`, which means the test split is never read; selection uses
+  validation numbers. The calibration split is held out of training as everywhere else.
+- **Equal budget per arm** (`assert_equal_budget`): same number of trials, tuning seeds and objective, each over the arm's
+  own space. GradNorm has more parameters; it does not get more trials.
+- **Moving off the reference needs evidence**: the best trial must beat the reference by more than the registered multiple
+  of seed noise (the larger of the reference's std and the median std across trials). Otherwise the reference stands.
+- **Parity gates first, at stock values** (`hyperparameter_source = "parity-gate"`): G1–G3 compare the trainer to stock KERMT
+  and are meaningless at tuned values.
+- **Tier 1 is reported at the reference configuration beside the tuned result.** Comparing a tuned Tier-1 arm to the
+  untuned stock Tier-0 number would credit tuning to mixed-type training.
+- The tuning seeds are among the five reporting seeds. That is acceptable because selection never touches the test split,
+  but validation numbers from those runs are optimistic and are not reported as results.
+
+**Cost of tuning (not set here).** `n_trials × tuning seeds × 3 arms × 2 clusters` runs at about 1.1 GPU-h each (the
+Tier-0 per-seed costs summed; never measured for a mixed run). Illustration only: 6 trials × 2 seeds = 72 runs ≈ 79 GPU-h,
+which exceeds the 30 arm runs themselves. This is the number the Tier-2 budget question turns on.
+
+**Open — maintainer.** (a) `n_trials` and the tuning seeds; (b) which axes per arm; (c) whether `val_selection_loss` is the
+objective or something computed from the saved views; (d) the evidence threshold; (e) whether Tier 0 receives an equal tuning
+budget so the Tier-0 / Tier-1 comparison is tuned-vs-tuned (otherwise the like-for-like number is Tier 1 at the reference
+configuration); (f) the Tier-2 gate's direct comparator (the Tier-0 subgroup model's validation MAE exists; a single-task
+KERMT regression does not exist for the A&D endpoints) and whether "within 15%" is per endpoint-and-seed pair or per
+endpoint mean (`t2_decoded_mae_gate` takes both as required arguments).
+
+**What changed in the code because of the objection.** No silent defaults remain in Tier 1/2: `loss_mode`,
+`min_per_task`, `hyperparameter_source`, GradNorm `alpha` / `lr` (required with `gradnorm`, rejected otherwise),
+`MixedLossConfig.mode` / `dist_coff`, `TrainSettings.mode` / `dist_coff`, `GradNormWeights(alpha, lr)`, Tier 2 `n_bins` /
+`strategy`, the gate tolerances. A missing one is a `TypeError`/`KeyError`, pinned by tests. Added: the pre-registered
+protocol (`tuning.py`), per-epoch validation views and a post-hoc re-scoring module (`posthoc.py`), and the Tier-2
+driver and gate. The earlier default of `dist_coff = 0.1` in the loss config was also wrong against KERMT's 0.15; it is gone.
+
+**What exists (new files; no existing `ml/` file was modified, so the Tier-0 protocol guard is untouched).**
+
+| Piece | File | Verified how |
+|---|---|---|
+| Per-column NaN-aware target scaling | `ml/train/kermt_mixed/scaling.py` | numerics match KERMT's `StandardScaler` |
+| Stratified batches | `.../sampler.py` | stock-equivalent at floor 0; floor met; deterministic |
+| Type-correct masked loss: `fixed`, `fixed_task`, `kendall`, `gradnorm` | `.../losses.py` | against **verbatim** KERMT `train()` reductions and `MTLLoss`; G4 |
+| GradNorm weights | `.../gradnorm.py` | direction and normalization on a toy; **not** on a real model |
+| Two-view forward, train and eval | `.../forward.py` | against **verbatim** `KermtFinetuneTask.forward`, 8 configurations |
+| Epoch loop, selection, NaN guard, per-epoch views | `.../trainer.py` | toy mixed task, all four modes |
+| In-container fit / predict entry | `.../train_mixed.py` | against a **fake** `kermt` transcribed from source (wiring only) |
+| Host wrapper `KermtMixedModel` | `ml/models/kermt_mixed_model.py` | container mocked |
+| Per-seed driver | `ml/train/train_kermt_mixed.py` | model test double |
+| Gate evaluators G1–G3; in-container G4 self-check | `.../gates.py`, `.../selfcheck.py` | synthetic; self-check run on CPU torch |
+| Tuning protocol, post-hoc re-scoring | `.../tuning.py`, `.../posthoc.py` | unit tests |
+| Tier 2 driver and gate | `ml/train/train_kermt_ordinal.py` | model test double |
+| Lab procedure | `documentation/AIMS/lab_session_tier1.md` | read-through only |
+
+**How the trainer reaches KERMT.** KERMT's source was read verbatim at the pinned tag (`v2.0.0`, `e402473`).
+Design consequences: no fork or patch, and `kermt_container.sh` is not extended; the stock `run_finetune_local.py
+--dry-run` writes the exact `main.py finetune` argv that the trainer feeds to KERMT's own `parse_args()`; training mode
+returns two raw views and eval mode collapses them with one sigmoid for the whole tensor, so a mixed run re-implements the
+forward; KERMT's loss is `pred_loss(a,y) + pred_loss(b,y) + dist_coff·(a−b)²`, so both views and the consistency term are
+kept; a missing label must be `None`, not NaN; stock zeroes `args.bond_drop_rate` after the first validation pass
+(reproduced for parity; whether that is intended upstream is not established); per-task heads are mandatory for more than
+one column.
+
+**What is NOT known (the CPU results are not evidence about KERMT).** Whether the container glue runs against the real
+KERMT (only G1/G2 on the workstation establish that); whether GradNorm behaves on the real network; the cost of a mixed
+run (~45–50 GPU-h for the arms plus G3 is the 2026-10-07 estimate, plus tuning); the whole-cluster label sacrifice of the
+leakage fix (Metabolism 29.2%, A&D 16.1% as measured 2026-09-20 — re-run `preflight_clusters.py`).
+
+**Reporting rules (unchanged).** A Tier-1 result is filed under `model_family="kermt_mixed"` with its arm in the run name
+and its `hyperparameter_source`; `log σ` is reported as is (the `+½ ln 2` offset applies only against a KERMT-native
+`MTLLoss` run); no Tier-0 result may be described as uncertainty-weighted.
+
+**Blueprint.** Reversed the same day for Module 4 (cluster tables, "Multi-task loss balancing", Tier-2 paragraph), Module 8
+(routing), Module 10 (MVP ≈ 100 GPU-h; Post-MVP-parallel ≈ 87–92 excluding tuning and Tier 2; grand total ≈ 190 excluding
+those; tuning a stated unknown), Module 11 §6 (axis restored) and the M2 milestone row. `FUTURE_SCOPE.md` keeps the
+2026-10-07 text as history.
+
+---
+
+## 2026-10-08 — AIMS is shared project guidance and is kept identical on every branch
+
+**Status:** decided 2026-10-08 by the maintainer (chat). Process rule only.
+
+**Decision.** `documentation/AIMS/` is project guidance, not branch work. An edit made on any branch is committed on
+`milestone/m4-frontend` and `milestone/m2-kermt` the same day. `main` receives it through the normal merges. This
+replaces the earlier frontend-handoff rule "do not commit AIMS or training notes here". Training notes, run records and
+anything under `ml/` beyond `ml/serve/` stay on `m2-kermt`.
+
+**Rationale.** The AIMS files were already byte-identical on the branches (HANDOFF section 7), and a decision recorded
+on only one branch is invisible to the session working on the other.
+
+**Open follow-up.** `mistakes.md` exists on `m2-kermt` only (560 lines at the time of this entry); copying it to the
+other branches is the maintainer's call.
+
+---
+
+## 2026-10-08 — Seed spread is not an uncertainty interval; a held-out-error band is planned (evidence for frontend ADR-024)
+
+**Status:** decided 2026-10-08 by the maintainer (chat). Changes documents only: no code, data, checkpoint, artifact or run
+record is touched. Frontend side: `frontend/DECISIONS.md` ADR-024 (Q4).
+
+**Decision.** The served `confidence_low` / `confidence_high` are `mean ± 1 std` across the promoted seeds
+(`ml/serve/predictor.py`; on classification, over the Platt-calibrated per-seed values). They are a measure of seed
+agreement, not an error range, and are not flagged or described as an interval. For regression endpoints a held-out-error
+band (pooled out-of-fold absolute residuals, one per-endpoint half-width) is the planned replacement; rough effort 1-2
+working days, not measured. Classification gets no spread range until a validated method exists (ties to ADR-023 C1).
+
+**Evidence.** Held-out test sets, five promoted XGBoost seeds per endpoint, ensemble mean as served. Regression:
+
+| Endpoint | n test | printed ±1σ contains truth | ±1.96σ | 80% band | 90% band | rank corr. (spread, abs err) | MAE / median spread |
+|---|---|---|---|---|---|---|---|
+| caco2_permeability | 180 | 0.12 | 0.27 | 0.81 | 0.93 | 0.25 | 4.7 |
+| clearance_microsomal | 221 | 0.11 | 0.21 | 0.71 | 0.86 | 0.53 | 6.5 |
+| lipophilicity_logp | 840 | 0.09 | 0.21 | 0.81 | 0.90 | 0.10 | 6.1 |
+| ppb_binding | 323 | 0.14 | 0.28 | 0.81 | 0.87 | 0.62 | 6.1 |
+| solubility_logs | 1960 | 0.11 | 0.22 | 0.78 | 0.90 | 0.15 | 6.4 |
+
+- Median spread in-domain vs out-of-domain: caco2 0.060 / 0.064, solubility 0.124 / 0.127, logP 0.088 / 0.107, clearance
+  3.87 / 5.48, ppb 1.17 / 4.09. Seed agreement is not evidence of being in-domain.
+- The band undercovers out-of-domain molecules at the 80% target: logP 0.83 in / 0.67 out (about 105 out), clearance
+  0.73 / 0.55 (about 20), ppb 0.82 / 0.43 (about 7: too few to read), solubility 0.79 / 0.74, caco2 0.82 / 0.77. Keep the
+  applicability-domain flag beside any band.
+- Classification (nine endpoints): rank correlation of spread with distance from 0.5 is -0.72 to -0.97 on eight (DILI
+  -0.35). With that removed, spread predicts misclassification at AUROC 0.43-0.63, so it adds nothing beyond the score.
+
+**Method.** Each seed trains on its own scaffold partition (`five_seed_train_val_folds`). The band takes each promoted seed's
+absolute residuals on its own validation fold (regenerated with that function), pools them (450-4,700 residuals per
+endpoint), and uses the ceil((n+1)(1-alpha))-th smallest as a constant half-width, scored on the test set against the
+ensemble mean. Leakage sanity: validation MAE is close to test MAE (caco2 0.336 / 0.284, clearance 19.2 / 25.8, logP
+0.519 / 0.539, ppb 7.49 / 7.25, solubility 0.726 / 0.802).
+
+**Caveats.** One test split, no confidence intervals on the coverage figures (the smaller test sets carry a few points of
+sampling error). The analysis ran in a scratch environment (Python 3.10 with shims, xgboost 3.2.0), not the pinned one;
+before relying on it the pipeline reproduced the recorded test metrics exactly (HIA AUROC 0.9721, solubility MAE 0.8098).
+The scripts and raw outputs are in `documentation/AIMS/evidence/2026-10-08-seed-spread/` (its README says how they were run and what to edit to re-run them).
+
+**Blueprint tie-in.** Module 5 (uncertainty and applicability domain; conformal prediction deferred with no milestone slot).
+The band is a minimal split-conformal-style construction and does not replace full conformal prediction.
+
+**Open follow-ups.** Commit the analysis script and its outputs. Choose the band level (80% or 90%) and the contract field
+names. Decide whether the spread range stays on classification rows (frontend design question). Out-of-domain coverage
+needs a larger sample than ppb and clearance have.
+
+---
+
+## 2026-10-08 — Served XGBoost calibration policy: UI says "score" now; stop applying the Platt calibrators (C0), then recalibrate (C1)
+
+**Status:** decided 2026-10-08 by the maintainer (chat). Changes documents only: no code, data, checkpoint, artifact or
+run record is touched. Resolves the OPEN item "served XGBoost Platt calibrators degrade held-out calibration" in
+`next_steps.md`. Frontend side: `frontend/DECISIONS.md` ADR-023 (Q21).
+
+**Decision.**
+
+1. The UI labels the nine classification endpoints `score`, not `probability`, until each endpoint's calibration is
+   validated.
+2. **C0 (next):** stop applying the served Platt calibrators in `ml/serve/predictor.py` (it applies
+   `registry.load_calibrator` to each seed's raw prediction, then averages) and serve the raw ensemble, behind a
+   switch. Regenerate the held-out numbers for raw vs calibrated per endpoint.
+3. **C1 (after C0):** recalibrate the XGBoost side on label-representative data using cross-validated out-of-fold
+   predictions. The calibration split itself stays frozen (D3). Validate against raw with ECE, Brier and reliability
+   curves on the held-out test set, with a per-endpoint pass bar fixed before the numbers are seen. An endpoint
+   returns to `probability` in the UI only when it passes.
+4. **C2 (not scheduled):** KERMT temperature scaling stays GPU-gated and was never run on real logits. It is not on the
+   critical path while the API serves XGBoost.
+
+**Rationale.** Like-for-like on the calibrator's own seed 4 (`next_steps.md`): the served calibrators are worse than raw
+on Brier for 9 of 9 endpoints and on ECE for 7 of 9 (worst `hia_absorption`, 0.045 to 0.209). Cause: the calibration
+split's positive rate differs from the test set's (CYP3A4 0.409 train_val vs 0.113 calibration). The `hia_absorption`
+calibrator was fit on 49 positives and 1 negative. Only one calibrator exists per endpoint (fit on seed 4) and it is
+applied to all five seeds.
+
+**Blueprint tie-in.** Module 5 (probability calibration, Platt for XGBoost); Module 9 (prediction panel).
+
+**Open follow-ups.** The pass bar for C1. Whether HIA (N=47), DILI (50 rows) and hERG can ever be validated; if not, they
+stay `score`. Whether any calibration-split change is wanted is still an M1 data decision and is not taken here.
+Effort is a rough estimate, not measured: C0 half a day to a day, C1 two to four working days, C2 weeks of calendar time.
+
+---
+
 ## 2026-10-07 — Scope decision: MARS ships on Tier 0; Tier 1 and Tier 2 are deferred to Future Scope
+
+> **Superseded in part by 2026-10-14.** Tier 1 was revived and Tier 2 became conditional on the GPU-time budget left after Tier 1; the Kendall / GradNorm ablation and the blueprint changes below were reversed. The six Tier-0 arms, the measured per-seed costs and the limitation list in this entry still stand.
 
 **Status:** decided 2026-10-07 by the maintainer (explicit instruction in chat: defer Tier 1 and Tier 2 to future scope, amend
 the blueprint and all other documentation, proceed with Tier 0 for the platform). Changes documents only: no code, data,
@@ -619,7 +860,8 @@ quoted on 2026-09-18 match. Verify on the workstation before comparing KERMT to 
 
 ## 2026-09-20 — RESOLVED: KERMT mixed-type cluster limitation. Three-tier ladder approved; option (b) fork rejected
 
-> **2026-10-07 update:** Tier 1 and Tier 2 below are **deferred to Future Scope**; MARS ships on Tier 0 (see the 2026-10-07 entry at the top). The findings in this entry (cross-endpoint split leakage, Kendall unreachable through the stock CLI, KERMT's uniform `MTLLoss` precision being an exact reparameterization) stay valid and are the starting point if Tier 1 is ever revived.
+> **2026-10-07 update:** Tier 1 and Tier 2 below are **deferred to Future Scope**; MARS ships on Tier 0 (see the 2026-10-07 entry at the top).
+> **2026-10-14 update:** Tier 1 was **revived** and Tier 2 is **conditional on the budget left after Tier 1** (see the 2026-10-14 entries at the top). This entry's tier ladder, gates G1–G4 and findings are live design again. The findings in this entry (cross-endpoint split leakage, Kendall unreachable through the stock CLI, KERMT's uniform `MTLLoss` precision being an exact reparameterization) stay valid and are the starting point if Tier 1 is ever revived.
 
 **This closes the 2026-09-18 "Not decided" item.** Literature review + a direct read of
 KERMT's own source settled it. Maintainer decision taken on two axes: **build the full
