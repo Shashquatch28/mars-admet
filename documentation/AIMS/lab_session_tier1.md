@@ -27,6 +27,24 @@ trial (`"tuning:<hash prefix>:<trial>"`). See "Why nothing is pre-set" at the en
 `glossary.md` has the full definitions. **Order is G4 → G1 → G2 → G3**: each is cheaper than the next and isolates a different
 thing; if an early one fails the later ones are not worth their GPU time.
 
+## 0.5 Session variables used by the snippets below
+
+`lab_env.sh` exports `MARS_REPO`, `PREP_ID`, `PY`, `LAB`, `LOGS`, `WANDB_ENTITY`, `WANDB_PROJECT`, `MARS_KERMT_REPO`,
+`MARS_KERMT_IMAGE` and `PYTHONPATH=.` (so Python snippets run from `$MARS_REPO/ml`). It does **not** export `PREP`, `CKPT`, `W`,
+`RUNS` or `MODEL_DIR`; the Python snippets assume this preamble:
+
+```python
+import os
+from pathlib import Path
+PREP = Path("data/processed") / os.environ["PREP_ID"]
+CKPT = Path("data/checkpoints/kermt/NV-KERMT-70M-v2/kermt_contrastive_v2.0.pt")
+RUNS = Path("runs")
+W = RUNS / "tier1_gates"; W.mkdir(parents=True, exist_ok=True)
+# Tier-0 toxicity__cls seed-0 model, as saved by KermtModel.save (model.pt + metadata.json):
+_c = sorted(RUNS.glob("kermt_mtsub_toxicity__cls_seed0_*/artifacts/model/kermt"))
+MODEL_DIR = _c[-1]   # if the list is empty, download kermt-toxicity-cls-seed0:v0 from W&B instead and point MODEL_DIR at it
+```
+
 ## 1. Preconditions — do not start before all hold
 
 1. **Tier 0 is complete** (30 of 30 seeds; `toxicity__cls` 5/5 with its aggregate), records committed.
@@ -59,8 +77,7 @@ Uses the Tier-0 `toxicity__cls` seed-0 model (W&B `kermt-toxicity-cls-seed0:v0`;
 all-classification spec.
 
 ```python
-# from $MARS_REPO/ml with PYTHONPATH=. ; $PREP, $CKPT, $W as in lab_env.sh
-from pathlib import Path
+# from $MARS_REPO/ml with PYTHONPATH=. ; PREP, CKPT, W, MODEL_DIR from §0.5
 from configs.clusters import type_homogeneous_subgroups
 from data.cluster_loaders import load_cluster
 from mars_contracts.endpoints import TaskType
