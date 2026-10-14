@@ -12,7 +12,13 @@ Newest first. Absolute dates only.
 
 ## 2026-10-07 — Tier 1 (mixed-type trainer), Tier 2 (ordinal homogenization), Kendall / GradNorm loss weighting
 
-**Status:** deferred by maintainer decision 2026-10-07. **Does change the blueprint** (Module 4 clusters and loss
+**Update 2026-10-14:** **Tier 1 and the Kendall / GradNorm axis were revived** by maintainer decision (`documentation/AIMS/decisions.md`
+2026-10-14); the trainer is built CPU-side and awaits gates G1–G4. **Tier 2 is no longer "deferred" either: it is conditional on the
+GPU-time budget remaining at the end of Tier 1** (maintainer, confirmed 2026-10-14), and its driver and gate evaluator exist
+(`ml/train/train_kermt_ordinal.py`). Nothing in this file is an active deferral for Tiers 1–2 any more; the text below is kept as
+written, as the record of the 2026-10-07 cut and of the preserved original design.
+
+**Status:** *historical* — deferred by maintainer decision 2026-10-07, **reversed 2026-10-14** (see above). **Did change the blueprint** (Module 4 clusters and loss
 balancing, Module 11 §6 ablation axis, the compute budget) — recorded in `documentation/AIMS/decisions.md` 2026-10-07 and
 applied to `documentation/mars-blueprint_v4.md` the same day. The MARS product ships on **Tier 0**: stock KERMT, one task
 type per subgroup, equal weighting.

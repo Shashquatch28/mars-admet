@@ -14,7 +14,7 @@ data/        Module 1 — acquire.py (TDC, runs in an isolated Linux venv),
 featurize/   Module 3 — standardize, scaffold, graph, fingerprints, descriptors,
              conformers, pipeline (featurize_batch), cache (FeatureCache),
              kermt_adapter (SMILES/CSV contract for KERMT),
-             ordinal.py (Tier-2 ordinal/CDF codec; unused, Tier 2 deferred 2026-10-07).
+             ordinal.py (Tier-2 ordinal/CDF codec; Tier 2 is conditional on the budget left after Tier 1, 2026-10-14).
 models/      Module 4 — base.py (MARSModel ABC), xgboost_model.py,
              kermt_model.py (stock KERMT CLI path).
 train/       Training loops + sweep drivers. train_xgboost, run_xgboost_baseline,
@@ -69,13 +69,16 @@ cd ml && PYTHONPATH=. ./.venv/Scripts/python.exe train/preflight_clusters.py
   artifacts promoted, evaluation reports in `runs/evaluations/`.
 - **KERMT integrated and GPU-validated at smoke-test scale** (tiny AMES fine-tune,
   2026-09-18); the mixed-type cluster limitation was resolved on 2026-09-20 by a three-tier
-  design, and **on 2026-10-07 the project decided to ship on Tier 0 only** (stock KERMT,
-  type-homogeneous subgroups, equal weighting) — Tiers 1 and 2 are deferred to
-  `../documentation/FUTURE_SCOPE.md`; see `../documentation/AIMS/decisions.md` (2026-10-07).
+  design. **2026-10-07:** shipped on Tier 0 (stock KERMT, type-homogeneous subgroups, equal weighting) and
+  deferred Tiers 1–2. **2026-10-14:** Tier 1 (MARS-owned mixed-type trainer) was revived and Tier 2 made
+  conditional on the budget left after Tier 1; **no Tier-1/2 hyperparameter is fixed in advance** (pre-registered
+  validation-only tuning protocol) — see `../documentation/AIMS/decisions.md` (2026-10-14). The Tier-1/2 code
+  (`train/kermt_mixed/`, `models/kermt_mixed_model.py`, `train/train_kermt_mixed.py`, `train/train_kermt_ordinal.py`)
+  lives on branch `milestone/m2-kermt-tier1`, CPU-verified only; gates G1–G4 have not been run.
   **Tier-0 production training is under way:** 27 of 30 seeds trained as of 2026-10-09
   (`metabolism__reg`, `absorption_distribution__cls`, `metabolism__cls`, `absorption_distribution__reg`, DILI complete at 5 seeds;
-  `toxicity__cls` 2 of 5), with real KERMT logits
-  calibrated (since 2026-09-22). Status: `../documentation/status/kermt_gpu_session_2026-10-09.md`.
+  `toxicity__cls` 2 of 5), with real KERMT logits calibrated (since 2026-09-22).
+  Status: `../documentation/status/kermt_gpu_session_2026-10-09.md`.
 - **XGBoost test-set evaluation done (2026-09-21):** `runs/test_evaluations/` holds the held-out
   numbers; the old `runs/evaluations/` are validation-fold and differ by up to +0.26 AUROC.
   Compare KERMT to the test set.

@@ -25,10 +25,12 @@ Brier for calibration). 13 ML-trained + SA rule-based = 14.
 
 ## Clusters (multi-task, shared pretrained backbone, masked loss)
 
-- **absorption_distribution** — the blueprint's original 7-task cluster (4 reg + 3 clf). **Shipped since 2026-10-07 as two Tier-0 subgroups:**
-  `absorption_distribution__reg` (logS, logP, Caco-2, PPB) and `absorption_distribution__cls` (HIA, P-gp, BBB). Equal weighting.
-- **metabolism** — the original 4-task cluster (3 clf CYP + 1 reg Clearance). **Shipped since 2026-10-07 as** `metabolism__cls` (3 CYPs) and `metabolism__reg`
-  (Clearance alone, single task). Equal weighting.
+- **absorption_distribution** — the blueprint's 7-task mixed cluster (4 reg + 3 clf). **Two designs exist side by side (2026-10-14):** the
+  **Tier-1 mixed cluster** (one run, type-correct loss, weighting arm chosen by the Module 11 ablation; live work) and the **Tier-0 subgroups**
+  `absorption_distribution__reg` (logS, logP, Caco-2, PPB) and `absorption_distribution__cls` (HIA, P-gp, BBB), trained with equal weighting
+  and kept as the shipped baseline and comparator.
+- **metabolism** — the 4-task mixed cluster (3 clf CYP + 1 reg Clearance). Same two designs: the **Tier-1 mixed cluster** (Clearance is the sparse
+  task, 1,102 vs 12k+; watch its logσ_t) and the **Tier-0 subgroups** `metabolism__cls` (3 CYPs) and `metabolism__reg` (Clearance alone, single task).
 - **toxicity** — hERG + AMES (2 clf). Weighting choice matters less (2 tasks).
 - **dili_standalone** — DILI only. Re-test joining toxicity cluster once
   DILIst-augmented (blueprint flags this as an empirical question).
@@ -95,16 +97,16 @@ through the encoder.
   endpoints cannot be jointly finetuned against the stock CLI. Inherited from
   its Chemprop/GROVER lineage, not a KERMT bug. Resolved 2026-09-20 by the
   **three-tier ladder** below.
-- **Tier 0 / path (a)** — **the shipped design (2026-10-07).** Type-homogeneous subgroups (`metabolism__cls`,
-  `absorption_distribution__reg`, …) trained by the **stock** KERMT CLI.
+- **Tier 0 / path (a)** — **the shipped baseline and the comparator** (decided 2026-10-07; stays). Type-homogeneous subgroups
+  (`metabolism__cls`, `absorption_distribution__reg`, …) trained by the **stock** KERMT CLI, equal weighting.
   `model_family` = `kermt_multitask_subgroup`. Same design ADMET-AI ships.
-- **Tier 1 / path (b)** — **DEFERRED 2026-10-07 (Future Scope; never built).** MARS-owned mixed-type trainer that **imports KERMT as
-  a library** inside its container. `model_family` = `kermt_mixed`. The only
-  path that satisfies Module 11's mixed-cluster loss-balancing ablation axis.
-- **Tier 2 / path (c)** — **DEFERRED 2026-10-07 (Future Scope; GPU gate not run).** Ordinal-CDF homogenization: a regression endpoint
-  encoded as M binary `y > quantile_m` columns so a mixed cluster becomes one
-  all-classification **stock-CLI** run; scalar decoded from the survival
-  function. `model_family` = `kermt_ordinal`. (Frank & Hall 2001; Li & Lin 2007.)
+- **Tier 1 / path (b)** — **LIVE since 2026-10-14** (revived after the 2026-10-07 deferral; built CPU-side, GPU gates not run). MARS-owned
+  mixed-type trainer that **imports KERMT as a library** inside its container. `model_family` = `kermt_mixed`. The only path that satisfies
+  Module 11's mixed-cluster loss-balancing ablation axis. Code: `milestone/m2-kermt-tier1`.
+- **Tier 2 / path (c)** — **CONDITIONAL (2026-10-14): trained only if GPU-time budget remains at the end of Tier 1** — neither deferred nor
+  scheduled. Ordinal-CDF homogenization: a regression endpoint encoded as M binary `y > quantile_m` columns so a mixed cluster becomes one
+  all-classification **stock-CLI** run; scalar decoded from the survival function. `model_family` = `kermt_ordinal`. (Frank & Hall 2001;
+  Li & Lin 2007.) Driver and gate exist (`ml/train/train_kermt_ordinal.py`).
 - **`--use_mtl_loss`** — KERMT's own opt-in flag enabling `MTLLoss` (Kendall
   weighting) in `main.py finetune`. **Unreachable from MARS:**
   `agent/scripts/run_finetune_local.py`, the only finetune entry point MARS uses,
@@ -112,10 +114,11 @@ through the encoder.
   failure, not a no-op. The stock path is therefore **equal-weighting only**
   (= the blueprint's mandatory fixed/equal baseline). All three loss-balancing
   arms come from Tier 1. See decisions.md 2026-09-20 finding 2.
-- **GradNorm** (Chen et al. 2018) — gradient-magnitude-equalizing alternative to
-  Kendall weighting. **Deferred 2026-10-07** (was a blueprint ablation arm); not part of the shipped system.
-- **Kendall weighting** — homoscedastic uncertainty multi-task loss balancing
-  (Kendall, Gal & Cipolla 2018); learnable per-task logσ_t. **Deferred 2026-10-07** — shipped models use equal weighting.
+- **GradNorm** (Chen et al. 2018) — gradient-magnitude-equalizing alternative to Kendall weighting. A Tier-1 ablation arm (restored 2026-10-14);
+  its asymmetry α and weight learning rate are tuning-protocol axes, not constants. Needs per-task heads.
+- **Kendall weighting** — homoscedastic uncertainty multi-task loss balancing (Kendall, Gal & Cipolla 2018); learnable per-task logσ_t. A
+  Tier-1 arm (restored 2026-10-14) and the leading candidate, not a default. Tier-0 models are equal-weighted and must never be described
+  as uncertainty-weighted.
 - **ECE / Brier** — calibration metrics. **Temperature scaling** — 1-param
   logit rescale for GNN calibration. **Platt** — for the XGBoost baseline.
 - **MMP** — Matched Molecular Pairs (novelty feature, `mmpdb` engine, Post-MVP).
@@ -123,6 +126,39 @@ through the encoder.
 - **Cloud Run** — Google serverless containers; MARS serving (backend + async
   worker). Async batch = Cloud Tasks → Cloud Run worker endpoint. $0 demo scale.
 - **AIMS** — this AI Memory System.
+
+## Tier-1 gates, arms and tuning — plain-language definitions (2026-10-14)
+
+**Why gates exist.** The Tier-1 trainer re-implements part of KERMT's fine-tune loop (the loss, the forward pass, target scaling, batch
+composition). "It runs" says nothing about whether it trains the *same* model as stock KERMT. Each gate isolates one thing and compares the
+MARS trainer to stock KERMT on a job both can run; **no mixed-type result is believed until all four pass.** Definitions are frozen in
+`decisions.md` 2026-09-20; evaluators in `ml/train/kermt_mixed/gates.py`; procedure in `lab_session_tier1.md`.
+
+- **G1 — forward / inference parity.** Take one *already trained* stock model (Tier-0 `toxicity__cls` seed 0) and the same 64 molecules.
+  Stock KERMT and the MARS forward pass must give predictions that agree to 1e-5. Isolates model construction, featurization, the
+  two-view average and where the sigmoid sits — with no training noise.
+- **G2 — one-epoch loss parity.** Train one epoch with the same arguments, seed and fold, MARS trainer in `fixed` mode (stock's reduction)
+  versus stock. The epoch-0 training loss must agree within 5%. A miss means the loss is wrong (a dropped view, a missing consistency
+  term, an unmasked NaN), not sampling noise.
+- **G3 — multi-seed AUROC parity.** On classification-only data, where both paths can legitimately run the same job (`toxicity__cls`, and
+  single-task `ames_mutagenicity`), 5 seeds, identical folds and hyperparameters: `|mean_stock − mean_mixed| ≤ 0.5·max(std)` **and** the
+  paired per-seed |ΔAUROC| ≤ 0.02 on at least 4 of 5 seeds, on validation-fold AUROC computed host-side. It isolates implementation
+  differences from the effect of mixing task types.
+- **G4 — Kendall math check.** A CPU unit test: with every log σ frozen at 0 the Kendall loss equals the equal-weight loss × 1 per
+  classification term and × 0.5 per regression term, exactly (plus the reparameterization relation to KERMT's own `MTLLoss`). Runs in the
+  container via `python -m kermt_mixed.selfcheck`.
+- **T2 gate** (Tier 2 only) — the validation-fold MAE of the *decoded* regression value must be within a stated tolerance (the frozen
+  wording says 15%) of a direct-regression MAE for the same endpoint and seed. The comparator and the aggregation rule are explicit
+  arguments (`t2_decoded_mae_gate`), not defaults.
+- **Arms.** `fixed` — stock's reduction (a global mean over labeled entries, so tasks are weighted by label count); used only in the
+  parity gates. `fixed_task` — equal weight per task; the ablation's baseline. `kendall`, `gradnorm` — the learned weightings.
+- **Reference configuration** — trial 0 of a tuning protocol: the stock/neutral settings, always run, and the number Tier 1 is reported at
+  beside the tuned result. **Tuning protocol** — a pre-registered (sha256-locked) search space, budget, seeds, objective and evidence
+  threshold, run on validation data only with equal trials per arm (`tuning.py`). **`hyperparameter_source`** — the string on every run
+  record saying where its settings came from: `stock-default`, `parity-gate`, or `tuning:<hash prefix>:<trial>`.
+- **Two views** — KERMT's head produces an atom-based and a bond-based prediction; training loss uses both plus a `dist_coff` consistency
+  term, eval averages them (sigmoids first, for classification). **Validation views** — every epoch's raw two-view outputs, saved so a
+  different selection rule can be applied afterwards without retraining (`posthoc.py`).
 
 ## M1 version identifiers (all part of downstream cache keys / provenance)
 
