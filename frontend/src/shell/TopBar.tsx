@@ -5,6 +5,7 @@ import { usePredictSession } from "../app/predictSession";
 import { useAuthSession } from "../app/authSession";
 import { USING_API } from "../data/client";
 import { accountInitial } from "../domain/session";
+import { FIXTURE_RESPONSE } from "../domain/fixtures";
 import { useApiHealth, type ApiHealth } from "../data/useApiHealth";
 
 const WORKSPACE_SUB: Record<string, string> = {
@@ -62,10 +63,13 @@ export function TopBar() {
         <span className={styles.kbarPh}>Search molecules, endpoints, commands</span>
         <kbd className={styles.kbd}>⌘K</kbd>
       </button>
-      <div className={styles.serving} role="button" tabIndex={0}>
+      {/* A plain readout (ADR-026 part 1): not a control, because there is nothing to switch to
+          until the API lists a second generation. Fixture mode says so rather than showing "—". */}
+      <div className={styles.serving}>
         <span className={styles.servingLbl}>Serving</span>
-        <span className={styles.servingVal}>{result?.response.model_version ?? "—"}</span>
-        <span className={styles.chev} aria-hidden="true">▾</span>
+        <span className={styles.servingVal}>
+          {USING_API ? (result?.response.model_version ?? "—") : `${FIXTURE_RESPONSE.model_version} · fixture`}
+        </span>
       </div>
       <div className={styles.apistat}>
         <span className={`${styles.dot} ${badge.dot}`} />
