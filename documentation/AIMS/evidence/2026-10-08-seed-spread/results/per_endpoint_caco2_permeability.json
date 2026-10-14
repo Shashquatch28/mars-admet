@@ -1,0 +1,48 @@
+{
+ "endpoint": "caco2_permeability",
+ "task": "TaskType.REGRESSION",
+ "n_test": 180,
+ "n_seeds": 5,
+ "dropped": 0,
+ "frac_in_domain": 0.6611111111111111,
+ "rmse": 0.35361910959083165,
+ "mae": 0.28381720201202404,
+ "std_median": 0.06119436683945944,
+ "std_p90": 0.10546524789673616,
+ "cover_1sigma": 0.11666666666666667,
+ "cover_196sigma": 0.2722222222222222,
+ "median_abs_err_over_median_std": 3.9433252935877867,
+ "spearman_std_vs_abserr": 0.2461383805317098,
+ "quartiles_abserr": [
+  {
+   "q": 1,
+   "n": 45,
+   "spread_med": 0.03286885997706741,
+   "err_mean": 0.21524468897732218
+  },
+  {
+   "q": 2,
+   "n": 45,
+   "spread_med": 0.05043599497688422,
+   "err_mean": 0.2479431761950684
+  },
+  {
+   "q": 3,
+   "n": 43,
+   "spread_med": 0.07060965202595983,
+   "err_mean": 0.3117820589951627
+  },
+  {
+   "q": 4,
+   "n": 47,
+   "spread_med": 0.09490388332728049,
+   "err_mean": 0.35823433814073935
+  }
+ ],
+ "std_median_in_domain": 0.060217833632630384,
+ "std_median_out_domain": 0.06430737776011794,
+ "abserr_in_domain": 0.2789498541425947,
+ "abserr_out_domain": 0.2933125199868124,
+ "cover_1sigma_in_domain": 0.1092436974789916,
+ "cover_1sigma_out_domain": 0.13114754098360656
+}

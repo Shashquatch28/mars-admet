@@ -1,0 +1,140 @@
+{
+ "endpoint": "ames_mutagenicity",
+ "task": "TaskType.CLASSIFICATION",
+ "n_test": 1453,
+ "n_seeds": 5,
+ "dropped": 0,
+ "frac_in_domain": 0.7474191328286304,
+ "variants": {
+  "raw": {
+   "auroc": 0.8621734973698809,
+   "err_rate": 0.20578114246386786,
+   "std_median": 0.03797868310243331,
+   "std_p90": 0.07700338943811572,
+   "spearman_std_vs_abserr": 0.5741864452355289,
+   "auroc_std_predicts_misclass": 0.6431548257333806,
+   "frac_interval_outside_01": 0.0,
+   "quartiles_abserr": [
+    {
+     "q": 1,
+     "n": 363,
+     "spread_med": 0.017647384639645897,
+     "err_mean": 0.16110256919611665
+    },
+    {
+     "q": 2,
+     "n": 363,
+     "spread_med": 0.030685877895735233,
+     "err_mean": 0.26076110112929807
+    },
+    {
+     "q": 3,
+     "n": 363,
+     "spread_med": 0.04575178357027596,
+     "err_mean": 0.3582657523011948
+    },
+    {
+     "q": 4,
+     "n": 364,
+     "spread_med": 0.07120671217239706,
+     "err_mean": 0.4125873714736612
+    }
+   ],
+   "quartiles_misclass": [
+    {
+     "q": 1,
+     "n": 363,
+     "spread_med": 0.017647384639645897,
+     "err_mean": 0.09641873278236915
+    },
+    {
+     "q": 2,
+     "n": 363,
+     "spread_med": 0.030685877895735233,
+     "err_mean": 0.16804407713498623
+    },
+    {
+     "q": 3,
+     "n": 363,
+     "spread_med": 0.04575178357027596,
+     "err_mean": 0.2644628099173554
+    },
+    {
+     "q": 4,
+     "n": 364,
+     "spread_med": 0.07120671217239706,
+     "err_mean": 0.29395604395604397
+    }
+   ],
+   "std_median_in_domain": 0.03555136606263228,
+   "std_median_out_domain": 0.045123603171535596,
+   "abserr_in_domain": 0.2811797382421517,
+   "abserr_out_domain": 0.3487945174356816
+  },
+  "served(calibrated)": {
+   "auroc": 0.8620633353136274,
+   "err_rate": 0.22918100481761872,
+   "std_median": 0.025195664705165946,
+   "std_p90": 0.06683795770437669,
+   "spearman_std_vs_abserr": 0.683611955782572,
+   "auroc_std_predicts_misclass": 0.7073064135564135,
+   "frac_interval_outside_01": 0.0,
+   "quartiles_abserr": [
+    {
+     "q": 1,
+     "n": 363,
+     "spread_med": 0.0065369575498076165,
+     "err_mean": 0.15298302220146656
+    },
+    {
+     "q": 2,
+     "n": 363,
+     "spread_med": 0.016885576240091054,
+     "err_mean": 0.2976271347019327
+    },
+    {
+     "q": 3,
+     "n": 363,
+     "spread_med": 0.03472622721959166,
+     "err_mean": 0.3894554927298768
+    },
+    {
+     "q": 4,
+     "n": 364,
+     "spread_med": 0.06238494341342351,
+     "err_mean": 0.45681483951675544
+    }
+   ],
+   "quartiles_misclass": [
+    {
+     "q": 1,
+     "n": 363,
+     "spread_med": 0.0065369575498076165,
+     "err_mean": 0.06611570247933884
+    },
+    {
+     "q": 2,
+     "n": 363,
+     "spread_med": 0.016885576240091054,
+     "err_mean": 0.18732782369146006
+    },
+    {
+     "q": 3,
+     "n": 363,
+     "spread_med": 0.03472622721959166,
+     "err_mean": 0.2644628099173554
+    },
+    {
+     "q": 4,
+     "n": 364,
+     "spread_med": 0.06238494341342351,
+     "err_mean": 0.3983516483516483
+    }
+   ],
+   "std_median_in_domain": 0.020845946309640616,
+   "std_median_out_domain": 0.03543411415389038,
+   "abserr_in_domain": 0.29941330106705893,
+   "abserr_out_domain": 0.39798797668161356
+  }
+ }
+}

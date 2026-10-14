@@ -1,0 +1,70 @@
+[
+ {
+  "endpoint": "dili_liver_injury",
+  "raw": {
+   "rho_std_margin": -0.3469614758545849,
+   "auroc_std": 0.5641025641025641,
+   "auroc_neg_margin": 0.8173639226270806,
+   "auroc_both": 0.8173639226270806,
+   "auroc_std_given_margin": 0.44534412955465585
+  },
+  "served": {
+   "rho_std_margin": -0.3628323385784048,
+   "auroc_std": 0.543747136967476,
+   "auroc_neg_margin": 0.7897388914338066,
+   "auroc_both": 0.7897388914338066,
+   "auroc_std_given_margin": 0.42876775080164914
+  }
+ },
+ {
+  "endpoint": "herg_cardiotoxicity",
+  "raw": {
+   "rho_std_margin": -0.7556637861626994,
+   "auroc_std": 0.6758263760906722,
+   "auroc_neg_margin": 0.7501610595075275,
+   "auroc_both": 0.7501610595075275,
+   "auroc_std_given_margin": 0.49007107740889577
+  },
+  "served": {
+   "rho_std_margin": -0.7675227666522215,
+   "auroc_std": 0.702564466893397,
+   "auroc_neg_margin": 0.7136455306315144,
+   "auroc_both": 0.7136455306315144,
+   "auroc_std_given_margin": 0.5794874733011266
+  }
+ },
+ {
+  "endpoint": "hia_absorption",
+  "raw": {
+   "rho_std_margin": -0.9702303346371142,
+   "auroc_std": 0.8483483483483484,
+   "auroc_neg_margin": 0.8318318318318318,
+   "auroc_both": 0.8318318318318318,
+   "auroc_std_given_margin": 0.6291291291291291
+  },
+  "served": {
+   "rho_std_margin": -0.9186036056287371,
+   "auroc_std": 0.8860082304526748,
+   "auroc_neg_margin": 0.9724279835390947,
+   "auroc_both": 0.9724279835390947,
+   "auroc_std_given_margin": 0.44897119341563785
+  }
+ },
+ {
+  "endpoint": "pgp_inhibition",
+  "raw": {
+   "rho_std_margin": -0.862963810698853,
+   "auroc_std": 0.7602040816326531,
+   "auroc_neg_margin": 0.8192419825072885,
+   "auroc_both": 0.8192419825072885,
+   "auroc_std_given_margin": 0.45730945439400245
+  },
+  "served": {
+   "rho_std_margin": -0.9044395837897846,
+   "auroc_std": 0.7756979695431472,
+   "auroc_neg_margin": 0.8109137055837563,
+   "auroc_both": 0.8109137055837563,
+   "auroc_std_given_margin": 0.4896362098138748
+  }
+ }
+]

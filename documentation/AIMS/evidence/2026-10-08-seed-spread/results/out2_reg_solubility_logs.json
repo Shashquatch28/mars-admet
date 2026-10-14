@@ -1,0 +1,21 @@
+[
+ {
+  "endpoint": "solubility_logs",
+  "n_resid": 4700,
+  "val_mae": 0.7258625324424435,
+  "test_mae": 0.8018213198023949,
+  "std_median": 0.12486763896479443,
+  "conf_80": {
+   "halfwidth": 1.144227828979492,
+   "cover": 0.7765306122448979,
+   "cover_in_domain": 0.789875173370319,
+   "cover_out_domain": 0.7393822393822393
+  },
+  "conf_90": {
+   "halfwidth": 1.677237024307251,
+   "cover": 0.8989795918367347,
+   "cover_in_domain": 0.9119278779472955,
+   "cover_out_domain": 0.862934362934363
+  }
+ }
+]

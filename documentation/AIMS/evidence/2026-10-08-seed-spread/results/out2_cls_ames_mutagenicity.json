@@ -1,0 +1,87 @@
+[
+ {
+  "endpoint": "ames_mutagenicity",
+  "raw": {
+   "rho_std_margin": -0.7166957939098724,
+   "auroc_std": 0.6431548257333806,
+   "auroc_neg_margin": 0.7248743645774767,
+   "auroc_both": 0.7248743645774767,
+   "auroc_std_given_margin": 0.4881233226874098
+  },
+  "served": {
+   "rho_std_margin": -0.8369536060552522,
+   "auroc_std": 0.7073064135564135,
+   "auroc_neg_margin": 0.7289173101673101,
+   "auroc_both": 0.7289173101673101,
+   "auroc_std_given_margin": 0.5438545688545688
+  }
+ },
+ {
+  "endpoint": "bbb_permeability",
+  "raw": {
+   "rho_std_margin": -0.7176632445635186,
+   "auroc_std": 0.7683033483258371,
+   "auroc_neg_margin": 0.7833583208395802,
+   "auroc_both": 0.7833583208395802,
+   "auroc_std_given_margin": 0.6003873063468266
+  },
+  "served": {
+   "rho_std_margin": -0.7582804829445277,
+   "auroc_std": 0.8684911303207834,
+   "auroc_neg_margin": 0.9072882953009136,
+   "auroc_both": 0.9072882953009136,
+   "auroc_std_given_margin": 0.574460240075382
+  }
+ },
+ {
+  "endpoint": "cyp2c9_inhibition",
+  "raw": {
+   "rho_std_margin": -0.9138660402857284,
+   "auroc_std": 0.7574477944363892,
+   "auroc_neg_margin": 0.7939119667957169,
+   "auroc_both": 0.7939119667957169,
+   "auroc_std_given_margin": 0.5048742631927732
+  },
+  "served": {
+   "rho_std_margin": -0.9554937971813435,
+   "auroc_std": 0.7812781133530395,
+   "auroc_neg_margin": 0.7857428845412395,
+   "auroc_both": 0.7857428845412395,
+   "auroc_std_given_margin": 0.5379103931667869
+  }
+ },
+ {
+  "endpoint": "cyp2d6_inhibition",
+  "raw": {
+   "rho_std_margin": -0.9305039834182562,
+   "auroc_std": 0.7537053952471514,
+   "auroc_neg_margin": 0.7855497821236579,
+   "auroc_both": 0.7855497821236579,
+   "auroc_std_given_margin": 0.4793698806546773
+  },
+  "served": {
+   "rho_std_margin": -0.9618125874724076,
+   "auroc_std": 0.771530643944437,
+   "auroc_neg_margin": 0.7861003861003862,
+   "auroc_both": 0.7861003861003862,
+   "auroc_std_given_margin": 0.4845929673515881
+  }
+ },
+ {
+  "endpoint": "cyp3a4_inhibition",
+  "raw": {
+   "rho_std_margin": -0.8672575593793465,
+   "auroc_std": 0.7500737944320159,
+   "auroc_neg_margin": 0.791083524200135,
+   "auroc_both": 0.791083524200135,
+   "auroc_std_given_margin": 0.513842836724548
+  },
+  "served": {
+   "rho_std_margin": -0.9214965949333469,
+   "auroc_std": 0.7818194255943259,
+   "auroc_neg_margin": 0.7921232651810342,
+   "auroc_both": 0.7921232651810342,
+   "auroc_std_given_margin": 0.5342974256818878
+  }
+ }
+]
