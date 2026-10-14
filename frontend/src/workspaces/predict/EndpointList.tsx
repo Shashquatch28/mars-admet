@@ -125,7 +125,7 @@ export function EndpointList({
         <span>Task</span>
         <span className={styles.colR}>Value</span>
         <span>Unit</span>
-        <span>Ensemble interval</span>
+        <span>Seed spread ±1σ</span>
         <span>Domain</span>
         <span className={styles.colR}>Source</span>
       </div>

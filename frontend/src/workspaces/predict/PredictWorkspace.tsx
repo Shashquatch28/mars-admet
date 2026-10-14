@@ -182,7 +182,7 @@ export function PredictWorkspace() {
                   ? "No prediction to inspect."
                   : idle
                     ? "No prediction yet. Enter a SMILES string and run it to inspect an endpoint."
-                    : "Select an endpoint to inspect its interval, applicability-domain distance and the model artifact that served it."}
+                    : "Select an endpoint to inspect its seed spread, applicability-domain distance and the model artifact that served it."}
             </p>
           </div>
         )}

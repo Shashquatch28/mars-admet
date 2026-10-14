@@ -106,9 +106,9 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
       {meta.taskType === "regression" && (
         <div className={styles.isec}>
           <dl className={styles.ikv}>
-            <dt>Interval</dt>
+            <dt>Seed spread ±1σ</dt>
             <dd>{fmtInterval(prediction.confidence_low, prediction.confidence_high, decimalPlaces(prediction.endpoint))}</dd>
-            <dt>Interval width</dt>
+            <dt>Spread width</dt>
             <dd>{fmtNum(Math.abs(prediction.confidence_high - prediction.confidence_low), decimalPlaces(prediction.endpoint))}</dd>
             <dt>Derived from</dt>
             <dd className={styles.ddDerived}>Spread across the 5 cross-validation seeds, not a coverage guarantee.</dd>
@@ -118,7 +118,7 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
       {meta.taskType === "classification" && (
         <div className={styles.isec}>
           <dl className={styles.ikv}>
-            <dt>Ensemble</dt>
+            <dt>Seed spread ±1σ</dt>
             <dd>{fmtInterval(prediction.confidence_low, prediction.confidence_high, 2)}</dd>
             <dt>Derived from</dt>
             <dd className={styles.ddDerived}>Spread across the 5 cross-validation seeds, not a coverage guarantee.</dd>
@@ -128,7 +128,7 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
       {meta.taskType === "rule_based" && (
         <div className={styles.isec}>
           <p className={styles.nostate}>
-            Computed, not predicted. A rule-based synthesis score has no interval and no applicability domain —
+            Computed, not predicted. A rule-based synthesis score has no seed spread and no applicability domain —
             and no pretence that either exists.
           </p>
         </div>
