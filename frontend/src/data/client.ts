@@ -13,6 +13,7 @@ import type {
   Endpoint,
   LoginResponse,
   MeResponse,
+  GenerationsResponse,
   PredictionResponse,
   RegisterResponse,
 } from "../types/contracts";
@@ -143,6 +144,11 @@ export async function logout(): Promise<void> {
 export async function fetchHealth(): Promise<true> {
   await request("/health");
   return true;
+}
+
+// The deployed model generation (ADR-026). Anonymous, like /predict.
+export async function fetchGenerations(): Promise<GenerationsResponse> {
+  return (await (await request("/generations")).json()) as GenerationsResponse;
 }
 
 export const USING_API = !!API_BASE;

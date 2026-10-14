@@ -1,12 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./shell.module.css";
 import { useUiState } from "../app/uiState";
-import { usePredictSession } from "../app/predictSession";
 import { useAuthSession } from "../app/authSession";
 import { USING_API } from "../data/client";
 import { accountInitial } from "../domain/session";
 import { FIXTURE_RESPONSE } from "../domain/fixtures";
 import { useApiHealth, type ApiHealth } from "../data/useApiHealth";
+import { useGenerations } from "../data/useGenerations";
 
 const WORKSPACE_SUB: Record<string, string> = {
   "/predict": "Single molecule",
@@ -25,7 +25,7 @@ const API_BADGE: Record<ApiHealth, { label: string; dot: string }> = {
 
 export function TopBar() {
   const { setPaletteOpen } = useUiState();
-  const { result } = usePredictSession();
+  const generations = useGenerations();
   const health = useApiHealth();
   const badge = API_BADGE[health];
   const { status, user, busy, signOut } = useAuthSession();
@@ -68,7 +68,7 @@ export function TopBar() {
       <div className={styles.serving}>
         <span className={styles.servingLbl}>Serving</span>
         <span className={styles.servingVal}>
-          {USING_API ? (result?.response.model_version ?? "—") : `${FIXTURE_RESPONSE.model_version} · fixture`}
+          {USING_API ? (generations?.active ?? "—") : `${FIXTURE_RESPONSE.model_version} · fixture`}
         </span>
       </div>
       <div className={styles.apistat}>
