@@ -5,7 +5,7 @@ They are ordered: when two conflict, the lower number wins.
 
 ## 1. Never imply a capability the model does not have
 
-MARS returns a value, an interval, a domain flag and a provenance id. It does
+MARS returns a value, a seed spread, a domain flag and a provenance id. It does
 **not** return a threshold, a direction of good, a ranking or a verdict. The UI
 stops exactly where the contract stops.
 

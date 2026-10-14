@@ -230,14 +230,14 @@ Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
    exists, keep the user's selected file across a 401 (ADR-022 item 3).
 6. ~~ADR-009 drift check~~ — done.
 7. ~~3Dmol~~ — done. Then Compare, Library.
-8. **Relabel classification units as `score`** (ADR-023; Q21 resolved 2026-10-08). Small and
-   user-visible: `DISPLAY_UNIT` and `unitLabel`. Do it before any demo.
-9. **Rename `ENSEMBLE INTERVAL` to `SEED SPREAD ±1σ`** (ADR-024). Text only; do it with item 8.
+8. ~~**Relabel classification units as `score`**~~ — done 2026-10-14 (ADR-023): `DISPLAY_UNIT` and `unitLabel`, pinned by a test.
+9. ~~**Rename `ENSEMBLE INTERVAL` to `SEED SPREAD ±1σ`**~~ — done 2026-10-14 (ADR-024), including the inspector rows
+   (`Seed spread ±1σ`, `Spread width`).
 10. **Production topology** (ADR-025; Q22): API under `/api`, frontend served from the API
     container, secure cookie. Before the first deploy, verify the client address the rate
     limiter sees behind Cloud Run.
-11. **Top-bar serving readout** (ADR-026 part 1): drop the button role, tab stop and chevron; show the
-    deployed generation from the API. Small; do it with items 8-9.
+11. ~~**Top-bar serving readout**~~ — done 2026-10-14 (ADR-026 part 1): a plain readout (no button role, tab stop or
+    chevron) of the generation from the new `GET /generations`; fixture mode labels itself a fixture.
 12. **Structure sketcher** (ADR-027): Ketcher standalone, lazy-loaded, in a bordered panel on Predict.
     Measure the chunk and audit never-do #7/#8 on first integration.
 13. **Generation switching** (ADR-026 parts 2-5): `GET /generations`, request `model_version`, versioned

@@ -614,7 +614,7 @@ is stale against Module 10 ($0 on Cloud Run) and is not corrected here.
 
 ## ADR-023 — Classification values are labelled "score" until calibration is validated (resolves Q21)
 
-**Date:** 2026-10-08 · **Status:** accepted (implementation pending)
+**Date:** 2026-10-08 · **Status:** accepted · implemented 2026-10-14 (unit text; C0 and C1 are ML work and remain)
 
 **Decision.**
 
@@ -649,7 +649,7 @@ C1 two to four working days, C2 weeks of calendar time.
 
 ## ADR-024 — Seed spread is not an interval: never flag it, and rename it (resolves Q4)
 
-**Date:** 2026-10-08 · **Status:** accepted (wording now; replacement band planned)
+**Date:** 2026-10-08 · **Status:** accepted (wording implemented 2026-10-14; replacement band planned)
 
 **Decision.**
 
@@ -683,6 +683,12 @@ or as suspicious* - both claim a calibration that does not exist. *Keeping the `
 different scaffold partition of the same train_val pool (`five_seed_train_val_folds`), so the spread includes
 partition variance and is still far too narrow. The contract names `confidence_low` and `confidence_high` stay
 misleading; renaming them is a breaking contract change and is not made here.
+
+Implemented 2026-10-14. The inspector's own labels were renamed with the column head, because the same reasoning
+applies to them: "Interval" is now `Seed spread ±1σ` and "Interval width" is `Spread width` (regression rows), "Ensemble"
+is `Seed spread ±1σ` (classification rows), and the rule-based note and the inspector hint say "seed spread".
+Spread is still shown on classification rows (item 4 stays open). No code identifier was renamed:
+`NumericInterval`, `IntervalTrack`, `fmtInterval` and the contract's `confidence_low` / `confidence_high` keep their names.
 
 ## ADR-025 — Production serves the frontend and the API from one origin (resolves Q22)
 
@@ -722,7 +728,7 @@ Dockerfile becomes multi-stage. CI does not deploy yet, so nothing needs migrati
 
 ## ADR-026 — The serving generation is a real, switchable setting (resolves Q6)
 
-**Date:** 2026-10-08 · **Status:** accepted (design). Part 1 ships now. Parts 2-5 are blocked until a second
+**Date:** 2026-10-08 · **Status:** accepted (design). Part 1 implemented 2026-10-14, with a minimal `GET /generations`. Parts 2-5 are blocked until a second
 generation exists.
 
 **Decision.**
@@ -754,8 +760,10 @@ neither exists. Parts 2-5 can be tested against two fixture registries, but not 
 
 **Consequences.** Touches `ml/serve/registry.py`, `prediction_service.py`, `prediction_cache.py`, a new route,
 `API_ROUTES.md`, a new `GenerationsResponse` and a request field in `mars_contracts` and its frontend mirror (the drift
-test covers both). The fixtures' `mars-routing@v0.3.1` disagrees with the API default `v0.2.0-dev`; neither is
-authoritative until part 2 lands.
+test covers both). The fixtures' `mars-routing@v0.3.1` disagrees with the API default `v0.2.0-dev`. `v0.2.0-dev` is the real string (`Settings.model_version`, which is also the
+cache-key tag); `mars-routing@v0.3.1` exists only in the design fixtures, and the top bar labels it a fixture.
+Implemented 2026-10-14: part 1, plus `GET /generations` returning `{active, available: [active]}` (contract, frontend
+mirror, drift test, `API_ROUTES.md`, one API test). It is not on `/health`, and the registry and cache key are unchanged.
 
 ## ADR-027 — Predict gets a structure sketcher: Ketcher, standalone mode (resolves Q9)
 

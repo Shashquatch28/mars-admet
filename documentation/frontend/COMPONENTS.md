@@ -40,7 +40,7 @@ variant does not exist.
 | `ADGauge` | covered zone, threshold tick, distance marker | the only gauge in MARS (ADR-012) |
 | `NumericInterval` | low … high in mono | the regression default |
 | `ReliabilityTag` | OOD / STUB / RULE tags. NOT RETURNED and NOT REQUESTED carry no tag: the value cell says it in words and the edge is solid or dashed (ADR-028) | no other variants exist; the switch is exhaustive |
-| `EndpointDetail` | inspector body: value, interval, AD distance, provenance | |
+| `EndpointDetail` | inspector body: value, seed spread, AD distance, provenance | |
 
 ### `EndpointRow` — the load-bearing component
 
