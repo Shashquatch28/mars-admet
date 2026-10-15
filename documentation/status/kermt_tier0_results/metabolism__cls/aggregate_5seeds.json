@@ -1,0 +1,140 @@
+{
+  "calibration_stability_across_seeds": {
+    "cyp2c9_inhibition": {
+      "n_at_boundary": 0,
+      "n_ece_not_improved": 4,
+      "n_fitted": 5,
+      "n_nll_not_improved": 0,
+      "n_optimizer_failed": 0,
+      "n_seeds": 5,
+      "statuses": [
+        "fitted"
+      ],
+      "temperature_max": 1.3921750039969214,
+      "temperature_mean": 1.3297583726865514,
+      "temperature_min": 1.2749833980620906,
+      "temperature_std": 0.04357192818440441
+    },
+    "cyp2d6_inhibition": {
+      "n_at_boundary": 0,
+      "n_ece_not_improved": 4,
+      "n_fitted": 5,
+      "n_nll_not_improved": 0,
+      "n_optimizer_failed": 0,
+      "n_seeds": 5,
+      "statuses": [
+        "fitted"
+      ],
+      "temperature_max": 1.2291934674502945,
+      "temperature_mean": 1.1958370027945757,
+      "temperature_min": 1.1668865717135497,
+      "temperature_std": 0.025069215179927315
+    },
+    "cyp3a4_inhibition": {
+      "n_at_boundary": 0,
+      "n_ece_not_improved": 0,
+      "n_fitted": 5,
+      "n_nll_not_improved": 0,
+      "n_optimizer_failed": 0,
+      "n_seeds": 5,
+      "statuses": [
+        "fitted"
+      ],
+      "temperature_max": 1.5049899020718482,
+      "temperature_mean": 1.417598437932253,
+      "temperature_min": 1.3612747796584508,
+      "temperature_std": 0.056547131911681765
+    }
+  },
+  "prep_id": "20260918T090433Z",
+  "subgroup": "metabolism__cls",
+  "test_metrics_across_seeds": {
+    "cyp2c9_inhibition": {
+      "calibrated": {
+        "auprc_mean": 0.7847831227364195,
+        "auprc_std": 0.002828763319083985,
+        "auroc_mean": 0.8934082417173386,
+        "auroc_std": 0.0013371793110067496,
+        "brier_score_mean": 0.12021923100891962,
+        "brier_score_std": 0.0009832209482595919,
+        "ece_mean": 0.03223250794917352,
+        "ece_std": 0.004373659576031643,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "n_calibrated_seeds": 5,
+      "n_seeds": 5,
+      "raw": {
+        "auprc_mean": 0.7847831227364195,
+        "auprc_std": 0.002828763319083985,
+        "auroc_mean": 0.8934082417173386,
+        "auroc_std": 0.0013371793110067496,
+        "brier_score_mean": 0.12185074744126918,
+        "brier_score_std": 0.001263176753057809,
+        "ece_mean": 0.04185866714539153,
+        "ece_std": 0.0035142482623553594,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "task_type": "classification"
+    },
+    "cyp2d6_inhibition": {
+      "calibrated": {
+        "auprc_mean": 0.6880045920050906,
+        "auprc_std": 0.0051859558457412755,
+        "auroc_mean": 0.8789644053339989,
+        "auroc_std": 0.002593014081814914,
+        "brier_score_mean": 0.08682430503756895,
+        "brier_score_std": 0.0011467374162605194,
+        "ece_mean": 0.034153394887491834,
+        "ece_std": 0.0076471845408710905,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "n_calibrated_seeds": 5,
+      "n_seeds": 5,
+      "raw": {
+        "auprc_mean": 0.6880045920050906,
+        "auprc_std": 0.0051859558457412755,
+        "auroc_mean": 0.8789644053339989,
+        "auroc_std": 0.002593014081814914,
+        "brier_score_mean": 0.08724776646995773,
+        "brier_score_std": 0.0010086308227743547,
+        "ece_mean": 0.03578992692542241,
+        "ece_std": 0.0043922300786609116,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "task_type": "classification"
+    },
+    "cyp3a4_inhibition": {
+      "calibrated": {
+        "auprc_mean": 0.8725684702074286,
+        "auprc_std": 0.002787094312163923,
+        "auroc_mean": 0.8952298014246871,
+        "auroc_std": 0.0011651551647822514,
+        "brier_score_mean": 0.13030747816235677,
+        "brier_score_std": 0.0007651367811879269,
+        "ece_mean": 0.02324440887885733,
+        "ece_std": 0.0037336121782337995,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "n_calibrated_seeds": 5,
+      "n_seeds": 5,
+      "raw": {
+        "auprc_mean": 0.8725684702074286,
+        "auprc_std": 0.002787094312163923,
+        "auroc_mean": 0.8952298014246871,
+        "auroc_std": 0.0011651551647822514,
+        "brier_score_mean": 0.13359542081797465,
+        "brier_score_std": 0.0016481844796758626,
+        "ece_mean": 0.05295093822120548,
+        "ece_std": 0.00785534320391388,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "task_type": "classification"
+    }
+  }
+}

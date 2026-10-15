@@ -1,0 +1,13 @@
+{
+  "cluster": "absorption_distribution",
+  "endpoint": "absorption_distribution__reg",
+  "finished_at": "2026-09-30T07:54:12.978204+00:00",
+  "model_family": "kermt_multitask_subgroup",
+  "n_targets": 4,
+  "name": "kermt_mtsub_absorption_distribution__reg_seed0",
+  "prep_id": "20260918T090433Z",
+  "run_id": "kermt_mtsub_absorption_distribution__reg_seed0_20260930T065737Z",
+  "seed": 0,
+  "started_at": "2026-09-30T06:57:37.521439+00:00",
+  "status": "completed"
+}

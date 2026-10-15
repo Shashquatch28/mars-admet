@@ -35,6 +35,11 @@ import numpy as np
 CALIBRATION_VERSION = "mars-calibration-v1"
 _EPS = 1e-12
 
+# Search interval for the scalar temperature. Named so that
+# eval.calibration_diagnostics can flag a fit that pinned to either end without
+# duplicating the literals (a pinned T means the NLL had no interior optimum).
+TEMPERATURE_BOUNDS_DEFAULT: tuple[float, float] = (0.05, 10.0)
+
 
 def _binary_cross_entropy(y_true: np.ndarray, y_prob: np.ndarray) -> float:
     p = np.clip(y_prob, _EPS, 1.0 - _EPS)
@@ -153,7 +158,7 @@ def fit_temperature_scaler(
     logits: np.ndarray,
     y_true: np.ndarray,
     *,
-    bounds: tuple[float, float] = (0.05, 10.0),
+    bounds: tuple[float, float] = TEMPERATURE_BOUNDS_DEFAULT,
 ) -> TemperatureScaler:
     """Fit scalar temperature T minimizing NLL on calibration-split logits.
 

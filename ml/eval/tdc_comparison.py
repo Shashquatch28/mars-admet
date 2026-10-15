@@ -55,7 +55,7 @@ class TDCComparisonResult:
     endpoint_key: str
     mars_metric_name: str
     mars_metric_mean: float
-    mars_metric_std: float
+    mars_metric_std: float | None  # None when the report has fewer than two valid seeds
     split_method: str
     comparable: bool
     comparability_note: str

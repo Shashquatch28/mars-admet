@@ -1,0 +1,13 @@
+{
+  "cluster": "metabolism",
+  "endpoint": "metabolism__cls",
+  "finished_at": "2026-09-30T09:01:32.160879+00:00",
+  "model_family": "kermt_multitask_subgroup",
+  "n_targets": 3,
+  "name": "kermt_mtsub_metabolism__cls_seed0",
+  "prep_id": "20260918T090433Z",
+  "run_id": "kermt_mtsub_metabolism__cls_seed0_20260930T080420Z",
+  "seed": 0,
+  "started_at": "2026-09-30T08:04:20.262756+00:00",
+  "status": "completed"
+}

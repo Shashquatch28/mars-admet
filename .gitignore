@@ -1,5 +1,3 @@
-documentation/
-
 # Environment
 .env
 .env.*
@@ -50,6 +48,12 @@ ml/data/processed/*
 # Feature/conformer cache — regenerable from ml/featurize/build_cache.py; can be
 # large (Morgan+descriptors+graph for the full corpus + 3D conformers).
 ml/data/cache/
+
+# Downloaded pretrained model checkpoints (KERMT etc.) — large binaries,
+# re-downloadable via the recorded source URL; identity/hash lives in
+# ml/data/metadata/kermt_checkpoint.lock.json instead (mirrors the raw/
+# dataset convention above).
+ml/data/checkpoints/
 
 # W&B local files
 wandb/

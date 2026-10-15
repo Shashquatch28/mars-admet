@@ -18,6 +18,7 @@ from eval.metrics import (
     compute_metrics,
     compute_regression_metrics,
     expected_calibration_error,
+    format_mean_std,
 )
 from mars_contracts.endpoints import TaskType
 
@@ -251,3 +252,93 @@ def test_aggregate_nan_exclusion():
     # NaN excluded → mean equals the single valid seed's value
     assert agg["auroc_mean"] == pytest.approx(m_good.auroc)
     assert agg["n_seeds"] == 2.0
+
+
+# ---------------------------------------------------------------------------- #
+# aggregate_seed_metrics: std is UNDEFINED (None) below two valid values, never 0.0
+# ---------------------------------------------------------------------------- #
+
+
+def _good_classification() -> ClassificationMetrics:
+    return compute_classification_metrics(np.array([0, 1, 0, 1]), np.array([0.2, 0.8, 0.3, 0.7]))
+
+
+def _nan_classification() -> ClassificationMetrics:
+    return ClassificationMetrics(
+        auroc=float("nan"),
+        auprc=float("nan"),
+        brier_score=0.25,
+        ece=0.1,
+        n_samples=4,
+        n_positive=4,
+        auroc_valid=False,
+    )
+
+
+def test_aggregate_single_seed_std_is_undefined_not_zero():
+    m = _good_classification()
+    agg = aggregate_seed_metrics([m])
+    assert agg["n_seeds"] == 1.0
+    for k in ("auroc", "auprc", "brier_score", "ece"):
+        assert agg[f"{k}_std"] is None, f"{k}_std must be undefined for one seed, not 0.0"
+        assert agg[f"{k}_mean"] == pytest.approx(getattr(m, k))
+
+
+def test_aggregate_single_seed_regression_std_is_undefined():
+    m = compute_regression_metrics(np.array([1.0, 2.0]), np.array([1.1, 2.1]))
+    agg = aggregate_seed_metrics([m])
+    assert agg["n_seeds"] == 1.0
+    assert agg["mae_std"] is None
+    assert agg["mae_mean"] == pytest.approx(0.1)
+
+
+def test_aggregate_two_seeds_std_is_the_sample_std():
+    m1 = compute_regression_metrics(np.array([1.0, 2.0]), np.array([1.1, 2.1]))
+    m2 = compute_regression_metrics(np.array([1.0, 2.0]), np.array([1.3, 2.3]))
+    agg = aggregate_seed_metrics([m1, m2])
+    assert agg["mae_std"] == pytest.approx(np.std([m1.mae, m2.mae], ddof=1))
+    assert agg["mae_std"] > 0.0
+
+
+def test_aggregate_nan_exclusion_makes_std_undefined_only_where_one_value_is_valid():
+    good, bad = _good_classification(), _nan_classification()
+    agg = aggregate_seed_metrics([good, bad])
+    # auroc/auprc: only one valid value -> mean is that value, std undefined
+    assert agg["auroc_mean"] == pytest.approx(good.auroc)
+    assert agg["auroc_std"] is None
+    assert agg["auprc_std"] is None
+    # brier/ece: both seeds contribute a finite value -> an ordinary sample std
+    assert agg["brier_score_std"] == pytest.approx(np.std([good.brier_score, bad.brier_score], ddof=1))
+    assert agg["ece_std"] == pytest.approx(np.std([good.ece, bad.ece], ddof=1))
+
+
+def test_aggregate_all_nan_has_nan_mean_and_no_std():
+    agg = aggregate_seed_metrics([_nan_classification(), _nan_classification()])
+    assert np.isnan(agg["auroc_mean"])
+    assert agg["auroc_std"] is None
+
+
+def test_format_mean_std():
+    assert format_mean_std(0.8512, 0.0123) == "0.851+-0.012"
+    assert format_mean_std(0.8512, None) == "0.851+-n/a"
+    assert format_mean_std(0.8512, 0.0123, digits=2) == "0.85+-0.01"
+
+
+def test_single_seed_report_round_trips_with_a_null_std(tmp_path):
+    from eval.evaluate import EvaluationReport
+
+    agg = aggregate_seed_metrics([compute_regression_metrics(np.array([1.0, 2.0]), np.array([1.1, 2.1]))])
+    report = EvaluationReport(
+        endpoint_key="clearance_microsomal",
+        model_family="kermt_single",
+        prep_id="test-prep",
+        task_type="regression",
+        seeds=[0],
+        run_ids=["run0"],
+        per_seed_metrics=[],
+        aggregated=agg,
+    )
+    path = tmp_path / "report.json"
+    report.save(path)
+    assert '"mae_std": null' in path.read_text(encoding="utf-8")
+    assert EvaluationReport.load(path).aggregated["mae_std"] is None

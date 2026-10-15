@@ -1,0 +1,16 @@
+{
+  "wandb_artifact": "kermt-dili-seed3",
+  "version": "v0",
+  "reference": "shashquatch/mars-admet/kermt-dili-seed3:v0",
+  "artifact_id": "QXJ0aWZhY3Q6MzczMTE0OTczMw==",
+  "digest": "3ab943cce353e7688cb3e3cf4cadf2df",
+  "artifact_size_bytes": 203154979,
+  "model_sha256": "a91d7555d31d66d7f4b97975821240a8b80323d1623167c966be1a6a51574194",
+  "model_size_bytes": 203151758,
+  "produced_by_run": "https://wandb.ai/shashquatch/mars-admet/runs/kermt_st_dili_standalone__cls_seed3_20260922T055629Z",
+  "aliases": [
+    "final",
+    "latest"
+  ],
+  "verified": "queried via wandb.Api; model.pt + metadata.json present; full download SHA-256 == local model.pt SHA-256 (2026-09-24)"
+}

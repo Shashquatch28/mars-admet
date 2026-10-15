@@ -1,0 +1,177 @@
+{
+  "run_id": "kermt_mtsub_absorption_distribution__reg_seed2_20261008T072316Z",
+  "seed": 2,
+  "wall_seconds": 3358.1,
+  "n_train": 9105,
+  "n_val": 1301,
+  "wandb_url": "https://wandb.ai/shashquatch/mars-admet/runs/kermt_mtsub_absorption_distribution__reg_seed2_20261008T072316Z",
+  "model_path": "/home/CL502-18/mars-work/mars-admet/ml/runs/kermt_mtsub_absorption_distribution__reg_seed2_20261008T072316Z/artifacts/model/kermt",
+  "val_metrics": {
+    "solubility_logs": {
+      "mae": 0.7126409335546138,
+      "n_samples": 741
+    },
+    "lipophilicity_logp": {
+      "mae": 0.41306131327196466,
+      "n_samples": 448
+    },
+    "caco2_permeability": {
+      "mae": 0.39825005484013065,
+      "n_samples": 138
+    },
+    "ppb_binding": {
+      "mae": 9.135654930867236,
+      "n_samples": 50
+    }
+  },
+  "calibration": {
+    "solubility_logs": {
+      "version": "mars-cluster-calibration-v1",
+      "endpoint_key": "solubility_logs",
+      "seed": 2,
+      "task_type": "regression",
+      "status": "skipped_regression",
+      "reason": "regression endpoint has no probability to calibrate",
+      "n_fit_samples": null,
+      "n_positive": null,
+      "n_negative": null,
+      "positive_rate": null,
+      "temperature": null,
+      "at_boundary": null,
+      "optimizer_success": null,
+      "nll_before": null,
+      "nll_after": null,
+      "ece_before": null,
+      "ece_after": null,
+      "nll_improved": null,
+      "ece_improved": null,
+      "train_val_positive_rate": null,
+      "calibration_positive_rate": null,
+      "n_calibration_labeled": 0,
+      "n_test_labeled": 1960,
+      "test_metrics_raw": {
+        "mae": 0.811903833929214,
+        "n_samples": 1960
+      },
+      "test_metrics_calibrated": null,
+      "prep_id": "20260918T090433Z",
+      "model_id": "mars-kermt-multitask-v1",
+      "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+      "provenance": {
+        "checkpoint_hf_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+        "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287"
+      }
+    },
+    "lipophilicity_logp": {
+      "version": "mars-cluster-calibration-v1",
+      "endpoint_key": "lipophilicity_logp",
+      "seed": 2,
+      "task_type": "regression",
+      "status": "skipped_regression",
+      "reason": "regression endpoint has no probability to calibrate",
+      "n_fit_samples": null,
+      "n_positive": null,
+      "n_negative": null,
+      "positive_rate": null,
+      "temperature": null,
+      "at_boundary": null,
+      "optimizer_success": null,
+      "nll_before": null,
+      "nll_after": null,
+      "ece_before": null,
+      "ece_after": null,
+      "nll_improved": null,
+      "ece_improved": null,
+      "train_val_positive_rate": null,
+      "calibration_positive_rate": null,
+      "n_calibration_labeled": 0,
+      "n_test_labeled": 840,
+      "test_metrics_raw": {
+        "mae": 0.4397206790820289,
+        "n_samples": 840
+      },
+      "test_metrics_calibrated": null,
+      "prep_id": "20260918T090433Z",
+      "model_id": "mars-kermt-multitask-v1",
+      "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+      "provenance": {
+        "checkpoint_hf_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+        "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287"
+      }
+    },
+    "caco2_permeability": {
+      "version": "mars-cluster-calibration-v1",
+      "endpoint_key": "caco2_permeability",
+      "seed": 2,
+      "task_type": "regression",
+      "status": "skipped_regression",
+      "reason": "regression endpoint has no probability to calibrate",
+      "n_fit_samples": null,
+      "n_positive": null,
+      "n_negative": null,
+      "positive_rate": null,
+      "temperature": null,
+      "at_boundary": null,
+      "optimizer_success": null,
+      "nll_before": null,
+      "nll_after": null,
+      "ece_before": null,
+      "ece_after": null,
+      "nll_improved": null,
+      "ece_improved": null,
+      "train_val_positive_rate": null,
+      "calibration_positive_rate": null,
+      "n_calibration_labeled": 0,
+      "n_test_labeled": 180,
+      "test_metrics_raw": {
+        "mae": 0.3424412352891253,
+        "n_samples": 180
+      },
+      "test_metrics_calibrated": null,
+      "prep_id": "20260918T090433Z",
+      "model_id": "mars-kermt-multitask-v1",
+      "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+      "provenance": {
+        "checkpoint_hf_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+        "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287"
+      }
+    },
+    "ppb_binding": {
+      "version": "mars-cluster-calibration-v1",
+      "endpoint_key": "ppb_binding",
+      "seed": 2,
+      "task_type": "regression",
+      "status": "skipped_regression",
+      "reason": "regression endpoint has no probability to calibrate",
+      "n_fit_samples": null,
+      "n_positive": null,
+      "n_negative": null,
+      "positive_rate": null,
+      "temperature": null,
+      "at_boundary": null,
+      "optimizer_success": null,
+      "nll_before": null,
+      "nll_after": null,
+      "ece_before": null,
+      "ece_after": null,
+      "nll_improved": null,
+      "ece_improved": null,
+      "train_val_positive_rate": null,
+      "calibration_positive_rate": null,
+      "n_calibration_labeled": 0,
+      "n_test_labeled": 323,
+      "test_metrics_raw": {
+        "mae": 7.16654970352203,
+        "n_samples": 323
+      },
+      "test_metrics_calibrated": null,
+      "prep_id": "20260918T090433Z",
+      "model_id": "mars-kermt-multitask-v1",
+      "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+      "provenance": {
+        "checkpoint_hf_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+        "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287"
+      }
+    }
+  }
+}
