@@ -41,12 +41,13 @@ import warnings
 from functools import lru_cache
 from pathlib import Path
 
-from mars_contracts import ML_ENDPOINTS, Endpoint, EndpointPrediction, PredictionResponse
+from mars_contracts import ALL_ENDPOINTS, Endpoint, EndpointPrediction, PredictionResponse
 
 from app.core.config import get_settings
 from app.services.stub_predictor import predict_stub
 
 _ml_available = False
+ml_import_error: ImportError | None = None  # surfaced at startup (app.main); never silent
 try:
     # ml/ is not a package (no top-level __init__.py) — its subpackages
     # (serve/, featurize/, models/, eval/) are imported as if ml/ were on
@@ -58,10 +59,11 @@ try:
     from featurize.cache import FeatureCache  # noqa: E402
     from serve.predictor import predict_endpoints, standardize_or_raise  # noqa: E402
     from serve.registry import ModelRegistry  # noqa: E402
+    from serve.rule_based import SA_MODEL_ID, SA_UNIT, compute_sa_score  # noqa: E402
 
     _ml_available = True
-except ImportError:
-    pass
+except ImportError as exc:
+    ml_import_error = exc
 
 
 @lru_cache
@@ -77,14 +79,24 @@ def predict(smiles: str, endpoints: list[Endpoint] | None = None) -> PredictionR
     """Raises `ValueError` for a chemically invalid SMILES — but ONLY when
     the real ml stack is available to actually judge validity (see module
     docstring). Callers must catch this and turn it into a 422 / per-row
-    error, not let it become an unhandled 500."""
-    targets = endpoints or ML_ENDPOINTS
+    error, not let it become an unhandled 500.
+
+    `endpoints=None` means every endpoint the environment can serve: the 14 ML
+    endpoints (real model or per-endpoint stub) plus the rule-based SA score
+    when RDKit is available. Without the ml stack the SA score is simply absent
+    — it is never stubbed — and the client reports it as not returned."""
+    targets = endpoints or ALL_ENDPOINTS
 
     smiles_for_stub = smiles
     if _ml_available:
         smiles_for_stub = standardize_or_raise(smiles)  # raises ValueError on invalid input
 
-    response = predict_stub(smiles_for_stub, targets)
+    response = _route_to_models(predict_stub(smiles_for_stub, targets), targets)
+    return _add_rule_based(response, targets)
+
+
+def _route_to_models(response: PredictionResponse, targets: list[Endpoint]) -> PredictionResponse:
+    """Swap stub values for real model output wherever a promoted model exists."""
     registry = _get_registry()
     if registry is None:
         return response
@@ -109,8 +121,46 @@ def predict(smiles: str, endpoints: list[Endpoint] | None = None) -> PredictionR
             confidence_high=real.confidence_high,
             in_domain=real.in_domain,
             knn_distance=real.knn_distance,
+            ad_threshold=real.ad_threshold,
             model_id=real.model_id,
         )
 
     response.predictions = [by_endpoint[ep] for ep in targets if ep in by_endpoint]
+    if any(real is not None for real in real_results.values()):
+        # `predict_stub` stamps "stub-v0"; once a promoted model has served any
+        # endpoint the response belongs to the deployed routing table, which is
+        # what `model_version` (and the cache key) names. Per-row truth stays in
+        # `EndpointPrediction.model_id`.
+        response.model_version = get_settings().model_version
+    return response
+
+
+def _add_rule_based(response: PredictionResponse, targets: list[Endpoint]) -> PredictionResponse:
+    """Append the computed synthetic-accessibility score when requested.
+
+    The contract has no "no interval / no domain" shape, so the interval
+    collapses to the point and the domain fields carry their neutral values
+    (`in_domain=True`, `knn_distance=0.0`). Those are placeholders for a rule
+    that has no applicability domain; clients must key off the endpoint's
+    `RULE_BASED` task type (and `model_id`), not read them as a measured domain.
+    """
+    if Endpoint.SA_SCORE not in targets or not _ml_available:
+        return response
+    score = compute_sa_score(response.smiles_standardized)
+    if score is None:
+        return response  # not computable -> the client shows NOT RETURNED, honestly
+    response.predictions.append(
+        EndpointPrediction(
+            endpoint=Endpoint.SA_SCORE,
+            value=score,
+            unit=SA_UNIT,
+            confidence_low=score,
+            confidence_high=score,
+            in_domain=True,
+            knn_distance=0.0,
+            model_id=SA_MODEL_ID,
+        )
+    )
+    order = {ep: i for i, ep in enumerate(targets)}
+    response.predictions.sort(key=lambda p: order.get(p.endpoint, len(order)))
     return response

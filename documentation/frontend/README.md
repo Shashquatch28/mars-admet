@@ -16,9 +16,11 @@ across two of them):
 | Interaction & motion | interaction taxonomy, ⌘K palette, gauge anatomy, motion spec |
 | Design system foundations | tokens |
 
-Phase status: **design phase, pass 1 (2026-09-30).** No production frontend
-code has been written. `frontend/` remains the M4 scaffold described in
-`frontend/README.md` — do not treat anything here as implemented.
+Phase status (2026-10-07): **design locked** (passes 1–2.1); **M4 built on
+fixture data** — shell, Predict workspace, Batch matrix. Nothing runs against the
+live API yet. **Start with `HANDOFF.md`**: it states what exists, what is
+broken, and the recommended order. Where a design doc and the code disagree, the
+code and `HANDOFF.md` are current.
 
 ## Why this directory exists separately
 
@@ -40,6 +42,7 @@ directory holds those, and does not restate what the blueprint already says.
 
 | File | Contents |
 |---|---|
+| `HANDOFF.md` | **read first** — current state, verified gaps, next steps, branch hazards |
 | `UX_PRINCIPLES.md` | the eight rules every screen is judged against |
 | `DESIGN_SYSTEM.md` | tokens: colour, type, spacing, surfaces, borders, motion, icons, data-viz |
 | `CRAFT_AND_INTERACTION.md` | pass-2 craft layer: machined surfaces, composing state channels, the AD gauge, motion spec, robustness |

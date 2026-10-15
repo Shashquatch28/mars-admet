@@ -8,7 +8,19 @@ today so work can continue either way.
 
 ## Blocking
 
-### Q1 — Is MARS 14 endpoints or 15?
+### Q1 — Is MARS 14 endpoints or 15? — **RESOLVED 2026-10-06 (verified against code)**
+
+**Resolution: 14 ML endpoints is the headline count; the roster renders 15
+rows.** Evidence: `contracts/mars_contracts/endpoints.py` defines 15 `Endpoint`
+members and `ML_ENDPOINTS` (all but `SA_SCORE`) = 14, enforced by
+`contracts/tests/test_contracts.py` (`len(ML_ENDPOINTS) == 14`). The API
+(`prediction_service.predict`, `stub_predictor`) defaults to `ML_ENDPOINTS`, the
+sweep was 14 × 5 = 70, and the blueprint table has 14 numbered ML rows plus an
+unnumbered "—" row for SA. The frontend already does this: `reconcile` counts
+over ML only (`requested: 14`) and renders `ALL_ENDPOINTS` (15 rows). The only
+off-by-one is prose — the blueprint heading and `AIMS/context.md` say
+"13 ML + 1 rule-based"; it should read "14 ML + 1 rule-based". Not edited here
+(blueprint and AIMS are maintainer-owned). Original text below for the record.
 
 `Endpoint` has **15** members. `ML_ENDPOINTS` has 14 (all but
 `synthetic_accessibility`). `AIMS/context.md` says "14 ADMET endpoints (13 ML +
@@ -21,7 +33,24 @@ The UI must print a number in several places ("All 15 endpoints", "15 requested
 score as a visible endpoint. Confirm, and note that the AIMS phrasing
 "13 ML + 1 rule-based" appears to be off by one against the enum.
 
-### Q2 — `synthetic_accessibility` is filed under `ABSORPTION`
+### Q2 — `synthetic_accessibility` is filed under `ABSORPTION` — **RESOLVED 2026-10-06 (UI side; live-mode gap closed, ADR-019)**
+
+**Resolution:** the UI keeps SA in its own trailing `RULE-BASED` group and
+excludes it from every count (`AGENTS.md`; `reconcile.test.ts`). The contract's
+`category: ABSORPTION` is left as is — it is unread by the grouping logic.
+
+**Gap found 2026-10-06 — CLOSED by option (a), ADR-019:** the API never returns an SA
+value on any path. `stub_predictor` skips `RULE_BASED` with `continue`, and
+`prediction_service` filters it out before real inference; the stub's comment
+says "served by rdkit rule" but no such code exists. Against the live API the SA
+row will therefore render **NOT RETURNED** — a claim that the service failed to
+return something it was never going to compute. Options: (a) the API computes
+the Ertl–Schuffenhauer score with RDKit and returns it (matches the blueprint,
+Module 12 "SA score"); (b) the UI renders a rule-based row with no prediction as
+a distinct "not computed" state instead of NOT RETURNED. Note `deriveRowState`
+checks `!prediction` before `rule_based`, so (b) is a small change there.
+Recommend (a).
+**Done:** option (a) implemented — `ml/serve/rule_based.py`, `prediction_service`, verified in the Docker image.
 
 `ENDPOINT_METADATA` gives it `category: ABSORPTION`, `cluster: None`,
 `task_type: RULE_BASED`. Grouping a rule-based synthesis score under absorption
@@ -32,7 +61,14 @@ the list, which contradicts the contract. Either the contract's category should
 change, or the UI should follow the contract and accept the oddity. This needs
 your call, not mine.
 
-### Q3 — Per-endpoint display domain for regression intervals
+### Q3 — Per-endpoint display domain for regression intervals — **RESOLVED 2026-10-07: (a), accept the asymmetry**
+
+**Resolution.** Regression intervals stay printed, not drawn. `AGENTS.md` never-do #4 already decides this ("Regression
+endpoints print the interval as text"; `IntervalTrack` takes a required `domain` with no default). Live responses
+confirm there is no common axis: ppb_binding spans 63.1 … 71.0 while caco2_permeability spans −4.55 … −4.49. Option (b)
+is rejected for the reason this entry already gave (a display range is read as a reference range) and because it would
+reintroduce an invented scale. Option (c), the range as real API metadata, is the only legitimate route and waits for a
+validated range to exist. Original text below.
 
 ADR-005: regression intervals are printed, not drawn, because no validated
 display range exists for logS, logP, Caco-2, PPB or clearance. This makes
@@ -46,7 +82,21 @@ meaning; (c) add the range to the API response as real metadata.
 (b) is the cheapest and the most dangerous — a display range is read as a
 reference range whether or not it is labelled as one.
 
-### Q4 — Interval labelling and the narrow-CI case
+### Q4 — Interval labelling and the narrow-CI case — **RESOLVED 2026-10-08 (ADR-024)**
+
+**Resolution:** never flag narrow seed spread; rename `ENSEMBLE INTERVAL` to `SEED SPREAD ±1σ`. Measured on the held-out
+test sets, the printed ±1σ range contained the truth for 9-14% of regression molecules, and on classification the spread
+adds nothing beyond the score. A held-out-error band is the planned regression replacement; hiding the spread on
+classification rows is left open. Correction to the recommendation below: the seeds do not share one training set (each
+uses its own scaffold partition). Original text below for the record.
+
+**Recommendation: stay unflagged.** The interval is the spread of 5 seeds, and the inspector already says so ("not a
+coverage guarantee"). A narrow spread means the seeds agree, which says nothing about whether they are right: five
+models fit to the same features and training set can agree confidently on a molecule far outside the domain. Flagging
+narrow intervals (as suspicious or as reassuring) would claim a calibration that does not exist, which is the project's
+top rule. Conformal prediction is Post-MVP and has no milestone slot (`AIMS/module_milestone_map.md`). **Wording:**
+`ENSEMBLE INTERVAL` is what the live column header shows. This departs from your earlier "surface narrow CIs"
+constraint, which is why it is a recommendation and not a resolution. Original text below.
 
 You named "unusually narrow confidence intervals" as a constraint the UI should
 surface. There is currently no validated per-endpoint reference distribution of
@@ -72,7 +122,12 @@ client consumes is a standing invitation for a future client to consume it.
 Recommend deprecating it in `mars_contracts/api.py` until direction-of-good is
 validated. Contract change, so it is your call and out of scope here.
 
-### Q6 — Model-generation selector behaviour
+### Q6 — Model-generation selector behaviour — **RESOLVED 2026-10-08 (ADR-026)**
+
+**Resolution: build real generation switching (ADR-026).** Until the API reports more than one generation the control is
+a plain readout. It becomes a picker when `GET /generations` lists several. Switching re-runs the open molecule
+explicitly and does not filter history. Blocked on a second generation existing (KERMT or a retrained set). Original
+text below.
 
 The top bar carries a permanent serving-generation readout
 (`mars-routing@v0.3.1`) drawn as a picker. Unspecified: does switching
@@ -80,7 +135,20 @@ generations re-run the prediction, filter saved history, or both? This matters
 for the "multiple model generations" goal and shapes whether the control
 belongs in the shell or in the workspace.
 
-### Q7 — Auth boundary in the shell
+### Q7 — Auth boundary in the shell — **RESOLVED 2026-10-08 (ADR-022)**
+
+**Resolution: gate the capability, not the app (ADR-022).** Predict and Compare stay anonymous. Batch and Library keep
+their rail items with a lock glyph and open to an in-workspace sign-in state. `GET /auth/me`, the session context and
+the auth UI are built first (Phase 1). Turnstile is not wired for now; the server skips it when its secret is unset.
+Evidence and original text below for the record.
+
+Verified: every `/batch/*` route depends on `get_current_user` (`api/app/routers/batch.py`); `/auth/register`,
+`/login`, `/logout` and password reset exist, and registration calls Turnstile verification (skipped when
+`CLOUDFLARE_TURNSTILE_SECRET_KEY` is unset). The frontend has **no auth UI and no session handling at all**, so
+Batch cannot go live until one exists: this is a build task, not just a design choice. **Recommendation:** keep all
+four rail destinations visible, mark gated ones with a lock glyph, and explain the state in the workspace itself
+(never-do #8: not in a tooltip) with an in-workspace sign-in state on entry, rather than a modal or a hidden rail
+item. This matches never-do #5 (absence is shown, not hidden). Original text below.
 
 `/predict` and `/compare` are anonymous; `/batch/*`, `/molecules`, `/reports`
 require a session. So two of the four rail destinations are gated. Currently
@@ -92,13 +160,21 @@ marked in the rail, or should sign-in be prompted on entry?
 Compact (30px) or comfortable (36px) as the shipped default? Compact fits all
 15 endpoints at 1440×900 without scrolling, which is the argument for it.
 
-### Q9 — Structure sketcher
+### Q9 — Structure sketcher — **RESOLVED 2026-10-08 (ADR-027)**
+
+**Resolution: build it in the MVP with Ketcher in standalone mode (ADR-027).** It opens in a bordered panel, loads by
+dynamic import, and writes SMILES into the existing textarea. Original text below.
 
 `PredictEmpty` offers "Draw a structure" as an entry point, but no sketcher is
 vendored — `package.json` has only `3dmol`. Is a sketcher (Ketcher, JSME) in
 MVP scope, or should that affordance be removed from the design until it is?
 
-### Q10 — Contract drift fix and CI check
+### Q10 — Contract drift fix and CI check — **RESOLVED 2026-10-07**
+
+`model_id` was fixed in ADR-017; `ad_threshold` followed (ADR-020). The ADR-009 check is now written:
+`contracts/tests/test_frontend_drift.py` compares enum members and interface field names in
+`frontend/src/types/contracts.ts` against the Pydantic models, and runs in the existing `pytest contracts/tests` CI
+step. Verified to fail when a field is removed from the mirror. It checks names, not types.
 
 `frontend/src/types/contracts.ts` is missing `EndpointPrediction.model_id`,
 which ADR-008's stub detection depends on. Not fixed here, because this pass
@@ -233,3 +309,63 @@ reinforcing fill rather than a sole carrier: the tick, the labels, the legend
 and the caption all state the same boundary. If you would rather have the
 stronger zone and give the in-domain marker an outline to compensate, say so —
 that is the other coherent way to resolve it.
+
+---
+
+# M4 scaffold — 2026-10-01
+
+### Q19 — The AD-gauge threshold is not in the prediction response — **RESOLVED 2026-10-06 (ADR-020)**
+
+**RESOLVED 2026-10-06 (ADR-020): option (a), `ad_threshold` is now in `EndpointPrediction`. The text below is the original question.**
+
+**Blocking for a *live* gauge, not for the scaffold.** `EndpointPrediction`
+carries `in_domain` and `knn_distance`, but **not** the per-endpoint threshold
+the gauge draws its tick at. That threshold is the 90th-percentile of the
+training set's own internal 5-NN distances (blueprint Module 5) — real, validated,
+per-endpoint metadata that currently lives only in the ML artifacts.
+
+The frontend holds a placeholder `AD_THRESHOLD` table in `domain/endpoints.ts`
+(all 0.58) so the gauge renders in the prototype. Before the gauge is shown on
+real predictions it must use real thresholds. Options: (a) add `threshold` (or
+`domain_threshold`) to `EndpointPrediction` in the contract — cleanest, travels
+with the value it describes; (b) expose a `/metadata` endpoint the client reads
+once; (c) ship a versioned threshold table generated from the Module 5
+evaluation, pinned to `model_version`. Recommend (a).
+
+Until then, `in_domain` alone is honest (it is a real boolean from the model);
+the *tick position* is the only part that needs the real number.
+
+### Q20 — Styling approach (ADR-016), confirm
+
+The scaffold uses CSS Modules over the token layer, not Tailwind v4 utilities —
+see ADR-016 for the reasoning. This narrows the Tailwind half of ADR-001. Confirm
+you are happy with that, or say the word and the token layer can be re-expressed
+as a Tailwind `@theme` with utilities on the layout surfaces.
+
+
+---
+
+# 2026-10-07: raised while verifying the live stack
+
+### Q21 — Classification values are labelled "probability"; calibration is not validated for every endpoint — **RESOLVED 2026-10-08 (ADR-023): (a) now, (c) later**
+
+**Resolution:** relabel the nine classification endpoints as `score` now (unit text only). Later, stop applying the
+served Platt calibrators (C0) and recalibrate on label-representative data (C1); an endpoint returns to `probability`
+only when it passes a per-endpoint bar. Original text below for the record.
+
+The Predict table prints classification values with the unit `probability`. `AIMS/module_milestone_map.md` records
+that the Platt calibration split is **not label-representative** (CYP3A4: train 0.409 positive vs calibration 0.113)
+and that `hia_absorption`'s promoted calibrator was **fit on 49 positives and 1 negative**. A live aspirin request
+returned `hia_absorption` 0.98. Calling that a probability implies a calibration MARS has not shown, which is the
+project's top rule. Options: (a) relabel classification values as a model *score* (unit text only, no layout change)
+until calibration is validated per endpoint; (b) keep "probability" and add a per-endpoint caveat on the affected rows;
+(c) fix the calibrators (ML side, `m2-kermt`'s territory). **Recommend (a) now, (c) later.** Not changed here: it alters
+a user-visible claim, so it is your call.
+
+### Q22 — CORS and cookies in production — **RESOLVED 2026-10-08 (ADR-025)**
+
+**Resolution: one origin.** The dev proxy only solves development. An explicit origin list with credentials is correct for a
+cross-origin deployment but does not make the `SameSite=Lax` session cookie travel on cross-site `fetch()`, which is what a
+Vercel frontend plus Cloud Run API would need. Production serves the built frontend from the API container, with the API
+under `/api`. See ADR-025 for the options considered and the one unverified item (the rate limiter's client address behind
+Cloud Run).

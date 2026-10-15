@@ -13,7 +13,7 @@ variant does not exist.
 |---|---|---|
 | `AppShell` | the 1440×900 frame: rail, top bar, workspace slot, status bar | the only component that positions regions; workspaces never set their own chrome |
 | `NavRail` | 68px primary nav, 4 destinations + settings | icon + 8px condensed caps label; active = accent left edge + raised surface + `aria-current="page"` |
-| `TopBar` | workspace label, command input, serving generation, API status, account | the serving generation (`model_version`) is **permanent** here, not per-panel |
+| `TopBar` | workspace label, command input, serving generation, API status, account | the serving generation (`model_version`) is **permanent** here, not per-panel; a plain readout while the API reports one generation, a picker only when it reports several (ADR-026) |
 | `CommandPalette` | ⌘K search over molecules, endpoints, commands | overlay; the only shell component using `--surface-overlay` + shadow |
 | `StatusBar` | served_at, latency, cache state, rate budget, keyboard hints | readouts only; never the sole home of information |
 
@@ -34,13 +34,13 @@ variant does not exist.
 | `MoleculeIdentity` | input SMILES, standardized SMILES, `molecule_id` | flags whether the standardizer rewrote the input; long SMILES truncate with an expand affordance, never wrap into the layout |
 | `StructureViewer` | 3Dmol.js host, hero and analysis modes | `loading` / `ready` / `unavailable (404)` / `unsupported (501)` — a 404 is a normal state, not an error |
 | `EndpointGroup` | one `EndpointCategory` heading and its rows | shows cluster provenance in the header |
-| `EndpointRow` | one endpoint, all six states | see below |
+| `EndpointRow` | one endpoint, all seven states | see below |
 | `BoundedTrack` | the shared track geometry: height, radius, 0–1 mapping | not used directly; `IntervalTrack` and `ADGauge` are its only consumers |
 | `IntervalTrack` | bounded-axis interval and point tick | **refuses to render without an explicit domain** |
 | `ADGauge` | covered zone, threshold tick, distance marker | the only gauge in MARS (ADR-012) |
 | `NumericInterval` | low … high in mono | the regression default |
-| `ReliabilityTag` | OOD / STUB / NOT RETURNED / RULE | no other variants exist |
-| `EndpointDetail` | inspector body: value, interval, AD distance, provenance | |
+| `ReliabilityTag` | OOD / STUB / RULE tags. NOT RETURNED and NOT REQUESTED carry no tag: the value cell says it in words and the edge is solid or dashed (ADR-028) | no other variants exist; the switch is exhaustive |
+| `EndpointDetail` | inspector body: value, seed spread, AD distance, provenance | |
 
 ### `EndpointRow` — the load-bearing component
 
@@ -48,7 +48,8 @@ variant does not exist.
 interface EndpointRowProps {
   endpoint: Endpoint;
   metadata: EndpointMetadata;        // task_type, category, cluster
-  prediction?: EndpointPrediction;   // undefined => not_returned
+  prediction?: EndpointPrediction;   // undefined => not_returned, or not_requested when the
+                                     // endpoint was left out of the request (ADR-028; derived upstream)
   selected: boolean;                 // user attention channel
   density: "compact" | "comfortable";
   onSelect(endpoint: Endpoint): void;

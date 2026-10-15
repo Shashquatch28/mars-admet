@@ -41,7 +41,7 @@ outcomes. First, never state an interval's coverage without having it: the
 column is labelled `ENSEMBLE INTERVAL`, because `confidence_low/high` is
 ensemble spread across 5 CV seeds, not a 95% interval — an early draft of this
 design mislabelled it and was corrected. Second, the "never assume the audience
-knows what the bars mean" guidance is why the inspector states the interval's
+knows what the bars mean" guidance is why the inspector states the seed spread's
 derivation in words rather than relying on the mark alone. The clinician study
 also argued against leaning on an unfamiliar mark for the primary read, which
 supports keeping the point value in plain mono text as the headline.

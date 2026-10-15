@@ -38,7 +38,10 @@ neither reliably.
   distance in the inspector.
 - Stub-served: amber hatch **plus** a `STUB` text tag — and hatch is a texture,
   so it survives greyscale and colour-vision deficiency.
-- Not returned: muted edge **plus** the literal words `NOT RETURNED`.
+- Not returned: solid muted edge **plus** the literal words `NOT RETURNED`.
+- Not requested: dashed muted edge **plus** the literal words `NOT REQUESTED`.
+  The edges differ in pattern, not hue, so the two stay distinguishable in
+  greyscale and for colour-vision deficiency (ADR-028).
 - No red/green pairing carries meaning anywhere in MARS. The two states most
   often confused by colour-blind users are never asked to be distinguished by
   hue.
@@ -90,7 +93,8 @@ category grouping is navigable rather than purely visual.
 - Numbers are announced with their unit and state. An out-of-domain row
   announces the endpoint, the value, the unit, and "outside applicability
   domain" — the marker is real text, not decoration.
-- A not-returned row announces the endpoint and "not returned", so absence is
+- A not-returned row announces the endpoint and "not returned"; a
+  not-requested row announces "not requested", so absence, and its cause, are
   audible as well as visible.
 - Live regions: the batch progress count and the prediction-complete
   announcement are `aria-live="polite"`. Nothing else is live — a dense grid

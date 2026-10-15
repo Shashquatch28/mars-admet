@@ -1,0 +1,148 @@
+// Canonical roster + metadata, mirrored from contracts/mars_contracts/endpoints.py.
+// This is the client-side source of the full endpoint roster (ADR-008): the UI
+// reconciles every response against it and never derives the roster from a
+// response.
+import type { Endpoint, EndpointCategory, TaskType } from "../types/contracts";
+
+export interface EndpointMeta {
+  taskType: TaskType;
+  category: EndpointCategory;
+  cluster: string | null;
+}
+
+// Order matches the Python Endpoint enum.
+export const ALL_ENDPOINTS: Endpoint[] = [
+  "solubility_logs",
+  "lipophilicity_logp",
+  "caco2_permeability",
+  "hia_absorption",
+  "pgp_inhibition",
+  "bbb_permeability",
+  "ppb_binding",
+  "cyp3a4_inhibition",
+  "cyp2d6_inhibition",
+  "cyp2c9_inhibition",
+  "clearance_microsomal",
+  "herg_cardiotoxicity",
+  "ames_mutagenicity",
+  "dili_liver_injury",
+  "synthetic_accessibility",
+];
+
+export const ENDPOINT_METADATA: Record<Endpoint, EndpointMeta> = {
+  solubility_logs: { taskType: "regression", category: "absorption", cluster: "absorption_distribution" },
+  lipophilicity_logp: { taskType: "regression", category: "absorption", cluster: "absorption_distribution" },
+  caco2_permeability: { taskType: "regression", category: "absorption", cluster: "absorption_distribution" },
+  hia_absorption: { taskType: "classification", category: "absorption", cluster: "absorption_distribution" },
+  pgp_inhibition: { taskType: "classification", category: "absorption", cluster: "absorption_distribution" },
+  bbb_permeability: { taskType: "classification", category: "distribution", cluster: "absorption_distribution" },
+  ppb_binding: { taskType: "regression", category: "distribution", cluster: "absorption_distribution" },
+  cyp3a4_inhibition: { taskType: "classification", category: "metabolism", cluster: "metabolism" },
+  cyp2d6_inhibition: { taskType: "classification", category: "metabolism", cluster: "metabolism" },
+  cyp2c9_inhibition: { taskType: "classification", category: "metabolism", cluster: "metabolism" },
+  clearance_microsomal: { taskType: "regression", category: "excretion", cluster: "metabolism" },
+  herg_cardiotoxicity: { taskType: "classification", category: "toxicity", cluster: "toxicity" },
+  ames_mutagenicity: { taskType: "classification", category: "toxicity", cluster: "toxicity" },
+  dili_liver_injury: { taskType: "classification", category: "toxicity", cluster: "dili_standalone" },
+  // In the contract SA is filed under ABSORPTION; the UI shows it in its own
+  // RULE-BASED group (maintainer decision, OPEN_QUESTIONS Q2). Grouping is by
+  // task_type, so this metadata stays a faithful mirror.
+  synthetic_accessibility: { taskType: "rule_based", category: "absorption", cluster: null },
+};
+
+export const ML_ENDPOINTS: Endpoint[] = ALL_ENDPOINTS.filter(
+  (e) => ENDPOINT_METADATA[e].taskType !== "rule_based",
+);
+
+// Display groups, in order. Rule-based endpoints are pulled into their own
+// trailing group regardless of their contract category.
+export type DisplayGroup =
+  | "absorption"
+  | "distribution"
+  | "metabolism"
+  | "excretion"
+  | "toxicity"
+  | "rule-based";
+
+export const DISPLAY_GROUP_ORDER: DisplayGroup[] = [
+  "absorption",
+  "distribution",
+  "metabolism",
+  "excretion",
+  "toxicity",
+  "rule-based",
+];
+
+export const DISPLAY_GROUP_LABEL: Record<DisplayGroup, string> = {
+  absorption: "Absorption",
+  distribution: "Distribution",
+  metabolism: "Metabolism",
+  excretion: "Excretion",
+  toxicity: "Toxicity",
+  "rule-based": "Rule-based",
+};
+
+export function displayGroupOf(e: Endpoint): DisplayGroup {
+  const meta = ENDPOINT_METADATA[e];
+  if (meta.taskType === "rule_based") return "rule-based";
+  return meta.category;
+}
+
+// The classification score axis MARS treats as genuinely bounded (0-1). A score is
+// bounded; whether it is a calibrated probability is a separate claim (ADR-023).
+export const PROB_DOMAIN: readonly [number, number] = [0, 1];
+
+export const STUB_MODEL_ID = "stub-v0";
+
+// Display unit per endpoint for the results column. Classification carries no
+// unit in the contract (null) — the axis is labelled "score" in the UI until
+// calibration is validated per endpoint (ADR-023). The unit stays per endpoint so
+// each can return to "probability" on its own.
+// Used for the not_returned row too, where there is no prediction to read a unit
+// from.
+export const DISPLAY_UNIT: Record<Endpoint, string> = {
+  solubility_logs: "logS",
+  lipophilicity_logp: "logP",
+  caco2_permeability: "log cm/s",
+  hia_absorption: "score",
+  pgp_inhibition: "score",
+  bbb_permeability: "score",
+  ppb_binding: "% bound",
+  cyp3a4_inhibition: "score",
+  cyp2d6_inhibition: "score",
+  cyp2c9_inhibition: "score",
+  clearance_microsomal: "mL/min/kg",
+  herg_cardiotoxicity: "score",
+  ames_mutagenicity: "score",
+  dili_liver_injury: "score",
+  synthetic_accessibility: "SA score",
+};
+
+// Short column labels for the Batch matrix, where an endpoint gets ~58px and the
+// full key will not fit. These are the conventional field abbreviations a
+// computational chemist already reads (logP, P-gp, hERG, 3A4), not invented
+// shorthand — the full key stays in the column header's title and in the
+// inspector, so nothing is only available abbreviated.
+export const SHORT_LABEL: Record<Endpoint, string> = {
+  solubility_logs: "logS",
+  lipophilicity_logp: "logP",
+  caco2_permeability: "Caco-2",
+  hia_absorption: "HIA",
+  pgp_inhibition: "P-gp",
+  bbb_permeability: "BBB",
+  ppb_binding: "PPB",
+  cyp3a4_inhibition: "3A4",
+  cyp2d6_inhibition: "2D6",
+  cyp2c9_inhibition: "2C9",
+  clearance_microsomal: "CLint",
+  herg_cardiotoxicity: "hERG",
+  ames_mutagenicity: "AMES",
+  dili_liver_injury: "DILI",
+  synthetic_accessibility: "SA",
+};
+
+/** The selector trigger's text: "All 14 endpoints" or "N of 14 endpoints". */
+export function endpointSelectionLabel(selected: Endpoint[]): string {
+  const total = ML_ENDPOINTS.length;
+  return selected.length === total ? `All ${total} endpoints` : `${selected.length} of ${total} endpoints`;
+}

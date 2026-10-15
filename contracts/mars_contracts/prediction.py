@@ -16,7 +16,7 @@ class PredictionRequest(BaseModel):
     smiles: str = Field(..., description="Input SMILES string, not yet standardized")
     endpoints: list[Endpoint] | None = Field(
         default=None,
-        description="Subset of endpoints to predict. None = all 14.",
+        description="Subset of endpoints to predict. None = all 14 ML endpoints, plus the rule-based SA score when the server can compute it.",
     )
 
 
@@ -28,6 +28,14 @@ class EndpointPrediction(BaseModel):
     confidence_high: float = Field(..., description="Upper bound of ensemble-spread confidence interval")
     in_domain: bool = Field(..., description="Module 5 k-NN applicability-domain flag for THIS endpoint's training set")
     knn_distance: float = Field(..., description="Mean 5-NN Tanimoto distance used to compute in_domain")
+    ad_threshold: float | None = Field(
+        default=None,
+        description="The per-endpoint cutoff `in_domain` was judged against: the 90th percentile of the "
+        "endpoint's training set's own leave-one-out 5-NN distances (Module 5). `in_domain` is "
+        "`knn_distance <= ad_threshold`. Null when no applicability-domain index exists for the endpoint "
+        "(stub-served, rule-based): there is no cutoff to draw, and clients must not invent one. "
+        "Additive field (Q19); defaults to None so existing callers are unaffected.",
+    )
     model_id: str = Field(
         default="stub-v0",
         description="Which trained artifact actually served THIS endpoint (e.g. "

@@ -56,7 +56,7 @@ application frame itself never scrolls, and never scrolls horizontally.
 | Inspector (inline column) | endpoint or row detail | Esc, close button — not modal |
 | Drawer | batch job detail, export configuration | Esc, backdrop click |
 | Modal | destructive confirmation only (delete account, delete saved report) | explicit action only |
-| Popover | endpoint subset selector, serving-generation picker | Esc, outside click |
+| Popover | endpoint subset selector, serving-generation picker (only when more than one generation exists, ADR-026) | Esc, outside click |
 | Tooltip | shortcut hints and icon labels only | hover or focus out |
 
 A tooltip is never the only place a state is explained. Every reliability state
