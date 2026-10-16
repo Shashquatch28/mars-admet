@@ -1,9 +1,8 @@
 # AGENTS.md — MARS
 
-Guidance for any AI coding agent (Claude Code, Cursor, v0, Copilot) working in
-this repo. Human-facing docs live in `documentation/frontend/`; the rendered
-visual system is the Design canvas linked there. **This file is the short,
-non-negotiable layer. The full reference is `frontend/DESIGN.md`.**
+Guidance for any AI coding agent working in this repo. Human-facing docs live
+in `documentation/frontend/`. **This file is the short, non-negotiable layer.
+The full reference is `frontend/DESIGN.md`.**
 
 MARS is a desktop scientific workstation that predicts ADMET endpoints for drug
 molecules. It talks to a FastAPI service. Frontend stack: Vite + React 18 + TS;
@@ -56,8 +55,9 @@ repeat it.
 - **Canonical ports.** API `8000` (`docker compose up -d api`, container
   `mars_api`), Vite `5173`. Do not move or repurpose them.
 - **Never edit shared, untracked config for a private experiment**: `.env`,
-  `frontend/.env.local`, `.claude/launch.json`. Every session reads them. Edit the
-  `.example` files only when the change is meant for everyone.
+  `frontend/.env.local`, and the untracked dev-server launch config. Every
+  session reads them. Edit the `.example` files only when the change is meant for
+  everyone.
 - **Need your own API or dev server?** Use a different port *and* a name that
   says whose it is, and aim only your own process at it:
   `docker run --name mars_api_<topic> -p 18000:8000 …`, then
@@ -86,13 +86,15 @@ computed rule, not a model prediction. Headline count is **14**.
   `frontend/DESIGN.md`.
 - Enforce honesty in the *type signature*, not in review. If a variant would let
   a caller imply something MARS can't support, the variant must not exist.
-- Generate against this system (point v0 / tooling at the Storybook, not a blank
-  prompt), then **audit against the "Never do" list above before merge.**
+- Generate against this system (point generators at `frontend/DESIGN.md`, the
+  token layer and the real components in `src/components/dataviz/` and
+  `src/workspaces/predict/`, not a blank prompt; no Storybook is installed), then
+  **audit against the "Never do" list above before merge.**
 - Contract types mirror `contracts/mars_contracts`; drift is a build failure
   (ADR-009). `frontend/src/types/contracts.ts` now includes
   `EndpointPrediction.model_id` (ADR-017); the CI drift check is
   `contracts/tests/test_frontend_drift.py` (field and enum names, not types).
 
 Full rationale for every rule: `documentation/frontend/` (UX_PRINCIPLES,
-DECISIONS ADR-001…027, COMPONENTS, DESIGN_SYSTEM, CRAFT_AND_INTERACTION).
+DECISIONS ADR-001…028, COMPONENTS, DESIGN_SYSTEM, CRAFT_AND_INTERACTION).
 Current state, verified gaps and next steps: `documentation/frontend/HANDOFF.md`.

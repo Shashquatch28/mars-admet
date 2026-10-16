@@ -1,130 +1,106 @@
-# frontend/ — UI (M4, in progress)
+# frontend/ — MARS UI (M4, in progress)
 
-Owns blueprint Module 9 (design system), Module 7 viewer wiring, Module 12/13 UI.
+Vite + React 18 + TypeScript single-page app. Owns blueprint Module 9 (design
+system), Module 7 viewer wiring, and the Module 12/13 UI.
 
-**Runnable.** The Vite entry now exists and the Predict workspace is built.
+## Status
+
+| Workspace | State |
+|---|---|
+| **Predict** | Live. Typed SMILES, Run, endpoint-subset selector, 15-row reconciled roster, inspector, AD gauge, 3D viewer (3Dmol), keyboard roving. |
+| **Batch** | Fixture only (240 deterministic molecules). Virtualized `role="grid"`, raw numeric sort, filters, molecule inspector. No upload and no SSE progress yet. Behind the sign-in gate. |
+| **Compare** | Placeholder (`StubWorkspace`). |
+| **Library** | Placeholder, behind the sign-in gate. |
+| **Settings** | Account section only. |
+| **Auth** | Sign in, create account, sign out, `GET /auth/me` session probe, global 401 handler. Password reset, Turnstile and delete-account are not built. |
+
+Without `VITE_API_BASE` the app runs on an illustrative fixture and shows a
+"design prototype" strip; Run is disabled. With it set, Predict shows only real
+service responses.
+
+Where things stand, what is broken, and what to do next:
+`../documentation/frontend/HANDOFF.md`.
+
+## Run
 
 ```bash
 cd frontend
 npm install
-npm run dev     # http://localhost:5173
-npm run build   # tsc && vite build — type-checks and bundles
+cp .env.example .env.local   # then set VITE_API_BASE=/api
+npm run dev                  # http://localhost:5173
+npm run build                # tsc && vite build
 ```
 
-**Dependency note (2026-10-06).** Vite 7, vitest 4, plugin-react 5 and
-react-router-dom 7 — the patched lines; `npm audit` reports 0 vulnerabilities.
-npm 10.9.3's resolver crashes (`Cannot read properties of null (reading
-'edgesOut')`) when *resolving* vitest 4, so a fresh lockfile must be generated
-with npm 11 (`npx npm@11 install`). Installing from the committed
+The dev server proxies `/api/*` to the API with the prefix stripped
+(default `http://localhost:8000`, from `docker compose up -d api` at the repo
+root), so the browser makes same-origin requests and CORS never applies. To aim
+your own server at a different API, set `MARS_API_PROXY_TARGET` in the
+**process** environment, never in `.env.local`
+(`../AGENTS.md`, "Shared dev environment").
+
+The proxy exists only in the dev server. A deployed SPA must reach the API
+same-site: the session cookie is `SameSite=Lax` and does not travel on
+cross-site `fetch()`. The production topology (one origin, API under `/api`) is
+ADR-025 and is not implemented yet.
+
+**Dependency note.** Vite 7, vitest 4, plugin-react 5 and react-router-dom 7.
+npm 10's resolver crashes when *resolving* vitest 4, so a fresh lockfile must be
+generated with npm 11 (`npx npm@11 install`). Installing from the committed
 `package-lock.json` (`npm ci`) works on npm 10.
-
-## What's built (pass 3, 2026-10-01)
-
-- **Shell**: nav rail, top bar (serving generation, API status, account), status
-  bar, and the ⌘K command palette (fuzzy search over endpoints / molecules /
-  commands; reliability tags travel into the results).
-- **Predict workspace**: molecule input + identity + structure-viewer shell; the
-  full 15-row endpoint roster reconciled from the contract (14 ML + the
-  rule-based SA score in its own group); the seven derived row states; the
-  applicability-domain gauge; the inspector; full keyboard roving (↑↓ / Home /
-  End / Enter), hover, focus and selection as distinct channels; density toggle;
-  reduced-motion support.
-- **Batch workspace**: a virtualized molecules × endpoints matrix (240-molecule
-  fixture), `role="grid"` with one Tab stop and 2-D arrow navigation, raw
-  numeric sort, filters, molecule inspector. Fixture-only — no upload, no SSE.
-- **Compare / Library / Settings**: routed placeholders — same shell, built later.
-
-Values are an **illustrative fixture** (`src/domain/fixtures.ts`), not model
-output; the app shows a "design prototype" strip accordingly.
-
-> **Going live is not one change.** Predict hard-codes its SMILES and has no
-> working Run button; the status bar and API badge show literal values; and the
-> browser will likely be blocked by CORS. See
-> `../documentation/frontend/HANDOFF.md` §3 before attempting it.
-
-The roster, state derivation and reconciliation come from `ENDPOINT_METADATA`,
-never the response (ADR-008).
 
 ## Architecture
 
-- Stack: Vite + React 18 + TypeScript, React Router (ADR-001). No Next.js.
+- Stack: Vite + React 18 + TypeScript, React Router, TanStack Query and Virtual,
+  3Dmol. No Next.js, no charting library, no component library with its own
+  theme (ADR-001).
 - Styling: CSS Modules over the token layer in `src/styles/tokens.css`
-  (ADR-016). No raw hex in a component.
-- `src/domain/` is load-bearing: `deriveRowState` is the single pure function
-  that decides an endpoint row's trustworthiness, and nothing else does
-  (ARCHITECTURE.md). Unit-test it against the API fixtures.
-- `src/types/contracts.ts` mirrors `contracts/mars_contracts` and now **includes
-  `model_id`** — the drift ADR-009 flagged is closed. A CI check to keep it in
-  sync is still to be written.
-
-Layout:
+  (ADR-016). No raw colour literal in a component; `tests/cssGuard.test.ts`
+  fails the build on one.
+- `src/domain/` is the load-bearing layer. `deriveRowState` is the single pure
+  function that decides an endpoint row's trustworthiness and nothing else does.
+  The roster comes from `ENDPOINT_METADATA`, never from the response (ADR-008).
+- `src/types/contracts.ts` mirrors `contracts/mars_contracts`. The CI check
+  `contracts/tests/test_frontend_drift.py` fails on a field or enum-name drift
+  (names only, not types; ADR-009).
 
 ```
 src/
-  app/            uiState (selected endpoint, palette, density)
+  app/            providers: uiState, predictSession, authSession, queryClient
+  auth/           Gated (sign-in state), AccountForm
   shell/          AppShell, NavRail, TopBar, StatusBar, CommandPalette
   workspaces/
-    predict/      PredictWorkspace + EndpointList/Row/Detail, StructureViewer
-    batch/        BatchWorkspace + BatchGrid (virtualized)
-    StubWorkspace (compare/library/settings)
-  components/dataviz/  BoundedTrack scale, IntervalTrack, ADGauge, NumericInterval, ReliabilityTag
-  domain/         endpoints, rowState, reconcile, format, fixtures, batch
-  data/           client, usePrediction (single-molecule /predict only)
-  types/          contracts.ts (contract mirror)
+    predict/      PredictWorkspace, EndpointList/Row/Detail/Selector, StructureViewer
+    batch/        BatchWorkspace, BatchGrid (virtualized)
+    settings/     SettingsWorkspace
+    StubWorkspace Compare and Library placeholders
+  components/dataviz/  scale, IntervalTrack, ADGauge, NumericInterval, ReliabilityTag
+  domain/         endpoints, rowState, reconcile, format, conformer, session,
+                  batch, fixtures, real-responses/ (captured API payloads)
+  data/           client (predict, conformer, health, auth), useApiHealth, useConformer
+  types/          contracts.ts
   styles/         tokens.css
+tests/            cssGuard.test.ts
 ```
 
-## Testing
+## Verify
 
 ```bash
-npm test        # vitest run — pure-domain unit tests
-npm run test:watch
-```
-
-Covers the load-bearing pure functions: `deriveRowState` (the single trust
-decision), `reconcile` (roster + counts, SA excluded), the formatters, and the
-Batch build / sort / filter logic. 31 tests in 4 files. Every fixture so far was
-written by us, so they test our assumptions — capture real API responses and
-add them (HANDOFF.md §4).
-
-```bash
-npm run lint    # eslint — TS/TSX only; does NOT read .module.css
+npm test             # vitest run: 113 tests in 9 files
+npm run lint         # eslint, TS/TSX only; does not read .module.css
 npx tsc --noEmit
 ```
 
-## Running against the real API
+Numbers above are from the audit of 2026-10-14: `tsc` clean, 113/113 tests,
+lint 0 errors and 3 fast-refresh warnings (`app/*.tsx` exports a provider and a
+hook from one file; accepted).
 
-```bash
-docker compose up -d --build api   # from the repo root; --build when ml/serve changed
-cp .env.example .env.local
-# set VITE_API_BASE=/api  (the dev server proxies /api -> http://localhost:8000)
-npm run dev
-```
-
-With `VITE_API_BASE` unset the UI runs on the fixture and shows the "design
-prototype" strip; Run is disabled. With it set, you type a SMILES and Run submits
-it to `/predict`; the strip clears, the status bar shows the real `served_at`,
-cache hit/miss and measured latency, the top bar shows the response's
-`model_version` and a live `/health` check, and the AD-gauge threshold is read
-from the response (`ad_threshold`). It is `null` for stub-served and rule-based
-rows, and the gauge is then not drawn (ADR-020).
-
-The `/api` proxy exists only in the dev server. A deployed SPA talks to the API
-cross-origin: set the API's `CORS_ALLOW_ORIGINS` to the SPA's origin (explicit
-list, credentials allowed; `*` is not valid with cookies) and keep both on the
-same site, because the session cookie is `SameSite=Lax`.
+The tests cover the pure domain layer (`rowState`, `reconcile`, formatters,
+batch build/sort/filter, conformer state, session gating), the real captured
+API responses in `src/domain/real-responses/` (provenance in the README there),
+and the CSS literal guard.
 
 ## Read first
 
-- `../AGENTS.md` and `DESIGN.md` — the guardrails any coding agent must follow
+- `../AGENTS.md` and `DESIGN.md`: the guardrails any coding agent must follow
   (the "never do" list, the type contracts, the tokens).
-- `../documentation/frontend/` — the full design system, ADRs, and open
-  questions. The visual source of truth is the Claude Design canvas linked from
-  its README; the live interactive reference is the published MARS Predict
-  artifact.
-
-## Open before this goes live
-
-See `../documentation/frontend/HANDOFF.md` §3–4. In short: Predict needs real
-input and a working Run; the status bar and API badge must stop showing literals;
-CORS must be settled; and the CSS needs a lint guard.
+- `../documentation/frontend/`: the design system, ADR log and open questions.

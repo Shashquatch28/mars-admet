@@ -1,9 +1,9 @@
 # MARS frontend architecture
 
-Status: **partly implemented (2026-10-07).** This document is the original
-architecture *proposal* and is kept for its reasoning. Where the build diverged,
-the divergence is recorded below and in `DECISIONS.md`; read `HANDOFF.md` for
-current state.
+Status: **partly implemented (re-audited 2026-10-14).** This document is the
+original architecture *proposal* and is kept for its reasoning. Where the build
+diverged, the divergence is recorded below and in `DECISIONS.md`; read
+`HANDOFF.md` for current state, and `frontend/README.md` for the layout as built.
 
 > **Superseded in part — styling.** The sections below propose Tailwind v4.
 > That was **not adopted**: ADR-016 chose CSS Modules over the token layer in
@@ -11,8 +11,14 @@ current state.
 > reference below as "CSS Modules + tokens". The no-raw-values rule is unchanged
 > and still the point. `@tanstack/react-table` and `radix-ui` are also not
 > installed yet; `@tanstack/react-query` and `@tanstack/react-virtual` are.
-> The "What already exists" section describes the *pre-build* scaffold and is
-> historical.
+> The "What already exists" section, including its "one live defect" note
+> (`model_id` was missing from `contracts.ts`; closed by ADR-009/Q10 and guarded
+> by `contracts/tests/test_frontend_drift.py`), describes the *pre-build*
+> scaffold and is historical. The "Proposed layout" below differs from what was
+> built in three ways: there is no `pages/` or `compare/` / `library/`
+> workspace directory yet (both are `StubWorkspace`), `auth/` was added, and
+> `components/` holds only `dataviz/`. The build and test stack is Vite 7,
+> vitest 4 and ESLint; there is no Storybook.
 
 ## What already exists
 

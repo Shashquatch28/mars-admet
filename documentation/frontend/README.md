@@ -1,24 +1,26 @@
 # documentation/frontend/ — MARS frontend design & engineering
 
 This directory is the **written source of truth** for MARS frontend work.
-The **visual source of truth** is the Claude Design canvas:
+The **visual source of truth** is the *MARS Frontend Design System* design
+canvas. It is a rendered artefact held outside this repository and is not linked
+from here; the tokens and states it shows are all written down in this directory
+and in `frontend/DESIGN.md`.
 
-> **MARS Frontend Design System** — https://claude.ai/artifact/G4Xn8GJCABLWRZ2qXrotzg
-
-Five artboards, with strict ownership (ADR-015 — do not duplicate a taxonomy
-across two of them):
+The canvas has five artboards, with strict ownership (ADR-015 — do not
+duplicate a taxonomy across two of them):
 
 | Artboard | Owns |
 |---|---|
 | Predict — result state | the canonical workspace, on a freshly computed result |
 | Predict — entry state | the empty workspace and the endpoint roster |
-| Semantic state language | the six data/contract states |
+| Semantic state language | the data/contract states (six drawn; `not_requested` was added later, ADR-028) |
 | Interaction & motion | interaction taxonomy, ⌘K palette, gauge anatomy, motion spec |
 | Design system foundations | tokens |
 
-Phase status (2026-10-07): **design locked** (passes 1–2.1); **M4 built on
-fixture data** — shell, Predict workspace, Batch matrix. Nothing runs against the
-live API yet. **Start with `HANDOFF.md`**: it states what exists, what is
+Phase status (2026-10-14): **design locked** (passes 1–2.1). **M4 is in
+progress**: the shell and Predict workspace run against the live API (typed
+SMILES, 3D viewer, auth UI); Batch is still a fixture; Compare and Library are
+placeholders. **Start with `HANDOFF.md`**: it states what exists, what is
 broken, and the recommended order. Where a design doc and the code disagree, the
 code and `HANDOFF.md` are current.
 
@@ -36,7 +38,7 @@ directory holds those, and does not restate what the blueprint already says.
 | `contracts/mars_contracts/*.py` | field names, endpoint list, task types |
 | `contracts/API_ROUTES.md` | routes, auth, rate limits, cache semantics |
 | `documentation/frontend/` (here) | tokens, IA, interaction, a11y, component architecture |
-| the Design canvas | the rendered visual system |
+| the design canvas (external) | the rendered visual system |
 
 ## Files
 

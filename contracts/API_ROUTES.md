@@ -14,7 +14,10 @@ real conformer generation reuses Module 3 Stage 5. `GET /health/ready`
 in Module 8's original table. `/molecule/{id}/explain` and `/molecule/{id}/report`
 remain M4/Post-MVP, undefined here beyond the sketch below.
 
-Base URL (local): `http://localhost:8000`
+Base URL (local): `http://localhost:8000`. Routes are mounted at the root
+today. Frontend ADR-025 plans to mount the API under `/api` in every
+environment so one origin can serve both; that is accepted as a design and is
+**not implemented**, so the table below is the current truth.
 
 | Route | Method | Auth | Request model | Response model | Milestone |
 |---|---|---|---|---|---|
@@ -46,9 +49,22 @@ container); 501 in an environment without it.
 - **Every `EndpointPrediction` also carries its own `model_id`** (M3 addition,
   additive/non-breaking, defaults to `"stub-v0"`): which specific trained
   artifact served *that endpoint*, since the routing table can have real
-  coverage for some endpoints and none for others at the same time (e.g. as of
-  2026-09-16, `hia_absorption` has one promoted local XGBoost seed;
-  every other endpoint still falls back to the stub within the same response).
+  coverage for some endpoints and none for others at the same time. Since the
+  2026-09-17 sweep all 14 ML endpoints have a promoted XGBoost model locally
+  (`mars-xgboost-ecfp-desc-v1`); an environment without `ml/artifacts/` or
+  without the ml stack falls back to `"stub-v0"` per endpoint. The rule-based
+  SA score is served with `model_id: "rdkit-sascore"` when rdkit is present.
+  Top-level `model_version` is the routing-table tag (`MODEL_VERSION`); it
+  changes whenever response shape or routing changes, because it is part of the
+  cache key.
+- **Every `EndpointPrediction` carries `ad_threshold`** (Q19/ADR-020, additive,
+  nullable): the cutoff `in_domain` was judged against (90th percentile of the
+  endpoint's own leave-one-out 5-NN distances). `null` for stub-served and
+  rule-based rows; clients must not invent a cutoff.
+- `confidence_low` / `confidence_high` are the spread across the 5 CV seeds, not
+  a confidence interval. The field names are historical (ADR-024).
+- `/compare` returns `per_endpoint_winner: null` always: MARS has no validated
+  direction-of-good, so the field is never populated and the UI never consumes it.
 - Rate limits: anonymous 60 `/predict`/min per IP; per-account 5 concurrent
   batch jobs, 50,000-molecule cap, interactive threshold 1,000.
 - Batch uploads (R2) auto-deleted 24h after job completion.
