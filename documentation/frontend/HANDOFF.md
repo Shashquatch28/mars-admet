@@ -1,8 +1,9 @@
 # Frontend session handoff
 
-**Written 2026-10-07; §1–§4 updated later the same day after Predict went live.
+**Written 2026-10-07; §1–§4 updated after Predict went live, and the gates,
+repository hazards and stale notes re-audited 2026-10-14.
 Branch `milestone/m4-frontend`.**
-Everything below was checked against the repository on that date, not recalled.
+Everything below was checked against the repository on those dates, not recalled.
 Where a claim could not be verified it says so.
 
 This is the file to read first when picking the frontend up in a new session.
@@ -20,15 +21,15 @@ and a real `/health` check. It was exercised in a browser against the real model
 path (see §2a). Batch is still fixture-only (§3.5); Compare/Library/Settings are
 stubs.
 
-| Gate (run 2026-10-07) | Result |
+| Gate (run 2026-10-14, working tree incl. uncommitted edits) | Result |
 |---|---|
 | `npx tsc --noEmit` | clean |
-| `npm run lint` | 0 errors, 1 warning (`uiState.tsx` fast-refresh, accepted) |
-| `npm test` | 51 / 51 passed, 5 files (20 new, against real captured responses) |
-| `npm run build` | succeeds |
-| `npm audit` | 0 vulnerabilities |
-| API + contract tests | 52 passed, 1 skipped (root `.venv`) |
-| `ml/tests/test_serve_registry.py` | 7 passed (**`ml/.venv`**, not the root env) |
+| `npm run lint` | 0 errors, 3 warnings (`app/authSession.tsx`, `predictSession.tsx`, `uiState.tsx` fast-refresh, accepted) |
+| `npm test` | 113 / 113 passed, 9 files |
+| `ruff check contracts api ml` | clean |
+| `contracts/tests` + `api/tests` (root `.venv`) | 51 passed, 26 skipped. The skips are the Postgres/Redis-backed tests, which skip when the stack is down; CI runs them for real. |
+| `ml/tests` (**`ml/.venv`**, not the root env) | 400 passed, 15 skipped (about 9 min) |
+| `npm run build`, `npm audit` | last run 2026-10-07: build succeeds, 0 vulnerabilities; not re-run |
 
 ## 2. What exists
 
@@ -39,7 +40,8 @@ stubs.
 | Batch | `src/workspaces/batch/`, `src/domain/batch.ts` | 240-molecule deterministic fixture, virtualized `role="grid"`, raw numeric sort, filters, molecule inspector. |
 | Data-viz | `src/components/dataviz/` | `ADGauge`, `IntervalTrack` (both require an explicit `domain`, no default), `NumericInterval`, `ReliabilityTag`. |
 | Domain | `src/domain/` | `rowState` (the one trust decision), `reconcile` (full roster every time), `format`, `endpoints`, `fixtures`, `batch`. This is the tested layer. |
-| Data | `src/data/` | `client.ts` (predict, conformer, health, auth) + hooks. No batch client. |
+| Data | `src/data/` | `client.ts` (predict, conformer, health, auth) + `useApiHealth`, `useConformer`. No batch client. |
+| Auth | `src/auth/`, `src/app/authSession.tsx`, `src/domain/session.ts` | `Gated` sign-in state, `AccountForm`, session provider (unknown / anonymous / signed in), global 401 handler. ADR-022 phase 1. |
 | Tooling | `.eslintrc.cjs`, `vitest.config.ts` | ESLint enforces two AGENTS.md rules in **TS/TSX only**. |
 | Backend (this branch) | `ml/serve/rule_based.py`, `contracts/…/prediction.py` | API now serves the SA score (ADR-019) and `ad_threshold` per prediction (ADR-020). |
 
@@ -118,71 +120,30 @@ stubs.
 
 These are ordered by how badly they would bite.
 
-### 3.1 ~~Predict cannot take input.~~ Resolved 2026-10-07 for SMILES + Run + Clear
-**Endpoint-subset selector: done 2026-10-08** (popover; a deselected endpoint is a
-`NOT REQUESTED` row, ADR-028). Still inert: **Compare molecule, Save to library,
-Export** (no handlers; Compare/Save depend on those workspaces and on ADR-022).
-Original note:
-
-`PredictWorkspace.tsx` hard-codes `const smiles = CELECOXIB_SMILES`. The textarea
-has only a `defaultValue`; **Run prediction, Clear, Compare molecule, Save to
-library, Export and the endpoint-subset selector have no handlers.** Setting
-`VITE_API_BASE` would query the API for celecoxib and nothing else, ever.
-
-> An earlier version of `frontend/README.md` (and this project's own advice)
-> described going live as "swap the fixture for a real response". That
-> understated the work and has been corrected.
+### 3.1 ~~Predict cannot take input.~~ Resolved 2026-10-07
+SMILES entry, Run and Clear work; the endpoint-subset selector landed 2026-10-08
+(a deselected endpoint is a `NOT REQUESTED` row, ADR-028). Still inert:
+**Compare molecule, Save to library, Export** (no handlers; Compare and Save
+depend on those workspaces).
 
 ### 3.2 ~~The status bar and top bar show fabricated values~~ Resolved 2026-10-07
-Original note:
-
-- `StatusBar.tsx` reads `FIXTURE_RESPONSE` directly: the timestamp, `CACHE MISS`,
-  `412 ms`, `rate 7/60 per min` and `cached for 48 h` are all literals. Against a
-  live response they would be presented as real. This violates the project's own
-  rule that sample data must never look like live data.
-- `TopBar.tsx` hard-codes `API Ready` and `mars-routing@v0.3.1`. The badge would
-  stay green with the API down.
-
-Fix: drive the status bar from the actual response (`served_at`, `cache_hit`,
-measured latency, `model_version`) and the API badge from a real `/health`
-check. Until a value has a source, render it as absent, not as a plausible number.
+The status bar reads the real response (`served_at`, `cache_hit`, measured
+latency, `model_version`); the API badge polls `/health`. A value with no source
+renders as absent, never as a plausible number.
 
 ### 3.3 ~~CORS~~ Resolved 2026-10-07 (dev proxy + explicit origin list with credentials)
-Confirmed in a browser. **Production:** an explicit origin list is not enough, because the session cookie is
-`SameSite=Lax` and does not travel on cross-site `fetch()`. Production serves one origin (ADR-025, Q22). Original note:
-
-`api/app/main.py` sets `allow_origins=["*"]` with **no** `allow_credentials`.
-`client.ts` sends `credentials: "include"`. Browsers reject a credentialed
-request answered with a wildcard origin. **Not verified in a browser** — this is
-from the CORS specification, so confirm it when you get there.
-
-Options: (a) Vite dev proxy `/api → localhost:8000`, which makes dev same-origin
-and needs no backend change (recommended for dev); (b) drop `credentials` for the
-anonymous `/predict` call only; (c) backend: explicit origin list +
-`allow_credentials=True` (needed for auth and prod anyway — the code comment says
-"tighten before prod deploy"). (c) touches `api/`, which is your call.
+Confirmed in a browser. **Production:** an explicit origin list is not enough,
+because the session cookie is `SameSite=Lax` and does not travel on cross-site
+`fetch()`. Production serves one origin (ADR-025, Q22). That ADR is accepted as
+a design; the `/api` mount and the multi-stage Dockerfile are **not
+implemented**.
 
 ### 3.4 ~~CSS is entirely unguarded~~ Resolved 2026-10-07 (no stylelint needed)
-`frontend/tests/cssGuard.test.ts` fails the build on any hex / `rgb()` / `hsl()` literal in a `.module.css`.
-New tokens: `--track`, `--band`, `--on-accent`, `--scrim`, `--highlight-selected`; every literal listed below is
-replaced. The two near-identical ink colours (`#07191d`, `#06181d`) are now one token. The 50% status dots are
-recorded as ADR-021. The guard lives in `tests/` because it reads the filesystem and the project has no
-`@types/node`. Original note:
-
-ESLint does not read `.module.css`, so the "no raw hex" rule only covers TS/TSX.
-Current violations, verified by grep:
-
-- Raw hex: `dataviz.module.css:13` (`#2a3236`), `:19` (`#3a4549`);
-  `batch.module.css:498` (`#07191d`); `predict.module.css:76` (`#06181d`).
-- The selection bevel `inset 0 2px 0 -1px rgba(255,255,255,0.045)` is
-  hard-coded in `shell`, `batch` and `predict` modules. ADR-011 says it should be
-  a token; `--highlight-machined` currently covers only the nav variant.
-- `border-radius: 50%` on two status dots (`shell.module.css:172`,
-  `batch.module.css:555`). **This is probably not a violation** — "radius ≤ 3px"
-  governs surfaces, not a 6px status dot, and the design drew them as circles.
-  But no ADR records the exception yet. Write one rather than "fixing" the dots.
-
-Fix is two tokens, a stylelint config, and that ADR — not a Batch-only patch.
+`frontend/tests/cssGuard.test.ts` fails the build on any hex / `rgb()` / `hsl()`
+literal in a `.module.css`. New tokens: `--track`, `--band`, `--on-accent`,
+`--scrim`, `--highlight-selected`. The 50% status dots are recorded as ADR-021.
+The guard lives in `tests/` because it reads the filesystem and the project has
+no `@types/node`.
 
 ### 3.5 Smaller gaps
 
@@ -279,23 +240,23 @@ alternatives recorded.
   `documentation/AIMS/`: it is shared project guidance (AIMS decision, 2026-10-08),
   so an AIMS edit is committed on both branches the same day. Push that single
   commit to `m2-kermt` without checking the branch out.
-- **Duplicate docs on this branch.** Commit `f7a41db` ("ship on Tier 0…") added
-  10 `documentation/AIMS/`, blueprint and `FUTURE_SCOPE` files here. `m2-kermt`
-  carries the same content (`5da3091`) and the 10 files are **byte-identical
-  today**. They exist as adds on both branches because `documentation/` was
-  gitignored on `main`. **Re-checked 2026-10-07:** `main` now carries the same
-  files too (`c8269b7`), and all copies are byte-identical, so merging this branch
-  to `main` is clean. The only remaining conflict is `m2-kermt` → `main` *after*
-  `m2-kermt` edits one of them, and it is trivial (take `m2-kermt`'s version).
-  Reverting `f7a41db` is no longer worth doing.
+- **Shared AIMS docs.** `documentation/AIMS/`, the blueprint and `FUTURE_SCOPE.md`
+  exist on both this branch and `m2-kermt`. Checked 2026-10-14: this branch's
+  AIMS files are byte-identical to `sync/aims-to-m2-kermt` (`e6c3dee`, the
+  2026-10-08 decisions on calibration, seed spread and branch sync), which has
+  not yet been merged into `m2-kermt`. Two files exist only on `m2-kermt`:
+  `AIMS/mistakes.md` and `documentation/status/mars-status_M{0,1}.md`, so
+  references to them from this branch (`README`, `.env.example`,
+  `docker-compose.yml`, AIMS) resolve only there. Edit AIMS on both branches the
+  same day; do not edit one copy alone.
 - **Two sessions once shared `frontend/.env.local` and port 5173 — fixed
   2026-10-08, rules now in `AGENTS.md` ("Shared dev environment").** One session had
   set `MARS_API_PROXY_TARGET=http://localhost:18000` in that shared file (a
   `mars_api_real` container built from older code, still returning
   `model_version: "stub-v0"`), so every Vite server on the tree proxied to it. The
   line is removed; `.env.local` now holds only `VITE_API_BASE=/api`. A `mars_api_real`
-  container may still exist in Docker (Docker Desktop was off when this was fixed, so
-  it could not be inspected or stopped): check `docker ps -a` when Docker is back.
+  container may still exist in Docker (it could not be inspected when this was
+  fixed and has not been re-checked): `docker ps -a`.
   Rule of thumb: private experiments use a process variable and their own port, never
   a shared file.
 - **Concurrent sessions.** Other chats edit this repo. Files change under you
@@ -309,9 +270,11 @@ alternatives recorded.
 
 ## 8. Design source
 
-Claude Design canvas: https://claude.ai/artifact/G4Xn8GJCABLWRZ2qXrotzg — five
-artboards with strict ownership (ADR-015). The design is locked; do not
-redesign. Changes to it need an ADR.
+The *MARS Frontend Design System* design canvas: five artboards with strict
+ownership (ADR-015). It is held outside the repository and is not linked here;
+everything it shows is written down in this directory and in
+`frontend/DESIGN.md`. The design is locked; do not redesign. Changes to it need
+an ADR.
 
 ## 9. Corrections made in this session worth not repeating
 

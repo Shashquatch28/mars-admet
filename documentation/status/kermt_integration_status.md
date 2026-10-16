@@ -5,6 +5,13 @@ _Last updated: 2026-09-18, RTX A4000 GPU workstation session. Companion to
 `documentation/AIMS/next_steps.md`'s live M2 pre-flight checklist — this file
 is the point-in-time status snapshot; those two are the process record._
 
+> **Branch scope (2026-10-14):** this file is mirrored on `milestone/m4-frontend`,
+> which carries none of the KERMT code it cites (`ml/models/kermt_model.py`,
+> `ml/featurize/kermt_adapter.py`, `ml/train/train_kermt_cluster.py`, …); those live on
+> `milestone/m2-kermt`. Current KERMT status (Tier-0 Pass 2, ship-on-Tier-0 scope) is in
+> `documentation/AIMS/next_steps.md`; this file is a 2026-09-18 snapshot with the addenda below.
+> Nothing here describes the XGBoost serving path or the frontend.
+
 > **2026-09-24 addendum:** first real Tier-0 training ran on the same RTX A4000 workstation on 2026-09-22 —
 > `dili_standalone__cls` seeds 0–4 and `toxicity__cls` seed 0. §7/§10b/§12 above ("never run", "not yet demonstrated")
 > predate it. See `kermt_gpu_session_2026-09-22.md` for what is and is not verified.

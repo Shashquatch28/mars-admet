@@ -4,6 +4,11 @@ Pass 1, 2026-09-30. **Blocking** questions gate the next design pass;
 **non-blocking** ones gate implementation. Each states what the design does
 today so work can continue either way.
 
+**Status 2026-10-14:** 22 questions. Resolved: Q1, Q2, Q3, Q4, Q6, Q7, Q9, Q10,
+Q14, Q15, Q17, Q19, Q21, Q22. Still open: Q5, Q8, Q11, Q12, Q13 (confirm), Q16,
+Q18, Q20. Question text below is kept as raised; a "RESOLVED" heading is
+authoritative over the body beneath it.
+
 ---
 
 ## Blocking
@@ -18,9 +23,9 @@ members and `ML_ENDPOINTS` (all but `SA_SCORE`) = 14, enforced by
 sweep was 14 × 5 = 70, and the blueprint table has 14 numbered ML rows plus an
 unnumbered "—" row for SA. The frontend already does this: `reconcile` counts
 over ML only (`requested: 14`) and renders `ALL_ENDPOINTS` (15 rows). The only
-off-by-one is prose — the blueprint heading and `AIMS/context.md` say
-"13 ML + 1 rule-based"; it should read "14 ML + 1 rule-based". Not edited here
-(blueprint and AIMS are maintainer-owned). Original text below for the record.
+off-by-one was prose — the blueprint heading, `AIMS/context.md`, `AIMS/glossary.md`
+and two test comments said "13 ML + 1 rule-based". Corrected to "14 ML + 1
+rule-based" on 2026-10-14. Original text below for the record.
 
 `Endpoint` has **15** members. `ML_ENDPOINTS` has 14 (all but
 `synthetic_accessibility`). `AIMS/context.md` says "14 ADMET endpoints (13 ML +
@@ -273,7 +278,9 @@ placed instead of animated under reduced motion.
 Flagging it explicitly rather than burying it, because it is the only place in
 pass 2 where a brief instruction and a standing principle genuinely met. If you
 would rather the gauge be fully static, the reduced-motion path is already the
-design and costs nothing to make universal.
+design and costs nothing to make universal. *As built (2026-10-14):* the marker
+settle is a one-time `--dur-enter` / `--ease` CSS transition on `left`, once per
+endpoint, not a spring; under reduced motion it is placed.
 
 ---
 

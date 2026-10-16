@@ -1,0 +1,19 @@
+# Build context = repo root (docker-compose.yml, CI: docker build -f api/Dockerfile .).
+# Allowlist: only what api/Dockerfile COPYs. Everything else (ml/.venv, datasets,
+# ml/runs, ml/artifacts, frontend/, documentation/, .git, .env) stays out of the
+# context. If you add a COPY to api/Dockerfile, add its path here too.
+*
+
+!contracts
+!api/requirements.txt
+!api/app
+!ml/requirements-serving.txt
+!ml/serve
+!ml/featurize
+!ml/models
+!ml/eval
+
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.venv

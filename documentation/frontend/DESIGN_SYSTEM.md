@@ -224,7 +224,9 @@ per screen. Full rationale: `DECISIONS.md` ADR-005, ADR-006, ADR-012.
 
 `confidence_low` / `confidence_high` are **ensemble spread across the 5
 cross-validation seeds** (blueprint Module 5 CORE), not a coverage-guaranteed
-interval. The UI therefore labels the column `ENSEMBLE INTERVAL` and never
-prints a percentage. Calling it a 95% interval would be a false precision
-claim; conformal prediction, which would justify a coverage number, is
-Post-MVP.
+interval. The UI therefore labels the column `SEED SPREAD ±1σ` (ADR-024; it
+was `ENSEMBLE INTERVAL` before 2026-10-08, and "interval" next to a value reads
+as an error range) and never prints a percentage. Calling it a 95% interval
+would be a false precision claim; conformal prediction, which would justify a
+coverage number, is Post-MVP. Narrow spread is never flagged, in either
+direction.

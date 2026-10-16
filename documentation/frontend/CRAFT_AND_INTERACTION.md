@@ -52,9 +52,9 @@ practice keeps the row identifier prominent and demotes only *field labels*.
 
 What legitimately rests at `--text-tertiary`, and stays there:
 
-- units (`logS`, `probability`, `mL/min/kg`)
+- units (`logS`, `score`, `mL/min/kg`; classification is labelled `score` until calibration is validated, ADR-023)
 - the task glyph (`REG` / `CLS` / `RULE`)
-- column heads (`ENDPOINT`, `ENSEMBLE INTERVAL`, `DOMAIN`, `SOURCE`)
+- column heads (`ENDPOINT`, `SEED SPREAD ±1σ`, `DOMAIN`, `SOURCE`)
 - the source readout (`v1`)
 
 Hover's affordance therefore comes from the **surface and the row rule**, never

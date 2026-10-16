@@ -41,8 +41,11 @@ The auth captures used a throwaway `@example.com` account on the dev database, d
 ## Facts these captures established (versus the hand-written fixture)
 
 - `unit` is `null` on every model row; only the SA row carries one (`"SA score"`).
-- A top-level `model_version` of `"stub-v0"` is returned even when every row was
-  served by a real model (backend: `_route_to_models` does not update it).
+- At capture time a top-level `model_version` of `"stub-v0"` was returned even
+  when every row was served by a real model (`_route_to_models` did not update
+  it). **Fixed 2026-10-07**: the service now stamps `MODEL_VERSION` once a real
+  model has served a row. The saved bodies here still show `"stub-v0"` because
+  they are unedited captures; do not read them as current behaviour.
 - `smiles_input` is returned already standardized, not as submitted.
 - A cache hit returns the original `served_at`.
 - Celecoxib is out of domain on 5 of 14 endpoints (the design fixture had 2).

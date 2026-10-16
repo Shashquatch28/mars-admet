@@ -462,7 +462,11 @@ OPEN_QUESTIONS Q19).
 
 ## ADR-018 — Data layer: TanStack Query, with a fixture fallback
 
-**Date:** 2026-10-01 · **Status:** accepted (M4)
+**Date:** 2026-10-01 · **Status:** accepted (M4); implementation superseded in part
+2026-10-07: Run is a mutation held in `src/app/predictSession.tsx`
+(`fetchPrediction` in `src/data/client.ts`), not a `usePrediction` query, because
+the server owns the 48 h cache and the client keeps no second one. `src/data/usePrediction.ts`
+never shipped; the fixture fallback and the `VITE_API_BASE` switch are unchanged.
 
 **Decision.** `/predict` is fetched through `@tanstack/react-query`
 (`src/data/usePrediction.ts` over a typed `src/data/client.ts`). The query is

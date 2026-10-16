@@ -1,9 +1,9 @@
 """
 Stub predictor — returns contract-shaped fake predictions so the API and
-frontend can be built and demoed end-to-end before Person A's trained
-models are ready. Swap this out at the A -> B integration sync (Phase 2,
-sync #1) for the real inference wrapper. Do NOT let real logic leak in
-here; keep it deterministic and obviously fake.
+frontend can be built and demoed end-to-end without trained models. It is the
+per-endpoint fallback when the registry has no promoted artifact (or the ml
+stack is not installed); every row it produces carries model_id "stub-v0".
+Do NOT let real logic leak in here; keep it deterministic and obviously fake.
 """
 
 import hashlib
@@ -26,7 +26,7 @@ def _molecule_id(smiles_standardized: str) -> str:
 
 def standardize_stub(smiles: str) -> str:
     # Real standardization (RDKit canonicalize/salt-strip/tautomer-normalize)
-    # lives in ml/featurize once Person A builds Module 3 Stage 1.
+    # lives in ml/featurize (Module 3 Stage 1) and is used when the ml stack is installed.
     return smiles.strip()
 
 

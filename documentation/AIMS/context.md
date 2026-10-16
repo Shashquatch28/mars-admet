@@ -4,8 +4,9 @@ _Last updated: 2026-09-30 (**KERMT Tier-0 Pass 1 is COMPLETE** — seed 0 of eve
 
 ## What MARS is
 
-AI-powered ADMET & drug-safety screening platform. Predicts **14 ADMET
-endpoints** (13 ML + 1 rule-based SA score) from a SMILES string. Research
+AI-powered ADMET & drug-safety screening platform. Predicts **14 ML ADMET
+endpoints** plus a rule-based SA score (15 `Endpoint` members; the headline
+count is 14) from a SMILES string. Research
 project → target output is a **product + a published paper** (MLSB / AI4Science
 venue). Reproducibility, provenance, deterministic evaluation, and auditable
 results are first-class, not add-ons.
@@ -242,6 +243,16 @@ StarDrop (enterprise).
   untracked" note below is superseded. **Since 2026-10-14 an AI session may perform git write operations
   (branch, worktree, commit, merge) provided no trace of the tool is left behind — no co-author or "generated with" trailer, no tool
   name in messages or files. Pushing is not covered and stays with the maintainer** (`decisions.md` 2026-10-14).
+- **Active: M4 — Frontend (Modules 9/7/12/13 UI), branch `milestone/m4-frontend`.**
+  *(added 2026-10-14; this bullet is the only M4 entry in this file.)* Runnable Vite SPA.
+  Predict is live against the API (typed SMILES, 15-row reconciled roster, AD gauge, 3D viewer,
+  endpoint-subset selector); auth UI phase 1; Batch is fixture-only; Compare/Library are
+  placeholders. The design system is locked (frontend ADR-001…028). Gates 2026-10-14: `tsc`
+  clean, vitest 113/113, ruff clean, ml tests 400 passed / 15 skipped. Current state, gaps and
+  next steps live in `documentation/frontend/HANDOFF.md`, not here. The API gained `GET /auth/me`,
+  `ad_threshold` per prediction, the rule-based SA row and an explicit CORS origin list on this
+  branch (contracts and `API_ROUTES.md` updated). Roster count: **14 ML endpoints + 1 rule-based
+  SA score** (corrected 2026-10-14; earlier text here said 13 + 1).
 
 ## Repo map
 
@@ -306,8 +317,10 @@ ml/          data/ — acquire.py, dataset_registry.py, snapshot.py, eda.py,
              data/compare_prep.py, utils/rng_state.py, train/readiness_report.py. Tier-1 trainer (ml/train/kermt_mixed/,
              models/kermt_mixed_model.py, train/train_kermt_mixed.py) and the Tier-2 driver (train/train_kermt_ordinal.py)
              exist on `milestone/m2-kermt-tier1` only (CPU-verified 2026-10-14; gates not run).
-frontend/    package.json + src/types/contracts.ts ONLY. NOT runnable (no Vite
-             entry). React 18 + Vite + 3dmol planned. M4.
+frontend/    Vite + React 18 + TS SPA, runnable (M4 in progress, 2026-10-14):
+             Predict live against the API, auth UI, 3D viewer; Batch fixture-only;
+             Compare/Library placeholders. 113 vitest tests. See
+             documentation/frontend/HANDOFF.md (branch milestone/m4-frontend).
 infra/       empty (infra/docker/.gitkeep). M3/M10.
 docker-compose.yml   postgres + redis + minio(R2 stand-in) + api. Valid.
 .github/workflows/ci.yml   ruff + pytest + docker build + /predict smoke on CCO.
@@ -389,7 +402,7 @@ cd ml && PYTHONPATH=. ..\ml\.venv\Scripts\python.exe -m pytest -q    # 633 pass,
 # Local infra
 docker compose up -d postgres redis minio
 
-# Frontend: NOT runnable yet (M4)
+# Frontend (M4, in progress): cd frontend && npm install && npm run dev  -> :5173
 ```
 
 ## Locked facts (do not re-litigate — see decisions.md + blueprint for why)

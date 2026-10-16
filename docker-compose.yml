@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: mars_dev_password
       POSTGRES_DB: mars_dev
     ports:
-      - "55432:5432"  # host 5432 AND 5433 are both taken by native Windows Postgres services (16, 18) on this machine — see mistakes.md
+      - "55432:5432"  # host 5432 AND 5433 are both taken by native Windows Postgres services (16, 18) on this machine — see documentation/AIMS/mistakes.md (milestone/m2-kermt)
     volumes:
       - mars_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -34,7 +34,7 @@ services:
       retries: 5
 
   minio:
-    image: quay.io/minio/minio:latest  # docker.io/minio/minio now requires `docker login` for anonymous pulls — see mistakes.md
+    image: quay.io/minio/minio:latest  # docker.io/minio/minio now requires `docker login` for anonymous pulls — see documentation/AIMS/mistakes.md (milestone/m2-kermt)
     container_name: mars_minio
     restart: unless-stopped
     command: server /data --console-address ":9001"

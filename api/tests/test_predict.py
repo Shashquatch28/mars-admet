@@ -16,7 +16,7 @@ def test_predict_returns_all_14_ml_endpoints():
     r = client.post("/predict", json={"smiles": "CCO", "endpoints": None})
     assert r.status_code == 200
     body = r.json()
-    assert len(body["predictions"]) == 14  # 13 ML + DILI standalone, SA excluded
+    assert len(body["predictions"]) == 14  # the 14 ML endpoints; the rule-based SA row is added only when rdkit is present
     assert body["model_version"]
     assert body["smiles_standardized"] == "CCO"
     for p in body["predictions"]:
