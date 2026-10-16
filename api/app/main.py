@@ -6,7 +6,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routers import account, auth, batch, compare, generations, health, molecule, molecules, predict, reports
+from app.routers import (
+    account,
+    auth,
+    batch,
+    compare,
+    generations,
+    health,
+    molecule,
+    molecules,
+    predict,
+    reports,
+)
 from app.services import prediction_service
 
 logger = logging.getLogger("mars.startup")
