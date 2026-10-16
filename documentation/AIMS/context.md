@@ -4,8 +4,9 @@ _Last updated: 2026-09-30 (**KERMT Tier-0 Pass 1 is COMPLETE** — seed 0 of eve
 
 ## What MARS is
 
-AI-powered ADMET & drug-safety screening platform. Predicts **14 ADMET
-endpoints** (13 ML + 1 rule-based SA score) from a SMILES string. Research
+AI-powered ADMET & drug-safety screening platform. Predicts **14 ML ADMET
+endpoints** plus a rule-based SA score (15 `Endpoint` members; the headline
+count is 14) from a SMILES string. Research
 project → target output is a **product + a published paper** (MLSB / AI4Science
 venue). Reproducibility, provenance, deterministic evaluation, and auditable
 results are first-class, not add-ons.
@@ -178,7 +179,13 @@ StarDrop (enterprise).
       unknown id → 404.
 - **2026-10-07 scope decision: MARS ships on Tier 0** (stock KERMT, type-homogeneous subgroups, equal weighting). Tier 1 (mixed-type trainer) and Tier 2
   (ordinalization), with Kendall / GradNorm weighting and the Module 11 loss-balancing ablation, are deferred to `FUTURE_SCOPE.md`; the blueprint was amended
-  (`decisions.md` 2026-10-07). **The next bullet is the 2026-09-20 record of the options, kept for history.** Tier-0 status: 23 of 30 seeds trained, 23 models in W&B.
+  (`decisions.md` 2026-10-07). **Partly superseded 2026-10-14:** Tier 1 was revived and Tier 2 became conditional on the budget left after Tier 1
+  (below). **The bullet after next is the 2026-09-20 record of the options.**
+- **2026-10-14 scope decision: Tier 1 revived; Tier 2 conditional on remaining budget.** The mixed-type trainer is built CPU-side on branch
+  `milestone/m2-kermt-tier1` (new files only; gates G1–G4 not run on a GPU); Tier 0 remains the shipped baseline and comparator and keeps
+  training on `milestone/m2-kermt`. Tier 2 is trained only if GPU-time budget remains at the end of Tier 1. **No Tier-1/2 hyperparameter is
+  fixed**: epochs, learning rates, the batch floor, GradNorm α and lr are decided by a pre-registered validation-only tuning protocol with
+  equal budget per arm (`decisions.md` 2026-10-14). The blueprint was reversed the same day. Tier-0 status: 27 of 30 seeds (2026-10-09).
 - **Active: M2 KERMT/GNN track — mixed-type cluster blocker RESOLVED 2026-09-20.**
   KERMT's stock CLI takes one `--dataset_type` per run, so the two mixed-type
   clusters (`metabolism`, `absorption_distribution`) can't be jointly finetuned
@@ -233,8 +240,19 @@ StarDrop (enterprise).
   scripts=`f51cb8f`, Tier-0 results/session records=`6df4bab`, `5c29407`, `ad6eaf1` (Pass-1 training commit `ae5d28d`).
   Current branch **`milestone/m2-kermt`**. Note `documentation/` became
   git-tracked at `1c252ac` (2026-09-18) — the older "documentation stays
-  untracked" note below is superseded. The user commits manually. **The AI must
-  not run git write commands.**
+  untracked" note below is superseded. **Since 2026-10-14 an AI session may perform git write operations
+  (branch, worktree, commit, merge) provided no trace of the tool is left behind — no co-author or "generated with" trailer, no tool
+  name in messages or files. Pushing is not covered and stays with the maintainer** (`decisions.md` 2026-10-14).
+- **Active: M4 — Frontend (Modules 9/7/12/13 UI), branch `milestone/m4-frontend`.**
+  *(added 2026-10-14; this bullet is the only M4 entry in this file.)* Runnable Vite SPA.
+  Predict is live against the API (typed SMILES, 15-row reconciled roster, AD gauge, 3D viewer,
+  endpoint-subset selector); auth UI phase 1; Batch is fixture-only; Compare/Library are
+  placeholders. The design system is locked (frontend ADR-001…028). Gates 2026-10-14: `tsc`
+  clean, vitest 113/113, ruff clean, ml tests 400 passed / 15 skipped. Current state, gaps and
+  next steps live in `documentation/frontend/HANDOFF.md`, not here. The API gained `GET /auth/me`,
+  `ad_threshold` per prediction, the rule-based SA row and an explicit CORS origin list on this
+  branch (contracts and `API_ROUTES.md` updated). Roster count: **14 ML endpoints + 1 rule-based
+  SA score** (corrected 2026-10-14; earlier text here said 13 + 1).
 
 ## Repo map
 
@@ -297,9 +315,12 @@ ml/          data/ — acquire.py, dataset_registry.py, snapshot.py, eda.py,
              featurize/ordinal.py, train/train_kermt_cluster.py,
              train/preflight_clusters.py, eval/heldout_evaluation.py, train/evaluate_xgboost_test.py,
              data/compare_prep.py, utils/rng_state.py, train/readiness_report.py. Tier-1 trainer (ml/train/kermt_mixed/,
-             models/kermt_mixed_model.py) does NOT exist and is deferred (Future Scope, 2026-10-07).
-frontend/    package.json + src/types/contracts.ts ONLY. NOT runnable (no Vite
-             entry). React 18 + Vite + 3dmol planned. M4.
+             models/kermt_mixed_model.py, train/train_kermt_mixed.py) and the Tier-2 driver (train/train_kermt_ordinal.py)
+             exist on `milestone/m2-kermt-tier1` only (CPU-verified 2026-10-14; gates not run).
+frontend/    Vite + React 18 + TS SPA, runnable (M4 in progress, 2026-10-14):
+             Predict live against the API, auth UI, 3D viewer; Batch fixture-only;
+             Compare/Library placeholders. 113 vitest tests. See
+             documentation/frontend/HANDOFF.md (branch milestone/m4-frontend).
 infra/       empty (infra/docker/.gitkeep). M3/M10.
 docker-compose.yml   postgres + redis + minio(R2 stand-in) + api. Valid.
 .github/workflows/ci.yml   ruff + pytest + docker build + /predict smoke on CCO.
@@ -381,7 +402,7 @@ cd ml && PYTHONPATH=. ..\ml\.venv\Scripts\python.exe -m pytest -q    # 633 pass,
 # Local infra
 docker compose up -d postgres redis minio
 
-# Frontend: NOT runnable yet (M4)
+# Frontend (M4, in progress): cd frontend && npm install && npm run dev  -> :5173
 ```
 
 ## Locked facts (do not re-litigate — see decisions.md + blueprint for why)
@@ -394,13 +415,16 @@ docker compose up -d postgres redis minio
 - Calibration split: carved from train_val before CV; 10% or 50-compound floor.
 - DILIst augments DILI (train/val pool only; dedup vs TDC test; re-check scaffold
   overlap post-merge).
-- Subgroups (Tier 0, multi-task, masked loss, one task type each; **since 2026-10-07 the shipped design**): `absorption_distribution__cls` (HIA, Pgp, BBB),
+- Two designs, kept distinct in code and run names (2026-10-14). **Tier-1 mixed clusters** (design target; one run, type-correct loss):
+  `absorption_distribution` (logS, logP, Caco2, PPB + HIA, Pgp, BBB) and `metabolism` (CYP3A4, CYP2D6, CYP2C9 + Clearance). **Tier-0 subgroups**
+  (stock KERMT, one task type each; the shipped baseline and comparator since 2026-10-07): `absorption_distribution__cls` (HIA, Pgp, BBB),
   `absorption_distribution__reg` (logS, logP, Caco2, PPB), `metabolism__cls` (CYP3A4, CYP2D6, CYP2C9), `metabolism__reg` (Clearance, single task),
-  `toxicity__cls` (hERG, AMES), `dili_standalone__cls` (DILI). The blueprint's earlier mixed-type clusters (`absorption_distribution`, `metabolism`) were split by task type.
+  `toxicity__cls` (hERG, AMES), `dili_standalone__cls` (DILI). Which serves each endpoint is decided per endpoint by the Module 11 comparison.
 - Backbone: **KERMT `nvidia/NV-KERMT-70M-v2`** (NVIDIA Open Model License).
   GROVER (MIT) is the pre-vetted fallback.
-- Loss balancing: **equal weighting (stock KERMT, Tier 0)** since 2026-10-07. Kendall weighting, GradNorm, stratified batches, per-task logσ_t monitoring and the
-  fixed-weight fallback (the earlier blueprint's plan for mixed clusters) are deferred to `FUTURE_SCOPE.md`. No result may be called uncertainty-weighted.
+- Loss balancing: Tier 0 is **equal weighting (stock KERMT)**. Tier 1 carries the ablation `fixed_task` vs Kendall vs GradNorm (restored 2026-10-14) with
+  stratified batches, per-task logσ_t monitoring and the fixed-weight fallback; the shipped weighting is the empirical winner, not a pre-named default.
+  No hyperparameter is fixed in advance (tuning protocol). No Tier-0 result may be called uncertainty-weighted.
 - Calibration: temperature scaling (GNN), Platt (XGBoost baseline). **Tier-0 KERMT protocol frozen 2026-09-30** (`decisions.md`): one fixed
   calibration split, `holdout_calibration=True` for every arm, HIA calibrated metrics not reportable, Option A for `metabolism__cls`.
 - Uncertainty CORE: 5-seed ensemble bands + k-NN AD (5-NN Tanimoto ECFP4,
