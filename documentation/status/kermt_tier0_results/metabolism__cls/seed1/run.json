@@ -1,0 +1,196 @@
+{
+  "workflow": "finetune",
+  "started_at": "2026-10-07T05:17:10.429495+00:00",
+  "container": {
+    "image_tag": "kermt:latest",
+    "image_digest": null
+  },
+  "repo": {
+    "commit": "e402473376ace30fa0092dad0578a88bf7f67287",
+    "dirty": false
+  },
+  "inputs": {
+    "ckpt": "/ckpt",
+    "prepare_data_manifest": "/runs/data/prepare_data.json",
+    "ckpt_validator_out": null,
+    "targets": [
+      "cyp3a4_inhibition",
+      "cyp2d6_inhibition",
+      "cyp2c9_inhibition"
+    ]
+  },
+  "model_type": "hybrid",
+  "gpu": 0,
+  "args_applied": {
+    "epochs": {
+      "value": 30,
+      "source": "default-config"
+    },
+    "batch_size": {
+      "value": 32,
+      "source": "default-config"
+    },
+    "init_lr": {
+      "value": 0.0001,
+      "source": "default-config"
+    },
+    "max_lr": {
+      "value": 0.0001,
+      "source": "default-config"
+    },
+    "final_lr": {
+      "value": 2e-05,
+      "source": "default-config"
+    },
+    "dropout": {
+      "value": 0.0,
+      "source": "default-config"
+    },
+    "bond_drop_rate": {
+      "value": 0.1,
+      "source": "default-config"
+    },
+    "dist_coff": {
+      "value": 0.15,
+      "source": "default-config"
+    },
+    "seed": {
+      "value": 1,
+      "source": "user"
+    },
+    "tensorboard": {
+      "value": true,
+      "source": "default-config"
+    },
+    "dataset_type": {
+      "value": "classification",
+      "source": "user"
+    },
+    "metric": {
+      "value": "auc",
+      "source": "user"
+    },
+    "split_type": {
+      "value": "scaffold_balanced",
+      "source": "default-config"
+    },
+    "ensemble_size": {
+      "value": 1,
+      "source": "default-config"
+    },
+    "num_folds": {
+      "value": 1,
+      "source": "default-config"
+    },
+    "no_features_scaling": {
+      "value": true,
+      "source": "default-config"
+    },
+    "ffn_hidden_size": {
+      "value": 700,
+      "source": "default-config"
+    },
+    "ffn_num_layers": {
+      "value": 3,
+      "source": "default-config"
+    },
+    "ffn_num_task_specific_layers": {
+      "value": 1,
+      "source": "user"
+    },
+    "ffn_task_specific_hidden_size": {
+      "value": 64,
+      "source": "user"
+    }
+  },
+  "arch": {
+    "hidden_size": 800,
+    "depth": 6,
+    "num_attn_head": 4,
+    "latent_dim": 512,
+    "activation": "PReLU",
+    "backbone": "gtrans",
+    "embedding_output_type": "both",
+    "self_attention": false
+  },
+  "save_dir": "/runs/ckpt",
+  "logs_dir": "/runs/logs",
+  "tensorboard_dir": "/runs/logs/tb",
+  "argv": [
+    "/softwares/miniconda3/envs/kermt/bin/python",
+    "-u",
+    "/workspace/main.py",
+    "finetune",
+    "--data_path",
+    "/runs/data/clean_train.csv",
+    "--separate_val_path",
+    "/runs/data/clean_val.csv",
+    "--separate_test_path",
+    "/runs/data/clean_test.csv",
+    "--features_path",
+    "/runs/data/clean_train.npz",
+    "--separate_val_features_path",
+    "/runs/data/clean_val.npz",
+    "--separate_test_features_path",
+    "/runs/data/clean_test.npz",
+    "--split_type",
+    "scaffold_balanced",
+    "--checkpoint_path",
+    "/ckpt",
+    "--dataset_type",
+    "classification",
+    "--metric",
+    "auc",
+    "--no_features_scaling",
+    "--ensemble_size",
+    "1",
+    "--num_folds",
+    "1",
+    "--hidden_size",
+    "800",
+    "--depth",
+    "6",
+    "--num_attn_head",
+    "4",
+    "--activation",
+    "PReLU",
+    "--embedding_output_type",
+    "both",
+    "--ffn_hidden_size",
+    "700",
+    "--ffn_num_layers",
+    "3",
+    "--ffn_num_task_specific_layers",
+    "1",
+    "--ffn_task_specific_hidden_size",
+    "64",
+    "--epochs",
+    "30",
+    "--batch_size",
+    "32",
+    "--init_lr",
+    "0.0001",
+    "--max_lr",
+    "0.0001",
+    "--final_lr",
+    "2e-05",
+    "--dropout",
+    "0.0",
+    "--bond_drop_rate",
+    "0.1",
+    "--dist_coff",
+    "0.15",
+    "--seed",
+    "1",
+    "--tensorboard",
+    "--gpu",
+    "0",
+    "--save_dir",
+    "/runs/ckpt"
+  ],
+  "cmd_replay": "CUDA_VISIBLE_DEVICES=0 /softwares/miniconda3/envs/kermt/bin/python -u /workspace/main.py finetune --data_path /runs/data/clean_train.csv --separate_val_path /runs/data/clean_val.csv --separate_test_path /runs/data/clean_test.csv --features_path /runs/data/clean_train.npz --separate_val_features_path /runs/data/clean_val.npz --separate_test_features_path /runs/data/clean_test.npz --split_type scaffold_balanced --checkpoint_path /ckpt --dataset_type classification --metric auc --no_features_scaling --ensemble_size 1 --num_folds 1 --hidden_size 800 --depth 6 --num_attn_head 4 --activation PReLU --embedding_output_type both --ffn_hidden_size 700 --ffn_num_layers 3 --ffn_num_task_specific_layers 1 --ffn_task_specific_hidden_size 64 --epochs 30 --batch_size 32 --init_lr 0.0001 --max_lr 0.0001 --final_lr 2e-05 --dropout 0.0 --bond_drop_rate 0.1 --dist_coff 0.15 --seed 1 --tensorboard --gpu 0 --save_dir /runs/ckpt",
+  "ok_to_replay": true,
+  "dry_run": false,
+  "exit_code": 0,
+  "status": "ok"
+}

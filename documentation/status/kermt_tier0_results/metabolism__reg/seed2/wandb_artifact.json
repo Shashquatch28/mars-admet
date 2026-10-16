@@ -1,0 +1,51 @@
+{
+  "wandb_artifact": "kermt-metabolism-reg-seed2",
+  "version": "v0",
+  "reference": "shashquatch/mars-admet/kermt-metabolism-reg-seed2:v0",
+  "artifact_id": "QXJ0aWZhY3Q6MzgyNjYzNDIwMA==",
+  "digest": "48e27445e2b41023176d6dc17129a807",
+  "artifact_size_bytes": 203155340,
+  "model_sha256": "3706e743868cb3170dd652fe3d3408cdf6a43374c675c32bccaf5532eba85fb9",
+  "model_size_bytes": 203152142,
+  "produced_by_run": "https://wandb.ai/shashquatch/mars-admet/runs/kermt_st_metabolism__reg_seed2_20261006T064018Z",
+  "aliases": [
+    "final",
+    "latest"
+  ],
+  "record_artifact": {
+    "reference": "shashquatch/mars-admet/kermt-metabolism-reg-seed2-record:v0",
+    "artifact_id": "QXJ0aWZhY3Q6MzgyNjYzNDE5Nw==",
+    "digest": "c59ebb2d46d0db2b2cb21c330928d504",
+    "type": "run-record",
+    "n_files": 26,
+    "files": [
+      "artifacts/calibration/clearance_microsomal/calibration_diagnostics.json",
+      "artifacts/kermt/ckpt/fold_0/test_result.csv",
+      "artifacts/kermt/ckpt/quiet.log",
+      "artifacts/kermt/ckpt/verbose.log",
+      "artifacts/kermt/data/prepare_data.json",
+      "artifacts/kermt/input/train.csv",
+      "artifacts/kermt/input/val.csv",
+      "artifacts/kermt/logs/finetune.log",
+      "artifacts/kermt/run.json",
+      "artifacts/model/kermt/metadata.json",
+      "config.json",
+      "lab_logs/tier0_metabolism__reg_seed2_20261006T064015Z.log",
+      "lab_logs/vram_metabolism__reg_seed2_20261006T064015Z.csv",
+      "lab_summary.json",
+      "metrics.jsonl",
+      "predictions/test/input/smiles.csv",
+      "predictions/test/logs/inference.log",
+      "predictions/test/out/predictions.csv",
+      "predictions/test/run.json",
+      "predictions/val/input/smiles.csv",
+      "predictions/val/logs/inference.log",
+      "predictions/val/out/predictions.csv",
+      "predictions/val/run.json",
+      "provenance.json",
+      "run.json",
+      "verify.txt"
+    ]
+  },
+  "verified": "queried via wandb.Api; model.pt + metadata.json present; full download SHA-256 == local model.pt SHA-256 (2026-10-06)"
+}

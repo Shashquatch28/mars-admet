@@ -1,0 +1,190 @@
+{
+  "run_id": "kermt_mtsub_absorption_distribution__cls_seed0_20260930T063831Z",
+  "seed": 0,
+  "wall_seconds": 1090.7,
+  "n_train": 2171,
+  "n_val": 310,
+  "wandb_url": "https://wandb.ai/shashquatch/mars-admet/runs/kermt_mtsub_absorption_distribution__cls_seed0_20260930T063831Z",
+  "model_path": "/home/CL502-18/mars-work/mars-admet/ml/runs/kermt_mtsub_absorption_distribution__cls_seed0_20260930T063831Z/artifacts/model/kermt",
+  "val_metrics": {
+    "hia_absorption": {
+      "auroc": 0.9463414634146342,
+      "auprc": 0.992695180214346,
+      "brier_score": 0.03600746035239481,
+      "ece": 0.04066964335019607,
+      "n_samples": 46,
+      "n_positive": 41,
+      "auroc_valid": true
+    },
+    "pgp_inhibition": {
+      "auroc": 0.9718076285240465,
+      "auprc": 0.9902676311411587,
+      "brier_score": 0.055685532583917584,
+      "ece": 0.07213184451486201,
+      "n_samples": 94,
+      "n_positive": 67,
+      "auroc_valid": true
+    },
+    "bbb_permeability": {
+      "auroc": 0.9296180010465724,
+      "auprc": 0.9874775986088,
+      "brier_score": 0.08677314824866425,
+      "ece": 0.06867174220653628,
+      "n_samples": 173,
+      "n_positive": 147,
+      "auroc_valid": true
+    }
+  },
+  "calibration": {
+    "hia_absorption": {
+      "version": "mars-cluster-calibration-v1",
+      "endpoint_key": "hia_absorption",
+      "seed": 0,
+      "task_type": "classification",
+      "status": "fitted",
+      "reason": null,
+      "n_fit_samples": 47,
+      "n_positive": 46,
+      "n_negative": 1,
+      "positive_rate": 0.9787234042553191,
+      "temperature": 0.9005997034857575,
+      "at_boundary": false,
+      "optimizer_success": true,
+      "nll_before": 0.08536382075095843,
+      "nll_after": 0.08394707057499896,
+      "ece_before": 0.005347698292833699,
+      "ece_after": 0.007786199652585195,
+      "nll_improved": true,
+      "ece_improved": false,
+      "train_val_positive_rate": 0.8863636363636364,
+      "calibration_positive_rate": 0.9787234042553191,
+      "n_calibration_labeled": 47,
+      "n_test_labeled": 117,
+      "test_metrics_raw": {
+        "auroc": 0.9135802469135802,
+        "auprc": 0.9680575952192865,
+        "brier_score": 0.07306282576721544,
+        "ece": 0.06716016323367378,
+        "n_samples": 117,
+        "n_positive": 90,
+        "auroc_valid": true
+      },
+      "test_metrics_calibrated": {
+        "auroc": 0.9135802469135802,
+        "auprc": 0.9680575952192865,
+        "brier_score": 0.07391008616740248,
+        "ece": 0.07448875301457683,
+        "n_samples": 117,
+        "n_positive": 90,
+        "auroc_valid": true
+      },
+      "prep_id": "20260918T090433Z",
+      "model_id": "mars-kermt-multitask-v1",
+      "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+      "provenance": {
+        "checkpoint_hf_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+        "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287"
+      }
+    },
+    "pgp_inhibition": {
+      "version": "mars-cluster-calibration-v1",
+      "endpoint_key": "pgp_inhibition",
+      "seed": 0,
+      "task_type": "classification",
+      "status": "fitted",
+      "reason": null,
+      "n_fit_samples": 97,
+      "n_positive": 36,
+      "n_negative": 61,
+      "positive_rate": 0.3711340206185567,
+      "temperature": 2.1303295193120206,
+      "at_boundary": false,
+      "optimizer_success": true,
+      "nll_before": 0.5699643804245101,
+      "nll_after": 0.45764822500929914,
+      "ece_before": 0.17165651862250314,
+      "ece_after": 0.08723573846792305,
+      "nll_improved": true,
+      "ece_improved": true,
+      "train_val_positive_rate": 0.5438225976768744,
+      "calibration_positive_rate": 0.3711340206185567,
+      "n_calibration_labeled": 97,
+      "n_test_labeled": 245,
+      "test_metrics_raw": {
+        "auroc": 0.9293521727539322,
+        "auprc": 0.9387286411655156,
+        "brier_score": 0.10528956810355206,
+        "ece": 0.06446918905757214,
+        "n_samples": 245,
+        "n_positive": 124,
+        "auroc_valid": true
+      },
+      "test_metrics_calibrated": {
+        "auroc": 0.9293521727539322,
+        "auprc": 0.9387286411655156,
+        "brier_score": 0.10873994814398125,
+        "ece": 0.08712762190829587,
+        "n_samples": 245,
+        "n_positive": 124,
+        "auroc_valid": true
+      },
+      "prep_id": "20260918T090433Z",
+      "model_id": "mars-kermt-multitask-v1",
+      "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+      "provenance": {
+        "checkpoint_hf_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+        "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287"
+      }
+    },
+    "bbb_permeability": {
+      "version": "mars-cluster-calibration-v1",
+      "endpoint_key": "bbb_permeability",
+      "seed": 0,
+      "task_type": "classification",
+      "status": "fitted",
+      "reason": null,
+      "n_fit_samples": 157,
+      "n_positive": 120,
+      "n_negative": 37,
+      "positive_rate": 0.7643312101910829,
+      "temperature": 1.425781335993927,
+      "at_boundary": false,
+      "optimizer_success": true,
+      "nll_before": 0.4160846195428777,
+      "nll_after": 0.3938149888096605,
+      "ece_before": 0.09407877893584549,
+      "ece_after": 0.07338511062056872,
+      "nll_improved": true,
+      "ece_improved": true,
+      "train_val_positive_rate": 0.7503242542153048,
+      "calibration_positive_rate": 0.7643312101910829,
+      "n_calibration_labeled": 157,
+      "n_test_labeled": 394,
+      "test_metrics_raw": {
+        "auroc": 0.937441107788111,
+        "auprc": 0.9846195914788411,
+        "brier_score": 0.08450015814721046,
+        "ece": 0.04762778174472488,
+        "n_samples": 394,
+        "n_positive": 317,
+        "auroc_valid": true
+      },
+      "test_metrics_calibrated": {
+        "auroc": 0.937441107788111,
+        "auprc": 0.9846195914788411,
+        "brier_score": 0.08186238138277128,
+        "ece": 0.06318613904860843,
+        "n_samples": 394,
+        "n_positive": 317,
+        "auroc_valid": true
+      },
+      "prep_id": "20260918T090433Z",
+      "model_id": "mars-kermt-multitask-v1",
+      "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+      "provenance": {
+        "checkpoint_hf_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+        "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287"
+      }
+    }
+  }
+}

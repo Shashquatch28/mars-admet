@@ -101,6 +101,9 @@ ruff check contracts api ml
 cd frontend && npm test && npm run lint && npx tsc --noEmit
 ```
 
+A native uvicorn from the root `.venv` (stub only, no ml stack) must use port
+8080: port 8000 is reserved by Hyper-V/Docker on the dev machine.
+
 CI (`.github/workflows/ci.yml`) runs ruff, the contract and API tests against
 real Postgres and Redis service containers, a `/predict` smoke test, and a
 Docker build of the API image. It does not deploy.

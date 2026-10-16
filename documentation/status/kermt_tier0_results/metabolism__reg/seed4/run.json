@@ -1,0 +1,13 @@
+{
+  "cluster": "metabolism",
+  "endpoint": "metabolism__reg",
+  "finished_at": "2026-10-06T07:03:44.670557+00:00",
+  "model_family": "kermt_single",
+  "n_targets": 1,
+  "name": "kermt_st_metabolism__reg_seed4",
+  "prep_id": "20260918T090433Z",
+  "run_id": "kermt_st_metabolism__reg_seed4_20261006T065650Z",
+  "seed": 4,
+  "started_at": "2026-10-06T06:56:50.286200+00:00",
+  "status": "completed"
+}

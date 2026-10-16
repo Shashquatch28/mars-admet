@@ -1,0 +1,26 @@
+{
+  "environment": {
+    "cuda_available": null,
+    "cuda_version": null,
+    "cudnn_version": null,
+    "gpu_name": null,
+    "machine": "x86_64",
+    "numpy_version": "2.4.6",
+    "pandas_version": "2.3.3",
+    "platform": "Linux-7.0.0-30-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "pytdc_version": null,
+    "python_version": "3.11.15 (main, Mar  3 2026, 09:26:23) [GCC 13.3.0]",
+    "rdkit_version": "2026.3.6",
+    "scikit_learn_version": "1.9.1",
+    "timestamp_utc": "2026-09-22T05:29:00.571970+00:00",
+    "torch_installed": false,
+    "torch_version": null,
+    "xgboost_version": null
+  },
+  "git": {
+    "branch": "milestone/m2-kermt",
+    "commit": "7475342b692626a78ff5152a958936795c734874",
+    "dirty": false
+  }
+}

@@ -8,15 +8,15 @@ gives pytest and ruff a rootdir).
 
 | Dir | Contents |
 |---|---|
-| `data/` | TDC acquisition (`acquire.py`, isolated env), standardization-driven `prepare.py`, tiered `dedup`, scaffold `split`, DILIst augmentation, EDA, dataset registry, lockfiles in `metadata/`, licences in `LICENSES.md` |
-| `featurize/` | RDKit standardization, Morgan fingerprints, 217 descriptors, graph, ETKDG/MMFF conformers, scaffold, batched `pipeline`, on-disk `cache`, `build_cache.py` |
-| `models/` | `base.py` interface, `xgboost_model.py` |
-| `train/` | `run_xgboost_baseline.py` (one endpoint x one seed), `train_xgboost.py`, and the production sweep drivers `preflight_sweep.py`, `run_production_sweep.py`, `verify_sweep.py` |
-| `eval/` | metrics, 5-seed aggregation (`evaluate.py`), Platt/temperature `calibration`, k-NN `applicability_domain`, `leakage_audit`, TDC comparability |
+| `data/` | TDC acquisition (`acquire.py`, isolated env), standardization-driven `prepare.py`, tiered `dedup`, scaffold `split`, DILIst augmentation, EDA, dataset registry, `cluster_loaders.py` (leakage-safe wide multi-endpoint tables for multi-task training), `compare_prep.py`, lockfiles in `metadata/`, licences in `LICENSES.md` |
+| `featurize/` | RDKit standardization, Morgan fingerprints, 217 descriptors, graph, ETKDG/MMFF conformers, scaffold, batched `pipeline`, on-disk `cache`, `build_cache.py`, `kermt_adapter.py` (SMILES/CSV contract for KERMT), `ordinal.py` (Tier-2 ordinal codec; Tier 2 is conditional on the budget left after Tier 1) |
+| `models/` | `base.py` interface, `xgboost_model.py`, `kermt_model.py` (stock KERMT CLI path) |
+| `train/` | `run_xgboost_baseline.py` (one endpoint x one seed), `train_xgboost.py`, and the production sweep drivers `preflight_sweep.py`, `run_production_sweep.py`, `verify_sweep.py`; KERMT: `train_kermt_cluster.py` (Tier-0 harness), `preflight_clusters.py` (zero-GPU cluster gate), `readiness_report.py`, `kermt_gpu_benchmark.py`; `evaluate_xgboost_test.py` (held-out test numbers into `runs/test_evaluations/`) |
+| `eval/` | metrics, 5-seed aggregation (`evaluate.py`), Platt/temperature `calibration`, k-NN `applicability_domain`, `leakage_audit`, TDC comparability, `calibration_diagnostics`, `cluster_calibration` (temperature scaling for KERMT runs), `cluster_eval`, `heldout_evaluation` (promoted XGBoost artifacts on the held-out test split), `tier0_artifacts` / `tier0_present` / `kermt_log` |
 | `serve/` | inference registry (`registry.py`), predictor, rule-based SA score. This is what the API container imports. |
 | `tracking/` | experiment run records, provenance capture, W&B logger |
-| `configs/` | `experiment_config.py` |
-| `utils/` | seeding |
+| `configs/` | `experiment_config.py`, `clusters.py` (cluster and type-homogeneous subgroup registry) |
+| `utils/` | seeding, `rng_state.py` (RNG capture/restore; not yet wired into training) |
 | `tests/` | pytest suite (400 pass, 15 skip, about 9 min, 2026-10-14) |
 
 Not tracked in git: `data/raw/`, `data/processed/`, `data/cache/`, `runs/`,
@@ -35,8 +35,11 @@ its dependencies, so acquisition runs in an isolated environment
 | `requirements-serving.txt` | the inference subset the API image installs |
 | `requirements.txt` | loose superset, reference only; not a lockfile |
 
-KERMT / torch / transformers are GPU-box only and are not in `ml/.venv`; the
-KERMT training track and its code live on `milestone/m2-kermt`.
+KERMT / torch / transformers are never installed in `ml/.venv`: KERMT runs in
+its own docker container (`cuik_molmaker` cannot be installed CPU-only). The
+Tier-1/2 mixed-type trainer (`train/kermt_mixed/`, `models/kermt_mixed_model.py`,
+`train/train_kermt_mixed.py`, `train/train_kermt_ordinal.py`) lives on
+`milestone/m2-kermt-tier1`, CPU-verified only; gates G1-G4 have not run.
 
 ## Pipeline
 
@@ -60,6 +63,16 @@ PYTHONPATH=. python train/verify_sweep.py
 The sweep promotes each seed into `artifacts/<endpoint>/` (model, AD index,
 calibrator) in the layout `serve/registry.py` documents; the API reads that
 directory.
+
+## Status of the training track
+
+- XGBoost: 70/70 production runs promoted. Held-out numbers are in
+  `runs/test_evaluations/`; the older `runs/evaluations/` are validation-fold and
+  differ by up to +0.26 AUROC, so compare KERMT against the test set.
+- KERMT Tier 0 (stock KERMT, type-homogeneous subgroups, equal weighting) is the
+  shipped baseline: 27 of 30 seeds trained as of 2026-10-09 (`toxicity__cls` 2 of 5).
+  Status: `../documentation/status/kermt_gpu_session_2026-10-09.md`; live plan:
+  `../documentation/AIMS/next_steps.md`.
 
 ## Rules that hold across this directory
 

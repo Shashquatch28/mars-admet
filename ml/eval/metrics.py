@@ -193,11 +193,17 @@ def compute_metrics(
 
 def aggregate_seed_metrics(
     per_seed: list[ClassificationMetrics | RegressionMetrics],
-) -> dict[str, float]:
-    """Compute mean ± std over 5-seed results (blueprint Module 11 §2).
+) -> dict[str, float | None]:
+    """Compute mean ± std over per-seed results (blueprint Module 11 §2: 5 fixed seeds).
 
-    Returns a flat dict: ``{metric_mean: float, metric_std: float, ...}``.
+    Returns a flat dict: ``{metric_mean: float, metric_std: float | None, ...}``.
     NaN values (e.g. from single-class folds) are excluded from the aggregate.
+
+    ``<metric>_std`` is the sample standard deviation (``ddof=1``) over the *valid*
+    values and is **``None`` when fewer than two valid values exist**: one seed has no
+    spread, and reporting ``0.0`` would read as perfect stability. ``<metric>_mean`` is
+    ``NaN`` when no valid value exists. This function does not enforce the blueprint's
+    five seeds — callers that publish a mean ± std must check ``n_seeds`` themselves.
 
     Parameters
     ----------
@@ -213,15 +219,22 @@ def aggregate_seed_metrics(
     else:
         keys = ["mae"]
 
-    out: dict[str, float] = {}
+    out: dict[str, float | None] = {}
     for k in keys:
         vals = np.array([getattr(m, k) for m in per_seed], dtype=float)
         valid = vals[~np.isnan(vals)]
         out[f"{k}_mean"] = float(np.mean(valid)) if len(valid) > 0 else float("nan")
-        out[f"{k}_std"] = float(np.std(valid, ddof=1)) if len(valid) > 1 else 0.0
+        out[f"{k}_std"] = float(np.std(valid, ddof=1)) if len(valid) > 1 else None
 
     out["n_seeds"] = float(len(per_seed))
     out["n_valid_seeds"] = float(
         len([m for m in per_seed if getattr(m, "auroc_valid", True)])
     )
     return out
+
+
+def format_mean_std(mean: float, std: float | None, *, digits: int = 3) -> str:
+    """``"0.851+-0.012"``, or ``"0.851+-n/a"`` when the std is undefined (fewer than two seeds)."""
+    if std is None:
+        return f"{mean:.{digits}f}+-n/a"
+    return f"{mean:.{digits}f}+-{std:.{digits}f}"

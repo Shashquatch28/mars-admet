@@ -15,8 +15,21 @@ from typing import Any
 # Matches the default in data.split.five_seed_train_val_folds.
 FIXED_SEEDS: tuple[int, ...] = (0, 1, 2, 3, 4)
 
+# The three KERMT training paths are deliberately distinct families so they can
+# never be conflated in run names, artifact paths or results tables:
+#   kermt_multitask_subgroup — stock KERMT CLI, type-homogeneous subgroup (path a)
+#   kermt_mixed              — MARS-owned mixed-type trainer, KERMT as a library (path b)
+#   kermt_ordinal            — stock KERMT CLI on ordinal-encoded targets (path c)
+# See documentation/AIMS/decisions.md (2026-09-20).
 VALID_MODEL_FAMILIES: frozenset[str] = frozenset(
-    {"xgboost", "kermt_single", "kermt_multitask"}
+    {
+        "xgboost",
+        "kermt_single",
+        "kermt_multitask",
+        "kermt_multitask_subgroup",
+        "kermt_mixed",
+        "kermt_ordinal",
+    }
 )
 
 # Short prefix used in run names and artifact paths
@@ -24,6 +37,9 @@ _MODEL_FAMILY_PREFIX: dict[str, str] = {
     "xgboost": "xgb",
     "kermt_single": "kermt_st",
     "kermt_multitask": "kermt_mt",
+    "kermt_multitask_subgroup": "kermt_mtsub",
+    "kermt_mixed": "kermt_mx",
+    "kermt_ordinal": "kermt_ord",
 }
 
 
@@ -50,6 +66,11 @@ class ExperimentConfig:
     hyperparams:
         Model-family-specific hyperparameters (e.g. XGBoost tree depth).
         Stored verbatim in run provenance — no schema enforced at this level.
+    variant:
+        Optional ablation-arm discriminator appended to the run name, e.g.
+        ``"kendall"`` / ``"fixed"`` / ``"gradnorm"`` for Module 11's mandated
+        loss-balancing axis. Without it the three arms of one cluster collide on
+        a single run name and silently overwrite each other's records.
     notes:
         Free-text annotation (reason for run, ablation axis, etc.).
     """
@@ -60,6 +81,7 @@ class ExperimentConfig:
     prep_id: str
     use_augmented_dili: bool = False
     hyperparams: dict[str, Any] = field(default_factory=dict)
+    variant: str = ""
     notes: str = ""
 
     def __post_init__(self) -> None:
@@ -84,10 +106,14 @@ class ExperimentConfig:
     def run_name(self) -> str:
         """Canonical run name passed to ExperimentRun.
 
-        Pattern: ``<prefix>_<endpoint>_seed<n>``
+        Pattern: ``<prefix>_<endpoint>_seed<n>[_<variant>]``
 
         Example: ``xgb_solubility_logs_seed0``,
-                 ``kermt_st_ames_mutagenicity_seed2``.
+                 ``kermt_st_ames_mutagenicity_seed2``,
+                 ``kermt_mx_metabolism_seed0_kendall``.
         """
         prefix = _MODEL_FAMILY_PREFIX[self.model_family]
-        return f"{prefix}_{self.endpoint}_seed{self.seed}"
+        name = f"{prefix}_{self.endpoint}_seed{self.seed}"
+        if self.variant:
+            name = f"{name}_{self.variant}"
+        return name

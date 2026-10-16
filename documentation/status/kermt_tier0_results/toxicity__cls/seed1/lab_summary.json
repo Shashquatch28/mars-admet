@@ -1,0 +1,131 @@
+{
+  "run_id": "kermt_mtsub_toxicity__cls_seed1_20260924T080913Z",
+  "seed": 1,
+  "wall_seconds": 5705.6,
+  "n_train": 12787,
+  "n_val": 1827,
+  "wandb_url": "https://wandb.ai/shashquatch/mars-admet/runs/kermt_mtsub_toxicity__cls_seed1_20260924T080913Z",
+  "model_path": "/home/CL502-18/mars-work/mars-admet/ml/runs/kermt_mtsub_toxicity__cls_seed1_20260924T080913Z/artifacts/model/kermt",
+  "val_metrics": {
+    "herg_cardiotoxicity": {
+      "auroc": 0.84375,
+      "auprc": 0.3666666666666667,
+      "brier_score": 0.11288544405533478,
+      "ece": 0.15334761096164584,
+      "n_samples": 18,
+      "n_positive": 2,
+      "auroc_valid": true
+    },
+    "ames_mutagenicity": {
+      "auroc": 0.8509254903113881,
+      "auprc": 0.8444895559173271,
+      "brier_score": 0.16383969998795517,
+      "ece": 0.09057195698942902,
+      "n_samples": 1810,
+      "n_positive": 958,
+      "auroc_valid": true
+    }
+  },
+  "calibration": {
+    "herg_cardiotoxicity": {
+      "version": "mars-cluster-calibration-v1",
+      "endpoint_key": "herg_cardiotoxicity",
+      "seed": 1,
+      "task_type": "classification",
+      "status": "fitted",
+      "reason": null,
+      "n_fit_samples": 1050,
+      "n_positive": 616,
+      "n_negative": 434,
+      "positive_rate": 0.5866666666666667,
+      "temperature": 1.6027876016493918,
+      "at_boundary": false,
+      "optimizer_success": true,
+      "nll_before": 0.5109523439847327,
+      "nll_after": 0.4737008982844894,
+      "ece_before": 0.09808508148949066,
+      "ece_after": 0.045083975370031254,
+      "nll_improved": true,
+      "ece_improved": true,
+      "train_val_positive_rate": 0.4900409797007529,
+      "calibration_positive_rate": 0.5866666666666667,
+      "n_calibration_labeled": 1050,
+      "n_test_labeled": 2627,
+      "test_metrics_raw": {
+        "auroc": 0.8942095464864518,
+        "auprc": 0.9041003962366814,
+        "brier_score": 0.13591722534015,
+        "ece": 0.05831795003138224,
+        "n_samples": 2627,
+        "n_positive": 1422,
+        "auroc_valid": true
+      },
+      "test_metrics_calibrated": {
+        "auroc": 0.8942095464864518,
+        "auprc": 0.9041003962366814,
+        "brier_score": 0.13273210049265974,
+        "ece": 0.04271833075521142,
+        "n_samples": 2627,
+        "n_positive": 1422,
+        "auroc_valid": true
+      },
+      "prep_id": "20260918T090433Z",
+      "model_id": "mars-kermt-multitask-v1",
+      "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+      "provenance": {
+        "checkpoint_hf_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+        "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287"
+      }
+    },
+    "ames_mutagenicity": {
+      "version": "mars-cluster-calibration-v1",
+      "endpoint_key": "ames_mutagenicity",
+      "seed": 1,
+      "task_type": "classification",
+      "status": "fitted",
+      "reason": null,
+      "n_fit_samples": 576,
+      "n_positive": 392,
+      "n_negative": 184,
+      "positive_rate": 0.6805555555555556,
+      "temperature": 1.378359022717123,
+      "at_boundary": false,
+      "optimizer_success": true,
+      "nll_before": 0.5054227731778114,
+      "nll_after": 0.49077088495227744,
+      "ece_before": 0.08981086707232555,
+      "ece_after": 0.08149690225504416,
+      "nll_improved": true,
+      "ece_improved": true,
+      "train_val_positive_rate": 0.5328265376641327,
+      "calibration_positive_rate": 0.6805555555555556,
+      "n_calibration_labeled": 576,
+      "n_test_labeled": 1453,
+      "test_metrics_raw": {
+        "auroc": 0.8568070314866763,
+        "auprc": 0.894933383183796,
+        "brier_score": 0.1545185662465072,
+        "ece": 0.07104386472556977,
+        "n_samples": 1453,
+        "n_positive": 866,
+        "auroc_valid": true
+      },
+      "test_metrics_calibrated": {
+        "auroc": 0.8568070314866763,
+        "auprc": 0.894933383183796,
+        "brier_score": 0.15075071744844182,
+        "ece": 0.04748237706302199,
+        "n_samples": 1453,
+        "n_positive": 866,
+        "auroc_valid": true
+      },
+      "prep_id": "20260918T090433Z",
+      "model_id": "mars-kermt-multitask-v1",
+      "checkpoint_sha256": "e9e6649bc96503fbdb3023e312764ecbbbafd686d9a62865a1fec9466cea6be3",
+      "provenance": {
+        "checkpoint_hf_repo_sha": "7df5eb3179235fdea1e8124db73215da33d77dce",
+        "kermt_commit": "e402473376ace30fa0092dad0578a88bf7f67287"
+      }
+    }
+  }
+}
