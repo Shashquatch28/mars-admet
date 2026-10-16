@@ -1,58 +1,83 @@
 # MARS — Molecular ADMET Rapid Screening
 
-Drug safety/viability screening platform predicting 14 clinically relevant ADMET
-endpoints from molecular structure. `documentation/mars-blueprint_v4.md` is the
-full locked design spec and the source of truth — this repo is the execution of
-that blueprint, not a restatement of it. Current implementation status and the
-verification matrix live in `documentation/status/mars-status_M0.md`.
+A desktop scientific workstation that predicts ADMET endpoints for drug
+molecules from a SMILES string: **14 ML endpoints** across five ADMET
+categories, plus a rule-based synthetic-accessibility score shown in its own
+group. Every value is served with an applicability-domain check and a note of
+which model produced it.
 
-Build is **solo, sequenced by dependency order** (blueprint Module 14, revised
-from the earlier 3-person A/B/C split). The `ml/` / `api/` / `frontend/` READMEs
-still say "Person A/B/C" in places — that framing is retired; treat them as
-module groupings, not people.
+`documentation/mars-blueprint_v4.md` is the locked design spec and the source
+of truth; this repository is its execution, not a restatement of it.
 
-## Repo layout
+## Where the project stands
+
+| Area | State |
+|---|---|
+| Contracts (`contracts/`) | Done. Pydantic models, route table, frontend drift test. |
+| Data and featurization (`ml/data`, `ml/featurize`) | Done. Locked acquisition, scaffold split, leakage audits, feature cache. |
+| Modelling (`ml/models`, `ml/train`, `ml/eval`) | XGBoost baseline done: 14 endpoints x 5 seeds promoted to `ml/artifacts/`. KERMT (GNN) training lives on `milestone/m2-kermt`; the product ships on its Tier 0 (`documentation/FUTURE_SCOPE.md`). |
+| Serving (`api/`, `ml/serve/`) | Done locally. `/predict`, `/compare`, `/batch/*`, `/molecule/{id}/3d`, auth and persistence. Cloud deploy has not happened. |
+| Frontend (`frontend/`) | In progress (M4). Predict is live against the API; Batch is on a fixture; Compare and Library are placeholders. |
+
+Current frontend state and next steps: `documentation/frontend/HANDOFF.md`.
+Project memory, decisions and the ML track log: `documentation/AIMS/`.
+
+## Repository layout
 
 ```
-contracts/    Shared Pydantic contracts (Phase 0) — source of truth for
-              field names used by ml/, api/, and frontend/. See API_ROUTES.md.
-ml/           Modules 1/3/4/5/6/11 — data, featurization, models, training, eval.
-api/          Module 8 — FastAPI serving, routing table, batch queue.
-frontend/     Modules 9/7/12/13 UI — React.
-infra/        Module 10 — deployment/config.
-docker-compose.yml   Local dev stack: Postgres, Redis, MinIO (R2 stand-in), API.
-.env.example  All required env vars, pre-named.
-.github/workflows/ci.yml   Lint + test + API image build + /predict smoke test.
+contracts/    Shared Pydantic contracts and the route table (API_ROUTES.md).
+              Source of truth for field names used by ml/, api/ and frontend/.
+ml/           Data, featurization, models, training, evaluation, serving
+              registry. Run as scripts, not installed. See ml/README.md.
+api/          FastAPI service: prediction, batch, auth, persistence.
+              See api/README.md.
+frontend/     Vite + React + TypeScript SPA. See frontend/README.md.
+infra/        Reserved for deployment config (Module 10); empty today.
+documentation/
+  mars-blueprint_v4.md   the locked spec
+  frontend/              design system, ADRs, handoff
+  AIMS/                  project memory, decision log, lab runbooks
+  status/                point-in-time status notes
+  FUTURE_SCOPE.md        deliberately deferred work
+docker-compose.yml       Local stack: Postgres, Redis, MinIO (R2 stand-in), API.
+.env.example             Every backend environment variable, with defaults.
+.github/workflows/ci.yml Lint, test, API image build, /predict smoke test.
+AGENTS.md                Non-negotiable rules for any coding agent.
 ```
 
-## Day 1 setup
+## Quick start
+
+Three separate Python environments are used on purpose; do not merge them.
+
+| Environment | For |
+|---|---|
+| root `.venv` | `contracts/` and `api/` tests |
+| `ml/.venv` | all `ml/` work (rdkit, xgboost, wandb) |
+| isolated acquisition env | PyTDC only (`ml/data/acquisition/README.md`) |
 
 ```bash
-# 1. Environment
+# 1. Environment file
 cp .env.example .env
 
-# 2. Contracts (install first — both ml/ and api/ depend on this)
+# 2. Contracts first; ml/, api/ and the drift test import them
 pip install -e ./contracts
 
-# 3. Bring up local infra
-docker compose up -d postgres redis minio
+# 3. Local infra and the API (http://localhost:8000/docs)
+docker compose up -d --build
 
-# 4. API (stub predictor wired in — /predict returns contract-shaped fake
-#    data until Person A's trained models land)
-cd api && pip install -r requirements.txt
-uvicorn app.main:app --reload
-# -> http://localhost:8000/docs
-
-# 5. ML deps (heavy — torch/rdkit/PyTDC; GNN training needs a CUDA box)
-cd ml && pip install -r requirements.txt
-python data/acquire.py   # STUB today — see documentation/status/mars-status_M0.md (M1)
+# 4. Frontend (http://localhost:5173)
+cd frontend
+npm install
+cp .env.example .env.local     # then set VITE_API_BASE=/api
+npm run dev
 ```
 
-> Frontend (`frontend/`) is **not runnable yet** — `package.json` exists but the
-> Vite entry (`index.html`, `src/main.tsx`, `vite.config.ts`, `tsconfig.json`)
-> is M4 work. `npm install` works; `npm run dev` does not.
+The API image installs the inference subset of `ml/` and mounts
+`ml/artifacts/` as a volume. **`ml/artifacts/` is git-ignored.** Without
+promoted artifacts the API serves the deterministic stub for every endpoint
+(`model_id: "stub-v0"`), which the UI marks with a diagonal hatch.
 
-## Verify it's working
+Smoke check:
 
 ```bash
 curl -X POST http://localhost:8000/predict \
@@ -60,22 +85,44 @@ curl -X POST http://localhost:8000/predict \
   -d '{"smiles": "CCO", "endpoints": null}'
 ```
 
-Should return 14 endpoint predictions (fake values from the stub predictor, but
-contract-shaped — this is what B and C build against until A's real models land).
+## Tests
 
-## Build order (Module 14, solo)
+```bash
+# contracts + API (root .venv). DB/Redis-backed tests skip when the stack is down.
+pytest contracts/tests api/tests -q
 
-Dependency chain, not a team split:
-`contracts → data/featurize/models/AD → API+auth → frontend+3D → infra deploy →
-eval/explainability/novelty`. Milestones M0–M5 target Sep 30, 2026. See
-`documentation/status/mars-status_M0.md` for where each module actually stands.
+# ml (ml/.venv; the full suite takes several minutes)
+ml/.venv/Scripts/python -m pytest ml/tests -q
 
-## Key locked decisions (see blueprint for full reasoning)
+# lint (CI runs the same command)
+ruff check contracts api ml
 
-- 14 endpoints, TDC-sourced, all CC BY 4.0 (PharmaBench dropped — NC-ND conflict)
-- Scaffold split (80/20, 5-seed CV), matches TDC's official benchmark protocol
-- Multi-task clusters: Absorption/Distribution, Metabolism (+Clearance), Toxicity, DILI standalone
-- k-NN applicability domain (5-NN Tanimoto/ECFP4) is core MVP, not deferred
-- Checkpointing + RNG-state restoration is mandatory (lab A100 sessions aren't guaranteed length)
-- `/predict` is fast/cheap; 3D conformers + explainability are lazy/on-demand
-- 48h Redis cache TTL, 24h batch upload retention, opt-in-only retraining use
+# frontend
+cd frontend && npm test && npm run lint && npx tsc --noEmit
+```
+
+CI (`.github/workflows/ci.yml`) runs ruff, the contract and API tests against
+real Postgres and Redis service containers, a `/predict` smoke test, and a
+Docker build of the API image. It does not deploy.
+
+## Working agreements
+
+- Several sessions may share one checkout, one Docker daemon and the same
+  untracked config. Read `AGENTS.md` ("Shared dev environment") before starting
+  a server or a container.
+- The UI must never imply a capability the model does not have: no value is
+  coloured, ranked or called good or safe by its magnitude. The full list of
+  rules is in `AGENTS.md`.
+
+## Key locked decisions
+
+Full reasoning is in the blueprint; the log of changes is in
+`documentation/AIMS/decisions.md`.
+
+- 14 TDC-sourced endpoints, all CC BY 4.0 (PharmaBench dropped: NC-ND conflict).
+- Scaffold split (80/20, 5-seed CV), matching TDC's benchmark protocol.
+- k-NN applicability domain (5-NN Tanimoto on ECFP4) is core, not deferred.
+- `/predict` is fast and cheap; 3D conformers and explainability are lazy.
+- 48 h Redis cache keyed on SMILES, endpoint set and `MODEL_VERSION`; 24 h
+  batch-upload retention; retraining use is opt-in only.
+- No paid compute. Serving target is Google Cloud Run.
