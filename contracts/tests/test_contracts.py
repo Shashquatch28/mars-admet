@@ -15,7 +15,7 @@ from mars_contracts import (
 
 
 def test_endpoint_counts_match_blueprint():
-    # Module 2: 14 endpoints = 13 ML-trained + 1 rule-based (SA score).
+    # Module 2: 14 ML-trained endpoints + 1 rule-based (SA score) = 15 members.
     assert len(ALL_ENDPOINTS) == 15  # 14 + SA
     assert len(ML_ENDPOINTS) == 14
     assert Endpoint.SA_SCORE not in ML_ENDPOINTS

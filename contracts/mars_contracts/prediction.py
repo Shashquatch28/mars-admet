@@ -1,8 +1,10 @@
 """
-Phase 0 contract — locked interface between ML (Person A) and API (Person B).
-A's inference wrapper must produce output matching EndpointPrediction/PredictionResponse.
-B's /predict route must accept PredictionRequest and return PredictionResponse.
-Changing field names here is a breaking change and requires a re-sync.
+Phase 0 contract — locked interface between the ML serving layer (ml/serve) and
+the API (api/). The inference wrapper must produce output matching
+EndpointPrediction/PredictionResponse; the /predict route must accept
+PredictionRequest and return PredictionResponse.
+Changing field names here is a breaking change: it also breaks
+frontend/src/types/contracts.ts (checked by contracts/tests/test_frontend_drift.py).
 """
 
 from datetime import datetime

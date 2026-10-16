@@ -10,10 +10,10 @@ Artifact layout (`artifacts_root`, default `ml/artifacts/`):
 This directory is intentionally decoupled from `ml/runs/` (ExperimentRun's
 ephemeral, git-ignored per-run output) — `promote_seed_artifact` is the one
 function that copies a finished run's model into the stable registry a
-serving process reads from. As of 2026-09-16, MARS has never run its
-production 70-run XGBoost sweep (14 endpoints x 5 seeds) and KERMT does not
-exist — so most endpoints have zero promoted artifacts. `ModelRegistry`
-reports this honestly via `available_endpoints()` rather than silently
+serving process reads from. `ml/artifacts/` is git-ignored: a checkout
+without promoted artifacts has zero covered endpoints (the 2026-09-17
+production sweep promoted all 14 on the development machine). `ModelRegistry`
+reports coverage honestly via `available_endpoints()` rather than silently
 falling back to anything fake; the API layer decides what to do when an
 endpoint isn't covered (Module 8's stub predictor).
 """
