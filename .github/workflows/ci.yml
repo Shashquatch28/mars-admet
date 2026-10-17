@@ -98,6 +98,9 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"smiles": "CCO", "endpoints": null}')
           echo "$resp"
+          # 14 = the ML endpoints. This job has no ml stack, so the stub serves
+          # them and no rule-based SA row is added; with rdkit present the
+          # service returns 15 rows (14 ML + synthetic_accessibility).
           echo "$resp" | python -c "import sys, json; d = json.load(sys.stdin); assert len(d['predictions']) == 14, d; assert d['model_version'], d; print('smoke OK:', len(d['predictions']), 'predictions,', 'model_version=' + d['model_version'])"
 
   build-api-image:

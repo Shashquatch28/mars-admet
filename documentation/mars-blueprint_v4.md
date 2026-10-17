@@ -100,11 +100,11 @@ Where a higher-quality/larger public dataset exists for a specific endpoint beyo
 **Decision: PharmaBench dropped as a candidate augmentation source.** Given the ambiguity sits directly across MARS's stated goals — publication, potential code/data sharing, commercial-platform styling — the lower-risk call is to not build on an assumption about an unsettled legal question. BBB and Clearance stay TDC-only (CC BY 4.0), which was already the retained fallback if the concordance check failed, so this doesn't require any pipeline redesign — just removing PharmaBench from the augmentation candidate list in §6 and Module 2's endpoint table.
 
 ## Module 2: Endpoint Selection
-`LAUNCH SCOPE: MVP` — all 14 endpoints ship in v1.
+`LAUNCH SCOPE: MVP` — all 14 ML endpoints ship in v1, plus the rule-based SA score.
 
 **Selection criteria:** clinically/practically used in real drug discovery triage, backed by a paper-published, publicly available dataset (primarily TDC / ADMET Benchmark Group), and covering all ADMET categories without redundant/low-value endpoints.
 
-### Final 14 endpoints (13 ML-trained + 1 rule-based)
+### Final endpoints: 14 ML-trained + 1 rule-based (15 in all)
 
 | # | Endpoint | Category | Task Type | Dataset | N (compounds) | Data Tier |
 |---|---|---|---|---|---|---|
@@ -427,7 +427,7 @@ Every response includes which model version served the prediction — extends Mo
 | Async batch worker | **Google Cloud Run** service (HTTP-triggered) + **Google Cloud Tasks** queue | GCP-native serverless queue: `POST /batch/predict` enqueues a Cloud Task per job; Cloud Tasks delivers to a dedicated Cloud Run worker endpoint with automatic ret/backoff. No always-on worker process, no Celery broker to run. Stays in the Cloud Tasks + Cloud Run free tiers at v1 scale. SSE progress (Module 8) is served from the backend reading job state in Redis. |
 | Database (Postgres) | Neon or Supabase (free tier) | Generous free tiers, serverless Postgres. Unchanged. |
 | Cache (Redis) | Upstash (free tier) | Serverless, request-based — fits the Module 8 caching pattern without paying for an always-on instance |
-| Frontend | Vercel (free tier) | Best-in-class React hosting, decoupled from the stateful backend |
+| Frontend | Vercel (free tier) | Best-in-class React hosting, decoupled from the stateful backend. *Pending amendment (2026-10-08): frontend ADR-025 proposes serving the built SPA from the API container on one origin instead, because the `SameSite=Lax` session cookie does not travel on cross-site requests.* |
 | Object storage (model weights, batch uploads, cached conformers) | Cloudflare R2 | S3-compatible, no egress fees — matters for batch upload/download bandwidth. Unchanged (kept over GCS specifically for the zero egress fee). |
 | Transactional email (Module 13 password reset) | Resend, free tier | 3,000 emails/mo, 100/day cap, 1 domain — free tier confirmed active as of mid-2026, comfortably covers password-reset volume at v1 scale; added when Module 13 was scoped |
 | Training compute (separate from serving) | **College lab A100s (free, primary)** with **free-tier cloud notebooks (Kaggle / Colab, free) as the fallback**. No paid GPU rental anywhere in the plan. | Inference doesn't need GPU at our model scale (CPU sufficient per Module 3 estimates); only training benefits from GPU, and it's a bursty not continuous need. See full budget below. |

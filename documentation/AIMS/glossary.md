@@ -1,6 +1,6 @@
 # glossary.md
 
-## The 14 endpoints (contract key → dataset, task, cluster)
+## The 14 ML endpoints + SA (contract key → dataset, task, cluster)
 
 | Endpoint key | Name | Task | Cluster | TDC dataset | ~N |
 |---|---|---|---|---|---|
@@ -21,7 +21,8 @@
 | `synthetic_accessibility` | SA score | rule_based | — | RDKit (Ertl & Schuffenhauer) | — |
 
 reg = regression (metric: MAE). clf = classification (AUROC + AUPRC; + ECE +
-Brier for calibration). 13 ML-trained + SA rule-based = 14.
+Brier for calibration). 14 ML-trained + SA rule-based = 15 `Endpoint` members;
+the headline count is the 14 ML endpoints.
 
 ## Clusters (multi-task, shared pretrained backbone, masked loss)
 

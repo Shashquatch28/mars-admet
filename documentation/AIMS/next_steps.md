@@ -303,7 +303,7 @@ graph-schema adapter (M2 pre-flight), full-scale 3D conformer population
 2. ✅ **Standardize (Run 2)** — `ml/featurize/standardize.py`; batched; deterministic; defined stereo preserved; 18 tests. Version `mars-standardizer-v1`.
 3. ✅ **EDA pass (Run 2)** — `ml/data/eda.py`; per-endpoint validity/dup/conflict/stereo/scaffold report at `ml/data/eda/…/`.
 4. ✅ **Dedup / conflict resolution (Run 2)** — `ml/data/dedup.py`; EDA-gated tiered policy; small-dataset override (DILI); 12 tests.
-5. ✅ **Scaffold split (Run 2)** — `ml/data/split.py`; TDC benchmark adopted for 13 endpoints; deterministic Murcko split for hERG_Karim; SMILES-level leakage is a hard failure; adopted-benchmark scaffold overlap surfaced honestly; 5-seed CV utility ready.
+5. ✅ **Scaffold split (Run 2)** — `ml/data/split.py`; TDC benchmark adopted for 13 endpoints at the time (12 since PPB moved to the human-only Option C, which self-generates its split); deterministic Murcko split for hERG_Karim; SMILES-level leakage is a hard failure; adopted-benchmark scaffold overlap surfaced honestly; 5-seed CV utility ready.
 6. ✅ **Calibration split (Run 2)** — 10% floor 50, scaffold-aware, seed=42, isolated from test — asserted at prepare-time + in tests.
 7. ✅ **DILIst augmentation (Run 2)** — DILIPredictor MIT gold standard; 57 test-set overlaps dropped; 6 tests including a bit-identity test on the test set.
 8. ✅ **Self-audit hooks (Run 2)** — `assert_no_leakage` + integration tests in `test_prepare_outputs.py` cover every processed dataset dir.

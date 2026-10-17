@@ -20,6 +20,9 @@ below is a CSS custom property to emit once and reference by name.
 --surface-raised    #15191B   selected row, active nav item
 --surface-overlay   #1F2528   popover, drawer, modal — the ONLY elevated surface
 --shadow-overlay    0 12px 28px rgba(0,0,0,0.55)   on --surface-overlay, nowhere else
+--scrim             rgba(5,7,8,0.5)                 behind an overlay
+--track             #2A3236   data-viz rail (interval track, AD gauge track)
+--band              #3A4549   data-viz interval band
 ```
 
 ### Borders
@@ -43,6 +46,7 @@ below is a CSS custom property to emit once and reference by name.
 ### Semantic colour (one meaning each; a colour with no meaning is not used)
 ```
 --accent       #49AEC4   interaction, focus, selection   NEVER a data value or judgement
+--on-accent    #07191D   ink on an --accent fill
 --caution      #D99A3C   reliability compromised: OOD, stub, sample   NEVER "risky"
 --error        #D9615A   a request/upload/row genuinely failed   NEVER a high value
 --success      #6FA860   a named op completed: saved, exported   NEVER a favourable value
@@ -55,17 +59,27 @@ Hatch (a texture, not a colour):
 
 ### Machined highlight (pass 2)
 ```
---highlight-machined  inset 0 1px 0 rgba(255,255,255,0.04)
+--highlight-machined  inset 0 1px 0 rgba(255,255,255,0.04)    active nav item
+--highlight-selected  inset 0 2px 0 -1px rgba(255,255,255,0.045)   selected row / cell
 ```
 A 1px inset top light line — a rendered-surface bevel, not a drop shadow, so the
 no-floating-cards rule holds. Applied to exactly two things: the **selected row**
 and the **active nav item**. On a selected row draw it one pixel inside the
-accent ring: `inset 0 0 0 1px var(--accent), inset 0 2px 0 -1px rgba(255,255,255,0.045)`
+accent ring: `inset 0 0 0 1px var(--accent), var(--highlight-selected)`
 (the negative spread clears the ring's own pixel). ADR-011.
+
+### Structure viewer (element palette, not UI semantics)
+```
+--viewer-bond #3A4549   --viewer-atom #4A5558   --viewer-hetero #C19A5B
+--viewer-atom-focus var(--accent)
+```
+These colour atoms and bonds in the 3D view and never carry interface meaning.
+The AD-gauge covered zone has its own token, `--ad-covered` (`#4A5558`).
 
 ### Radius / spacing
 Radius: `--radius-sm 2px` (tags, inputs, buttons), `--radius 3px` (overlays).
-Nothing exceeds 3px; nothing is pill-shaped. Base unit 4px; scale 2/4/8/12/16/20/24/32.
+Nothing exceeds 3px; nothing is pill-shaped. The only circles are the 6px
+status dots (ADR-021: the cap governs surfaces). Base unit 4px; scale 2/4/8/12/16/20/24/32.
 Row height: compact 30px, comfortable 36px (user choice). Group header 24px,
 column header 26px. Endpoint groups separated by 7px **plus a rule**, never a gap.
 
@@ -115,9 +129,10 @@ durations and transforms; every state must stay legible without motion.
 
 ## Data-viz primitives (five; compose, never restyled per screen)
 
-1. **Interval track** — 2px grey rail, 4px `#3A4549` band for the interval, 1px
+1. **Interval track** — 2px `--track` rail, 4px `--band` for the interval, 1px
    `--text-primary` tick for the point value. Only on a genuinely bounded axis
-   (today: classification probability 0–1).
+   (today: the classification score, 0–1; labelled `score`, not `probability`,
+   until calibration is validated per endpoint, ADR-023).
 2. **Numeric interval** — mono `low … high`. Every regression endpoint (no
    validated display range exists — inventing one invents a scale; ADR-005).
 3. **Reliability edge + tag** — 2px left edge + condensed-caps tag. Amber for OOD
@@ -125,7 +140,7 @@ durations and transforms; every state must stay legible without motion.
 4. **Hatch** — value did not come from a promoted model (`model_id=="stub-v0"`,
    sample, prototype).
 5. **Applicability-domain gauge** (`ADGauge`) — 6px track on a real 0–1 axis:
-   `#4A5558` covered zone 0→threshold, 1px `--text-tertiary` full-height threshold
+   `--ad-covered` zone 0→threshold, 1px `--text-tertiary` full-height threshold
    tick (the carrier; must stay visible under the marker), 8px diamond marker for
    this molecule's 5-NN Tanimoto distance. The marker takes the **reliability
    colour of its state** (amber past threshold, `--text-secondary` inside), never
@@ -134,8 +149,10 @@ durations and transforms; every state must stay legible without motion.
    *"Measures how well this endpoint's training set covers this molecule. It is
    not a statement about the molecule."* ADR-012.
 
-Interval label: `confidence_low/high` is **ensemble spread across 5 CV seeds**,
-not a 95% CI. Column reads `ENSEMBLE INTERVAL`; never print a percentage.
+Interval label: `confidence_low/high` is **spread across 5 CV seeds**, not a
+confidence interval and not an error range. Column reads `SEED SPREAD ±1σ`
+(ADR-024; the earlier `ENSEMBLE INTERVAL` label is retired). Never print a
+percentage and never flag a narrow spread as reassuring or suspicious.
 
 ---
 
@@ -170,8 +187,11 @@ ADR-014 reversed) — hover's affordance is the surface lift, not the name's
 contrast.
 
 `deriveRowState()` is the single pure function that decides trustworthiness:
-`'ok' | 'out_of_domain' | 'stub_served' | 'not_returned' | 'rule_based'`. Nothing
-else in the app decides row state. Unit-test it against the API fixtures.
+`'ok' | 'out_of_domain' | 'stub_served' | 'not_returned' | 'not_requested' |
+'rule_based'`. `not_returned` means the service was asked and did not answer;
+`not_requested` means the user left the endpoint out of the request (ADR-028).
+Nothing else in the app decides row state. It is unit-tested in
+`src/domain/rowState.test.ts` against captured API responses.
 
 ---
 
@@ -180,11 +200,11 @@ else in the app decides row state. Unit-test it against the API fixtures.
 1. Tokens live in `src/styles/tokens.css` as CSS custom properties. Components
    use CSS Modules referencing `var(--token)`; no raw hex in a component
    (ADR-016 — Tailwind is not installed in this pass).
-2. Storybook renders every component in every state (the six EndpointRow states,
-   the tags, loading/partial/failed workspace states) — it is both your review
-   surface and the machine-readable spec generators read.
-3. Generate against the Storybook, never a blank prompt.
-4. **Audit against `AGENTS.md`'s "Never do" list before every merge** (the
-   Anthropic `frontend-design` skill, or `npx @memi-design/cli diagnose .`).
-5. Mirror `contracts/mars_contracts` in `src/types/contracts.ts`; drift fails CI
-   (ADR-009).
+2. There is no Storybook. The review surface is the running app; the
+   machine-readable spec is this file plus `src/domain/` and the dataviz
+   components. Generate against those, never a blank prompt.
+3. **Audit against `AGENTS.md`'s "Never do" list before every merge.**
+   `tests/cssGuard.test.ts` enforces "no raw colour literal in a `.module.css`";
+   ESLint enforces two more rules in TS/TSX only.
+4. Mirror `contracts/mars_contracts` in `src/types/contracts.ts`; drift fails CI
+   (`contracts/tests/test_frontend_drift.py`, ADR-009).

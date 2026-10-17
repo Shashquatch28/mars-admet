@@ -38,7 +38,7 @@ chrome per row.
 
 **Effect on MARS.** The strongest influence in this pass. Two concrete
 outcomes. First, never state an interval's coverage without having it: the
-column is labelled `ENSEMBLE INTERVAL`, because `confidence_low/high` is
+column was labelled `ENSEMBLE INTERVAL` (now `SEED SPREAD ±1σ`, ADR-024), because `confidence_low/high` is
 ensemble spread across 5 CV seeds, not a 95% interval — an early draft of this
 design mislabelled it and was corrected. Second, the "never assume the audience
 knows what the bars mean" guidance is why the inspector states the seed spread's
