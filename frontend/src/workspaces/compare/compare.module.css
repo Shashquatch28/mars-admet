@@ -1,0 +1,288 @@
+/* Compare: inputs on top, one table below. Same grammar as Predict and Batch: hairlines not
+   cards, reliability on a 2px edge of the cell (a separate channel from the value), values
+   mono / tabular / --text-primary and never recoloured. Tokens only; no shadow; no animation. */
+
+.cmp {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-void);
+}
+.hd {
+  flex: none;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line-subtle);
+}
+.title {
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.sub {
+  font-size: 10.5px;
+  color: var(--text-quiet);
+}
+
+.inputs {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-default);
+  background: var(--surface-panel);
+}
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.slotLabel {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.slot input {
+  height: 26px;
+  padding: 0 8px;
+  background: var(--surface-void);
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--mono);
+  font-size: 11px;
+  min-width: 0;
+}
+.slot input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+.slot input:disabled {
+  color: var(--text-disabled);
+}
+.actions {
+  display: flex;
+  gap: 7px;
+}
+.actions button {
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-primary);
+  font-size: 10.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.actions button:hover:not(:disabled) {
+  background: var(--surface-raised);
+}
+.actions button:disabled {
+  color: var(--text-disabled);
+  border-color: var(--line-default);
+  cursor: default;
+}
+.actions button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+.actions .go:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.status {
+  flex: none;
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px;
+  border-bottom: 1px solid var(--line-subtle);
+  font-size: 10.5px;
+  color: var(--text-secondary);
+}
+.failTitle {
+  font-family: var(--cond);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--error);
+}
+.failDetail {
+  font-family: var(--mono);
+  color: var(--text-tertiary);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.empty {
+  margin: 0;
+  padding: 24px 18px;
+  max-width: 64ch;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-quiet);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.corner,
+.unithd {
+  width: 190px;
+  padding: 8px 14px;
+  text-align: left;
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  background: var(--surface-chrome);
+  border-bottom: 1px solid var(--line-default);
+  position: sticky;
+  top: 0;
+}
+.unithd {
+  width: 96px;
+}
+.molhd {
+  padding: 8px 14px;
+  text-align: right;
+  font-weight: 400;
+  background: var(--surface-chrome);
+  border-bottom: 1px solid var(--line-default);
+  position: sticky;
+  top: 0;
+  vertical-align: bottom;
+}
+.molName {
+  display: block;
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.molSmiles {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flags {
+  display: block;
+  font-size: 9.5px;
+  color: var(--text-quiet);
+}
+.flags b {
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.grp {
+  padding: 6px 14px;
+  text-align: left;
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  background: var(--surface-panel);
+  border-bottom: 1px solid var(--line-subtle);
+}
+.ep {
+  padding: 0 14px;
+  height: 28px;
+  text-align: left;
+  font-weight: 400;
+  font-size: 11.5px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--line-hairline);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cell {
+  position: relative;
+  height: 28px;
+  padding: 0 14px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line-hairline);
+}
+.cell > * + * {
+  margin-left: 8px;
+}
+.cell::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+}
+.edgeAmber::before {
+  background: var(--caution);
+}
+.edgeMuted::before {
+  background: var(--line-strong);
+}
+.edgeDashed::before {
+  background: repeating-linear-gradient(to bottom, var(--line-strong) 0 3px, transparent 3px 6px);
+}
+.val {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.na {
+  font-family: var(--cond);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.hatch {
+  padding: 1px 4px;
+  background: var(--hatch-unreal);
+  border-radius: 1px;
+}
+.unit {
+  padding: 0 14px;
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line-hairline);
+}

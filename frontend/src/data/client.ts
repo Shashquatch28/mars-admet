@@ -11,6 +11,8 @@
 import { parseProgressEvents, type JobProgress } from "../domain/batchJob";
 import type {
   BatchPredictResponse,
+  CompareRequest,
+  CompareResponse,
   ConformerResponse,
   DeleteAccountRequest,
   Endpoint,
@@ -104,6 +106,15 @@ export async function fetchPrediction(
   });
   const response = (await res.json()) as PredictionResponse;
   return { response, latencyMs: Math.round(performance.now() - t0), submitted: smiles, sent: endpoints ?? null };
+}
+
+// Two or three molecules, anonymous. A single invalid SMILES fails the whole comparison (422)
+// rather than comparing against a fabricated result. `per_endpoint_winner` comes back null and
+// is never read (ADR-007).
+export async function fetchComparison(smiles: string[]): Promise<CompareResponse> {
+  const body: CompareRequest = { smiles, endpoints: null };
+  const res = await request("/compare", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return (await res.json()) as CompareResponse;
 }
 
 // 404: unknown or expired molecule_id (a normal state); 501: the API has no RDKit.

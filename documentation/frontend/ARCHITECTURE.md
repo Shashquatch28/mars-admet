@@ -15,9 +15,9 @@ diverged, the divergence is recorded below and in `DECISIONS.md`; read
 > (`model_id` was missing from `contracts.ts`; closed by ADR-009/Q10 and guarded
 > by `contracts/tests/test_frontend_drift.py`), describes the *pre-build*
 > scaffold and is historical. The "Proposed layout" below differs from what was
-> built in three ways: there is no `pages/` or `compare/` / `library/`
-> workspace directory yet (both are `StubWorkspace`), `auth/` was added, and
-> `components/` holds only `dataviz/`. The build and test stack is Vite 7,
+> built in three ways: there is no `pages/`; `auth/` and `compare/` /
+> `library/` were added (`StubWorkspace` is gone), and `components/` holds `dataviz/`, `ConfirmDialog`
+> and `SaveControl`. The build and test stack is Vite 7,
 > vitest 4 and ESLint; there is no Storybook.
 
 ## What already exists

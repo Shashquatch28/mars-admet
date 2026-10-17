@@ -4,6 +4,8 @@
 // shell shows the "design prototype" strip). The roster, state derivation and
 // reconciliation always come from ENDPOINT_METADATA, never the response (ADR-008).
 import { useEffect, useMemo, type KeyboardEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { useCompareSession } from "../../app/compareSession";
 import styles from "./predict.module.css";
 import { useUiState } from "../../app/uiState";
 import { usePredictSession } from "../../app/predictSession";
@@ -34,6 +36,8 @@ export function PredictWorkspace() {
   const { selectedEndpoint, setIsSample } = useUiState();
   const { smiles, setSmiles, selected, setSelected, result, running, error, canRun, run, clear } = usePredictSession();
   const usingApi = USING_API;
+  const navigate = useNavigate();
+  const compare = useCompareSession();
 
   // The prototype strip is shown only while the values on screen are the fixture.
   // A live session with no result has no values at all, so nothing there is illustrative.
@@ -189,7 +193,17 @@ export function PredictWorkspace() {
           </div>
         )}
         <div className={styles.inspfoot} style={{ flexWrap: "wrap" }}>
-          <button className={styles.ibtn}>Compare molecule</button>
+          <button
+            className={styles.ibtn}
+            disabled={!(usingApi && result && !failure)}
+            onClick={() => {
+              if (!result) return;
+              compare.seedFirst(result.submitted); // what the user typed, not a rewritten form
+              navigate("/compare");
+            }}
+          >
+            Compare molecule
+          </button>
           <SaveControl
             kind="molecule"
             withLabel

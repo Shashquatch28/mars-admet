@@ -18,14 +18,13 @@ The design is **locked** (passes 1–2.1, 2026-10-01). **Predict is live**: with
 `VITE_API_BASE=/api` it takes a typed SMILES, Run submits it to `/predict`
 through a Vite dev proxy, and the status bar and top bar read the real response
 and a real `/health` check. It was exercised in a browser against the real model
-path (see §2a). Batch runs against the API too (upload, progress, results; §2b); Library and delete-account exist (§2c); Compare is
-a stub.
+path (see §2a). Batch runs against the API too (upload, progress, results; §2b); Library, delete-account and Compare exist (§2c, §2f).
 
 | Gate (run 2026-10-14, working tree incl. uncommitted edits) | Result |
 |---|---|
 | `npx tsc --noEmit` | clean |
 | `npm run lint` | 0 errors, 3 warnings (`app/authSession.tsx`, `predictSession.tsx`, `uiState.tsx` fast-refresh, accepted) |
-| `npm test` | 113 / 113 passed, 9 files (175 / 175 in 14 files after Batch live, Library and Save, 2026-10-18) |
+| `npm test` | 113 / 113 passed, 9 files (187 / 187 in 15 files after Compare, 2026-10-18) |
 | `ruff check contracts api ml` | clean |
 | `contracts/tests` + `api/tests` (root `.venv`) | 51 passed, 26 skipped. The skips are the Postgres/Redis-backed tests, which skip when the stack is down; CI runs them for real. |
 | `ml/tests` (**`ml/.venv`**, not the root env) | 400 passed, 15 skipped (about 9 min) |
@@ -211,6 +210,59 @@ a stub.
   for saves of expired results (the current route has no such check, since the client sends the
   results in hand).
 
+### 2e. Real-stack check, 2026-10-18 (Docker, Postgres, Redis, the rebuilt API image)
+
+Run after the stand-in checks above, once Docker was started: `docker compose up -d --build api`,
+migrations already at head (`d5be9f4ca6e0`), a private Vite on :5174 against the canonical API on
+:8000, a throwaway account created and deleted through the UI.
+
+- **Worked on the real service:** anonymous Predict (15 rows, real XGBoost, `v0.2.0-dev`) and the
+  anonymous Save message; create account; Save molecule (row checked in Postgres: label trimmed, tags
+  `coxib, Coxib, demo` stored as `{coxib,demo}`, snapshot of 15 predictions); a 5-row Batch (4 out of
+  domain, 1 failed row kept); Save report (5 rows, tags `{pilot,real}`) and Save molecule from a
+  Batch row; Library list, detail (with the real OUT OF DOMAIN mark) and both deletes (rows gone in
+  Postgres); delete-account with a wrong password (403, dialog stays, "Nothing was deleted") then the
+  right one. Afterwards `users`, `saved_molecules`, `saved_reports` and `batch_jobs` were all 0, so
+  the cascade works.
+- **The C0 change is live in the rebuilt image** (`platt_enabled()` is False; the `.dockerignore`
+  allowlist builds, and `/app/ml` holds only `serve`, `featurize`, `models`, `eval`, `artifacts`, `data`).
+- **Not checked: the queued Batch path (over 1,000 molecules) with real models.** See the
+  performance finding below: 1,200 rows would take hours, so it was not run. The queued path,
+  progress stream and results fetch were exercised only against the stand-in.
+- **Performance finding (serving, not frontend):** a molecule not yet in the Redis prediction cache
+  takes **18 to 37 seconds** on the real stack (a repeat takes 35 ms). Profiled inside the container:
+  every request loads all 70 XGBoost model files from disk (14 endpoints x 5 seeds, about 8 s) and
+  then predicts, with nothing kept between requests; this runs from bind-mounted `ml/artifacts` on
+  Windows, which may add to it. Consequences: Batch is about 12 to 25 s per molecule (the 5-row batch
+  took about 61 s), the interactive tier (up to 1,000 rows) holds one HTTP request open for the whole
+  run with no progress, and a queued 1,200-row job would take hours. A model cache in
+  `ml/serve/registry.py` (keyed on the artifact files' modification time) and batched prediction are
+  the obvious fixes; neither is done. The Batch screen only says "Uploading <file>" during the
+  interactive tier, which is accurate but uninformative for a run this long.
+
+### 2f. Compare (ADR-007) — what was done and what was checked
+
+- **Screen** (`src/workspaces/compare/`, `src/domain/compare.ts`, `src/app/compareSession.tsx`): two or
+  three SMILES inputs, Run, and one table: rows are the fixed roster in its fixed order, one column per
+  molecule plus the unit. Every molecule runs through the same `reconcile()` as Predict, so each has a cell
+  on every endpoint and a missing one reads "not returned". Value cells keep the grammar (mono, tabular,
+  `--text-primary` in every state; stub hatched); out-of-domain, stub and rule-based are separate marks on
+  a 2px cell edge and a tag. Each column header counts its own out-of-domain, stub-served and not-returned
+  cells. It says when the molecules were served by different model versions.
+- **ADR-007 held in the type and the test:** no winner, rank, highlight, difference column or ordering by
+  value; `per_endpoint_winner` is never read (a unit test feeds a response that carries one and asserts the
+  comparison is identical). The empty state says why: a higher or lower value is not a better or worse
+  molecule.
+- **Hand-off:** Predict's **Compare molecule** (enabled once a result exists) puts what the user typed into
+  slot 1 and opens Compare. State lives above the router, so slots and the last result survive a workspace
+  switch. `/compare` is anonymous, so Compare is never gated. A failure (a 422 names the offending SMILES,
+  as the service words it) keeps the inputs and clears the table, never showing a stale result.
+- **Checked on the real stack** (Docker, 2026-10-18): Predict to Compare hand-off; 2 molecules in 20 s and
+  3 in 33 s; 15 rows x N cells in roster order; every value rendered in one colour; no evaluative word on
+  screen; a 422 for `not-a-smiles` with the inputs kept; adding and removing the third slot. 12 new tests
+  (187 total), contract drift test covers `CompareRequest` (39 contract tests).
+- **Not built:** Library to Compare, Batch to Compare, an endpoint subset for Compare (the request sends none).
+
 ## 3. What is broken or missing — read before touching anything
 
 These are ordered by how badly they would bite.
@@ -218,7 +270,7 @@ These are ordered by how badly they would bite.
 ### 3.1 ~~Predict cannot take input.~~ Resolved 2026-10-07
 SMILES entry, Run and Clear work; the endpoint-subset selector landed 2026-10-08
 (a deselected endpoint is a `NOT REQUESTED` row, ADR-028). Save to library works (§2d).
-Still inert: **Compare molecule, Export** (no handlers; Compare depends on its workspace).
+Compare molecule works (§2f). Still inert: **Export** (no handler, no spec).
 
 ### 3.2 ~~The status bar and top bar show fabricated values~~ Resolved 2026-10-07
 The status bar reads the real response (`served_at`, `cache_hit`, measured
@@ -249,7 +301,7 @@ no `@types/node`.
   from `emptyResponse`. I did not verify any dedicated empty-state view exists.
 - ~~**3Dmol is installed but unused.**~~ Wired 2026-10-07 (see "3D viewer" in §2a).
   Fixture mode still shows the placeholder geometry, labelled as illustrative.
-- **Compare** is a `StubWorkspace`. Library lists and deletes saved snapshots but nothing can be saved yet (§2c). Settings holds the Account section and delete-account.
+- **Export** has no spec and no handler (Predict, Batch). Settings holds the Account section and delete-account.
 - ~~**ADR-009 CI drift check** is unwritten.~~ Written 2026-10-07:
   `contracts/tests/test_frontend_drift.py` (names only, not types).
 - ~~**Bump `MODEL_VERSION` on release.**~~ Done (`v0.2.0-dev`); see §2a item 8.
@@ -282,7 +334,7 @@ no `@types/node`.
    gated call yet, so the 401-drops-to-anonymous path is covered by unit tests only; a session
    that expires (or an account deleted) while the app is open is noticed on the first gated call
    or a reload. Batch live is done (§2b), so a gated call now exists; the chosen file is held
-   above the router and survives a 401 (ADR-022 item 3). Library, delete-account and Save are built (§2c, §2d). Next: Compare, Export.
+   above the router and survives a 401 (ADR-022 item 3). Library, delete-account, Save and Compare are built (§2c, §2d, §2f). Next: Export.
 6. ~~ADR-009 drift check~~ — done.
 7. ~~3Dmol~~ — done. Then Compare, Library.
 8. ~~**Relabel classification units as `score`**~~ — done 2026-10-14 (ADR-023): `DISPLAY_UNIT` and `unitLabel`, pinned by a test.
