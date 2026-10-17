@@ -129,7 +129,8 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   worst hia .045→.209). They are what the API applies. Cause: calibration-split prior ≠ test prior.
   Also only ONE calibrator exists per endpoint (fit on seed 4). **Policy:** the UI says `score` now;
   C0 = stop applying the calibrators and serve raw; C1 = recalibrate on label-representative data and
-  validate per endpoint; C2 (KERMT) stays GPU-gated. **Not yet implemented.**
+  validate per endpoint; C2 (KERMT) stays GPU-gated. **C0 implemented 2026-10-17** (`MARS_APPLY_PLATT`, off by default;
+  `documentation/status/xgboost_c0_raw_vs_calibrated.md`); C1 and C2 not started.
 - **OPEN — shared cluster fold leaves tiny per-task validation sets.** `toxicity__cls` val =
   18–24 hERG labels vs ~1,810 AMES; `ppb` 42–50; `hia` 46. Epoch selection for those tasks is
   effectively unmeasured. Design decision; not changed.

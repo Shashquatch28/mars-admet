@@ -250,6 +250,10 @@ applied to all five seeds.
 stay `score`. Whether any calibration-split change is wanted is still an M1 data decision and is not taken here.
 Effort is a rough estimate, not measured: C0 half a day to a day, C1 two to four working days, C2 weeks of calendar time.
 
+**C0 implemented 2026-10-17.** `ml/serve/predictor.py` no longer applies the Platt calibrator unless `MARS_APPLY_PLATT=1`
+(off by default; regression was never calibrated). Raw-vs-calibrated held-out numbers regenerated from the promoted
+artifacts: all 14 reports are identical to the 2026-09-21 ones. Table and caveats: `documentation/status/xgboost_c0_raw_vs_calibrated.md`.
+
 ---
 
 ## 2026-10-07 — Scope decision: MARS ships on Tier 0; Tier 1 and Tier 2 are deferred to Future Scope
