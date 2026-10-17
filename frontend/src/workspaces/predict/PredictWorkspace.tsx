@@ -16,6 +16,8 @@ import { USING_API, ApiError, saveMolecule } from "../../data/client";
 import { SaveControl } from "../../components/SaveControl";
 import { buildMoleculeRequest, moleculeKey, saveNote } from "../../domain/save";
 import { EndpointList } from "./EndpointList";
+import { downloadText } from "../../data/download";
+import { buildCsv, predictFileName } from "../../domain/exportCsv";
 import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
 import { StructureViewer } from "./StructureViewer";
@@ -69,6 +71,15 @@ export function PredictWorkspace() {
   }
 
   const failure = error ? requestFailure(error) : null;
+  // Export is of a real result only: never the illustrative sample, never a stale one after a failure.
+  const exportCsv =
+    usingApi && result && !failure
+      ? () =>
+          downloadText(
+            predictFileName(result.response.molecule_id),
+            buildCsv([{ smilesInput: result.submitted, response: result.response, cells: recon.rows }]),
+          )
+      : undefined;
   // Fixture: the response's own input field. Live: what was actually submitted.
   const inputShown = usingApi ? result?.submitted : response?.smiles_input;
   const rewritten = !!response && !!inputShown && inputShown !== response.smiles_standardized;
@@ -166,7 +177,7 @@ export function PredictWorkspace() {
           </div>
         </section>
       ) : (
-        <EndpointList recon={recon} loading={placeholders} idle={idle} />
+        <EndpointList recon={recon} loading={placeholders} idle={idle} onExport={exportCsv} />
       )}
 
       {/* inspector */}

@@ -346,8 +346,12 @@
   font-size: 10.5px;
   color: var(--text-tertiary);
 }
-.exp:hover {
+.exp:hover:not(:disabled) {
   color: var(--text-secondary);
+}
+.exp:disabled {
+  color: var(--text-disabled);
+  cursor: default;
 }
 .densetog {
   display: flex;

@@ -12,6 +12,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useBatchSession } from "../../app/batchSession";
 import { USING_API, saveMolecule } from "../../data/client";
+import { downloadText } from "../../data/download";
+import { batchFileName, batchRowFileName, buildCsv, type ExportMolecule } from "../../domain/exportCsv";
 import { SaveControl } from "../../components/SaveControl";
 import { buildMoleculeRequest, moleculeKey, saveNote } from "../../domain/save";
 import styles from "./batch.module.css";
@@ -69,6 +71,16 @@ export function BatchWorkspace() {
   );
 
   const c = summary.counts;
+  // Export covers the whole run in run order, not what the filter happens to show, and only real
+  // results (the 240-molecule sample is illustrative and is never exported).
+  const toExport = (r: (typeof summary.rows)[number]): ExportMolecule => ({
+    row: r.rowIndex + 1,
+    smilesInput: r.smilesInput,
+    response: r.response,
+    cells: r.cells,
+    error: r.ok ? null : (r.error ?? "row failed"),
+  });
+  const canExport = USING_API && summary.rows.length > 0;
   const toggle = (k: keyof FilterSpec) => setFilter((f) => ({ ...f, [k]: !f[k] }));
 
   return (
@@ -85,6 +97,16 @@ export function BatchWorkspace() {
             <span className={styles.reconD}>·</span> <b>{c.failedRows}</b> failed
           </span>
           <span style={{ flex: 1 }} />
+          <button
+            className={styles.exportBtn}
+            disabled={!canExport}
+            title={`Download all ${summary.rows.length} rows of this run as CSV`}
+            onClick={() =>
+              downloadText(batchFileName(summary.rows.length), buildCsv(summary.rows.map(toExport)))
+            }
+          >
+            Export results
+          </button>
           {isFiltered(filter) && (
             <span className={styles.sortnote}>
               showing <b>{visible.length}</b> of <b>{summary.rows.length}</b>
@@ -252,7 +274,15 @@ export function BatchWorkspace() {
 
         <div className={styles.inspfoot} style={{ flexWrap: "wrap" }}>
           <button>Open in Predict</button>
-          <button>Export row</button>
+          <button
+            disabled={!USING_API || !selectedRow}
+            onClick={() =>
+              selectedRow &&
+              downloadText(batchRowFileName(selectedRow.rowIndex + 1), buildCsv([toExport(selectedRow)]))
+            }
+          >
+            Export row
+          </button>
           {USING_API && (
             <SaveControl
               kind="molecule"
