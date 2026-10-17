@@ -11,7 +11,7 @@ and plots what the training run already produced.
 
 Classification arms only. A regression arm (``*__reg``) has no temperature scaler by design
 (decisions.md D2, ``skipped_regression``) and none of the artifacts below apply to it, so
-``RunBundle`` refuses it up front; regression reporting is a separate open P1 item.
+``RunBundle`` refuses it up front; regression reporting is `eval/tier0_regression.py`.
 
 Handles both single-endpoint arms (e.g. ``dili_standalone__cls``) and
 multi-task subgroup arms (e.g. ``toxicity__cls`` = herg + ames): every
