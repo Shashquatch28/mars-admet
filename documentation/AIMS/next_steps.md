@@ -33,7 +33,7 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   (Option A pool, D5: about 29% of each CYP's training labels removed). All runs `VERDICT: PASS` + `PROTOCOL: MATCH`; **23 KERMT models in W&B**; driver, host Python,
   `kermt:latest` image and checkpoint unchanged. Session note: `status/kermt_gpu_session_2026-10-07.md`. **Tier-0 progress: 23 of 30 seeds.**
   **Remaining Tier-0 work:** `absorption_distribution__reg` 1–4 (≈ 3.8 h; regression, no `tier0_artifacts` package by design) and `toxicity__cls` 2–4 (≈ 4.75 h) — about
-  8.5 h, which is the whole of the remaining GPU training. Also owed: the single-task CYP KERMT baselines on full original splits, and regression reporting for the regression arms.
+  8.5 h, which is the whole of the remaining GPU training. Also owed: the single-task CYP KERMT baselines on full original splits. (Regression reporting for the regression arms: done 2026-10-18, MAE only, `ml/eval/tier0_regression.py`, `documentation/status/kermt_vs_xgboost_regression.md`.)
 - **STATE 2026-10-06 (Pass 2, session 1).** On `c1f0f04`: `metabolism__reg` seeds 1–4 and `absorption_distribution__cls` seeds 1–4 done — **both arms now have 5 seeds**
   and aggregates (`status/kermt_tier0_results/<arm>/aggregate_5seeds.json`): `clearance_microsomal` raw test MAE 24.510 ± 0.650; `absorption_distribution__cls` test AUROC
   BBB 0.941 ± 0.003, P-gp 0.932 ± 0.004, HIA 0.926 ± 0.017 (HIA calibrated not reportable, D4). All runs `VERDICT: PASS` + `PROTOCOL: MATCH`; **19 KERMT models in W&B**.
@@ -41,7 +41,7 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   Session note: `status/kermt_gpu_session_2026-10-06.md`. Driver 595.91.07 (Pass 1: 580.173.02), host Python 3.11.17 (3.11.15), image id unchanged.
   **Remaining:** `metabolism__cls` 1–4 (≈ 3.8 h), `absorption_distribution__reg` 1–4 (≈ 3.8 h), `toxicity__cls` 2–4 (≈ 4.75 h).
   **Resolved 2026-10-06 (decisions.md):** `ml/eval/tier0_artifacts.py` is classification-only; `RunBundle` now refuses regression arms up front (`require_classification`)
-  instead of crashing on the missing `temperature_scaler.json`. `metabolism__reg` and `absorption_distribution__reg` get no artifact package until regression reporting (separate P1) exists.
+  instead of crashing on the missing `temperature_scaler.json`. `metabolism__reg` and `absorption_distribution__reg` get no artifact package (plots need per-seed prediction files, not in git); their MAE table and the KERMT-vs-XGBoost difference come from `ml/eval/tier0_regression.py`.
 - **STATE 2026-09-30.** Pass 1 done: seed 0 of `metabolism__reg`, `absorption_distribution__cls`, `absorption_distribution__reg`,
   `metabolism__cls` (all `VERDICT: PASS`, ≈ 2.3 h GPU) on top of DILI seeds 0–4 and `toxicity__cls` seeds 0–1 = **11 KERMT models**, all
   in W&B (`shashquatch/mars-admet`, model + run-record artifacts). Records: `status/kermt_tier0_results/`; session note:
@@ -57,7 +57,7 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   - **Reporting gaps (P1, do not block Pass 2):** single-seed `std` — *fixed 2026-10-01* (`aggregate_seed_metrics` returns `None` for `_std` below two valid values);
     `tier0_present.py` — *now refuses* partial, multi-endpoint and regression input, and its DILI-only text is conditional on the DILI arm (still single-endpoint classification only);
     saved-epoch reporting in `tier0_artifacts.py` — *fixed 2026-10-01* (`ml/eval/kermt_log.py`; packages generated earlier must be regenerated); still open: `s_agg.py` refuses
-    < 5 seeds (workstation helper, not in repo) and regression arms report MAE only (M6).
+    < 5 seeds (workstation helper, not in repo) and regression arms report MAE only, because no other regression metric is stored in git (`ml/eval/tier0_regression.py`).
   - **Laptop baseline 2026-09-30 (read-only audit):** clean tree at `ad6eaf1`; ml tests 633 passed / 5 failed (the known
     `test_acquisition_lockfile.py` failures) / 15 skipped; root `contracts`+`api` tests 21 passed / 23 skipped (Redis/Postgres down);
     `ruff`: 12 findings, all in `ml/eval/tier0_artifacts.py` (8) and `tier0_present.py` (4) — none new.
@@ -129,7 +129,8 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   worst hia .045→.209). They are what the API applies. Cause: calibration-split prior ≠ test prior.
   Also only ONE calibrator exists per endpoint (fit on seed 4). **Policy:** the UI says `score` now;
   C0 = stop applying the calibrators and serve raw; C1 = recalibrate on label-representative data and
-  validate per endpoint; C2 (KERMT) stays GPU-gated. **Not yet implemented.**
+  validate per endpoint; C2 (KERMT) stays GPU-gated. **C0 implemented 2026-10-17** (`MARS_APPLY_PLATT`, off by default;
+  `documentation/status/xgboost_c0_raw_vs_calibrated.md`); C1 and C2 not started.
 - **OPEN — shared cluster fold leaves tiny per-task validation sets.** `toxicity__cls` val =
   18–24 hERG labels vs ~1,810 AMES; `ppb` 42–50; `hia` 46. Epoch selection for those tasks is
   effectively unmeasured. Design decision; not changed.

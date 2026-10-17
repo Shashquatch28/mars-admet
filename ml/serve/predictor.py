@@ -15,6 +15,7 @@ model, not a bug to paper over.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 
 import numpy as np
@@ -22,6 +23,15 @@ from featurize.standardize import standardize
 from mars_contracts.endpoints import ENDPOINT_METADATA, Endpoint, TaskType
 
 from serve.registry import ModelRegistry
+
+# C0 (AIMS decisions.md 2026-10-08): the served Platt calibrators were worse than
+# the raw ensemble on held-out Brier for 9 of 9 classification endpoints, so they
+# are not applied by default. MARS_APPLY_PLATT=1 restores the old behaviour.
+APPLY_PLATT_ENV = "MARS_APPLY_PLATT"
+
+
+def platt_enabled() -> bool:
+    return os.environ.get(APPLY_PLATT_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 @dataclass(frozen=True)
@@ -66,9 +76,10 @@ def predict_endpoint(
     endpoint = Endpoint(endpoint_key)
     task_type = ENDPOINT_METADATA[endpoint]["task_type"]
 
-    calibrator = registry.load_calibrator(endpoint_key)
-    if task_type == TaskType.CLASSIFICATION and calibrator is not None:
-        raw_preds = calibrator.transform(raw_preds)
+    if task_type == TaskType.CLASSIFICATION and platt_enabled():
+        calibrator = registry.load_calibrator(endpoint_key)
+        if calibrator is not None:
+            raw_preds = calibrator.transform(raw_preds)
 
     mean = float(np.mean(raw_preds))
     std = float(np.std(raw_preds))
