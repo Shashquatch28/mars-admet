@@ -18,14 +18,14 @@ The design is **locked** (passes 1–2.1, 2026-10-01). **Predict is live**: with
 `VITE_API_BASE=/api` it takes a typed SMILES, Run submits it to `/predict`
 through a Vite dev proxy, and the status bar and top bar read the real response
 and a real `/health` check. It was exercised in a browser against the real model
-path (see §2a). Batch is still fixture-only (§3.5); Compare/Library/Settings are
-stubs.
+path (see §2a). Batch runs against the API too (upload, progress, results; §2b); Library and delete-account exist (§2c); Compare is
+a stub.
 
 | Gate (run 2026-10-14, working tree incl. uncommitted edits) | Result |
 |---|---|
 | `npx tsc --noEmit` | clean |
 | `npm run lint` | 0 errors, 3 warnings (`app/authSession.tsx`, `predictSession.tsx`, `uiState.tsx` fast-refresh, accepted) |
-| `npm test` | 113 / 113 passed, 9 files |
+| `npm test` | 113 / 113 passed, 9 files (175 / 175 in 14 files after Batch live, Library and Save, 2026-10-18) |
 | `ruff check contracts api ml` | clean |
 | `contracts/tests` + `api/tests` (root `.venv`) | 51 passed, 26 skipped. The skips are the Postgres/Redis-backed tests, which skip when the stack is down; CI runs them for real. |
 | `ml/tests` (**`ml/.venv`**, not the root env) | 400 passed, 15 skipped (about 9 min) |
@@ -37,10 +37,10 @@ stubs.
 |---|---|---|
 | Shell | `src/shell/` | AppShell, NavRail, TopBar, StatusBar, CommandPalette. Keys 1–4 switch workspace, ⌘K opens the palette. |
 | Predict | `src/workspaces/predict/` | Roster of 15 rows (14 ML + rule-based SA), seven derived row states (incl. NOT REQUESTED, ADR-028), endpoint-subset selector, inspector, AD gauge, keyboard roving, live 3D viewer (placeholder SVG in fixture mode). |
-| Batch | `src/workspaces/batch/`, `src/domain/batch.ts` | 240-molecule deterministic fixture, virtualized `role="grid"`, raw numeric sort, filters, molecule inspector. |
+| Batch | `src/workspaces/batch/`, `src/domain/batch.ts`, `src/domain/batchJob.ts`, `src/app/batchSession.tsx` | Live: choose or drop a CSV/SDF, optional SMILES column, Run, progress for queued jobs, rows into the grid. Without an API: 240-molecule deterministic fixture. Virtualized `role="grid"`, raw numeric sort, filters, molecule inspector. |
 | Data-viz | `src/components/dataviz/` | `ADGauge`, `IntervalTrack` (both require an explicit `domain`, no default), `NumericInterval`, `ReliabilityTag`. |
 | Domain | `src/domain/` | `rowState` (the one trust decision), `reconcile` (full roster every time), `format`, `endpoints`, `fixtures`, `batch`. This is the tested layer. |
-| Data | `src/data/` | `client.ts` (predict, conformer, health, auth) + `useApiHealth`, `useConformer`. No batch client. |
+| Data | `src/data/` | `client.ts` (predict, conformer, health, auth, batch: `postBatch`, `followBatchProgress`, `fetchBatchResults`) + `useApiHealth`, `useConformer`. |
 | Auth | `src/auth/`, `src/app/authSession.tsx`, `src/domain/session.ts` | `Gated` sign-in state, `AccountForm`, session provider (unknown / anonymous / signed in), global 401 handler. ADR-022 phase 1. |
 | Tooling | `.eslintrc.cjs`, `vitest.config.ts` | ESLint enforces two AGENTS.md rules in **TS/TSX only**. |
 | Backend (this branch) | `ml/serve/rule_based.py`, `contracts/…/prediction.py` | API now serves the SA score (ADR-019) and `ad_threshold` per prediction (ADR-020). |
@@ -116,15 +116,109 @@ stubs.
    response shape or routing changes.** A better fix (derive the tag from the
    promoted-artifact set so it cannot be forgotten) is not done.
 
+### 2b. Batch against the API — what was done and what was not checked
+
+- **Flow** (`src/app/batchSession.tsx`, held above the router like Predict so switching
+  workspace keeps the file and a running job): `POST /batch/predict` (multipart). Up to
+  1,000 molecules come back in that response (`job_id` null). Larger files are queued: the
+  client follows `GET /batch/progress/{job_id}` with fetch streaming (not `EventSource`, so a
+  401/404 goes through the same error handling), then fetches `GET /batch/results/{job_id}`.
+- **Pure parts** (`src/domain/batchJob.ts`, tested): file validation (.csv/.sdf, non-empty),
+  SSE framing across chunk boundaries, percent, status words, and what the final event means
+  (`unknown` = no record of the job, shown as an error, never as a result).
+- **Honesty rules held:** rows go through the same `buildBatch`/`reconcile` as Predict (full
+  roster, failed rows kept with their error, no ranking). The bar is determinate and appears
+  only once the service has reported a total; nothing animates; limits are written in the
+  panel, not in a tooltip. `isSample` is false in live mode (only the fixture is illustrative).
+- **Checked:** 23 new vitest tests (136 total; client tests run the real `client.ts` against a
+  stubbed `fetch`). In a browser (1440 px) against a **stand-in API that serves only the
+  /batch routes and /auth/me, built on a real captured `/predict` response**: interactive
+  tier, queued tier with incremental progress, wrong extension, empty file, a 422 from the
+  service, job and file surviving a workspace switch, and a 401 dropping to the sign-in state.
+- **Not checked:** the real service from a browser. Docker was not running, so Postgres and
+  Redis were unavailable and the real `/batch/*` routes were not exercised end to end from the
+  UI; the backend side is covered by its own API tests (skipped without the stack, run in CI).
+  Not exercised at all: an SDF upload, a file near the 50,000-molecule cap, a failed server job
+  (`status: failed`) and an expired result (410) are covered by unit tests only.
+
+### 2c. Library and delete-account (ADR-022 phase 2) — what was done and what was not checked
+
+- **Library** (`src/workspaces/library/`, `src/domain/library.ts`): lists the account's saved
+  molecules and saved reports (`GET /molecules`, `GET /reports`), newest first, with a text
+  filter. Every entry is a **frozen snapshot**: the detail column says which `model_version`
+  made it and when it was saved, and never calls it a current prediction. A saved molecule shows
+  the full roster through `reconcile` (an endpoint the snapshot lacks is a marked row), values in
+  the normal value-cell grammar, stub and out-of-domain as a separate mark. A report shows its
+  size, failed rows and model versions, read defensively (an unexpected snapshot shape is said to
+  be unrecognised, not shown as zero rows). Deleting a saved molecule is an inline
+  Delete / Cancel; deleting a saved report uses the modal (INTERACTIONS.md allows it). A 404 on
+  delete is treated as already gone; any other failure says nothing was deleted.
+- **Delete account** (`src/workspaces/settings/DeleteAccount.tsx`, `src/components/ConfirmDialog.tsx`):
+  Settings, signed in. A modal (`role="alertdialog"`, focus into the password field, Tab trapped,
+  Esc = Cancel, backdrop click does nothing, focus returns to the opener, no animation) lists what
+  is removed, asks for the password, and sends `DELETE /account`. A wrong password (403) or any
+  other failure keeps the dialog open and says nothing was deleted. On success the app drops to
+  anonymous, the library cache is removed and the Batch file/result is cleared.
+- **Contract**: `contracts.ts` now mirrors `SavedMoleculeResponse`, `SavedReportResponse` and
+  `DeleteAccountRequest`; `contracts/tests/test_frontend_drift.py` covers them (36 contract tests pass).
+- **Checked:** 24 new vitest tests (160 total). In a browser at 1440 px against a **stand-in API**
+  (`/auth/me`, `/molecules`, `/reports`, `DELETE` routes and `DELETE /account`, built on real captured
+  `/predict` responses): list, filter and its count note, inline delete including a server 500
+  (nothing removed, message shown) and a success, the report modal (Cancel, Esc, backdrop click,
+  confirm), delete-account with a wrong password then the right one, the return to the sign-in
+  state, and Library showing the gate afterwards with no stale rows.
+- **Not checked:** the real service (Docker was not running); a screenshot of the dialog (the
+  pane timed out, so it was checked through the DOM: role, name, focus, text); large libraries
+  (the list is not virtualized); the real cascade of `DELETE /account` (backend API tests cover it
+  and run in CI).
+- **Saving:** Library fills through Save (§2d).
+
+### 2d. Save to library — what was done and what was not checked
+
+- **Where:** Predict (`Save to library`, inspector footer) saves the molecule on screen; Batch has
+  `Save molecule` (the row selected in the inspector) and `Save report` (the whole result, in the
+  strip under the upload controls). One control, `src/components/SaveControl.tsx`; pure parts in
+  `src/domain/save.ts`. A "single" report from Predict is not offered: a saved molecule is the
+  same snapshot.
+- **Snapshot-on-save:** the client sends back the response it already holds
+  (`POST /molecules/save`, `POST /reports/save`); the service freezes it. The panel says so before
+  the user commits: a frozen copy, with the model version, that does not update, and that stub
+  values are saved as stub values. A batch report keeps failed rows and records the job id as
+  provenance only; `molecule_ids` stays empty (those would be links to separately saved
+  molecules, which this flow does not create).
+- **States, all in words beside the control:** disabled with the reason (no API, no result yet,
+  running, no row selected, a failed row); anonymous gets "Saving needs an account" with a link to
+  sign-in and no form; a failure says nothing was saved and keeps what was typed; success becomes
+  "Saved to Library" with a link. `src/app/savedMarks.tsx` remembers what was saved this session
+  (keyed by molecule id plus `served_at`, or by batch result) so a second click cannot save the
+  same thing twice; marks are dropped when the session is not signed in. Typed tags are trimmed and
+  de-duplicated ignoring case; blank label and notes are sent as null. No length limits are
+  invented: the database columns are unbounded text.
+- **Contract:** `contracts.ts` mirrors `SaveMoleculeRequest` and `SaveReportRequest`; the drift
+  test covers them (38 contract tests).
+- **Checked:** 15 new vitest tests since the Library work (175 total). In a browser at 1440 px
+  against a stand-in API (real captured responses): Predict save with a server 500 first (typed
+  values kept, "Nothing was saved"), then success; the exact request bodies (label trimmed, tags
+  de-duplicated, same payload on retry); Batch report save and selected-molecule save; a failed
+  row disables Save with its reason; the new entries appear in Library without a reload; after
+  sign-out the control shows the account message and no form.
+- **Found while checking:** the control passed a disabled reason even when saving was possible,
+  so it always read as disabled. Fixed before commit; no test covers the component's rendering
+  (the frontend suite is node-only), so this is covered by the browser run only.
+- **Not checked:** the real service (Docker was not running); saving a very large batch
+  (the whole result, up to 50,000 rows, is sent as one JSON body: payload size and any server
+  limit are unmeasured, and the panel states the row count); the `410` the route table mentions
+  for saves of expired results (the current route has no such check, since the client sends the
+  results in hand).
+
 ## 3. What is broken or missing — read before touching anything
 
 These are ordered by how badly they would bite.
 
 ### 3.1 ~~Predict cannot take input.~~ Resolved 2026-10-07
 SMILES entry, Run and Clear work; the endpoint-subset selector landed 2026-10-08
-(a deselected endpoint is a `NOT REQUESTED` row, ADR-028). Still inert:
-**Compare molecule, Save to library, Export** (no handlers; Compare and Save
-depend on those workspaces).
+(a deselected endpoint is a `NOT REQUESTED` row, ADR-028). Save to library works (§2d).
+Still inert: **Compare molecule, Export** (no handlers; Compare depends on its workspace).
 
 ### 3.2 ~~The status bar and top bar show fabricated values~~ Resolved 2026-10-07
 The status bar reads the real response (`served_at`, `cache_hit`, measured
@@ -147,15 +241,15 @@ no `@types/node`.
 
 ### 3.5 Smaller gaps
 
-- **Batch is fixture-only.** No upload (`POST /batch/predict` needs an account and
-  the auth UI, ADR-022), no SSE progress for the >1000 async tier, no multi-select, "Open in
-  Predict" / "Export row" are inert.
+- **Batch gaps.** No multi-select; "Open in Predict" / "Export row" are inert; no
+  endpoint subset for a batch (the request sends none, so the service runs all); no way to
+  reopen an earlier job after a reload (the job id is held in memory only).
 - **No empty/entry state.** The *Predict — entry state* artboard (draw/upload/
   recents, "what MARS does not do") is not implemented; the roster merely renders
   from `emptyResponse`. I did not verify any dedicated empty-state view exists.
 - ~~**3Dmol is installed but unused.**~~ Wired 2026-10-07 (see "3D viewer" in §2a).
   Fixture mode still shows the placeholder geometry, labelled as illustrative.
-- **Compare and Library** are `StubWorkspace` (Library is behind the sign-in gate). Settings holds the Account section only.
+- **Compare** is a `StubWorkspace`. Library lists and deletes saved snapshots but nothing can be saved yet (§2c). Settings holds the Account section and delete-account.
 - ~~**ADR-009 CI drift check** is unwritten.~~ Written 2026-10-07:
   `contracts/tests/test_frontend_drift.py` (names only, not types).
 - ~~**Bump `MODEL_VERSION` on release.**~~ Done (`v0.2.0-dev`); see §2a item 8.
@@ -187,8 +281,8 @@ no `@types/node`.
    7), Turnstile, delete-account modal (Phase 2). **Known limit:** nothing in the UI makes a
    gated call yet, so the 401-drops-to-anonymous path is covered by unit tests only; a session
    that expires (or an account deleted) while the app is open is noticed on the first gated call
-   or a reload. Next: the batch client + SSE hook, Library, delete-account. When the upload
-   exists, keep the user's selected file across a 401 (ADR-022 item 3).
+   or a reload. Batch live is done (§2b), so a gated call now exists; the chosen file is held
+   above the router and survives a 401 (ADR-022 item 3). Library, delete-account and Save are built (§2c, §2d). Next: Compare, Export.
 6. ~~ADR-009 drift check~~ — done.
 7. ~~3Dmol~~ — done. Then Compare, Library.
 8. ~~**Relabel classification units as `score`**~~ — done 2026-10-14 (ADR-023): `DISPLAY_UNIT` and `unitLabel`, pinned by a test.
@@ -213,8 +307,8 @@ Q6 (ADR-026), Q9 (ADR-027), Q15, Q17, Q19 (ADR-020), Q21 (ADR-023), Q22 (ADR-025
 Q11, Q12, Q13 (resolved, confirm), Q16, Q18, Q20.
 
 Only these affect the next steps:
-- **Q7** resolved 2026-10-08 (ADR-022): the auth UI, not a decision, now blocks Batch upload,
-  rail gating and Library.
+- **Q7** resolved 2026-10-08 (ADR-022): the auth UI, not a decision, blocked Batch upload,
+  rail gating and Library. Batch upload is built (§2b).
 - **Q8** (default density) and **Q12** (accent) are confirmations, not blockers.
 - **Q3** resolved 2026-10-07 (printed intervals, per AGENTS.md never-do #4). **Q4**
   resolved 2026-10-08 (ADR-024): never flag narrow spread; rename it `SEED SPREAD ±1σ`.

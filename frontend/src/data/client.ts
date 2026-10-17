@@ -8,14 +8,21 @@
 // and allow_credentials (CORS_ALLOW_ORIGINS) — never `*`, which browsers reject
 // together with credentials. Cookies are SameSite=Lax, so the SPA and API must
 // be same-site (e.g. app.x.com and api.x.com).
+import { parseProgressEvents, type JobProgress } from "../domain/batchJob";
 import type {
+  BatchPredictResponse,
   ConformerResponse,
+  DeleteAccountRequest,
   Endpoint,
   LoginResponse,
   MeResponse,
   GenerationsResponse,
   PredictionResponse,
   RegisterResponse,
+  SaveMoleculeRequest,
+  SaveReportRequest,
+  SavedMoleculeResponse,
+  SavedReportResponse,
 } from "../types/contracts";
 
 export const API_BASE = import.meta.env.VITE_API_BASE;
@@ -105,6 +112,11 @@ export async function fetchConformer(moleculeId: string): Promise<ConformerRespo
   return (await res.json()) as ConformerResponse;
 }
 
+const jsonBody = (body: unknown): RequestInit => ({
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+});
+
 const jsonPost = (body: unknown): RequestInit => ({
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -149,6 +161,98 @@ export async function fetchHealth(): Promise<true> {
 // The deployed model generation (ADR-026). Anonymous, like /predict.
 export async function fetchGenerations(): Promise<GenerationsResponse> {
   return (await (await request("/generations")).json()) as GenerationsResponse;
+}
+
+// --- batch (account required; API_ROUTES.md /batch/*) ---
+
+/**
+ * Upload a CSV or SDF. Up to 1,000 molecules come back in this response (`job_id`
+ * null, `status` "done"); more are queued and `job_id` is set. `endpoints` null means
+ * no subset. Not sent as JSON: the body is multipart, so no Content-Type is set and the
+ * browser adds the boundary.
+ */
+export async function postBatch(
+  file: File,
+  opts: { smilesColumn?: string; endpoints?: Endpoint[] | null } = {},
+): Promise<BatchPredictResponse> {
+  const query = new URLSearchParams();
+  if (opts.smilesColumn?.trim()) query.set("smiles_column", opts.smilesColumn.trim());
+  for (const e of opts.endpoints ?? []) query.append("endpoints", e);
+  const qs = query.toString();
+  const body = new FormData();
+  body.append("file", file, file.name);
+  const res = await request(`/batch/predict${qs ? `?${qs}` : ""}`, { method: "POST", body });
+  return (await res.json()) as BatchPredictResponse;
+}
+
+/**
+ * Follow GET /batch/progress/{job_id} (server-sent events) until the service closes the
+ * stream, calling `onProgress` for each report. Read with fetch rather than EventSource
+ * so a 401/404 reaches the same error handling as every other call. Resolves with the
+ * last report seen (null if the stream carried none).
+ */
+export async function followBatchProgress(
+  jobId: string,
+  onProgress: (p: JobProgress) => void,
+  signal?: AbortSignal,
+): Promise<JobProgress | null> {
+  const res = await request(`/batch/progress/${encodeURIComponent(jobId)}`, { signal });
+  if (!res.body) throw new ApiError(0, "The progress stream is not readable in this browser");
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let last: JobProgress | null = null;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (value) buffer += decoder.decode(value, { stream: !done });
+    const parsed = parseProgressEvents(done ? buffer + "\n\n" : buffer);
+    buffer = done ? "" : parsed.rest;
+    for (const ev of parsed.events) {
+      last = ev;
+      onProgress(ev);
+    }
+    if (done) return last;
+  }
+}
+
+// 409: still running; 410: results expired (24 h retention); 404: not this account's job.
+export async function fetchBatchResults(jobId: string): Promise<BatchPredictResponse> {
+  return (await (await request(`/batch/results/${encodeURIComponent(jobId)}`)).json()) as BatchPredictResponse;
+}
+
+// --- library (account required; API_ROUTES.md /molecules, /reports, /account) ---
+
+// Snapshot-on-save: the service freezes exactly what is sent. 201 on success.
+export async function saveMolecule(body: SaveMoleculeRequest): Promise<SavedMoleculeResponse> {
+  return (await (await request("/molecules/save", jsonPost(body))).json()) as SavedMoleculeResponse;
+}
+
+export async function saveReport(body: SaveReportRequest): Promise<SavedReportResponse> {
+  return (await (await request("/reports/save", jsonPost(body))).json()) as SavedReportResponse;
+}
+
+export async function fetchSavedMolecules(): Promise<SavedMoleculeResponse[]> {
+  return (await (await request("/molecules")).json()) as SavedMoleculeResponse[];
+}
+
+export async function fetchSavedReports(): Promise<SavedReportResponse[]> {
+  return (await (await request("/reports")).json()) as SavedReportResponse[];
+}
+
+// 404 means it is not this account's (or already gone): callers treat it as gone.
+export async function deleteSavedMolecule(id: string): Promise<void> {
+  await request(`/molecules/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+export async function deleteSavedReport(id: string): Promise<void> {
+  await request(`/reports/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+// Cascades on the server to saved molecules, saved reports and batch jobs, and revokes every
+// session. 403 = wrong password. 204 = gone; the caller then drops to anonymous.
+export async function deleteAccount(password: string): Promise<void> {
+  const body: DeleteAccountRequest = { password };
+  await request("/account", { method: "DELETE", ...jsonBody(body) });
 }
 
 export const USING_API = !!API_BASE;

@@ -1,11 +1,12 @@
-// Settings. Today it holds the Account section only: sign in or out. Deleting an
-// account (behind a confirmation modal) is Phase 2 of ADR-022.
+// Settings. Today it holds the Account section only: sign in or out, and delete the
+// account behind a confirmation modal (ADR-022 phase 2).
 import { useEffect } from "react";
 import styles from "../../auth/auth.module.css";
 import { AccountForm } from "../../auth/AccountForm";
 import { useAuthSession } from "../../app/authSession";
 import { useUiState } from "../../app/uiState";
 import { USING_API } from "../../data/client";
+import { DeleteAccount } from "./DeleteAccount";
 
 export function SettingsWorkspace() {
   const { status, user, busy, signOut } = useAuthSession();
@@ -31,6 +32,7 @@ export function SettingsWorkspace() {
             Sign out
           </button>
         </div>
+        <DeleteAccount />
       </>
     );
   } else {

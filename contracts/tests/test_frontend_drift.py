@@ -17,6 +17,7 @@ from mars_contracts import (
     BatchPredictResponse,
     BatchRowResult,
     CompareResponse,
+    DeleteAccountRequest,
     Endpoint,
     EndpointCategory,
     EndpointPrediction,
@@ -28,6 +29,10 @@ from mars_contracts import (
     PredictionResponse,
     RegisterRequest,
     RegisterResponse,
+    SavedMoleculeResponse,
+    SavedReportResponse,
+    SaveMoleculeRequest,
+    SaveReportRequest,
     TaskType,
 )
 
@@ -74,6 +79,11 @@ def test_enum_members_match(ts_name, enum):
         ("LoginResponse", LoginResponse),
         ("RegisterRequest", RegisterRequest),
         ("RegisterResponse", RegisterResponse),
+        ("SaveMoleculeRequest", SaveMoleculeRequest),
+        ("SaveReportRequest", SaveReportRequest),
+        ("SavedMoleculeResponse", SavedMoleculeResponse),
+        ("SavedReportResponse", SavedReportResponse),
+        ("DeleteAccountRequest", DeleteAccountRequest),
     ],
 )
 def test_interface_fields_match(ts_name, model):
