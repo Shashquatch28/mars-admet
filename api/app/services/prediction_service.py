@@ -122,6 +122,9 @@ def _route_to_models(response: PredictionResponse, targets: list[Endpoint]) -> P
             in_domain=real.in_domain,
             knn_distance=real.knn_distance,
             ad_threshold=real.ad_threshold,
+            heldout_error_halfwidth=real.heldout_error_halfwidth,
+            heldout_error_level=real.heldout_error_level,
+            heldout_error_n=real.heldout_error_n,
             model_id=real.model_id,
         )
 

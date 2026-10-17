@@ -40,6 +40,9 @@ class _Registry:
         self.calibrator_loads += 1
         return _Calibrator()
 
+    def load_error_band(self, endpoint_key):
+        return None
+
     def load_ad_index(self, endpoint_key):
         return None
 

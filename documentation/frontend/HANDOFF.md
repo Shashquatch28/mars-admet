@@ -263,6 +263,20 @@ migrations already at head (`d5be9f4ca6e0`), a private Vite on :5174 against the
   (187 total), contract drift test covers `CompareRequest` (39 contract tests).
 - **Not built:** Library to Compare, Batch to Compare, an endpoint subset for Compare (the request sends none).
 
+### 2g. Held-out-error band (ADR-024) — what was done and what was checked
+
+- **Backend:** `ml/eval/error_band.py`, `ml/train/build_error_bands.py`, `ModelRegistry.load_error_band`, three additive
+  `EndpointPrediction` fields (`heldout_error_halfwidth`, `heldout_error_level`, `heldout_error_n`). Level 90%. The band files
+  live in `ml/artifacts/<endpoint>/error_band.json`, which is git-ignored: on a new machine run
+  `cd ml && PYTHONPATH=. python train/build_error_bands.py` (about 6 minutes) or the regression rows carry no band.
+- **Frontend:** `src/domain/errorBand.ts` (tested) and two rows in the Predict inspector for regression endpoints: "Held-out
+  error ±X" and a note saying what was measured. Text only, never a bar, never coloured; absent when the service sent none.
+  Batch and Compare do not show it.
+- **Checked on the real stack** (2026-10-18): `/predict` returns the five bands (solubility 1.677, logP 1.103, Caco-2 0.615,
+  PPB 18.07, clearance 51.21) and null on the nine classification rows and the rule-based row; the inspector shows the band on a
+  regression row and none on a classification row. Test coverage of the bands: `documentation/status/heldout_error_bands.md`.
+- **Note:** predictions cached in Redis before this change have no band until their entry expires or is flushed.
+
 ## 3. What is broken or missing — read before touching anything
 
 These are ordered by how badly they would bite.

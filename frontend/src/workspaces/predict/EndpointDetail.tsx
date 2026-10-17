@@ -7,6 +7,7 @@ import type { PredictionResponse } from "../../types/contracts";
 import { DISPLAY_UNIT, PROB_DOMAIN } from "../../domain/endpoints";
 import { decimalPlaces, fmtValue, fmtInterval, fmtDateTime, fmtNum } from "../../domain/format";
 import { ADGauge } from "../../components/dataviz/ADGauge";
+import { errorBandNote, errorBandOf } from "../../domain/errorBand";
 
 function Rule() {
   return <div className={styles.irule} />;
@@ -88,6 +89,7 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
   // The cutoff comes from the response only (Q19). null means the endpoint has no
   // applicability-domain index: draw no tick rather than invent one.
   const threshold = prediction.ad_threshold;
+  const band = meta.taskType === "regression" ? errorBandOf(prediction) : null;
   const showGauge =
     (state.kind === "ok" || state.kind === "out_of_domain") && threshold != null;
 
@@ -106,6 +108,14 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
       {meta.taskType === "regression" && (
         <div className={styles.isec}>
           <dl className={styles.ikv}>
+            {band && (
+              <>
+                <dt>Held-out error</dt>
+                <dd>±{fmtNum(band.halfwidth, decimalPlaces(prediction.endpoint))}</dd>
+                <dt>Measured as</dt>
+                <dd className={styles.ddDerived}>{errorBandNote(band)}</dd>
+              </>
+            )}
             <dt>Seed spread ±1σ</dt>
             <dd>{fmtInterval(prediction.confidence_low, prediction.confidence_high, decimalPlaces(prediction.endpoint))}</dd>
             <dt>Spread width</dt>

@@ -91,7 +91,7 @@ reference range whether or not it is labelled as one.
 
 **Resolution:** never flag narrow seed spread; rename `ENSEMBLE INTERVAL` to `SEED SPREAD ±1σ`. Measured on the held-out
 test sets, the printed ±1σ range contained the truth for 9-14% of regression molecules, and on classification the spread
-adds nothing beyond the score. A held-out-error band is the planned regression replacement; hiding the spread on
+adds nothing beyond the score. A held-out-error band replaced it on the regression endpoints (built 2026-10-18, ADR-024); hiding the spread on
 classification rows is left open. Correction to the recommendation below: the seeds do not share one training set (each
 uses its own scaffold partition). Original text below for the record.
 

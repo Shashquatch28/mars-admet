@@ -46,6 +46,12 @@ class RealPrediction:
     n_seeds: int
     # The cutoff in_domain was judged against; None when the endpoint has no AD index.
     ad_threshold: float | None = None
+    # Held-out-error band (ADR-024): the share of held-out validation errors that fell within
+    # +/- halfwidth, and how many residuals that was taken over. None for classification and for
+    # any regression endpoint whose band has not been built.
+    heldout_error_halfwidth: float | None = None
+    heldout_error_level: float | None = None
+    heldout_error_n: int | None = None
 
 
 def standardize_or_raise(smiles: str) -> str:
@@ -97,6 +103,8 @@ def predict_endpoint(
         knn_distance = float("nan")
         ad_threshold = None
 
+    band = registry.load_error_band(endpoint_key) if task_type == TaskType.REGRESSION else None
+
     return RealPrediction(
         endpoint=endpoint_key,
         value=mean,
@@ -107,6 +115,9 @@ def predict_endpoint(
         model_id=models[0].model_id,
         n_seeds=len(models),
         ad_threshold=ad_threshold,
+        heldout_error_halfwidth=band.halfwidth if band else None,
+        heldout_error_level=band.level if band else None,
+        heldout_error_n=band.n_residuals if band else None,
     )
 
 

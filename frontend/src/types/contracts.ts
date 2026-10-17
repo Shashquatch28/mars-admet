@@ -51,6 +51,13 @@ export interface EndpointPrediction {
   // applicability-domain index (stub-served, rule-based): there is no tick to
   // draw and the client must not invent one.
   ad_threshold: number | null;
+  // Additive fields (ADR-024). Regression endpoints only: heldout_error_level of the absolute errors the
+  // promoted seeds made on molecules held out of their own training were at most heldout_error_halfwidth,
+  // taken over heldout_error_n pooled residuals. One constant per endpoint, not a per-molecule interval.
+  // null (or absent, in a response produced before they existed) means no band: show none, invent none.
+  heldout_error_halfwidth?: number | null;
+  heldout_error_level?: number | null;
+  heldout_error_n?: number | null;
 }
 
 export interface PredictionResponse {

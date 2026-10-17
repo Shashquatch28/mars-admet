@@ -653,7 +653,7 @@ C1 two to four working days, C2 weeks of calendar time.
 
 ## ADR-024 — Seed spread is not an interval: never flag it, and rename it (resolves Q4)
 
-**Date:** 2026-10-08 · **Status:** accepted (wording implemented 2026-10-14; replacement band planned)
+**Date:** 2026-10-08 · **Status:** accepted (wording implemented 2026-10-14; held-out-error band implemented 2026-10-18)
 
 **Decision.**
 
@@ -693,6 +693,15 @@ applies to them: "Interval" is now `Seed spread ±1σ` and "Interval width" is `
 is `Seed spread ±1σ` (classification rows), and the rule-based note and the inspector hint say "seed spread".
 Spread is still shown on classification rows (item 4 stays open). No code identifier was renamed:
 `NumericInterval`, `IntervalTrack`, `fmtInterval` and the contract's `confidence_low` / `confidence_high` keep their names.
+
+Band implemented 2026-10-18 at the 90% level (AIMS `decisions.md` 2026-10-18). Contract fields on `EndpointPrediction`:
+`heldout_error_halfwidth`, `heldout_error_level`, `heldout_error_n`, all additive and null when there is no band
+(classification, stub-served, rule-based, or a regression endpoint whose band has not been built). The Predict inspector
+prints it as text above the seed spread: "Held-out error ±1.68" with a note that says what was measured, that it is one value
+for the whole endpoint, and that it is not a guarantee for an out-of-domain molecule. It is never drawn as a bar, never
+coloured, and `errorBandOf` returns nothing for a partial or nonsensical band rather than showing half a claim. Batch and
+Compare do not show it. Out-of-domain coverage is lower than in-domain at every endpoint but Caco-2, so the domain flag
+stays beside it.
 
 ## ADR-025 — Production serves the frontend and the API from one origin (resolves Q22)
 

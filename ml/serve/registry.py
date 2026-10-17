@@ -6,6 +6,7 @@ Artifact layout (`artifacts_root`, default `ml/artifacts/`):
         seed_<n>/model.json, metadata.json      # one XGBoostModel per promoted seed
         ad_index/reference_fingerprints.npy, metadata.json   # Module 5 CORE k-NN AD
         calibrator.json                          # Module 4 Platt calibrator (classification only)
+        error_band.json                          # held-out-error band (regression only, ADR-024)
 
 This directory is intentionally decoupled from `ml/runs/` (ExperimentRun's
 ephemeral, git-ignored per-run output) — `promote_seed_artifact` is the one
@@ -27,6 +28,7 @@ from pathlib import Path
 import numpy as np
 from eval.applicability_domain import ADIndex, build_ad_index
 from eval.calibration import PlattCalibrator, fit_platt_calibrator
+from eval.error_band import ERROR_BAND_FILENAME, ErrorBand
 from featurize.cache import FeatureCache
 from mars_contracts.endpoints import Endpoint, TaskType
 from models.xgboost_model import XGBoostModel
@@ -97,6 +99,13 @@ class ModelRegistry:
         if not (path / "metadata.json").exists():
             return None
         return ADIndex.load(path)
+
+    def load_error_band(self, endpoint_key: str) -> ErrorBand | None:
+        """The endpoint's held-out-error band, or None when none was built (classification, or not yet)."""
+        path = self._endpoint_dir(endpoint_key) / ERROR_BAND_FILENAME
+        if not path.exists():
+            return None
+        return ErrorBand.load(path)
 
     def load_calibrator(self, endpoint_key: str) -> PlattCalibrator | None:
         path = self._endpoint_dir(endpoint_key) / "calibrator.json"

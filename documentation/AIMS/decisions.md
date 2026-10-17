@@ -13,6 +13,32 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-18 — Held-out-error band: level 90%, served on the five regression endpoints (completes the 2026-10-08 follow-up)
+
+**Decision.** The band level is **90%**, the maintainer having asked for a recommended default and for item 10 to be finished
+(chat, 2026-10-18). The contract carries the level, so changing it is a re-run (`--level`) and no code change. Served
+fields on `EndpointPrediction`, all additive and null when there is no band: `heldout_error_halfwidth`,
+`heldout_error_level`, `heldout_error_n`.
+
+**Why 90% rather than 80%.** The pooled-residual half-width under-covers on the test set at either level, and the shortfall is
+smaller at 90% (clearance 0.86 against a 0.90 target is 4 points short; 0.71 against 0.80 is 9 short). The cost is a wider band:
+at 90% clearance is +/-51.2 against a typical error of 25.8, so it says little there. The label states what was measured (the
+share of held-out errors within the half-width), so the width is honest rather than flattering. Choosing 80% would make the
+bands narrower and the test shortfall larger.
+
+**Built.** `ml/eval/error_band.py` (quantile, pooled residuals, `ErrorBand` JSON), `ml/train/build_error_bands.py` (writes
+`<artifacts>/<endpoint>/error_band.json`, reports test coverage, never uses the test set to pick the half-width),
+`ModelRegistry.load_error_band`, `RealPrediction.heldout_error_*`, contract and frontend mirror. Result
+(`documentation/status/heldout_error_bands.md`): half-widths solubility 1.677, logP 1.103, Caco-2 0.615, PPB 18.07, clearance
+51.21; test coverage 0.90, 0.90, 0.93, 0.87, 0.86; out-of-domain coverage 0.86, 0.80, 0.93, 0.43 (n = 7, too few to read), 0.80.
+These reproduce the 2026-10-08 figures, now from committed code under the pinned environment.
+
+**Caveats that stand.** One constant per endpoint, not per molecule. It under-covers out-of-domain molecules, so the
+applicability-domain flag stays beside it. It describes the error of the seed ensemble mean (the served value). Classification
+gets no band. `ml/artifacts/` is git-ignored: a machine must run the builder once, or its regression rows carry no band.
+
+---
+
 ## 2026-10-14 — AI sessions may perform git write operations; no AI attribution is left behind
 
 **Status:** decided 2026-10-14 by the maintainer (chat). Process rule; changes no code or data.
