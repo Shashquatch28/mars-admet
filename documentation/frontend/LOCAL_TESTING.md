@@ -1,7 +1,7 @@
 # Running MARS locally and trying the new screens
 
 Covers what was added on 2026-10-18: **Batch on the live API, Library, Save to library,
-delete-account.** Two ways to run it. Use the first to test against the real service; use the
+delete-account, Compare.** Two ways to run it. Use the first to test against the real service; use the
 second when Docker is not available or you only want to see the UI states.
 
 These screens were first checked against a stand-in API, then on the real stack on 2026-10-18
@@ -134,10 +134,17 @@ handful of molecules**: each new molecule takes roughly 12 to 25 seconds today, 
    password. A wrong password keeps the dialog open and says nothing was deleted. The right one
    returns you to signed-out, and Library shows the sign-in gate with no rows left.
 
+7. **Compare** (key 3, anonymous: no account needed). In Predict, run a molecule, then click
+   **Compare molecule**: Compare opens with it in slot 1, as you typed it. Put a second SMILES in slot 2
+   (optionally **Add a third molecule**) and **Run comparison**. You get one table: 15 endpoint rows in
+   fixed order, one column per molecule. Nothing is ranked, highlighted or called better; out-of-domain
+   cells carry an amber edge and an OOD tag but their numbers look like any other. An invalid SMILES gives
+   a "Molecule rejected" message naming it and keeps what you typed. On the real service expect about 10
+   seconds per new molecule.
+
 ## What to expect that is not finished
 
-- **Compare**, **Export**, Batch's **Open in Predict** and **Export row**, and Predict's **Compare
-  molecule** are placeholders with no handlers.
+- **Export**, Batch's **Open in Predict** and **Export row** are placeholders with no handlers.
 - Password reset is not offered (no email is sent).
 - A very large batch is saved as one JSON body of every row; its size and any server limit have not
   been measured.

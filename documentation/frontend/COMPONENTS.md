@@ -11,7 +11,8 @@ components are named where the shell already implies them, and specified later.
 > (`workspaces/predict/`); `IntervalTrack`, `ADGauge`, `NumericInterval`,
 > `ReliabilityTag` and the `scale.ts` helper that is `BoundedTrack`'s role
 > (`components/dataviz/`); `BatchWorkspace`/`BatchGrid`; `Gated` and
-> `AccountForm` (`auth/`, not in this inventory); `StubWorkspace`.
+> `AccountForm` (`auth/`), `ConfirmDialog`, `SaveControl`, `CompareWorkspace` and
+> `LibraryWorkspace` (not in this inventory).
 > Named below but **not separate components**: `MoleculeInput`,
 > `MoleculeIdentity`, `EndpointGroup`, `WorkspaceHeader`, `WorkspacePanel` and
 > `Inspector` are regions inside `PredictWorkspace.tsx` / `EndpointList.tsx` /

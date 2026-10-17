@@ -101,6 +101,10 @@ export interface BatchPredictResponse {
 }
 
 // --- compare (api.py) ---
+export interface CompareRequest {
+  smiles: string[]; // 2 or 3
+  endpoints?: Endpoint[] | null;
+}
 export interface CompareResponse {
   molecules: PredictionResponse[];
   // per_endpoint_winner is intentionally NOT consumed anywhere in the UI

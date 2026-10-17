@@ -8,10 +8,10 @@ system), Module 7 viewer wiring, and the Module 12/13 UI.
 | Workspace | State |
 |---|---|
 | **Predict** | Live. Typed SMILES, Run, endpoint-subset selector, 15-row reconciled roster, inspector, AD gauge, 3D viewer (3Dmol), keyboard roving. |
-| **Batch** | Fixture only (240 deterministic molecules). Virtualized `role="grid"`, raw numeric sort, filters, molecule inspector. No upload and no SSE progress yet. Behind the sign-in gate. |
-| **Compare** | Placeholder (`StubWorkspace`). |
-| **Library** | Placeholder, behind the sign-in gate. |
-| **Settings** | Account section only. |
+| **Batch** | Live: upload a CSV/SDF, progress for queued jobs over SSE, results in a virtualized `role="grid"` with raw numeric sort, filters and a molecule inspector; Save molecule and Save report. Without an API it shows a 240-molecule fixture. Behind the sign-in gate. |
+| **Compare** | Live: two or three molecules side by side, descriptive only (no winner, ADR-007); reached from Predict's Compare molecule. Anonymous. |
+| **Library** | Live: saved molecules and reports as frozen snapshots, delete. Behind the sign-in gate. |
+| **Settings** | Account section: sign in or out, delete account (confirmation modal). |
 | **Auth** | Sign in, create account, sign out, `GET /auth/me` session probe, global 401 handler. Password reset, Turnstile and delete-account are not built. |
 
 Without `VITE_API_BASE` the app runs on an illustrative fixture and shows a
@@ -70,9 +70,10 @@ src/
   shell/          AppShell, NavRail, TopBar, StatusBar, CommandPalette
   workspaces/
     predict/      PredictWorkspace, EndpointList/Row/Detail/Selector, StructureViewer
-    batch/        BatchWorkspace, BatchGrid (virtualized)
-    settings/     SettingsWorkspace
-    StubWorkspace Compare and Library placeholders
+    batch/        BatchWorkspace, BatchGrid (virtualized), BatchUpload
+    compare/      CompareWorkspace
+    library/      LibraryWorkspace
+    settings/     SettingsWorkspace, DeleteAccount
   components/dataviz/  scale, IntervalTrack, ADGauge, NumericInterval, ReliabilityTag
   domain/         endpoints, rowState, reconcile, format, conformer, session,
                   batch, fixtures, real-responses/ (captured API payloads)
@@ -85,7 +86,7 @@ tests/            cssGuard.test.ts
 ## Verify
 
 ```bash
-npm test             # vitest run: 175 tests in 14 files
+npm test             # vitest run: 187 tests in 15 files
 npm run lint         # eslint, TS/TSX only; does not read .module.css
 npx tsc --noEmit
 ```

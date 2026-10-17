@@ -16,6 +16,7 @@ import pytest
 from mars_contracts import (
     BatchPredictResponse,
     BatchRowResult,
+    CompareRequest,
     CompareResponse,
     DeleteAccountRequest,
     Endpoint,
@@ -72,6 +73,7 @@ def test_enum_members_match(ts_name, enum):
         ("PredictionResponse", PredictionResponse),
         ("BatchRowResult", BatchRowResult),
         ("BatchPredictResponse", BatchPredictResponse),
+        ("CompareRequest", CompareRequest),
         ("CompareResponse", CompareResponse),
         ("GenerationsResponse", GenerationsResponse),
         ("MeResponse", MeResponse),

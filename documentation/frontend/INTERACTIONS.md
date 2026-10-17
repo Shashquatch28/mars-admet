@@ -12,8 +12,8 @@
 > client); the springs. Where this file says "spring", the code uses the
 > `--dur-*` / `--ease` tokens with a CSS transition; the AD-gauge marker
 > settles with `transition: left var(--dur-enter)`, once per endpoint (ADR-013).
-> The molecule hand-off between workspaces (Predict → Compare, Batch → Predict,
-> Library) is not wired: Compare and Library are placeholders.
+> The molecule hand-off between workspaces: Predict → Compare is wired (2026-10-18).
+> Batch → Predict and Library → Predict/Compare are not.
 
 ## Navigation
 
