@@ -4,6 +4,7 @@ import { queryClient } from "./app/queryClient";
 import { UiStateProvider } from "./app/uiState";
 import { PredictSessionProvider } from "./app/predictSession";
 import { AuthSessionProvider } from "./app/authSession";
+import { BatchSessionProvider } from "./app/batchSession";
 import { Gated } from "./auth/Gated";
 import { SettingsWorkspace } from "./workspaces/settings/SettingsWorkspace";
 import { AppShell } from "./shell/AppShell";
@@ -18,6 +19,7 @@ export function App() {
         <UiStateProvider>
           <AuthSessionProvider>
             <PredictSessionProvider>
+              <BatchSessionProvider>
               <Routes>
                 <Route element={<AppShell />}>
                   <Route index element={<Navigate to="/predict" replace />} />
@@ -29,6 +31,7 @@ export function App() {
                   <Route path="*" element={<Navigate to="/predict" replace />} />
                 </Route>
               </Routes>
+              </BatchSessionProvider>
             </PredictSessionProvider>
           </AuthSessionProvider>
         </UiStateProvider>

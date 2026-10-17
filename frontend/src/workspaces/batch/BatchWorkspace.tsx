@@ -1,7 +1,8 @@
 // Batch — high-density triage. Composes the matrix and a molecule inspector.
-// Runs on the illustrative fixture (240 molecules, so virtualization and the
-// keyboard model are genuinely exercised); the real path is POST /batch/predict,
-// which requires an account, and is not wired yet.
+// With an API (VITE_API_BASE) it takes a CSV or SDF, runs POST /batch/predict, follows
+// the progress stream for queued jobs and shows the returned rows. Without one it runs on
+// the illustrative fixture (240 molecules, so virtualization and the keyboard model are
+// genuinely exercised). Both go through the same buildBatch and the same grid.
 //
 // Honesty rules that shape this screen specifically:
 //   - sorting is RAW numeric on one endpoint, never favourability (AGENTS.md #3)
@@ -9,6 +10,8 @@
 //   - a failed row stays a row, carrying its error
 //   - no aggregate score across endpoints, because no weighting is validated
 import { useEffect, useMemo, useState } from "react";
+import { useBatchSession } from "../../app/batchSession";
+import { USING_API } from "../../data/client";
 import styles from "./batch.module.css";
 import { useUiState } from "../../app/uiState";
 import {
@@ -25,17 +28,33 @@ import {
 import { SHORT_LABEL } from "../../domain/endpoints";
 import { fmtValue } from "../../domain/format";
 import { BatchGrid } from "./BatchGrid";
+import { BatchUpload } from "./BatchUpload";
 
 export function BatchWorkspace() {
   const { density, setIsSample } = useUiState();
   const rowH = density === "compact" ? 30 : 36;
 
-  useEffect(() => setIsSample(true), [setIsSample]);
+  const session = useBatchSession();
+  // Only the fixture is illustrative; rows that came back from the service are real.
+  useEffect(() => setIsSample(!USING_API), [setIsSample]);
 
-  const summary = useMemo(() => buildBatch(makeBatchFixture(240)), []);
+  const summary = useMemo(
+    () =>
+      USING_API
+        ? buildBatch(session.result ?? { status: "done", total: 0, completed: 0, results: [] })
+        : buildBatch(makeBatchFixture(240)),
+    [session.result],
+  );
   const [sort, setSort] = useState<SortSpec>({ kind: "input" });
   const [filter, setFilter] = useState<FilterSpec>(NO_FILTER);
   const [selected, setSelected] = useState<number | null>(null);
+
+  // A new result starts from input order with nothing filtered or selected.
+  useEffect(() => {
+    setSort({ kind: "input" });
+    setFilter(NO_FILTER);
+    setSelected(null);
+  }, [session.resultId]);
 
   const visible = useMemo(
     () => sortRows(filterRows(summary.rows, filter), sort),
@@ -53,6 +72,7 @@ export function BatchWorkspace() {
   return (
     <>
       <section className={styles.batch} aria-label="Batch">
+        {USING_API && <BatchUpload />}
         <div className={styles.bhd}>
           <span className={styles.bTitle}>Batch</span>
           <span className={styles.recon}>
@@ -124,14 +144,24 @@ export function BatchWorkspace() {
         </div>
 
         <div className={styles.gridwrap} style={{ ["--row-h" as string]: `${rowH}px` }}>
-          <BatchGrid
-            rows={visible}
-            rowH={rowH}
-            selected={selected}
-            onSelect={(r: BatchRow) => setSelected(r.rowIndex)}
-            sort={sort}
-            onSort={setSort}
-          />
+          {USING_API && summary.rows.length === 0 ? (
+            <p className={styles.gridempty}>
+              {session.busy
+                ? "Waiting for the service. Rows appear here when the batch finishes."
+                : session.phase.kind === "failed"
+                  ? "The last run returned no rows. The reason is above; fix it and run again."
+                  : "No batch has been run. Choose a CSV or SDF above and run it; every molecule gets one cell per endpoint, including the ones the service did not return."}
+            </p>
+          ) : (
+            <BatchGrid
+              rows={visible}
+              rowH={rowH}
+              selected={selected}
+              onSelect={(r: BatchRow) => setSelected(r.rowIndex)}
+              sort={sort}
+              onSort={setSort}
+            />
+          )}
         </div>
 
         <div className={styles.bfoot}>

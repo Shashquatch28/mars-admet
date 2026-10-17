@@ -8,7 +8,9 @@
 // and allow_credentials (CORS_ALLOW_ORIGINS) — never `*`, which browsers reject
 // together with credentials. Cookies are SameSite=Lax, so the SPA and API must
 // be same-site (e.g. app.x.com and api.x.com).
+import { parseProgressEvents, type JobProgress } from "../domain/batchJob";
 import type {
+  BatchPredictResponse,
   ConformerResponse,
   Endpoint,
   LoginResponse,
@@ -149,6 +151,63 @@ export async function fetchHealth(): Promise<true> {
 // The deployed model generation (ADR-026). Anonymous, like /predict.
 export async function fetchGenerations(): Promise<GenerationsResponse> {
   return (await (await request("/generations")).json()) as GenerationsResponse;
+}
+
+// --- batch (account required; API_ROUTES.md /batch/*) ---
+
+/**
+ * Upload a CSV or SDF. Up to 1,000 molecules come back in this response (`job_id`
+ * null, `status` "done"); more are queued and `job_id` is set. `endpoints` null means
+ * no subset. Not sent as JSON: the body is multipart, so no Content-Type is set and the
+ * browser adds the boundary.
+ */
+export async function postBatch(
+  file: File,
+  opts: { smilesColumn?: string; endpoints?: Endpoint[] | null } = {},
+): Promise<BatchPredictResponse> {
+  const query = new URLSearchParams();
+  if (opts.smilesColumn?.trim()) query.set("smiles_column", opts.smilesColumn.trim());
+  for (const e of opts.endpoints ?? []) query.append("endpoints", e);
+  const qs = query.toString();
+  const body = new FormData();
+  body.append("file", file, file.name);
+  const res = await request(`/batch/predict${qs ? `?${qs}` : ""}`, { method: "POST", body });
+  return (await res.json()) as BatchPredictResponse;
+}
+
+/**
+ * Follow GET /batch/progress/{job_id} (server-sent events) until the service closes the
+ * stream, calling `onProgress` for each report. Read with fetch rather than EventSource
+ * so a 401/404 reaches the same error handling as every other call. Resolves with the
+ * last report seen (null if the stream carried none).
+ */
+export async function followBatchProgress(
+  jobId: string,
+  onProgress: (p: JobProgress) => void,
+  signal?: AbortSignal,
+): Promise<JobProgress | null> {
+  const res = await request(`/batch/progress/${encodeURIComponent(jobId)}`, { signal });
+  if (!res.body) throw new ApiError(0, "The progress stream is not readable in this browser");
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let last: JobProgress | null = null;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (value) buffer += decoder.decode(value, { stream: !done });
+    const parsed = parseProgressEvents(done ? buffer + "\n\n" : buffer);
+    buffer = done ? "" : parsed.rest;
+    for (const ev of parsed.events) {
+      last = ev;
+      onProgress(ev);
+    }
+    if (done) return last;
+  }
+}
+
+// 409: still running; 410: results expired (24 h retention); 404: not this account's job.
+export async function fetchBatchResults(jobId: string): Promise<BatchPredictResponse> {
+  return (await (await request(`/batch/results/${encodeURIComponent(jobId)}`)).json()) as BatchPredictResponse;
 }
 
 export const USING_API = !!API_BASE;
