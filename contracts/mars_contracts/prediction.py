@@ -38,6 +38,26 @@ class EndpointPrediction(BaseModel):
         "(stub-served, rule-based): there is no cutoff to draw, and clients must not invent one. "
         "Additive field (Q19); defaults to None so existing callers are unaffected.",
     )
+    heldout_error_halfwidth: float | None = Field(
+        default=None,
+        description="Regression endpoints only. Half-width, in the endpoint's own unit, of the held-out-error band "
+        "(ADR-024): `heldout_error_level` of the absolute errors the promoted seeds made on their own "
+        "scaffold-held-out validation folds were at most this large. One constant per endpoint, taken from the "
+        "pooled out-of-fold residuals; it is NOT a per-molecule interval and NOT a guarantee for this molecule "
+        "(it under-covers out-of-domain molecules, so read it beside `in_domain`). Null for classification, "
+        "stub-served and rule-based rows, and for a regression endpoint whose band has not been built: clients "
+        "must not invent one. Additive field; defaults to None so existing callers are unaffected.",
+    )
+    heldout_error_level: float | None = Field(
+        default=None,
+        description="The share of held-out errors that fell within `heldout_error_halfwidth` (e.g. 0.9). Null exactly "
+        "when `heldout_error_halfwidth` is null.",
+    )
+    heldout_error_n: int | None = Field(
+        default=None,
+        description="How many pooled held-out residuals the half-width was taken over. Null exactly when "
+        "`heldout_error_halfwidth` is null.",
+    )
     model_id: str = Field(
         default="stub-v0",
         description="Which trained artifact actually served THIS endpoint (e.g. "

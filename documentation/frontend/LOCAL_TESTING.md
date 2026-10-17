@@ -142,6 +142,13 @@ handful of molecules**: each new molecule takes roughly 12 to 25 seconds today, 
    a "Molecule rejected" message naming it and keeps what you typed. On the real service expect about 10
    seconds per new molecule.
 
+8. **Held-out error band** (Predict). Run a molecule, select a regression row (solubility_logs, lipophilicity_logp,
+   caco2_permeability, ppb_binding or clearance_microsomal). The inspector shows **Held-out error ±X** with a note saying what
+   it measured, above the seed spread. Classification rows show no such row. The band comes from
+   `ml/artifacts/<endpoint>/error_band.json`; if you see no band on a regression row, build them once with
+   `cd ml; $env:PYTHONPATH="."; .venv\Scripts\python train\build_error_bands.py`, rebuild the API image, and use a molecule
+   you have not run before (cached results from before the band existed carry none).
+
 ## What to expect that is not finished
 
 - **Export**, Batch's **Open in Predict** and **Export row** are placeholders with no handlers.
@@ -153,7 +160,7 @@ handful of molecules**: each new molecule takes roughly 12 to 25 seconds today, 
 ## Tests
 
 ```powershell
-cd frontend; npm test; npx tsc --noEmit; npm run lint     # 175 tests; lint has 0 errors
+cd frontend; npm test; npx tsc --noEmit; npm run lint     # 191 tests; lint has 0 errors
 cd ..; .venv\Scripts\ruff check contracts api ml
 .venv\Scripts\pytest contracts/tests api/tests -q          # DB/Redis tests skip unless the stack is up
 ```
