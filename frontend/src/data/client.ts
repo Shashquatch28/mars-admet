@@ -12,12 +12,15 @@ import { parseProgressEvents, type JobProgress } from "../domain/batchJob";
 import type {
   BatchPredictResponse,
   ConformerResponse,
+  DeleteAccountRequest,
   Endpoint,
   LoginResponse,
   MeResponse,
   GenerationsResponse,
   PredictionResponse,
   RegisterResponse,
+  SavedMoleculeResponse,
+  SavedReportResponse,
 } from "../types/contracts";
 
 export const API_BASE = import.meta.env.VITE_API_BASE;
@@ -106,6 +109,11 @@ export async function fetchConformer(moleculeId: string): Promise<ConformerRespo
   const res = await request(`/molecule/${encodeURIComponent(moleculeId)}/3d`);
   return (await res.json()) as ConformerResponse;
 }
+
+const jsonBody = (body: unknown): RequestInit => ({
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+});
 
 const jsonPost = (body: unknown): RequestInit => ({
   method: "POST",
@@ -208,6 +216,32 @@ export async function followBatchProgress(
 // 409: still running; 410: results expired (24 h retention); 404: not this account's job.
 export async function fetchBatchResults(jobId: string): Promise<BatchPredictResponse> {
   return (await (await request(`/batch/results/${encodeURIComponent(jobId)}`)).json()) as BatchPredictResponse;
+}
+
+// --- library (account required; API_ROUTES.md /molecules, /reports, /account) ---
+
+export async function fetchSavedMolecules(): Promise<SavedMoleculeResponse[]> {
+  return (await (await request("/molecules")).json()) as SavedMoleculeResponse[];
+}
+
+export async function fetchSavedReports(): Promise<SavedReportResponse[]> {
+  return (await (await request("/reports")).json()) as SavedReportResponse[];
+}
+
+// 404 means it is not this account's (or already gone): callers treat it as gone.
+export async function deleteSavedMolecule(id: string): Promise<void> {
+  await request(`/molecules/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+export async function deleteSavedReport(id: string): Promise<void> {
+  await request(`/reports/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+// Cascades on the server to saved molecules, saved reports and batch jobs, and revokes every
+// session. 403 = wrong password. 204 = gone; the caller then drops to anonymous.
+export async function deleteAccount(password: string): Promise<void> {
+  const body: DeleteAccountRequest = { password };
+  await request("/account", { method: "DELETE", ...jsonBody(body) });
 }
 
 export const USING_API = !!API_BASE;

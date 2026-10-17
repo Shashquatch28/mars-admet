@@ -18,6 +18,8 @@ interface AuthSession {
   error: { status: number; message: string } | null;
   submit: (mode: AuthMode, email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  /** The account no longer exists (deleted): drop to anonymous without asking the server. */
+  forgetSession: () => void;
   clearError: () => void;
 }
 
@@ -75,6 +77,8 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     }
   }, [signOutAsync]);
 
+  const forgetSession = useCallback(() => qc.setQueryData(ME_KEY, null), [qc]);
+
   const status = sessionStatus({ usingApi: USING_API, pending: me.isPending, me: me.data });
   const value = useMemo<AuthSession>(
     () => ({
@@ -84,9 +88,10 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       error: auth.error ? { status: (auth.error as { status?: number }).status ?? 0, message: auth.error.message } : null,
       submit,
       signOut,
+      forgetSession,
       clearError: reset,
     }),
-    [status, me.data, auth.isPending, out.isPending, auth.error, submit, signOut, reset],
+    [status, me.data, auth.isPending, out.isPending, auth.error, submit, signOut, forgetSession, reset],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

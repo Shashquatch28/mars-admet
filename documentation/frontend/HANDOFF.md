@@ -18,14 +18,14 @@ The design is **locked** (passes 1–2.1, 2026-10-01). **Predict is live**: with
 `VITE_API_BASE=/api` it takes a typed SMILES, Run submits it to `/predict`
 through a Vite dev proxy, and the status bar and top bar read the real response
 and a real `/health` check. It was exercised in a browser against the real model
-path (see §2a). Batch runs against the API too (upload, progress, results; §2b); Compare/Library/Settings are
-stubs.
+path (see §2a). Batch runs against the API too (upload, progress, results; §2b); Library and delete-account exist (§2c); Compare is
+a stub.
 
 | Gate (run 2026-10-14, working tree incl. uncommitted edits) | Result |
 |---|---|
 | `npx tsc --noEmit` | clean |
 | `npm run lint` | 0 errors, 3 warnings (`app/authSession.tsx`, `predictSession.tsx`, `uiState.tsx` fast-refresh, accepted) |
-| `npm test` | 113 / 113 passed, 9 files (136 / 136 in 11 files after Batch live, 2026-10-18) |
+| `npm test` | 113 / 113 passed, 9 files (160 / 160 in 13 files after Batch live and Library, 2026-10-18) |
 | `ruff check contracts api ml` | clean |
 | `contracts/tests` + `api/tests` (root `.venv`) | 51 passed, 26 skipped. The skips are the Postgres/Redis-backed tests, which skip when the stack is down; CI runs them for real. |
 | `ml/tests` (**`ml/.venv`**, not the root env) | 400 passed, 15 skipped (about 9 min) |
@@ -141,6 +141,39 @@ stubs.
   Not exercised at all: an SDF upload, a file near the 50,000-molecule cap, a failed server job
   (`status: failed`) and an expired result (410) are covered by unit tests only.
 
+### 2c. Library and delete-account (ADR-022 phase 2) — what was done and what was not checked
+
+- **Library** (`src/workspaces/library/`, `src/domain/library.ts`): lists the account's saved
+  molecules and saved reports (`GET /molecules`, `GET /reports`), newest first, with a text
+  filter. Every entry is a **frozen snapshot**: the detail column says which `model_version`
+  made it and when it was saved, and never calls it a current prediction. A saved molecule shows
+  the full roster through `reconcile` (an endpoint the snapshot lacks is a marked row), values in
+  the normal value-cell grammar, stub and out-of-domain as a separate mark. A report shows its
+  size, failed rows and model versions, read defensively (an unexpected snapshot shape is said to
+  be unrecognised, not shown as zero rows). Deleting a saved molecule is an inline
+  Delete / Cancel; deleting a saved report uses the modal (INTERACTIONS.md allows it). A 404 on
+  delete is treated as already gone; any other failure says nothing was deleted.
+- **Delete account** (`src/workspaces/settings/DeleteAccount.tsx`, `src/components/ConfirmDialog.tsx`):
+  Settings, signed in. A modal (`role="alertdialog"`, focus into the password field, Tab trapped,
+  Esc = Cancel, backdrop click does nothing, focus returns to the opener, no animation) lists what
+  is removed, asks for the password, and sends `DELETE /account`. A wrong password (403) or any
+  other failure keeps the dialog open and says nothing was deleted. On success the app drops to
+  anonymous, the library cache is removed and the Batch file/result is cleared.
+- **Contract**: `contracts.ts` now mirrors `SavedMoleculeResponse`, `SavedReportResponse` and
+  `DeleteAccountRequest`; `contracts/tests/test_frontend_drift.py` covers them (36 contract tests pass).
+- **Checked:** 24 new vitest tests (160 total). In a browser at 1440 px against a **stand-in API**
+  (`/auth/me`, `/molecules`, `/reports`, `DELETE` routes and `DELETE /account`, built on real captured
+  `/predict` responses): list, filter and its count note, inline delete including a server 500
+  (nothing removed, message shown) and a success, the report modal (Cancel, Esc, backdrop click,
+  confirm), delete-account with a wrong password then the right one, the return to the sign-in
+  state, and Library showing the gate afterwards with no stale rows.
+- **Not checked:** the real service (Docker was not running); a screenshot of the dialog (the
+  pane timed out, so it was checked through the DOM: role, name, focus, text); large libraries
+  (the list is not virtualized); the real cascade of `DELETE /account` (backend API tests cover it
+  and run in CI).
+- **Honest gap:** nothing can be saved yet. The Save controls in Predict and Batch are still
+  inert, so against the real service Library is empty, and says so in words. Save is the next step.
+
 ## 3. What is broken or missing — read before touching anything
 
 These are ordered by how badly they would bite.
@@ -180,7 +213,7 @@ no `@types/node`.
   from `emptyResponse`. I did not verify any dedicated empty-state view exists.
 - ~~**3Dmol is installed but unused.**~~ Wired 2026-10-07 (see "3D viewer" in §2a).
   Fixture mode still shows the placeholder geometry, labelled as illustrative.
-- **Compare and Library** are `StubWorkspace` (Library is behind the sign-in gate). Settings holds the Account section only.
+- **Compare** is a `StubWorkspace`. Library lists and deletes saved snapshots but nothing can be saved yet (§2c). Settings holds the Account section and delete-account.
 - ~~**ADR-009 CI drift check** is unwritten.~~ Written 2026-10-07:
   `contracts/tests/test_frontend_drift.py` (names only, not types).
 - ~~**Bump `MODEL_VERSION` on release.**~~ Done (`v0.2.0-dev`); see §2a item 8.
@@ -213,7 +246,7 @@ no `@types/node`.
    gated call yet, so the 401-drops-to-anonymous path is covered by unit tests only; a session
    that expires (or an account deleted) while the app is open is noticed on the first gated call
    or a reload. Batch live is done (§2b), so a gated call now exists; the chosen file is held
-   above the router and survives a 401 (ADR-022 item 3). Next: Library, delete-account.
+   above the router and survives a 401 (ADR-022 item 3). Library and delete-account are built (§2c). Next: Save (Predict and Batch), Compare, Export.
 6. ~~ADR-009 drift check~~ — done.
 7. ~~3Dmol~~ — done. Then Compare, Library.
 8. ~~**Relabel classification units as `score`**~~ — done 2026-10-14 (ADR-023): `DISPLAY_UNIT` and `unitLabel`, pinned by a test.

@@ -85,7 +85,7 @@ tests/            cssGuard.test.ts
 ## Verify
 
 ```bash
-npm test             # vitest run: 136 tests in 11 files
+npm test             # vitest run: 160 tests in 13 files
 npm run lint         # eslint, TS/TSX only; does not read .module.css
 npx tsc --noEmit
 ```

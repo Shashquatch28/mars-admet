@@ -1,0 +1,83 @@
+/* The destructive-confirmation modal. A true overlay, so the scrim and overlay shadow are
+   allowed here and nowhere else. Tokens only; nothing animates. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--scrim);
+}
+.dialog {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px 18px;
+  background: var(--surface-overlay);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-overlay);
+}
+.title {
+  margin: 0;
+  font-family: var(--cond);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.error {
+  margin: 0;
+  font-size: 11px;
+  color: var(--error);
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+.cancel,
+.confirm {
+  height: 28px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  cursor: pointer;
+}
+.cancel {
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--text-primary);
+}
+.cancel:hover:not(:disabled) {
+  background: var(--surface-raised);
+}
+.confirm {
+  background: none;
+  border: 1px solid var(--error);
+  color: var(--error);
+}
+.confirm:hover:not(:disabled) {
+  background: var(--surface-raised);
+}
+.cancel:disabled,
+.confirm:disabled {
+  color: var(--text-disabled);
+  border-color: var(--line-default);
+  cursor: default;
+}
+.cancel:focus-visible,
+.confirm:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}

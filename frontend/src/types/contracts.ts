@@ -131,6 +131,34 @@ export interface MeResponse {
   email: string;
 }
 
+// --- persistence (persistence.py): Library and delete-account ---
+// A saved molecule or report is a frozen snapshot of a response the user already
+// received. It is never recomputed, so it carries the `model_version` it was made with.
+export interface SavedMoleculeResponse {
+  id: string;
+  smiles: string; // standardized SMILES, from predictions_snapshot
+  label: string | null;
+  notes: string | null;
+  tags: string[];
+  predictions_snapshot: PredictionResponse;
+  model_version: string;
+  created_at: string; // ISO datetime
+  updated_at: string;
+}
+export interface SavedReportResponse {
+  id: string;
+  type: string; // "single" | "batch"
+  source_batch_job_id: string | null;
+  results_snapshot: Record<string, unknown>; // frozen BatchPredictResponse or PredictionResponse
+  molecule_ids: string[];
+  notes: string | null;
+  tags: string[];
+  created_at: string;
+}
+export interface DeleteAccountRequest {
+  password: string; // re-confirmation before a cascading, irreversible delete
+}
+
 // --- generations (api.py) ---
 // GET /generations (ADR-026). `available` is [active] until a second generation exists,
 // so a picker built from it never offers a choice that is not real.
