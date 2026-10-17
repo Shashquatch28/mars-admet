@@ -226,19 +226,35 @@ migrations already at head (`d5be9f4ca6e0`), a private Vite on :5174 against the
   the cascade works.
 - **The C0 change is live in the rebuilt image** (`platt_enabled()` is False; the `.dockerignore`
   allowlist builds, and `/app/ml` holds only `serve`, `featurize`, `models`, `eval`, `artifacts`, `data`).
-- **Not checked: the queued Batch path (over 1,000 molecules) with real models.** See the
-  performance finding below: 1,200 rows would take hours, so it was not run. The queued path,
-  progress stream and results fetch were exercised only against the stand-in.
-- **Performance finding (serving, not frontend):** a molecule not yet in the Redis prediction cache
-  takes **18 to 37 seconds** on the real stack (a repeat takes 35 ms). Profiled inside the container:
-  every request loads all 70 XGBoost model files from disk (14 endpoints x 5 seeds, about 8 s) and
-  then predicts, with nothing kept between requests; this runs from bind-mounted `ml/artifacts` on
-  Windows, which may add to it. Consequences: Batch is about 12 to 25 s per molecule (the 5-row batch
-  took about 61 s), the interactive tier (up to 1,000 rows) holds one HTTP request open for the whole
-  run with no progress, and a queued 1,200-row job would take hours. A model cache in
-  `ml/serve/registry.py` (keyed on the artifact files' modification time) and batched prediction are
-  the obvious fixes; neither is done. The Batch screen only says "Uploading <file>" during the
-  interactive tier, which is accurate but uninformative for a run this long.
+- **Serving speed, fixed later the same day (2026-10-18, ml/serve, measured on the real stack).** The 18 to
+  37 s per new molecule was model loading, as profiled. Fix: `ModelRegistry` keeps loaded models, AD indexes
+  and calibrators in memory per endpoint, keyed on the files' (mtime, size) and re-checked at most every 5 s
+  (a re-promoted artifact is picked up within that window, no restart, no stale model); a molecule is
+  featurized once for all 70 models; serving models predict on one thread; the AD query intersects only the
+  query's set bits. **Measured** in a private container (same image recipe, `ml/artifacts` bind-mounted,
+  empty feature cache, empty Redis db): **21.9 s per new molecule before (6 molecules, 20.3 to 24.0 s) and
+  0.18 s after (13 molecules, 0.14 to 0.34 s)**, about 120x. The first request after a container starts still
+  pays the one-off load of all 70 models, 12.7 s. The 6 molecules' `/predict` bodies are identical before and
+  after (all fields except `served_at`), and a 6 x 14 golden comparison of `predict_endpoints` is
+  byte-identical; C0 (raw ensemble) and the contract are untouched. Two things surfaced only inside Docker:
+  XGBoost's all-core thread team cost 47 ms per single-row call in an 18-CPU container (1.2 ms with one
+  thread), and `stat` on the Windows bind mount costs about 5 ms, which is why the file stamp is re-checked
+  on a 5 s window rather than per request.
+- **Queued Batch with real models, run:** 1,200 distinct valid SMILES uploaded to `POST /batch/predict`
+  (over the 1,000 threshold, so queued), real XGBoost, new feature cache. It finished **done, 1,200 of
+  1,200 rows ok, 0 failed, in about 9.5 minutes (0.47 s per row)**, 16,800 model predictions plus 1,200
+  rule-based scores, no stubs. Progress and results were read back through the real routes. This is the
+  first real-model queued run. The interactive tier (up to 1,000 rows) is now minutes, not hours, but it
+  still holds one HTTP request open with no progress.
+- **Found, not fixed (API, not ml/serve):** `predict_one` is synchronous and runs directly on the event loop
+  in `POST /predict`, `POST /compare`, the interactive batch loop and `_run_async_job`. While a molecule is
+  being predicted the whole API process answers nothing else (a 1,000-row interactive batch is about
+  3 minutes of that). Running it in a thread (`asyncio.to_thread`) is the fix, but it should come with a
+  decision on the feature cache, whose `_record_config` read-modify-write of `_config.json` is not safe for
+  concurrent writers. A start-up warm-up of the registry would remove the 12.7 s first request.
+- **Method note for the next session:** `docker compose up -d --build api` from a worktree bind-mounts that
+  worktree's (absent) `ml/artifacts`; build the image from the worktree and run a private, differently named
+  container instead (see AGENTS.md shared-environment rules).
 
 ### 2f. Compare (ADR-007) — what was done and what was checked
 
