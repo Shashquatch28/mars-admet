@@ -36,9 +36,10 @@ that would just be wrong some of the time.
 
 from __future__ import annotations
 
+import logging
 import sys
+import threading
 import warnings
-from functools import lru_cache
 from pathlib import Path
 
 from mars_contracts import ALL_ENDPOINTS, Endpoint, EndpointPrediction, PredictionResponse
@@ -66,13 +67,44 @@ except ImportError as exc:
     ml_import_error = exc
 
 
-@lru_cache
+logger = logging.getLogger("mars.prediction")
+
+_registry = None
+_registry_lock = threading.Lock()
+
+
 def _get_registry():
+    """The process-wide registry. Built once under a lock: predictions run on worker
+    threads, and two registries would each hold (and each load) their own 70 models."""
+    global _registry
     if not _ml_available:
         return None
-    settings = get_settings()
-    cache = FeatureCache(Path(settings.ml_data_cache_dir))
-    return ModelRegistry(cache, artifacts_root=Path(settings.model_artifact_dir))
+    with _registry_lock:
+        if _registry is None:
+            settings = get_settings()
+            cache = FeatureCache(Path(settings.ml_data_cache_dir))
+            _registry = ModelRegistry(cache, artifacts_root=Path(settings.model_artifact_dir))
+        return _registry
+
+
+def warm_up() -> int:
+    """Load every promoted model, AD index and calibrator into the registry now, so the
+    first request does not pay for it (about 12 s for 70 models). Blocking: call it on a
+    worker thread. Returns the number of endpoints loaded; never raises, because a
+    failure here only means the first request loads lazily as before."""
+    registry = _get_registry()
+    if registry is None:
+        return 0
+    try:
+        endpoints = registry.available_endpoints()
+        for key in endpoints:
+            registry.load_models(key)
+            registry.load_ad_index(key)
+            registry.load_calibrator(key)
+        return len(endpoints)
+    except Exception:
+        logger.exception("Registry warm-up failed; models will load on first use")
+        return 0
 
 
 def predict(smiles: str, endpoints: list[Endpoint] | None = None) -> PredictionResponse:

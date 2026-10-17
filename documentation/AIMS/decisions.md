@@ -63,9 +63,13 @@ bit-for-bit the matmul path, and 8 concurrent first loads deserialise each seed 
 **Trade-off accepted.** A re-promoted artifact is served from the old copy for up to 5 s. The window exists because a stamp
 check is about 20 `stat` calls per endpoint, 5 ms each on a Docker Desktop Windows bind mount.
 
-**Open follow-ups.** (1) `predict_one` runs synchronously on the event loop in the API; move to a thread together with a
-safe `FeatureCache` (concurrent `_config.json` writers). (2) Warm the registry at start-up. (3) The interactive batch tier
-still holds one request open without progress.
+**Follow-up done the same day.** Predictions now run off the event loop (`asyncio.to_thread` in `POST /predict` and both
+Batch tiers), with `FeatureCache` writes made atomic and its `_config.json` update locked, the registry built once under a
+lock, and the registry warmed in the background at start-up. On the real stack `/health` stayed under 40 ms through a
+300-row interactive batch and a queued 1,200-row job, and all 1,200 rows equal the pre-threading run.
+
+**Open follow-ups.** (1) No cap on concurrent predictions (default pool of 40 threads; size to the container's CPUs).
+(2) The interactive batch tier still holds one request open without progress.
 
 ---
 

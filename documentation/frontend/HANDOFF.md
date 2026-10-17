@@ -246,12 +246,24 @@ migrations already at head (`d5be9f4ca6e0`), a private Vite on :5174 against the
   rule-based scores, no stubs. Progress and results were read back through the real routes. This is the
   first real-model queued run. The interactive tier (up to 1,000 rows) is now minutes, not hours, but it
   still holds one HTTP request open with no progress.
-- **Found, not fixed (API, not ml/serve):** `predict_one` is synchronous and runs directly on the event loop
-  in `POST /predict`, `POST /compare`, the interactive batch loop and `_run_async_job`. While a molecule is
-  being predicted the whole API process answers nothing else (a 1,000-row interactive batch is about
-  3 minutes of that). Running it in a thread (`asyncio.to_thread`) is the fix, but it should come with a
-  decision on the feature cache, whose `_record_config` read-modify-write of `_config.json` is not safe for
-  concurrent writers. A start-up warm-up of the registry would remove the 12.7 s first request.
+- **Event loop, fixed (2026-10-18).** `predict_one` used to run synchronously on the event loop in
+  `POST /predict` and in both Batch tiers, so the whole API answered nothing else while a molecule was
+  predicted. Now `POST /predict` and the Batch loops call it through `asyncio.to_thread` (`POST /compare` is
+  a plain `def`, so FastAPI already ran it on a worker thread). Made safe first: `FeatureCache` writes every
+  entry via temp file + `os.replace` and serialises the `_config.json` read-modify-write (on Windows a
+  concurrent replace raises `PermissionError`, retried and, for content-addressed entries, dropped if the
+  file is already there); the registry is built once under a lock. The registry is also **warmed in the
+  background at start-up** (`prediction_service.warm_up`, 14 endpoints in about 9 s), so the server accepts
+  requests at once and the first prediction no longer pays 12.7 s. **Measured on the real stack:**
+  `/health` answered in 7 to 37 ms during that warm-up, 6 to 23 ms (48 samples) through a 300-row
+  interactive Batch (62 s, 0.21 s per row), and at worst 29 ms (64 samples) through a queued 1,200-row job,
+  which finished in 222 s with all 1,200 rows ok and **every row identical to the pre-threading run** (the
+  222 s is not a like-for-like speed-up: 300 of those molecules were already in that container's feature
+  cache). Tests: `api/tests/test_predict_off_event_loop.py` (fails if the call goes back on the loop),
+  `ml/tests/test_cache_concurrency.py`, and a concurrent-prediction equality test in
+  `ml/tests/test_serve_model_cache.py`. Not done: a cap on concurrent predictions (the default thread pool
+  allows 40; each prediction is single-threaded, so size it to the container's CPUs before deploying), and
+  the interactive tier (up to 1,000 rows) still holds one HTTP request open with no progress.
 - **Method note for the next session:** `docker compose up -d --build api` from a worktree bind-mounts that
   worktree's (absent) `ml/artifacts`; build the image from the worktree and run a private, differently named
   container instead (see AGENTS.md shared-environment rules).

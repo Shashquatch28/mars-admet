@@ -245,3 +245,25 @@ def test_ad_fast_path_matches_the_matmul_distance_exactly():
     slow = bulk_tanimoto_distance(fps, index.reference_fingerprints)
     assert fast.shape == slow.shape
     assert np.array_equal(fast, slow)  # bit-for-bit, not approx
+
+
+def test_concurrent_predictions_equal_sequential(artifacts, cache):
+    """The API predicts on worker threads against shared, cached models."""
+    registry = ModelRegistry(cache, artifacts_root=artifacts)
+    mols = QUERIES + SMILES
+    expected = {s: _snapshot(predict_endpoints(registry, s, [CLS, REG])) for s in mols}
+    got: dict = {}
+    barrier = threading.Barrier(6)
+
+    def work(i):
+        barrier.wait()
+        for s in mols[i % len(mols):] + mols[: i % len(mols)]:
+            got[(i, s)] = _snapshot(predict_endpoints(registry, s, [CLS, REG]))
+
+    threads = [threading.Thread(target=work, args=(i,)) for i in range(6)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert len(got) == 6 * len(mols)
+    assert all(v == expected[s] for (_, s), v in got.items())

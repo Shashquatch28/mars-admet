@@ -9,6 +9,7 @@ environment that can't parse it, rather than always claiming 415."""
 
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
 import json
@@ -83,7 +84,7 @@ async def _run_async_job(job_id: str, smiles_list: list[str], endpoints: list[En
 
         results: list[BatchRowResult] = []
         for i, smiles in enumerate(smiles_list):
-            results.append(_predict_row(i, smiles, endpoints))
+            results.append(await asyncio.to_thread(_predict_row, i, smiles, endpoints))
             await set_job_progress(r, job_id, status="running", total=total, completed=i + 1)
 
         response = BatchPredictResponse(job_id=job_id, status="done", total=total, completed=total, results=results)
@@ -147,7 +148,9 @@ async def batch_predict(
     job_id = str(job.id)
 
     if total <= settings.batch_interactive_threshold:
-        results = [_predict_row(i, s, endpoints) for i, s in enumerate(smiles_list)]
+        results = await asyncio.to_thread(
+            lambda: [_predict_row(i, s, endpoints) for i, s in enumerate(smiles_list)]
+        )
         job.status = "done"
         job.completed_at = _now_naive_utc()
         await db.commit()
