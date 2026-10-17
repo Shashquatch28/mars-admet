@@ -29,10 +29,10 @@ from mars_contracts import (
     PredictionResponse,
     RegisterRequest,
     RegisterResponse,
-    SaveMoleculeRequest,
-    SaveReportRequest,
     SavedMoleculeResponse,
     SavedReportResponse,
+    SaveMoleculeRequest,
+    SaveReportRequest,
     TaskType,
 )
 
