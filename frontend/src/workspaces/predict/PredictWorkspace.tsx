@@ -10,7 +10,9 @@ import { usePredictSession } from "../../app/predictSession";
 import { reconcile, requestedMlEndpoints } from "../../domain/reconcile";
 import { ML_ENDPOINTS } from "../../domain/endpoints";
 import { FIXTURE_RESPONSE, emptyResponse } from "../../domain/fixtures";
-import { USING_API, ApiError } from "../../data/client";
+import { USING_API, ApiError, saveMolecule } from "../../data/client";
+import { SaveControl } from "../../components/SaveControl";
+import { buildMoleculeRequest, moleculeKey, saveNote } from "../../domain/save";
 import { EndpointList } from "./EndpointList";
 import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
@@ -186,9 +188,26 @@ export function PredictWorkspace() {
             </p>
           </div>
         )}
-        <div className={styles.inspfoot}>
+        <div className={styles.inspfoot} style={{ flexWrap: "wrap" }}>
           <button className={styles.ibtn}>Compare molecule</button>
-          <button className={styles.ibtn}>Save to library</button>
+          <SaveControl
+            kind="molecule"
+            withLabel
+            buttonClassName={styles.ibtn}
+            buttonLabel="Save to library"
+            markKey={usingApi && result && !failure ? moleculeKey(result.response) : null}
+            disabledReason={
+              usingApi && result && !failure
+                ? null
+                : !usingApi
+                  ? "Saving needs the API. These values are sample data."
+                  : running
+                    ? "Wait for the run to finish."
+                    : "Run a molecule to save it."
+            }
+            note={saveNote("molecule", result?.response.model_version ?? null)}
+            save={(input) => saveMolecule(buildMoleculeRequest(result!.response, input))}
+          />
         </div>
       </aside>
     </>

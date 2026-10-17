@@ -11,7 +11,9 @@
 //   - no aggregate score across endpoints, because no weighting is validated
 import { useEffect, useMemo, useState } from "react";
 import { useBatchSession } from "../../app/batchSession";
-import { USING_API } from "../../data/client";
+import { USING_API, saveMolecule } from "../../data/client";
+import { SaveControl } from "../../components/SaveControl";
+import { buildMoleculeRequest, moleculeKey, saveNote } from "../../domain/save";
 import styles from "./batch.module.css";
 import { useUiState } from "../../app/uiState";
 import {
@@ -248,9 +250,26 @@ export function BatchWorkspace() {
           </div>
         )}
 
-        <div className={styles.inspfoot}>
+        <div className={styles.inspfoot} style={{ flexWrap: "wrap" }}>
           <button>Open in Predict</button>
           <button>Export row</button>
+          {USING_API && (
+            <SaveControl
+              kind="molecule"
+              withLabel
+              buttonLabel="Save molecule"
+              markKey={selectedRow?.response ? moleculeKey(selectedRow.response) : null}
+              disabledReason={
+                selectedRow?.response
+                  ? null
+                  : !selectedRow
+                    ? "Select a molecule to save it."
+                    : "This row failed, so there is nothing to save."
+              }
+              note={saveNote("molecule", selectedRow?.response?.model_version ?? null)}
+              save={(input) => saveMolecule(buildMoleculeRequest(selectedRow!.response!, input))}
+            />
+          )}
         </div>
       </aside>
     </>

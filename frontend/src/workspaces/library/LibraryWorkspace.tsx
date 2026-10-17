@@ -8,7 +8,7 @@
 //   - the full roster renders for a saved molecule, so an endpoint the snapshot lacks is a
 //     marked row, never a gap (ADR-008)
 //   - no ranking, no score across entries; the list is newest first and filterable by text
-//   - an empty list says why it is empty, including that Save is not wired yet
+//   - an empty list says why it is empty and where entries come from
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import styles from "./library.module.css";
@@ -151,8 +151,7 @@ export function LibraryWorkspace() {
             </p>
           ) : items.length === 0 ? (
             <p className={styles.empty}>
-              Nothing is saved. The Save controls in Predict and Batch are not wired yet, so this list stays empty
-              until they are.
+              Nothing is saved yet. Use Save to library in Predict, or Save molecule and Save report in Batch.
             </p>
           ) : visible.length === 0 ? (
             <p className={styles.empty}>No entry matches the filter. The filter hides entries; it changes none.</p>

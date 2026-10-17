@@ -77,3 +77,30 @@ describe("deleteAccount", () => {
     expect(onUnauthorized).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("save", () => {
+  it("posts a molecule snapshot to /molecules/save as JSON", async () => {
+    const { saveMolecule } = await loadClient();
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: "s1" }), { status: 201 }));
+    const prediction = { molecule_id: "m1" } as never;
+    const r = await saveMolecule({ prediction, label: "x", notes: null, tags: ["a"] });
+    expect(r).toEqual({ id: "s1" });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/molecules/save");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual({ prediction: { molecule_id: "m1" }, label: "x", notes: null, tags: ["a"] });
+  });
+  it("posts a report snapshot to /reports/save", async () => {
+    const { saveReport } = await loadClient();
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: "r1" }), { status: 201 }));
+    await saveReport({ type: "batch", results: { status: "done", total: 0, completed: 0 }, molecule_ids: [] });
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/reports/save");
+  });
+  it("surfaces a 422 reason from the service", async () => {
+    const { saveReport } = await loadClient();
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ detail: 'type must be "single" or "batch"' }), { status: 422 }));
+    await expect(saveReport({ type: "nope", results: { status: "done", total: 0, completed: 0 } })).rejects.toMatchObject({
+      status: 422,
+    });
+  });
+});

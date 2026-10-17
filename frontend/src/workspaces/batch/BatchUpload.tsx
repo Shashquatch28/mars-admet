@@ -5,6 +5,9 @@
 import { useRef, useState, type DragEvent } from "react";
 import styles from "./batch.module.css";
 import { useBatchSession } from "../../app/batchSession";
+import { SaveControl } from "../../components/SaveControl";
+import { saveReport } from "../../data/client";
+import { buildBatchReportRequest, reportKey, saveNote } from "../../domain/save";
 import { BATCH_INTERACTIVE_MAX, BATCH_MAX_MOLECULES, percentDone, phaseLabel } from "../../domain/batchJob";
 
 export function BatchUpload() {
@@ -81,6 +84,19 @@ export function BatchUpload() {
           </progress>
         )}
       </div>
+
+      {s.result && (
+        <div className={styles.upRow} style={{ flexWrap: "wrap" }}>
+          <SaveControl
+            kind="report"
+            buttonLabel="Save report"
+            buttonClassName={styles.upBtn}
+            markKey={reportKey(s.resultId)}
+            note={saveNote("report", null, s.result.results?.length ?? s.result.total)}
+            save={(input) => saveReport(buildBatchReportRequest(s.result!, input))}
+          />
+        </div>
+      )}
 
       <p className={styles.upNote}>
         Up to {BATCH_INTERACTIVE_MAX.toLocaleString()} molecules are returned directly. Larger files, up to{" "}

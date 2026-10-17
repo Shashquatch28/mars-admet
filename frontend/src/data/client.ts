@@ -19,6 +19,8 @@ import type {
   GenerationsResponse,
   PredictionResponse,
   RegisterResponse,
+  SaveMoleculeRequest,
+  SaveReportRequest,
   SavedMoleculeResponse,
   SavedReportResponse,
 } from "../types/contracts";
@@ -219,6 +221,15 @@ export async function fetchBatchResults(jobId: string): Promise<BatchPredictResp
 }
 
 // --- library (account required; API_ROUTES.md /molecules, /reports, /account) ---
+
+// Snapshot-on-save: the service freezes exactly what is sent. 201 on success.
+export async function saveMolecule(body: SaveMoleculeRequest): Promise<SavedMoleculeResponse> {
+  return (await (await request("/molecules/save", jsonPost(body))).json()) as SavedMoleculeResponse;
+}
+
+export async function saveReport(body: SaveReportRequest): Promise<SavedReportResponse> {
+  return (await (await request("/reports/save", jsonPost(body))).json()) as SavedReportResponse;
+}
 
 export async function fetchSavedMolecules(): Promise<SavedMoleculeResponse[]> {
   return (await (await request("/molecules")).json()) as SavedMoleculeResponse[];

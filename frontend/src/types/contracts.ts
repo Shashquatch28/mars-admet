@@ -134,6 +134,20 @@ export interface MeResponse {
 // --- persistence (persistence.py): Library and delete-account ---
 // A saved molecule or report is a frozen snapshot of a response the user already
 // received. It is never recomputed, so it carries the `model_version` it was made with.
+export interface SaveMoleculeRequest {
+  prediction: PredictionResponse; // exactly as received from /predict
+  label?: string | null;
+  notes?: string | null;
+  tags?: string[];
+}
+export interface SaveReportRequest {
+  type: string; // "single" | "batch"
+  source_batch_job_id?: string | null; // provenance only, not a live dependency
+  results: BatchPredictResponse | PredictionResponse; // the result set to freeze
+  molecule_ids?: string[]; // references to separately saved molecules
+  notes?: string | null;
+  tags?: string[];
+}
 export interface SavedMoleculeResponse {
   id: string;
   smiles: string; // standardized SMILES, from predictions_snapshot

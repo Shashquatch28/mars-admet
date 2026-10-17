@@ -25,7 +25,7 @@ a stub.
 |---|---|
 | `npx tsc --noEmit` | clean |
 | `npm run lint` | 0 errors, 3 warnings (`app/authSession.tsx`, `predictSession.tsx`, `uiState.tsx` fast-refresh, accepted) |
-| `npm test` | 113 / 113 passed, 9 files (160 / 160 in 13 files after Batch live and Library, 2026-10-18) |
+| `npm test` | 113 / 113 passed, 9 files (175 / 175 in 14 files after Batch live, Library and Save, 2026-10-18) |
 | `ruff check contracts api ml` | clean |
 | `contracts/tests` + `api/tests` (root `.venv`) | 51 passed, 26 skipped. The skips are the Postgres/Redis-backed tests, which skip when the stack is down; CI runs them for real. |
 | `ml/tests` (**`ml/.venv`**, not the root env) | 400 passed, 15 skipped (about 9 min) |
@@ -171,8 +171,45 @@ a stub.
   pane timed out, so it was checked through the DOM: role, name, focus, text); large libraries
   (the list is not virtualized); the real cascade of `DELETE /account` (backend API tests cover it
   and run in CI).
-- **Honest gap:** nothing can be saved yet. The Save controls in Predict and Batch are still
-  inert, so against the real service Library is empty, and says so in words. Save is the next step.
+- **Saving:** Library fills through Save (§2d).
+
+### 2d. Save to library — what was done and what was not checked
+
+- **Where:** Predict (`Save to library`, inspector footer) saves the molecule on screen; Batch has
+  `Save molecule` (the row selected in the inspector) and `Save report` (the whole result, in the
+  strip under the upload controls). One control, `src/components/SaveControl.tsx`; pure parts in
+  `src/domain/save.ts`. A "single" report from Predict is not offered: a saved molecule is the
+  same snapshot.
+- **Snapshot-on-save:** the client sends back the response it already holds
+  (`POST /molecules/save`, `POST /reports/save`); the service freezes it. The panel says so before
+  the user commits: a frozen copy, with the model version, that does not update, and that stub
+  values are saved as stub values. A batch report keeps failed rows and records the job id as
+  provenance only; `molecule_ids` stays empty (those would be links to separately saved
+  molecules, which this flow does not create).
+- **States, all in words beside the control:** disabled with the reason (no API, no result yet,
+  running, no row selected, a failed row); anonymous gets "Saving needs an account" with a link to
+  sign-in and no form; a failure says nothing was saved and keeps what was typed; success becomes
+  "Saved to Library" with a link. `src/app/savedMarks.tsx` remembers what was saved this session
+  (keyed by molecule id plus `served_at`, or by batch result) so a second click cannot save the
+  same thing twice; marks are dropped when the session is not signed in. Typed tags are trimmed and
+  de-duplicated ignoring case; blank label and notes are sent as null. No length limits are
+  invented: the database columns are unbounded text.
+- **Contract:** `contracts.ts` mirrors `SaveMoleculeRequest` and `SaveReportRequest`; the drift
+  test covers them (38 contract tests).
+- **Checked:** 15 new vitest tests since the Library work (175 total). In a browser at 1440 px
+  against a stand-in API (real captured responses): Predict save with a server 500 first (typed
+  values kept, "Nothing was saved"), then success; the exact request bodies (label trimmed, tags
+  de-duplicated, same payload on retry); Batch report save and selected-molecule save; a failed
+  row disables Save with its reason; the new entries appear in Library without a reload; after
+  sign-out the control shows the account message and no form.
+- **Found while checking:** the control passed a disabled reason even when saving was possible,
+  so it always read as disabled. Fixed before commit; no test covers the component's rendering
+  (the frontend suite is node-only), so this is covered by the browser run only.
+- **Not checked:** the real service (Docker was not running); saving a very large batch
+  (the whole result, up to 50,000 rows, is sent as one JSON body: payload size and any server
+  limit are unmeasured, and the panel states the row count); the `410` the route table mentions
+  for saves of expired results (the current route has no such check, since the client sends the
+  results in hand).
 
 ## 3. What is broken or missing — read before touching anything
 
@@ -180,9 +217,8 @@ These are ordered by how badly they would bite.
 
 ### 3.1 ~~Predict cannot take input.~~ Resolved 2026-10-07
 SMILES entry, Run and Clear work; the endpoint-subset selector landed 2026-10-08
-(a deselected endpoint is a `NOT REQUESTED` row, ADR-028). Still inert:
-**Compare molecule, Save to library, Export** (no handlers; Compare and Save
-depend on those workspaces).
+(a deselected endpoint is a `NOT REQUESTED` row, ADR-028). Save to library works (§2d).
+Still inert: **Compare molecule, Export** (no handlers; Compare depends on its workspace).
 
 ### 3.2 ~~The status bar and top bar show fabricated values~~ Resolved 2026-10-07
 The status bar reads the real response (`served_at`, `cache_hit`, measured
@@ -246,7 +282,7 @@ no `@types/node`.
    gated call yet, so the 401-drops-to-anonymous path is covered by unit tests only; a session
    that expires (or an account deleted) while the app is open is noticed on the first gated call
    or a reload. Batch live is done (§2b), so a gated call now exists; the chosen file is held
-   above the router and survives a 401 (ADR-022 item 3). Library and delete-account are built (§2c). Next: Save (Predict and Batch), Compare, Export.
+   above the router and survives a 401 (ADR-022 item 3). Library, delete-account and Save are built (§2c, §2d). Next: Compare, Export.
 6. ~~ADR-009 drift check~~ — done.
 7. ~~3Dmol~~ — done. Then Compare, Library.
 8. ~~**Relabel classification units as `score`**~~ — done 2026-10-14 (ADR-023): `DISPLAY_UNIT` and `unitLabel`, pinned by a test.

@@ -5,6 +5,7 @@ import { UiStateProvider } from "./app/uiState";
 import { PredictSessionProvider } from "./app/predictSession";
 import { AuthSessionProvider } from "./app/authSession";
 import { BatchSessionProvider } from "./app/batchSession";
+import { SavedMarksProvider } from "./app/savedMarks";
 import { Gated } from "./auth/Gated";
 import { SettingsWorkspace } from "./workspaces/settings/SettingsWorkspace";
 import { AppShell } from "./shell/AppShell";
@@ -19,6 +20,7 @@ export function App() {
       <BrowserRouter>
         <UiStateProvider>
           <AuthSessionProvider>
+            <SavedMarksProvider>
             <PredictSessionProvider>
               <BatchSessionProvider>
               <Routes>
@@ -34,6 +36,7 @@ export function App() {
               </Routes>
               </BatchSessionProvider>
             </PredictSessionProvider>
+            </SavedMarksProvider>
           </AuthSessionProvider>
         </UiStateProvider>
       </BrowserRouter>
