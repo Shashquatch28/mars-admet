@@ -233,7 +233,7 @@ migrations already at head (`d5be9f4ca6e0`), a private Vite on :5174 against the
   featurized once for all 70 models; serving models predict on one thread; the AD query intersects only the
   query's set bits. **Measured** in a private container (same image recipe, `ml/artifacts` bind-mounted,
   empty feature cache, empty Redis db): **21.9 s per new molecule before (6 molecules, 20.3 to 24.0 s) and
-  0.18 s after (13 molecules, 0.14 to 0.34 s)**, about 120x. The first request after a container starts still
+  0.18 s median after (13 molecules after the first; 0.14 to 0.34 s, one 0.87 s outlier)**, about 120x. The first request after a container starts still
   pays the one-off load of all 70 models, 12.7 s. The 6 molecules' `/predict` bodies are identical before and
   after (all fields except `served_at`), and a 6 x 14 golden comparison of `predict_endpoints` is
   byte-identical; C0 (raw ensemble) and the contract are untouched. Two things surfaced only inside Docker:

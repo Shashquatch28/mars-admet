@@ -54,7 +54,7 @@ transposed reference instead of converting the reference matrix to float64 per c
 (about 8 s locally, more in Docker). That made Batch unusable (about 12 to 25 s per molecule; a queued 1,200-row job
 never run).
 
-**Result (real Docker stack, private container, empty feature cache).** 21.9 s to 0.18 s per new molecule (about 120x);
+**Result (real Docker stack, private container, empty feature cache).** 21.9 s to 0.18 s median per new molecule (about 120x);
 first request after start 12.7 s (one-off load). A queued 1,200-row Batch finished in about 9.5 min, 1,200/1,200 ok, all
 real models. Outputs: `/predict` bodies and a 6 molecule x 14 endpoint golden comparison are identical before and after;
 `ml/tests/test_serve_model_cache.py` pins cached = uncached, replacing/adding an artifact invalidates, the AD fast path is
