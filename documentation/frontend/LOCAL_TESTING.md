@@ -1,14 +1,14 @@
 # Running MARS locally and trying the new screens
 
 Covers what was added on 2026-10-18: **Batch on the live API, Library, Save to library,
-delete-account, Compare.** Two ways to run it. Use the first to test against the real service; use the
+delete-account, Compare, the held-out error band, CSV export.** Two ways to run it. Use the first to test against the real service; use the
 second when Docker is not available or you only want to see the UI states.
 
 These screens were first checked against a stand-in API, then on the real stack on 2026-10-18
 (`HANDOFF.md` §2e): create account, Predict and Batch (5 rows), Save, Library, delete, delete-account.
-Not run on the real stack: a queued batch of over 1,000 molecules, because the real service takes
-18 to 37 seconds per new molecule (see §2e), so 1,200 rows would take hours. Use the stand-in (B)
-to see the progress bar. If a step fails, that is a finding worth reporting.
+A queued batch of 1,200 molecules has also been run on the real stack with real models (about 9.5
+minutes) since serving keeps its models in memory (§2e, AIMS decisions 2026-10-18); the stand-in (B)
+is still the quickest way to see the progress bar. If a step fails, that is a finding worth reporting.
 
 Use a browser window at least **1280 px wide**; narrower shows a "desktop workstation" notice.
 
@@ -103,9 +103,9 @@ python -c "import itertools; s=itertools.cycle(['CCO','c1ccccc1','CC(=O)Oc1ccccc
 
 `not-a-smiles` and `bad-smiles-here` are there on purpose: a bad row must stay in the grid with its
 error, not disappear. (With the stand-in, a file of 20 or more lines takes the queued path, so
-`batch_large.csv` exercises the progress bar there too.) **On the real stack keep Batch files to a
-handful of molecules**: each new molecule takes roughly 12 to 25 seconds today, and a file of up to
-1,000 rows shows only "Uploading" until it finishes.
+`batch_large.csv` exercises the progress bar there too.) On the real stack the
+first request after the API starts takes about 15 seconds (it loads the models), then a new molecule
+takes about a second; a file of up to 1,000 rows still shows only "Uploading" until it finishes.
 
 ---
 
@@ -139,8 +139,8 @@ handful of molecules**: each new molecule takes roughly 12 to 25 seconds today, 
    (optionally **Add a third molecule**) and **Run comparison**. You get one table: 15 endpoint rows in
    fixed order, one column per molecule. Nothing is ranked, highlighted or called better; out-of-domain
    cells carry an amber edge and an OOD tag but their numbers look like any other. An invalid SMILES gives
-   a "Molecule rejected" message naming it and keeps what you typed. On the real service expect about 10
-   seconds per new molecule.
+   a "Molecule rejected" message naming it and keeps what you typed. On the real service expect about a
+   second per new molecule once the models are loaded (about 15 seconds for the very first request after the API starts).
 
 8. **Held-out error band** (Predict). Run a molecule, select a regression row (solubility_logs, lipophilicity_logp,
    caco2_permeability, ppb_binding or clearance_microsomal). The inspector shows **Held-out error ±X** with a note saying what
