@@ -137,9 +137,12 @@ def test_classification_never_carries_a_band_even_if_a_file_exists():
 
 
 def test_registry_reads_the_band_file_and_reports_none_when_absent(tmp_path):
-    registry = ModelRegistry(cache=None, artifacts_root=tmp_path)  # type: ignore[arg-type]
+    registry = ModelRegistry(cache=None, artifacts_root=tmp_path, revalidate_seconds=0)  # type: ignore[arg-type]
     assert registry.load_error_band("solubility_logs") is None
     (tmp_path / "solubility_logs").mkdir()
     band = ErrorBand(endpoint="solubility_logs", level=0.9, halfwidth=1.677, n_residuals=4700, n_seeds=5)
     band.save(tmp_path / "solubility_logs" / ERROR_BAND_FILENAME)
     assert registry.load_error_band("solubility_logs") == band
+    rebuilt = ErrorBand(endpoint="solubility_logs", level=0.9, halfwidth=2.0, n_residuals=4700, n_seeds=5)
+    rebuilt.save(tmp_path / "solubility_logs" / ERROR_BAND_FILENAME)
+    assert registry.load_error_band("solubility_logs") == rebuilt  # a rebuilt band is picked up, not served stale

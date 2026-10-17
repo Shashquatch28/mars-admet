@@ -89,7 +89,7 @@ class ModelRegistry:
         self._revalidate_seconds = revalidate_seconds
         self._lock = threading.RLock()
         # kind -> endpoint_key -> [stamp, value, last_checked_monotonic]
-        self._memo: dict[str, dict[str, list[Any]]] = {"models": {}, "ad": {}, "calibrator": {}}
+        self._memo: dict[str, dict[str, list[Any]]] = {"models": {}, "ad": {}, "calibrator": {}, "error_band": {}}
 
     def _memoised(self, kind: str, endpoint_key: str, stamp_fn, build) -> Any:
         with self._lock:
@@ -183,9 +183,11 @@ class ModelRegistry:
     def load_error_band(self, endpoint_key: str) -> ErrorBand | None:
         """The endpoint's held-out-error band, or None when none was built (classification, or not yet)."""
         path = self._endpoint_dir(endpoint_key) / ERROR_BAND_FILENAME
-        if not path.exists():
-            return None
-        return ErrorBand.load(path)
+
+        def build() -> ErrorBand | None:
+            return ErrorBand.load(path) if path.exists() else None
+
+        return self._memoised("error_band", endpoint_key, lambda: _file_stamp(path), build)
 
     def load_calibrator(self, endpoint_key: str) -> PlattCalibrator | None:
         path = self._endpoint_dir(endpoint_key) / "calibrator.json"
