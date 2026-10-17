@@ -149,9 +149,16 @@ handful of molecules**: each new molecule takes roughly 12 to 25 seconds today, 
    `cd ml; $env:PYTHONPATH="."; .venv\Scripts\python train\build_error_bands.py`, rebuild the API image, and use a molecule
    you have not run before (cached results from before the band existed carry none).
 
+9. **Export** (CSV, nothing is sent to the service). Predict: run a molecule and click **Export** above the results; a
+   file `mars-predict-<id>-<date>.csv` downloads with one line per endpoint (15), including endpoints that were not
+   returned or not requested. Batch: after a run, **Export results** (top right of the Batch header) downloads every row;
+   **Export row** (inspector footer) the selected one. A failed row appears as one `row_failed` line with its error.
+   Open the file: `state` says ok / out_of_domain / stub_served / not_returned / not_requested / rule_based, and there is
+   no rank or winner column. The buttons are greyed out when nothing real is on screen.
+
 ## What to expect that is not finished
 
-- **Export**, Batch's **Open in Predict** and **Export row** are placeholders with no handlers.
+- Batch's **Open in Predict** and the command palette's commands are placeholders with no handlers.
 - Password reset is not offered (no email is sent).
 - A very large batch is saved as one JSON body of every row; its size and any server limit have not
   been measured.

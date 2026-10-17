@@ -129,6 +129,25 @@
   background: var(--error);
 }
 
+.exportBtn {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.exportBtn:hover:not(:disabled) {
+  color: var(--text-secondary);
+}
+.exportBtn:disabled {
+  color: var(--text-disabled);
+  cursor: default;
+}
+.exportBtn:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .sortnote {
   font-family: var(--mono);
   font-size: 9.5px;

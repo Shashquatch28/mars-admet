@@ -12,10 +12,12 @@ export function EndpointList({
   recon,
   loading,
   idle,
+  onExport,
 }: {
   recon: Reconciliation;
   loading?: boolean;
   idle?: boolean; // live session, nothing run yet — there is no request to reconcile
+  onExport?: () => void; // absent when there is no real result to export (sample data, nothing run, failure)
 }) {
   const { selectedEndpoint, setSelectedEndpoint, density, setDensity } = useUiState();
   const rows = recon.rows;
@@ -96,7 +98,7 @@ export function EndpointList({
           )}
         </span>
         <span style={{ flex: 1 }} />
-        <button className={styles.exp}>
+        <button className={styles.exp} onClick={onExport} disabled={!onExport} title="Download this result as CSV">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M8 2v8M5 7l3 3 3-3M3 13h10" />
           </svg>

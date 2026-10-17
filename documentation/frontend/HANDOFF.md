@@ -277,6 +277,26 @@ migrations already at head (`d5be9f4ca6e0`), a private Vite on :5174 against the
   regression row and none on a classification row. Test coverage of the bands: `documentation/status/heldout_error_bands.md`.
 - **Note:** predictions cached in Redis before this change have no band until their entry expires or is flushed.
 
+### 2h. Export (CSV) — what was done and what was checked
+
+- **What it is:** a client-side CSV of what is on screen, no API call. Predict's **Export** downloads the current result;
+  Batch's **Export results** downloads every row of the run (run order, not the filtered view) and **Export row** the
+  selected one. The sample data (no API) and a failed or empty state cannot be exported: the buttons are disabled.
+- **Format** (`src/domain/exportCsv.ts`, `src/data/download.ts`): long format, one line per molecule x endpoint, in fixed
+  roster order, every roster endpoint present. Columns: `row`, `smiles_input`, `smiles_standardized`, `molecule_id`,
+  `endpoint`, `task`, `value`, `unit`, `state`, `seed_spread_low/high`, `heldout_error_halfwidth/level/n`, `knn_distance`,
+  `ad_threshold`, `model_id`, `model_version`, `served_at`, `error`. `state` is the screen's own word (ok, out_of_domain,
+  stub_served, not_returned, not_requested, rule_based, row_failed), kept apart from `value`. Numbers are full precision.
+  A failed Batch row is one `row_failed` line with its error. The rule-based score exports no spread. Text fields that start
+  with `= + - @` get a leading apostrophe so a spreadsheet does not read them as a formula; numbers are untouched.
+- **Not in it:** any rank, winner, score, colour or favourability column (a test pins the column list), and the 3D structure.
+  The JSON snapshot that Save keeps is a separate thing and is not exported.
+- **Checked on the real stack** (2026-10-18): Predict export of a real molecule (15 lines in roster order, band and spread
+  present on the regression line, none on the rule-based line); a two-row Batch (one valid, one invalid) exported 15 lines
+  for row 1 and one `row_failed` line for row 2 with the service's error. **Export row** was not clicked through in a
+  browser (it shares the same builder). The command palette's "Export results" entry is still a placeholder, like the rest
+  of the palette's commands.
+
 ## 3. What is broken or missing — read before touching anything
 
 These are ordered by how badly they would bite.
@@ -284,7 +304,7 @@ These are ordered by how badly they would bite.
 ### 3.1 ~~Predict cannot take input.~~ Resolved 2026-10-07
 SMILES entry, Run and Clear work; the endpoint-subset selector landed 2026-10-08
 (a deselected endpoint is a `NOT REQUESTED` row, ADR-028). Save to library works (§2d).
-Compare molecule works (§2f). Still inert: **Export** (no handler, no spec).
+Compare molecule and Export (CSV) work (§2f, §2h).
 
 ### 3.2 ~~The status bar and top bar show fabricated values~~ Resolved 2026-10-07
 The status bar reads the real response (`served_at`, `cache_hit`, measured
@@ -307,7 +327,7 @@ no `@types/node`.
 
 ### 3.5 Smaller gaps
 
-- **Batch gaps.** No multi-select; "Open in Predict" / "Export row" are inert; no
+- **Batch gaps.** No multi-select; "Open in Predict" is inert; no
   endpoint subset for a batch (the request sends none, so the service runs all); no way to
   reopen an earlier job after a reload (the job id is held in memory only).
 - **No empty/entry state.** The *Predict — entry state* artboard (draw/upload/
@@ -315,7 +335,7 @@ no `@types/node`.
   from `emptyResponse`. I did not verify any dedicated empty-state view exists.
 - ~~**3Dmol is installed but unused.**~~ Wired 2026-10-07 (see "3D viewer" in §2a).
   Fixture mode still shows the placeholder geometry, labelled as illustrative.
-- **Export** has no spec and no handler (Predict, Batch). Settings holds the Account section and delete-account.
+- **Export** is CSV only (§2h); there is no JSON export, and the command palette's commands are placeholders. Settings holds the Account section and delete-account.
 - ~~**ADR-009 CI drift check** is unwritten.~~ Written 2026-10-07:
   `contracts/tests/test_frontend_drift.py` (names only, not types).
 - ~~**Bump `MODEL_VERSION` on release.**~~ Done (`v0.2.0-dev`); see §2a item 8.
@@ -348,7 +368,7 @@ no `@types/node`.
    gated call yet, so the 401-drops-to-anonymous path is covered by unit tests only; a session
    that expires (or an account deleted) while the app is open is noticed on the first gated call
    or a reload. Batch live is done (§2b), so a gated call now exists; the chosen file is held
-   above the router and survives a 401 (ADR-022 item 3). Library, delete-account, Save and Compare are built (§2c, §2d, §2f). Next: Export.
+   above the router and survives a 401 (ADR-022 item 3). Library, delete-account, Save, Compare and Export are built (§2c, §2d, §2f, §2h).
 6. ~~ADR-009 drift check~~ — done.
 7. ~~3Dmol~~ — done. Then Compare, Library.
 8. ~~**Relabel classification units as `score`**~~ — done 2026-10-14 (ADR-023): `DISPLAY_UNIT` and `unitLabel`, pinned by a test.
