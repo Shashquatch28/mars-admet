@@ -211,6 +211,36 @@ a stub.
   for saves of expired results (the current route has no such check, since the client sends the
   results in hand).
 
+### 2e. Real-stack check, 2026-10-18 (Docker, Postgres, Redis, the rebuilt API image)
+
+Run after the stand-in checks above, once Docker was started: `docker compose up -d --build api`,
+migrations already at head (`d5be9f4ca6e0`), a private Vite on :5174 against the canonical API on
+:8000, a throwaway account created and deleted through the UI.
+
+- **Worked on the real service:** anonymous Predict (15 rows, real XGBoost, `v0.2.0-dev`) and the
+  anonymous Save message; create account; Save molecule (row checked in Postgres: label trimmed, tags
+  `coxib, Coxib, demo` stored as `{coxib,demo}`, snapshot of 15 predictions); a 5-row Batch (4 out of
+  domain, 1 failed row kept); Save report (5 rows, tags `{pilot,real}`) and Save molecule from a
+  Batch row; Library list, detail (with the real OUT OF DOMAIN mark) and both deletes (rows gone in
+  Postgres); delete-account with a wrong password (403, dialog stays, "Nothing was deleted") then the
+  right one. Afterwards `users`, `saved_molecules`, `saved_reports` and `batch_jobs` were all 0, so
+  the cascade works.
+- **The C0 change is live in the rebuilt image** (`platt_enabled()` is False; the `.dockerignore`
+  allowlist builds, and `/app/ml` holds only `serve`, `featurize`, `models`, `eval`, `artifacts`, `data`).
+- **Not checked: the queued Batch path (over 1,000 molecules) with real models.** See the
+  performance finding below: 1,200 rows would take hours, so it was not run. The queued path,
+  progress stream and results fetch were exercised only against the stand-in.
+- **Performance finding (serving, not frontend):** a molecule not yet in the Redis prediction cache
+  takes **18 to 37 seconds** on the real stack (a repeat takes 35 ms). Profiled inside the container:
+  every request loads all 70 XGBoost model files from disk (14 endpoints x 5 seeds, about 8 s) and
+  then predicts, with nothing kept between requests; this runs from bind-mounted `ml/artifacts` on
+  Windows, which may add to it. Consequences: Batch is about 12 to 25 s per molecule (the 5-row batch
+  took about 61 s), the interactive tier (up to 1,000 rows) holds one HTTP request open for the whole
+  run with no progress, and a queued 1,200-row job would take hours. A model cache in
+  `ml/serve/registry.py` (keyed on the artifact files' modification time) and batched prediction are
+  the obvious fixes; neither is done. The Batch screen only says "Uploading <file>" during the
+  interactive tier, which is accurate but uninformative for a run this long.
+
 ## 3. What is broken or missing — read before touching anything
 
 These are ordered by how badly they would bite.

@@ -4,10 +4,11 @@ Covers what was added on 2026-10-18: **Batch on the live API, Library, Save to l
 delete-account.** Two ways to run it. Use the first to test against the real service; use the
 second when Docker is not available or you only want to see the UI states.
 
-Everything below was checked against a stand-in API, **not** against the real service, because
-Docker was not running while it was built. The Docker steps come from `docker-compose.yml`,
-`api/README.md` and `frontend/.env.example`, and have not been run end to end since these
-screens were added. If a step fails, that is a finding worth reporting, not something you did wrong.
+These screens were first checked against a stand-in API, then on the real stack on 2026-10-18
+(`HANDOFF.md` §2e): create account, Predict and Batch (5 rows), Save, Library, delete, delete-account.
+Not run on the real stack: a queued batch of over 1,000 molecules, because the real service takes
+18 to 37 seconds per new molecule (see §2e), so 1,200 rows would take hours. Use the stand-in (B)
+to see the progress bar. If a step fails, that is a finding worth reporting.
 
 Use a browser window at least **1280 px wide**; narrower shows a "desktop workstation" notice.
 
@@ -102,7 +103,9 @@ python -c "import itertools; s=itertools.cycle(['CCO','c1ccccc1','CC(=O)Oc1ccccc
 
 `not-a-smiles` and `bad-smiles-here` are there on purpose: a bad row must stay in the grid with its
 error, not disappear. (With the stand-in, a file of 20 or more lines takes the queued path, so
-`batch_large.csv` exercises the progress bar there too.)
+`batch_large.csv` exercises the progress bar there too.) **On the real stack keep Batch files to a
+handful of molecules**: each new molecule takes roughly 12 to 25 seconds today, and a file of up to
+1,000 rows shows only "Uploading" until it finishes.
 
 ---
 
