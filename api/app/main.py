@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import warnings
 from contextlib import asynccontextmanager
@@ -55,7 +56,13 @@ def _warn_on_insecure_config() -> None:
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     _warn_on_insecure_config()
-    yield
+    # Warm the model registry in the background: the server accepts requests at once, and a
+    # request that arrives first simply waits on the registry lock for the same load.
+    warm_task = asyncio.create_task(asyncio.to_thread(prediction_service.warm_up))
+    try:
+        yield
+    finally:
+        warm_task.cancel()
 
 
 app = FastAPI(

@@ -39,6 +39,40 @@ gets no band. `ml/artifacts/` is git-ignored: a machine must run the builder onc
 
 ---
 
+## 2026-10-18 — Serving keeps models in memory (ml/serve); queued Batch run with real models
+
+**Status:** implemented and measured 2026-10-18 on branch `perf/serving-model-cache`; merged by the PR that carries it. Changes no
+prediction value, no contract field, and not C0.
+
+**Decision.** `ModelRegistry` (`ml/serve/registry.py`) caches loaded models, AD indexes and calibrators per endpoint,
+keyed on the artifact files' (mtime_ns, size) and re-validated at most every 5 s (`revalidate_seconds`; 0 = every call).
+`predict_endpoints` featurizes a molecule once for all 70 models (`XGBoostModel.prepare` / `predict_prepared`), serving
+models are loaded with one prediction thread, and `query_ad` intersects only the query's set bits against a cached
+transposed reference instead of converting the reference matrix to float64 per call.
+
+**Why.** The 2026-10-18 real-stack run found 18 to 37 s per uncached molecule: all 70 `load_model` calls on every request
+(about 8 s locally, more in Docker). That made Batch unusable (about 12 to 25 s per molecule; a queued 1,200-row job
+never run).
+
+**Result (real Docker stack, private container, empty feature cache).** 21.9 s to 0.18 s median per new molecule (about 120x);
+first request after start 12.7 s (one-off load). A queued 1,200-row Batch finished in about 9.5 min, 1,200/1,200 ok, all
+real models. Outputs: `/predict` bodies and a 6 molecule x 14 endpoint golden comparison are identical before and after;
+`ml/tests/test_serve_model_cache.py` pins cached = uncached, replacing/adding an artifact invalidates, the AD fast path is
+bit-for-bit the matmul path, and 8 concurrent first loads deserialise each seed once. C0 (`MARS_APPLY_PLATT` off) unchanged.
+
+**Trade-off accepted.** A re-promoted artifact is served from the old copy for up to 5 s. The window exists because a stamp
+check is about 20 `stat` calls per endpoint, 5 ms each on a Docker Desktop Windows bind mount.
+
+**Follow-up done the same day.** Predictions now run off the event loop (`asyncio.to_thread` in `POST /predict` and both
+Batch tiers), with `FeatureCache` writes made atomic and its `_config.json` update locked, the registry built once under a
+lock, and the registry warmed in the background at start-up. On the real stack `/health` stayed under 40 ms through a
+300-row interactive batch and a queued 1,200-row job, and all 1,200 rows equal the pre-threading run.
+
+**Open follow-ups.** (1) No cap on concurrent predictions (default pool of 40 threads; size to the container's CPUs).
+(2) The interactive batch tier still holds one request open without progress.
+
+---
+
 ## 2026-10-14 — AI sessions may perform git write operations; no AI attribution is left behind
 
 **Status:** decided 2026-10-14 by the maintainer (chat). Process rule; changes no code or data.

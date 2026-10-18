@@ -131,7 +131,7 @@ export function CompareWorkspace() {
             <b className={styles.failTitle}>{failure.title}</b> <span className={styles.failDetail}>{failure.detail}</span>
           </>
         ) : s.running ? (
-          "The service predicts each molecule in turn. A molecule it has not seen before can take tens of seconds."
+          "The service predicts each molecule in turn. A molecule it has not seen before takes longer than one it has cached."
         ) : s.problem && !s.result ? (
           s.problem
         ) : repeats.length > 0 ? (

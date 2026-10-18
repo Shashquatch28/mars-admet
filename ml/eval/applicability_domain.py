@@ -18,7 +18,7 @@ Module 1's finalized train_val pool, both already on disk.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -88,6 +88,27 @@ class ADIndex:
     threshold: float
     morgan_cache_key: str
     ad_version: str = AD_VERSION
+    # Serving-time derivatives of reference_fingerprints, built on first query (not saved).
+    _packed: tuple[np.ndarray, np.ndarray] | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
+
+    def binary_reference(self) -> tuple[np.ndarray, np.ndarray] | None:
+        """(reference.T as uint8 contiguous, per-row bit counts as float64), or None
+        when the fingerprints are not a plain 0/1 matrix (callers then use the
+        generic matmul path). Built once; lets a query intersect only its set bits."""
+        if self._packed is None:
+            ref = self.reference_fingerprints
+            if ref.ndim != 2 or ref.dtype not in (np.uint8, np.bool_) or (
+                ref.size and int(ref.max()) > 1
+            ):
+                return None
+            ref_u8 = ref.astype(np.uint8, copy=False)
+            self._packed = (
+                np.ascontiguousarray(ref_u8.T),
+                ref_u8.sum(axis=1, dtype=np.int64).astype(np.float64),
+            )
+        return self._packed
 
     def save(self, path: Path) -> None:
         path = Path(path)
@@ -165,6 +186,31 @@ def build_ad_index(
     )
 
 
+def _distances_to_reference(fps: np.ndarray, index: ADIndex) -> np.ndarray:
+    """`bulk_tanimoto_distance(fps, index.reference_fingerprints)`, bit-for-bit, without
+    converting the whole reference matrix to float64 on every call (213 MB for hERG).
+    For 0/1 fingerprints the intersection of a query with every reference is the sum of
+    the reference columns at the query's set bits - an exact integer, as in the matmul."""
+    packed = index.binary_reference()
+    if (
+        packed is None
+        or fps.ndim != 2
+        or fps.shape[1] != index.reference_fingerprints.shape[1]
+        or (fps.size and int(fps.max()) > 1)
+    ):
+        return bulk_tanimoto_distance(fps, index.reference_fingerprints)
+    ref_t, r_sum = packed
+    rows = []
+    for q in fps:
+        on = np.flatnonzero(q)
+        inter = ref_t[on].sum(axis=0, dtype=np.int64).astype(np.float64)
+        union = float(len(on)) + r_sum - inter
+        with np.errstate(divide="ignore", invalid="ignore"):
+            sim = np.where(union > 0, inter / union, 0.0)
+        rows.append(1.0 - sim)
+    return np.vstack(rows)
+
+
 @dataclass(frozen=True)
 class ADResult:
     smiles: str
@@ -200,7 +246,7 @@ def query_ad(
     if fps.shape[0] == 0:
         return []
 
-    dist_matrix = bulk_tanimoto_distance(fps, index.reference_fingerprints)
+    dist_matrix = _distances_to_reference(fps, index)
     results: list[ADResult] = []
     for row_i, orig_i in enumerate(kept_idx):
         mean_dist = _knn_mean_distance(dist_matrix[row_i], index.k, exclude_nearest=False)

@@ -22,8 +22,11 @@ endpoint isn't covered (Module 8's stub predictor).
 from __future__ import annotations
 
 import shutil
+import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from eval.applicability_domain import ADIndex, build_ad_index
@@ -34,6 +37,7 @@ from mars_contracts.endpoints import Endpoint, TaskType
 from models.xgboost_model import XGBoostModel
 
 DEFAULT_ARTIFACTS_ROOT = Path(__file__).resolve().parents[1] / "artifacts"
+DEFAULT_REVALIDATE_SECONDS = 5.0
 
 
 @dataclass(frozen=True)
@@ -44,17 +48,72 @@ class EndpointCoverage:
     has_calibrator: bool
 
 
+def _file_stamp(path: Path) -> tuple[int, int] | None:
+    """(mtime_ns, size) of a file, or None if it is absent. A re-promotion rewrites
+    the file (`promote_seed_artifact` copies a fresh tree), so either value moves."""
+    try:
+        st = path.stat()
+    except FileNotFoundError:
+        return None
+    return (st.st_mtime_ns, st.st_size)
+
+
 class ModelRegistry:
     """Read-only view over promoted model artifacts for serving.
 
     This is the "routing table" the blueprint's Module 8 describes: given an
     endpoint key, resolve which trained model(s) actually exist. It never
     trains anything itself.
+
+    Loaded models, AD indexes and calibrators are kept in memory per endpoint,
+    keyed on the (mtime_ns, size) of the files they were read from, so a serving
+    process pays the XGBoost deserialisation once instead of on every request
+    (2026-10-18: 70 `load_model` calls were ~80% of a cold /predict). The stamp is
+    re-checked at most every `revalidate_seconds` (default 5 s; 0 = on every call),
+    so a re-promoted artifact is picked up within that window with no restart and
+    no stale model. The window exists because a stamp check is ~20 `stat`s per
+    endpoint, which on a Docker Desktop bind mount cost ~5 ms each (2026-10-18:
+    ~1.3 s per molecule spent in `stat` alone). Nothing cached is ever mutated by
+    callers; the returned model list is a copy.
     """
 
-    def __init__(self, cache: FeatureCache, artifacts_root: Path | str | None = None) -> None:
+    def __init__(
+        self,
+        cache: FeatureCache,
+        artifacts_root: Path | str | None = None,
+        *,
+        revalidate_seconds: float = DEFAULT_REVALIDATE_SECONDS,
+    ) -> None:
         self._cache = cache
         self.artifacts_root = Path(artifacts_root) if artifacts_root else DEFAULT_ARTIFACTS_ROOT
+        self._revalidate_seconds = revalidate_seconds
+        self._lock = threading.RLock()
+        # kind -> endpoint_key -> [stamp, value, last_checked_monotonic]
+        self._memo: dict[str, dict[str, list[Any]]] = {"models": {}, "ad": {}, "calibrator": {}, "error_band": {}}
+
+    def _memoised(self, kind: str, endpoint_key: str, stamp_fn, build) -> Any:
+        with self._lock:
+            hit = self._memo[kind].get(endpoint_key)
+            now = time.monotonic()
+            if (
+                hit is not None
+                and self._revalidate_seconds > 0
+                and now - hit[2] < self._revalidate_seconds
+            ):
+                return hit[1]
+            stamp = stamp_fn()
+            if hit is not None and hit[0] == stamp:
+                hit[2] = now
+                return hit[1]
+            value = build()
+            self._memo[kind][endpoint_key] = [stamp, value, now]
+            return value
+
+    def clear_cache(self) -> None:
+        """Drop every in-memory artifact (tests, or to release memory)."""
+        with self._lock:
+            for table in self._memo.values():
+                table.clear()
 
     def _endpoint_dir(self, endpoint_key: str) -> Path:
         return self.artifacts_root / endpoint_key
@@ -87,31 +146,56 @@ class ModelRegistry:
         return out
 
     def load_models(self, endpoint_key: str) -> list[XGBoostModel]:
-        cov = self.coverage(endpoint_key)
         ep_dir = self._endpoint_dir(endpoint_key)
-        return [
-            XGBoostModel.load_with_cache(ep_dir / f"seed_{seed}", self._cache)
-            for seed in cov.seeds
-        ]
+
+        def stamp() -> tuple:
+            return tuple(
+                (
+                    seed,
+                    _file_stamp(ep_dir / f"seed_{seed}" / "model.json"),
+                    _file_stamp(ep_dir / f"seed_{seed}" / "metadata.json"),
+                )
+                for seed in self.coverage(endpoint_key).seeds
+            )
+
+        def build() -> list[XGBoostModel]:
+            return [
+                XGBoostModel.load_with_cache(ep_dir / f"seed_{seed}", self._cache, n_jobs=1)
+                for seed in self.coverage(endpoint_key).seeds
+            ]
+
+        return list(self._memoised("models", endpoint_key, stamp, build))
 
     def load_ad_index(self, endpoint_key: str) -> ADIndex | None:
         path = self._endpoint_dir(endpoint_key) / "ad_index"
-        if not (path / "metadata.json").exists():
-            return None
-        return ADIndex.load(path)
+
+        def stamp() -> tuple:
+            return (
+                _file_stamp(path / "metadata.json"),
+                _file_stamp(path / "reference_fingerprints.npy"),
+            )
+
+        def build() -> ADIndex | None:
+            return ADIndex.load(path) if (path / "metadata.json").exists() else None
+
+        return self._memoised("ad", endpoint_key, stamp, build)
 
     def load_error_band(self, endpoint_key: str) -> ErrorBand | None:
         """The endpoint's held-out-error band, or None when none was built (classification, or not yet)."""
         path = self._endpoint_dir(endpoint_key) / ERROR_BAND_FILENAME
-        if not path.exists():
-            return None
-        return ErrorBand.load(path)
+
+        def build() -> ErrorBand | None:
+            return ErrorBand.load(path) if path.exists() else None
+
+        return self._memoised("error_band", endpoint_key, lambda: _file_stamp(path), build)
 
     def load_calibrator(self, endpoint_key: str) -> PlattCalibrator | None:
         path = self._endpoint_dir(endpoint_key) / "calibrator.json"
-        if not path.exists():
-            return None
-        return PlattCalibrator.load(path)
+
+        def build() -> PlattCalibrator | None:
+            return PlattCalibrator.load(path) if path.exists() else None
+
+        return self._memoised("calibrator", endpoint_key, lambda: _file_stamp(path), build)
 
 
 def promote_seed_artifact(

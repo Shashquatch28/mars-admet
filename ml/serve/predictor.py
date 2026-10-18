@@ -61,17 +61,39 @@ def standardize_or_raise(smiles: str) -> str:
     return result.canonical_smiles
 
 
+def _model_predict(model, smiles_standardized: str, prepared: dict | None) -> float:
+    """One model's raw prediction for one molecule.
+
+    When `prepared` is given (a per-molecule scratch dict owned by the caller) and the
+    model can expose its feature identity, the molecule is featurized once per distinct
+    feature set and shared by every model that uses it. Models without that interface
+    (test doubles) just `predict`.
+    """
+    key = getattr(model, "feature_key", None)
+    if prepared is None or key is None:
+        return model.predict([smiles_standardized])[0]
+    if key not in prepared:
+        prepared[key] = model.prepare([smiles_standardized])
+    return model.predict_prepared(1, *prepared[key])[0]
+
+
 def predict_endpoint(
     registry: ModelRegistry,
     endpoint_key: str,
     smiles_standardized: str,
+    *,
+    prepared: dict | None = None,
 ) -> RealPrediction | None:
-    """Real prediction for one (endpoint, molecule), or None if uncovered."""
+    """Real prediction for one (endpoint, molecule), or None if uncovered.
+
+    `prepared` is an optional per-molecule featurization memo shared across endpoints
+    (see `predict_endpoints`); it changes cost, never values.
+    """
     models = registry.load_models(endpoint_key)
     if not models:
         return None
 
-    raw_preds = np.array([m.predict([smiles_standardized])[0] for m in models])
+    raw_preds = np.array([_model_predict(m, smiles_standardized, prepared) for m in models])
     if np.all(np.isnan(raw_preds)):
         # Registry has a model but featurization failed for this molecule
         # (e.g. an element outside the training feature space). Not "no
@@ -128,9 +150,11 @@ def predict_endpoints(
 ) -> dict[str, RealPrediction | None]:
     """Real predictions for a batch of endpoints on one molecule.
 
-    Standardizes once, reuses the result across all requested endpoints.
+    Standardizes once and featurizes once, reusing both across all requested
+    endpoints and all of their seed models.
     Value at each key is `None` when the registry has no promoted model for
     that endpoint — the caller (API layer) decides the fallback.
     """
     smiles_std = standardize_or_raise(smiles)
-    return {ep: predict_endpoint(registry, ep, smiles_std) for ep in endpoint_keys}
+    prepared: dict = {}
+    return {ep: predict_endpoint(registry, ep, smiles_std, prepared=prepared) for ep in endpoint_keys}

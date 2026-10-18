@@ -38,8 +38,13 @@ convention as the non-cached batch APIs).
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
+import os
+import threading
+import time
+import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -93,6 +98,39 @@ def _lib_versions() -> dict[str, str]:
     }
 
 
+def _atomic_write(path: Path, write, *, content_addressed: bool = True) -> None:
+    """Write `path` via a unique temp file in the same directory, then `os.replace`.
+
+    A reader (another thread, another process) sees either no file or the whole file,
+    never a half-written `.npy`/`.npz`/`.json`; two writers of the same content-addressed
+    key cannot interleave bytes. `write` receives the open binary temp file.
+
+    On Windows `os.replace` raises PermissionError while another handle has the target
+    open (a concurrent reader, or a concurrent writer replacing the same key). That is
+    retried briefly; if it persists and the entry is content-addressed, the file that is
+    already there holds the same bytes, so the temp copy is simply dropped."""
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+    try:
+        with open(tmp, "wb") as f:
+            write(f)
+        for attempt in range(40):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                if attempt == 39:
+                    if content_addressed and path.exists():
+                        break
+                    raise
+                time.sleep(0.005)
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+    except BaseException:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        raise
+
+
 def entry_key(stage: str, cache_key: str, smiles: str) -> str:
     """Deterministic content-addressed key for one (stage, config, molecule)."""
     return hashlib.sha256(
@@ -112,6 +150,10 @@ class CacheStats:
 class FeatureCache:
     def __init__(self, root: str | Path) -> None:
         self.root = Path(root)
+        # Serialises the read-modify-write of each stage's _config.json across threads
+        # (the API predicts on worker threads). Entry files need no lock: they are
+        # content-addressed and written atomically.
+        self._config_lock = threading.Lock()
         for stage in _STAGES:
             (self.root / stage).mkdir(parents=True, exist_ok=True)
 
@@ -120,6 +162,10 @@ class FeatureCache:
         return self.root / stage / key[:2] / f"{key}.{ext}"
 
     def _record_config(self, stage: str, cache_key: str, added: int) -> None:
+        with self._config_lock:
+            self._record_config_locked(stage, cache_key, added)
+
+    def _record_config_locked(self, stage: str, cache_key: str, added: int) -> None:
         meta_path = self.root / stage / "_config.json"
         if meta_path.exists():
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
@@ -136,7 +182,8 @@ class FeatureCache:
              "n_entries": 0},
         )
         seen["n_entries"] += added
-        meta_path.write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        payload = (json.dumps(meta, indent=2, sort_keys=True) + "\n").encode("utf-8")
+        _atomic_write(meta_path, lambda f: f.write(payload), content_addressed=False)
 
     def configs_seen(self, stage: str) -> dict:
         meta_path = self.root / stage / "_config.json"
@@ -181,7 +228,7 @@ class FeatureCache:
                 key = entry_key("morgan", ck, standardized_smiles[orig_i])
                 p = self._path("morgan", key, "npy")
                 p.parent.mkdir(parents=True, exist_ok=True)
-                np.save(p, vec)
+                _atomic_write(p, lambda f, vec=vec: np.save(f, vec))
                 computed += 1
             self._record_config("morgan", ck, computed)
 
@@ -234,7 +281,10 @@ class FeatureCache:
                 key = entry_key("descriptors", ck, standardized_smiles[orig_i])
                 p = self._path("descriptors", key, "npz")
                 p.parent.mkdir(parents=True, exist_ok=True)
-                np.savez(p, values=v, non_finite=json.dumps(nf, sort_keys=True))
+                _atomic_write(
+                    p,
+                    lambda f, v=v, nf=nf: np.savez(f, values=v, non_finite=json.dumps(nf, sort_keys=True)),
+                )
                 computed += 1
             self._record_config("descriptors", ck, computed)
 
@@ -294,13 +344,16 @@ class FeatureCache:
                 key = entry_key("graph", ck, standardized_smiles[orig_i])
                 p = self._path("graph", key, "npz")
                 p.parent.mkdir(parents=True, exist_ok=True)
-                np.savez(
+                _atomic_write(
                     p,
-                    n_atoms=g.n_atoms,
-                    n_bonds=g.n_bonds,
-                    atom_features=g.atom_features,
-                    edge_index=g.edge_index,
-                    edge_features=g.edge_features,
+                    lambda f, g=g: np.savez(
+                        f,
+                        n_atoms=g.n_atoms,
+                        n_bonds=g.n_bonds,
+                        atom_features=g.atom_features,
+                        edge_index=g.edge_index,
+                        edge_features=g.edge_features,
+                    ),
                 )
                 computed += 1
             self._record_config("graph", ck, computed)
@@ -339,7 +392,8 @@ class FeatureCache:
                 key = entry_key("conformer", ck, standardized_smiles[orig_i])
                 p = self._path("conformer", key, "json")
                 p.parent.mkdir(parents=True, exist_ok=True)
-                p.write_text(json.dumps(_conformer_to_dict(r), sort_keys=True), encoding="utf-8")
+                payload = json.dumps(_conformer_to_dict(r), sort_keys=True).encode("utf-8")
+                _atomic_write(p, lambda f, payload=payload: f.write(payload))
                 computed += 1
             self._record_config("conformer", ck, computed)
 

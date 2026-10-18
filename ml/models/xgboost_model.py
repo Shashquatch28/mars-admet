@@ -199,16 +199,34 @@ class XGBoostModel(MARSModel):
         self._model = self._build_model(with_early_stopping=eval_set is not None)
         self._model.fit(feat_train, y_tr, eval_set=eval_set, verbose=False)
 
-    def predict(self, X: list[str]) -> np.ndarray:
-        if self._model is None:
-            raise RuntimeError("Model has not been fitted. Call fit() first.")
-        smiles = list(X)
-        feat, valid_idx, dropped_idx = _extract_features(
-            smiles,
+    @property
+    def feature_key(self) -> tuple[str, str]:
+        """Identity of the feature matrix this model consumes. Two models with equal
+        keys can share one `prepare()` result (serving featurizes a molecule once
+        for all 70 models instead of once per model)."""
+        return (self._cfg.morgan_config.cache_key(), self._cfg.descriptor_config.cache_key())
+
+    def prepare(self, X: list[str]) -> tuple[np.ndarray, list[int], list[int]]:
+        """Featurize `X` -> (matrix, valid_idx, dropped_idx), as `predict` would."""
+        return _extract_features(
+            list(X),
             self._cache,
             morgan_config=self._cfg.morgan_config,
             descriptor_config=self._cfg.descriptor_config,
         )
+
+    def predict(self, X: list[str]) -> np.ndarray:
+        if self._model is None:
+            raise RuntimeError("Model has not been fitted. Call fit() first.")
+        smiles = list(X)
+        return self.predict_prepared(len(smiles), *self.prepare(smiles))
+
+    def predict_prepared(
+        self, n: int, feat: np.ndarray, valid_idx: list[int], dropped_idx: list[int]
+    ) -> np.ndarray:
+        """`predict` on an already-featurized batch of `n` SMILES (see `prepare`)."""
+        if self._model is None:
+            raise RuntimeError("Model has not been fitted. Call fit() first.")
         if dropped_idx:
             warnings.warn(
                 f"XGBoostModel.predict: {len(dropped_idx)} SMILES dropped; NaN returned at those positions.",
@@ -216,14 +234,14 @@ class XGBoostModel(MARSModel):
                 stacklevel=2,
             )
         if len(valid_idx) == 0:
-            return np.full(len(smiles), float("nan"))
+            return np.full(n, float("nan"))
 
         if self._task_type == TaskType.CLASSIFICATION:
             valid_preds = self._model.predict_proba(feat)[:, 1]
         else:
             valid_preds = self._model.predict(feat)
 
-        out = np.full(len(smiles), float("nan"))
+        out = np.full(n, float("nan"))
         for new_i, orig_i in enumerate(valid_idx):
             out[orig_i] = valid_preds[new_i]
         return out
@@ -251,8 +269,15 @@ class XGBoostModel(MARSModel):
         )
 
     @classmethod
-    def load_with_cache(cls, path: Path, cache: FeatureCache) -> XGBoostModel:
-        """Load a saved XGBoostModel and attach the given FeatureCache."""
+    def load_with_cache(
+        cls, path: Path, cache: FeatureCache, *, n_jobs: int | None = None
+    ) -> XGBoostModel:
+        """Load a saved XGBoostModel and attach the given FeatureCache.
+
+        `n_jobs` caps the prediction thread count for this model. Serving predicts one
+        molecule at a time, where an all-cores OpenMP team is pure overhead (47 ms vs
+        1.2 ms per call in an 18-CPU container); it never changes the value, since
+        threads only split rows."""
         if not _XGB_AVAILABLE:
             raise ImportError("xgboost is required. Install with: pip install 'xgboost>=2.0'")
         path = Path(path)
@@ -265,4 +290,7 @@ class XGBoostModel(MARSModel):
         else:
             inst._model = xgb.XGBRegressor()
         inst._model.load_model(str(path / "model.json"))
+        if n_jobs is not None:
+            inst._model.get_booster().set_param({"nthread": n_jobs})
+            inst._model.set_params(n_jobs=n_jobs)
         return inst
