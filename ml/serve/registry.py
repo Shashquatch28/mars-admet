@@ -7,6 +7,7 @@ Artifact layout (`artifacts_root`, default `ml/artifacts/`):
         ad_index/reference_fingerprints.npy, metadata.json   # Module 5 CORE k-NN AD
         calibrator.json                          # Module 4 Platt calibrator (classification only)
         error_band.json                          # held-out-error band (regression only, ADR-024)
+        kermt_error_band.json                    # the same band for the KERMT ensemble (regression endpoints it serves)
 
 This directory is intentionally decoupled from `ml/runs/` (ExperimentRun's
 ephemeral, git-ignored per-run output) — `promote_seed_artifact` is the one
@@ -38,6 +39,7 @@ from models.xgboost_model import XGBoostModel
 
 DEFAULT_ARTIFACTS_ROOT = Path(__file__).resolve().parents[1] / "artifacts"
 DEFAULT_REVALIDATE_SECONDS = 5.0
+KERMT_ERROR_BAND_FILENAME = "kermt_error_band.json"
 
 
 @dataclass(frozen=True)
@@ -180,14 +182,17 @@ class ModelRegistry:
 
         return self._memoised("ad", endpoint_key, stamp, build)
 
-    def load_error_band(self, endpoint_key: str) -> ErrorBand | None:
-        """The endpoint's held-out-error band, or None when none was built (classification, or not yet)."""
-        path = self._endpoint_dir(endpoint_key) / ERROR_BAND_FILENAME
+    def load_error_band(self, endpoint_key: str, filename: str = ERROR_BAND_FILENAME) -> ErrorBand | None:
+        """The endpoint's held-out-error band, or None when none was built (classification, or not yet).
+
+        `filename` selects which model's band: the XGBoost seeds' band is the default file; the KERMT
+        seeds' band (`KERMT_ERROR_BAND_FILENAME`) sits beside it and describes the KERMT ensemble."""
+        path = self._endpoint_dir(endpoint_key) / filename
 
         def build() -> ErrorBand | None:
             return ErrorBand.load(path) if path.exists() else None
 
-        return self._memoised("error_band", endpoint_key, lambda: _file_stamp(path), build)
+        return self._memoised("error_band", f"{endpoint_key}/{filename}", lambda: _file_stamp(path), build)
 
     def load_calibrator(self, endpoint_key: str) -> PlattCalibrator | None:
         path = self._endpoint_dir(endpoint_key) / "calibrator.json"
@@ -247,6 +252,7 @@ def promote_seed_artifact(
 
 __all__ = [
     "DEFAULT_ARTIFACTS_ROOT",
+    "KERMT_ERROR_BAND_FILENAME",
     "EndpointCoverage",
     "ModelRegistry",
     "promote_seed_artifact",
