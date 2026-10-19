@@ -909,3 +909,40 @@ frontend tests cover the model (`report.test.ts`: roster completeness, no marker
 NOT RETURNED versus NOT REQUESTED, no favourability wording, counts agree with the screen); the rendered layout was
 checked in a browser against a live API with the print stylesheet applied.
 
+---
+
+## ADR-030 — Accessibility pass: AA text tokens, scroll instead of block, a switch for the 1-4 keys
+
+**Date:** 2026-10-19 · **Status:** accepted · implemented 2026-10-19 (ship checklist D6)
+
+**Decision.**
+
+1. **Text tokens are AA on every surface.** `--text-quiet` becomes `#848F92` and `--error` `#E06861`. An audit of the
+   running app found readable information in `--text-quiet` (3.5-4.4:1: the held-out-error explanation, the "illustrative,
+   not model output" note, key hints) and in `--text-disabled` (3.2:1: row numbers, the `-N` not-returned flag, group
+   counts), and error text under 4.5:1 on the dialog surface. `--text-disabled` is now for disabled controls only
+   (WCAG exempts them) and a test enforces it.
+2. **Narrow windows and high zoom scroll; nothing is blocked.** The blocking "minimum width" notice is replaced by a
+   1080px canvas that scrolls sideways, with a one-line note. This amends RESPONSIVE_STRATEGY ("a blocking notice
+   rather than a broken layout"): at 200% browser zoom on a 1440px screen the viewport is 720 CSS px, the notice
+   replaced the whole app, and zoom users could not use it at all (WCAG 1.4.4, 1.4.10).
+3. **The 1-4 keys can be turned off** (WCAG 2.1.4): Settings, Keyboard, "Single-key shortcuts", on by default, remembered
+   in this browser. The alternative (require Alt+1-4) was declined because it changes the documented keys.
+4. **Structure and announcements.** One `<main>`, a skip link, an `h1` per workspace and `h2` endpoint groups, per-workspace
+   page titles, a valid ARIA grid on Predict (headers inside the grid, `gridcell`s, `aria-activedescendant`), one polite
+   live region for "prediction complete" and batch start / quarters / finish, errors linked to their fields, a 24px
+   minimum target size.
+
+**Rationale.** WCAG 2.2 AA is the stated target (ACCESSIBILITY.md) and the doc already listed live regions, error
+association, headings and focus return as specified but not built. The audit measured the rest.
+
+**Rejected.** *Keep the block and record an exception* - fails 1.4.4 for exactly the users who need zoom. *Alt+1-4* -
+see above. *Announce every batch progress event* - the service reports every half second; a screen reader would
+talk over everything. *A new dependency (axe, jsx-a11y)* - not needed to catch the measured failures; the guards and
+the audit script cover them, and a dependency can be added later.
+
+**Consequences.** The `--text-quiet` rung of the hierarchy is nearly the same as `--text-tertiary`, so quiet text is
+slightly brighter than designed. `--error` is a touch lighter. The app now scrolls at narrow widths instead of
+refusing to run, which means small screens get an unrefined layout rather than a notice. Predict's rows carry no
+`aria-rowindex` any more (not virtualized, and the old values did not match the group rows between them). Not done:
+screen-reader testing, the Ketcher panel, the Batch grid's keyboard model (see ACCESSIBILITY.md, "Not built or not checked").

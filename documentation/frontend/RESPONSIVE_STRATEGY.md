@@ -20,7 +20,7 @@ current:
 
 | Concern | Design | Built |
 |---|---|---|
-| Minimum width | blocking notice below 1280 | blocking notice below **1080px** (`@media (max-width: 1079px)` in `shell.module.css`) |
+| Minimum width | blocking notice below 1280 | **no block** since 2026-10-19 (ADR-030): a 1080px canvas that scrolls sideways below that, with a one-line note (`.narrow`, `@media (max-width: 1079px)` in `shell.module.css`) |
 | Maximum width | content centred at 1920 | app frame capped at **1680px** (`.app`, `shell.module.css`) |
 | Molecule column | 356, narrowing to 320 | `clamp(300px, 24vw, 356px)` |
 | Inspector | 332, collapsing to a toggle under 1440 | `clamp(300px, 23vw, 332px)`; no collapse toggle |
@@ -51,7 +51,7 @@ is one glance.
 
 | Range | Behaviour |
 |---|---|
-| < 1280 | **not supported in pass 1.** A blocking notice stating the minimum width, rather than a broken layout. |
+| < 1080 | **scrolls sideways** on a 1080px canvas with a note (ADR-030); it replaces the blocking notice of pass 1, which locked out users at high zoom. Not designed for, not blocked. |
 | 1280–1439 | inspector collapses to a toggle; molecule column narrows to 320; results column keeps its geometry |
 | 1440 (canonical) | the drawn design |
 | 1441–1920 | results column absorbs the extra width; molecule column and inspector stay fixed |

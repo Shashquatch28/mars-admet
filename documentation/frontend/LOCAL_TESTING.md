@@ -10,7 +10,7 @@ A queued batch of 1,200 molecules has also been run on the real stack with real 
 minutes) since serving keeps its models in memory (§2e, AIMS decisions 2026-10-18); the stand-in (B)
 is still the quickest way to see the progress bar. If a step fails, that is a finding worth reporting.
 
-Use a browser window at least **1280 px wide**; narrower shows a "desktop workstation" notice.
+Use a browser window at least **1280 px wide**. Narrower than 1080 px the page scrolls sideways with a short note (it no longer blocks).
 
 ---
 
