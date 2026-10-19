@@ -33,7 +33,7 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
       <div className={styles.imeta}>
         {chips.map((c, i) => (
           <span key={c}>
-            {i > 0 && <span className={styles.imetaD}>· </span>}
+            {i > 0 && <span className={styles.imetaD} aria-hidden="true">· </span>}
             {c}
           </span>
         ))}

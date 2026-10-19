@@ -10,7 +10,7 @@ import { DeleteAccount } from "./DeleteAccount";
 
 export function SettingsWorkspace() {
   const { status, user, busy, signOut } = useAuthSession();
-  const { setIsSample } = useUiState();
+  const { setIsSample, shortcutsEnabled, setShortcutsEnabled } = useUiState();
   useEffect(() => setIsSample(false), [setIsSample]); // Settings shows no values: nothing is illustrative
 
   let body;
@@ -45,6 +45,19 @@ export function SettingsWorkspace() {
         <div className={`${styles.formcol} ${styles.stack}`}>
           <span className={styles.kicker}>Account</span>
           {body}
+          <span className={styles.kicker}>Keyboard</span>
+          <label className={styles.check}>
+            <input
+              type="checkbox"
+              checked={shortcutsEnabled}
+              onChange={(e) => setShortcutsEnabled(e.target.checked)}
+            />
+            <span>Single-key shortcuts: keys 1 to 4 switch workspace</span>
+          </label>
+          <p className={styles.body}>
+            Turn this off if a stray key press moves you between workspaces. Ctrl or ⌘ + K for the command palette is
+            not affected. The choice is remembered in this browser.
+          </p>
         </div>
       </div>
     </section>

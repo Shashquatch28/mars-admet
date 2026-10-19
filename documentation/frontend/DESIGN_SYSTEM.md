@@ -38,7 +38,7 @@ Elevation: `--shadow-overlay: 0 12px 28px rgba(0,0,0,0.55)`, applied to
 | `--text-primary` | `#E9EDEE` | values, endpoint names, headings | 16.5:1 |
 | `--text-secondary` | `#A8B2B5` | supporting prose, metadata values | 9.0:1 |
 | `--text-tertiary` | `#859093` | field labels, units, section labels | 5.9:1 |
-| `--text-quiet` | `#6E797C` | explanatory notes, status bar | 4.4:1 — **below 4.5, non-essential text only** |
+| `--text-quiet` | `#848F92` | explanatory notes, status bar, separators | 4.5:1 or better on every surface; one step from tertiary (ADR-030). `--text-disabled` is for disabled controls only.
 | `--text-disabled` | `#5C6669` | disabled controls only (WCAG-exempt) | 3.3:1 |
 
 `--text-quiet` is the one token that needs care: at 4.4:1 it sits just below the
@@ -57,7 +57,7 @@ anywhere in MARS.
 |---|---|---|---|
 | `--accent` | `#49AEC4` | interaction, focus, selection | a data value, a quality judgement, decoration |
 | `--caution` | `#D99A3C` | reliability compromised: OOD, stub-served, sample data | "this molecule is risky" |
-| `--error` | `#D9615A` | a request, upload or row genuinely failed | a high predicted value, a toxic-sounding endpoint |
+| `--error` | `#E06861` | a request, upload or row genuinely failed | a high predicted value, a toxic-sounding endpoint |
 | `--success` | `#6FA860` | a named operation completed: saved, exported, ready | a favourable prediction |
 | `--unavailable` | `#859093` | requested but not returned, or not applicable | anything hidden |
 

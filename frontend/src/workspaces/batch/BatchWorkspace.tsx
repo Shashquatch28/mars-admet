@@ -92,11 +92,11 @@ export function BatchWorkspace() {
         <div className={styles.bhd}>
           <span className={styles.bTitle}>Batch</span>
           <span className={styles.recon}>
-            <b>{c.molecules}</b> molecules <span className={styles.reconD}>·</span>{" "}
+            <b>{c.molecules}</b> molecules <span className={styles.reconD} aria-hidden="true">·</span>{" "}
             <b className={styles.reconOod}>{c.rowsWithOod}</b> with out-of-domain{" "}
-            <span className={styles.reconD}>·</span> <b>{c.rowsWithStub}</b> with stub-served{" "}
-            <span className={styles.reconD}>·</span> <b>{c.cellsNotReturned}</b> cells not returned{" "}
-            <span className={styles.reconD}>·</span> <b>{c.failedRows}</b> failed
+            <span className={styles.reconD} aria-hidden="true">·</span> <b>{c.rowsWithStub}</b> with stub-served{" "}
+            <span className={styles.reconD} aria-hidden="true">·</span> <b>{c.cellsNotReturned}</b> cells not returned{" "}
+            <span className={styles.reconD} aria-hidden="true">·</span> <b>{c.failedRows}</b> failed
           </span>
           <span style={{ flex: 1 }} />
           <button

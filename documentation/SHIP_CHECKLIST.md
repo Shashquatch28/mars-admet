@@ -49,7 +49,8 @@ approval, `[lab]` needs the GPU workstation.
 - [ ] D4 `[here]` TDC leaderboard comparison tables.
 - [x] D5 `[here]` Report export (the CSV export is done; a report is a separate item).
   Done as a print-only light report (Save as PDF), frontend ADR-029; no server route. No 2D structure or drug-likeness flags: the service has neither.
-- [ ] D6 `[here]` WCAG / accessibility pass.
+- [x] D6 `[here]` WCAG / accessibility pass.
+  Done in code and verified in a browser (ADR-030, `ACCESSIBILITY.md`). Not done: a screen-reader test, the Ketcher panel, the Batch grid's keyboard re-test; no axe run. Plan these into D7 (final QA).
 - [ ] D7 `[here]` Final QA: re-run the AGENTS.md "Never do" audit in a browser at 1440 px, run every screen in `documentation/frontend/LOCAL_TESTING.md`, re-check the stub-served row state (no mixed real+stub response has ever been captured).
 - [ ] D8 `[you]` Launch.
 

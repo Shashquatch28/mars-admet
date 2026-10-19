@@ -50,8 +50,8 @@ export function TopBar() {
         <span className={styles.brandSub}>ADMET Rapid Screening</span>
       </div>
       <div className={styles.crumb}>
-        <span className={styles.crumbW}>{label}</span>
-        {sub && <span className={styles.crumbSep}>/</span>}
+        <h1 className={styles.crumbW}>{label}</h1>
+        {sub && <span className={styles.crumbSep} aria-hidden="true">/</span>}
         {sub && <span className={styles.crumbSub}>{sub}</span>}
       </div>
       <div className={styles.spacer} />

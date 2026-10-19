@@ -340,6 +340,20 @@ migrations already at head (`d5be9f4ca6e0`), a private Vite on :5174 against the
   held-out-error cell rendered in the page (both are covered by the tests on real captured responses, not by a screenshot).
 - **Not in it:** a 2D structure drawing and drug-likeness flags. The service provides neither.
 
+### 2j. Accessibility pass (ADR-030) — what was done and what was checked
+
+- **Found by running the app:** `--text-quiet` and `--text-disabled` used for readable information (3.2-4.4:1), error text at 4.3:1 on
+  the dialog surface, targets of 16-22px, no `<main>` or headings or skip link, a Predict grid with bare spans inside its rows,
+  no live announcements, and a blocking notice below 1080 CSS px (zoom lock-out). Fixes and the two design calls are in ADR-030.
+- **Guards:** `tests/a11yGuard.test.ts` (token contrast computed from `tokens.css`, `--text-disabled` only on disabled rules, 9px
+  floor, icon-only button names, clickable non-controls need a role, skip link / `main` / `h1`, one live region, 24px base).
+  `src/domain/announce.ts` (+ test) holds the announcement wording.
+- **Checked in a browser** (fixture mode on every workspace, live API for Predict): computed contrast of every visible text node,
+  accessible names, target sizes, landmarks and headings, the grid roles, the announcement text after a real prediction, the skip
+  link, the shortcut switch (default on, off stops the keys, remembered), the sign-in error linkage, and a 720px window.
+- **Not checked:** a screen reader, the Ketcher panel, the Batch grid keyboard model, the real Tab order end to end (the in-app
+  browser's Tab starts from its own focus point, so the skip link was focused and activated by script).
+
 ## 3. What is broken or missing — read before touching anything
 
 These are ordered by how badly they would bite.
