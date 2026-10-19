@@ -20,14 +20,14 @@ through a Vite dev proxy, and the status bar and top bar read the real response
 and a real `/health` check. It was exercised in a browser against the real model
 path (see §2a). Batch runs against the API too (upload, progress, results; §2b); Library, delete-account and Compare exist (§2c, §2f).
 
-| Gate (run 2026-10-14, working tree incl. uncommitted edits) | Result |
+| Gate (run 2026-10-19, branch `fix/ship-quick-wins`, Docker stack up) | Result |
 |---|---|
 | `npx tsc --noEmit` | clean |
-| `npm run lint` | 0 errors, 3 warnings (`app/authSession.tsx`, `predictSession.tsx`, `uiState.tsx` fast-refresh, accepted) |
-| `npm test` | 113 / 113 passed, 9 files (187 / 187 in 15 files after Compare, 2026-10-18) |
+| `npm run lint` | 0 errors, 6 warnings (`app/authSession.tsx`, `batchSession.tsx`, `compareSession.tsx`, `predictSession.tsx`, `savedMarks.tsx`, `uiState.tsx` fast-refresh, accepted) |
+| `npm test` | 202 / 202 passed, 17 files |
 | `ruff check contracts api ml` | clean |
-| `contracts/tests` + `api/tests` (root `.venv`) | 51 passed, 26 skipped. The skips are the Postgres/Redis-backed tests, which skip when the stack is down; CI runs them for real. |
-| `ml/tests` (**`ml/.venv`**, not the root env) | 400 passed, 15 skipped (about 9 min) |
+| `contracts/tests` + `api/tests` (root `.venv`, Postgres/Redis up) | 88 passed, 1 skipped (`rdkit` not installed), 1 failed: `api/tests/test_predict.py::test_predict_returns_all_14_ml_endpoints` sees 15 rows (the rule-based SA row) because this environment has the ml stack; it fails the same way on `main` and expects 14 only where CI has no ml stack. Not caused by this branch. |
+| `ml/tests` (**`ml/.venv`**, not the root env) | 708 passed, 21 skipped (10 min 41 s) |
 | `npm run build`, `npm audit` | last run 2026-10-07: build succeeds, 0 vulnerabilities; not re-run |
 
 ## 2. What exists
