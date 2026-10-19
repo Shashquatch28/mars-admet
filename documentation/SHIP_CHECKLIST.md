@@ -38,7 +38,7 @@ approval, `[lab]` needs the GPU workstation.
 - [ ] C7 `[you]` Deploy: Cloud Run, Neon, Upstash, R2. Rebuild the held-out error bands on the deploy machine (`build_error_bands.py`, about 6 min) or regression rows carry no band.
 - [x] C8 `[here]` Cloud Tasks batch worker (needs a deployed worker)
   Code done: jobs run as resumable slices through a blob store (Redis or S3/R2) and a queue (local or Cloud Tasks) with a secret-guarded worker endpoint; unit-tested against fakes and, for S3, against local MinIO. Not run against a real Cloud Tasks project; the post-deploy checks are in `api/README.md`..
-- [ ] C9 `[here]` Sentry and UptimeRobot monitoring.
+- [x] C9 `[here]` Sentry and UptimeRobot monitoring. (Sentry is code-complete and tested; both need a real account and the deployed URL, so the setup is the runbook in `documentation/MONITORING.md`.)
 
 ## D. Launch quality (M5 minimum)
 

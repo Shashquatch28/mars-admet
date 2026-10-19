@@ -58,6 +58,12 @@ class Settings(BaseSettings):
         "process. Cloud Run does not always report its vCPU limit to the process, so set this to the "
         "service's vCPU count there.",
     )
+    sentry_dsn: str = Field(default="", description="Sentry project DSN. Empty (default) turns error reporting off.")
+    sentry_environment: str = Field(default="development", description="Shown on every event, e.g. 'production'.")
+    sentry_release: str = Field(default="", description="Release label, e.g. the git commit the image was built from.")
+    sentry_traces_sample_rate: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="Share of requests traced for performance. 0 spends the free quota on errors."
+    )
     batch_size_cap: int = Field(default=50_000)
     batch_interactive_threshold: int = Field(
         default=100,

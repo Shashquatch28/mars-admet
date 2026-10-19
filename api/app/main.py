@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
+from app.observability import init_sentry
 from app.routers import (
     account,
     auth,
@@ -25,6 +26,9 @@ from app.services import prediction_service
 from app.spa import mount_spa
 
 logger = logging.getLogger("mars.startup")
+
+# Before the app exists, so Sentry's FastAPI/Starlette integrations can patch it.
+init_sentry(get_settings())
 
 
 def _warn_on_insecure_config() -> None:
