@@ -1,0 +1,580 @@
+{
+  "prep_id": "20260918T090433Z",
+  "min_per_class": 70,
+  "subgroups": {
+    "absorption_distribution__cls": {
+      "pool_size": 2481,
+      "val_size": {
+        "0": 310,
+        "1": 310,
+        "2": 310,
+        "3": 310,
+        "4": 310
+      },
+      "labels_lost_to_calibration_holdout": {
+        "hia_absorption": 65,
+        "pgp_inhibition": 105,
+        "bbb_permeability": 163
+      },
+      "tasks": {
+        "hia_absorption": {
+          "type": "classification",
+          "per_seed": {
+            "0": {
+              "n": 46,
+              "pos": 41,
+              "neg": 5,
+              "pairs": 205,
+              "smallest_auroc_step": 0.004878048780487805
+            },
+            "1": {
+              "n": 46,
+              "pos": 41,
+              "neg": 5,
+              "pairs": 205,
+              "smallest_auroc_step": 0.004878048780487805
+            },
+            "2": {
+              "n": 46,
+              "pos": 41,
+              "neg": 5,
+              "pairs": 205,
+              "smallest_auroc_step": 0.004878048780487805
+            },
+            "3": {
+              "n": 46,
+              "pos": 41,
+              "neg": 5,
+              "pairs": 205,
+              "smallest_auroc_step": 0.004878048780487805
+            },
+            "4": {
+              "n": 46,
+              "pos": 41,
+              "neg": 5,
+              "pairs": 205,
+              "smallest_auroc_step": 0.004878048780487805
+            }
+          },
+          "train_labelled_seed0": 329
+        },
+        "pgp_inhibition": {
+          "type": "classification",
+          "per_seed": {
+            "0": {
+              "n": 94,
+              "pos": 67,
+              "neg": 27,
+              "pairs": 1809,
+              "smallest_auroc_step": 0.000552791597567717
+            },
+            "1": {
+              "n": 94,
+              "pos": 67,
+              "neg": 27,
+              "pairs": 1809,
+              "smallest_auroc_step": 0.000552791597567717
+            },
+            "2": {
+              "n": 94,
+              "pos": 67,
+              "neg": 27,
+              "pairs": 1809,
+              "smallest_auroc_step": 0.000552791597567717
+            },
+            "3": {
+              "n": 93,
+              "pos": 67,
+              "neg": 26,
+              "pairs": 1742,
+              "smallest_auroc_step": 0.000574052812858783
+            },
+            "4": {
+              "n": 93,
+              "pos": 67,
+              "neg": 26,
+              "pairs": 1742,
+              "smallest_auroc_step": 0.000574052812858783
+            }
+          },
+          "train_labelled_seed0": 748
+        },
+        "bbb_permeability": {
+          "type": "classification",
+          "per_seed": {
+            "0": {
+              "n": 173,
+              "pos": 147,
+              "neg": 26,
+              "pairs": 3822,
+              "smallest_auroc_step": 0.00026164311878597594
+            },
+            "1": {
+              "n": 173,
+              "pos": 147,
+              "neg": 26,
+              "pairs": 3822,
+              "smallest_auroc_step": 0.00026164311878597594
+            },
+            "2": {
+              "n": 173,
+              "pos": 147,
+              "neg": 26,
+              "pairs": 3822,
+              "smallest_auroc_step": 0.00026164311878597594
+            },
+            "3": {
+              "n": 174,
+              "pos": 147,
+              "neg": 27,
+              "pairs": 3969,
+              "smallest_auroc_step": 0.0002519526329050139
+            },
+            "4": {
+              "n": 174,
+              "pos": 148,
+              "neg": 26,
+              "pairs": 3848,
+              "smallest_auroc_step": 0.0002598752598752599
+            }
+          },
+          "train_labelled_seed0": 1206
+        }
+      },
+      "flags": [
+        "hia_absorption seed0: pos=41 neg=5 (< 70)",
+        "hia_absorption seed1: pos=41 neg=5 (< 70)",
+        "hia_absorption seed2: pos=41 neg=5 (< 70)",
+        "hia_absorption seed3: pos=41 neg=5 (< 70)",
+        "hia_absorption seed4: pos=41 neg=5 (< 70)",
+        "pgp_inhibition seed0: pos=67 neg=27 (< 70)",
+        "pgp_inhibition seed1: pos=67 neg=27 (< 70)",
+        "pgp_inhibition seed2: pos=67 neg=27 (< 70)",
+        "pgp_inhibition seed3: pos=67 neg=26 (< 70)",
+        "pgp_inhibition seed4: pos=67 neg=26 (< 70)",
+        "bbb_permeability seed0: pos=147 neg=26 (< 70)",
+        "bbb_permeability seed1: pos=147 neg=26 (< 70)",
+        "bbb_permeability seed2: pos=147 neg=26 (< 70)",
+        "bbb_permeability seed3: pos=147 neg=27 (< 70)",
+        "bbb_permeability seed4: pos=148 neg=26 (< 70)"
+      ],
+      "val_jaccard": {
+        "min": 0.9935691318327974,
+        "max": 0.9935691318327974,
+        "pairs": {
+          "0-1": 0.9935691318327974,
+          "0-2": 0.9935691318327974,
+          "0-3": 0.9935691318327974,
+          "0-4": 0.9935691318327974,
+          "1-2": 0.9935691318327974,
+          "1-3": 0.9935691318327974,
+          "1-4": 0.9935691318327974,
+          "2-3": 0.9935691318327974,
+          "2-4": 0.9935691318327974,
+          "3-4": 0.9935691318327974
+        },
+        "in_all_five": 309
+      }
+    },
+    "absorption_distribution__reg": {
+      "pool_size": 10406,
+      "val_size": {
+        "0": 1301,
+        "1": 1301,
+        "2": 1301,
+        "3": 1301,
+        "4": 1301
+      },
+      "labels_lost_to_calibration_holdout": {
+        "solubility_logs": 789,
+        "lipophilicity_logp": 316,
+        "caco2_permeability": 77,
+        "ppb_binding": 114
+      },
+      "tasks": {
+        "solubility_logs": {
+          "type": "regression",
+          "per_seed": {
+            "0": {
+              "n": 761
+            },
+            "1": {
+              "n": 748
+            },
+            "2": {
+              "n": 741
+            },
+            "3": {
+              "n": 741
+            },
+            "4": {
+              "n": 755
+            }
+          },
+          "train_labelled_seed0": 5937
+        },
+        "lipophilicity_logp": {
+          "type": "regression",
+          "per_seed": {
+            "0": {
+              "n": 433
+            },
+            "1": {
+              "n": 444
+            },
+            "2": {
+              "n": 448
+            },
+            "3": {
+              "n": 451
+            },
+            "4": {
+              "n": 450
+            }
+          },
+          "train_labelled_seed0": 2361
+        },
+        "caco2_permeability": {
+          "type": "regression",
+          "per_seed": {
+            "0": {
+              "n": 130
+            },
+            "1": {
+              "n": 132
+            },
+            "2": {
+              "n": 138
+            },
+            "3": {
+              "n": 132
+            },
+            "4": {
+              "n": 125
+            }
+          },
+          "train_labelled_seed0": 478
+        },
+        "ppb_binding": {
+          "type": "regression",
+          "per_seed": {
+            "0": {
+              "n": 42
+            },
+            "1": {
+              "n": 45
+            },
+            "2": {
+              "n": 50
+            },
+            "3": {
+              "n": 45
+            },
+            "4": {
+              "n": 45
+            }
+          },
+          "train_labelled_seed0": 947
+        }
+      },
+      "flags": [],
+      "val_jaccard": {
+        "min": 0.9146431199411332,
+        "max": 0.9549211119459053,
+        "pairs": {
+          "0-1": 0.9403430275913497,
+          "0-2": 0.9231337767923133,
+          "0-3": 0.9317000742390498,
+          "0-4": 0.9317000742390498,
+          "1-2": 0.9403430275913497,
+          "1-3": 0.9549211119459053,
+          "1-4": 0.9146431199411332,
+          "2-3": 0.9403430275913497,
+          "2-4": 0.9146431199411332,
+          "3-4": 0.9317000742390498
+        },
+        "in_all_five": 1183
+      }
+    },
+    "metabolism__cls": {
+      "pool_size": 8700,
+      "val_size": {
+        "0": 1088,
+        "1": 1088,
+        "2": 1088,
+        "3": 1088,
+        "4": 1088
+      },
+      "labels_lost_to_calibration_holdout": {
+        "cyp3a4_inhibition": 715,
+        "cyp2d6_inhibition": 836,
+        "cyp2c9_inhibition": 803
+      },
+      "tasks": {
+        "cyp3a4_inhibition": {
+          "type": "classification",
+          "per_seed": {
+            "0": {
+              "n": 842,
+              "pos": 400,
+              "neg": 442,
+              "pairs": 176800,
+              "smallest_auroc_step": 5.656108597285068e-06
+            },
+            "1": {
+              "n": 837,
+              "pos": 404,
+              "neg": 433,
+              "pairs": 174932,
+              "smallest_auroc_step": 5.716506985571536e-06
+            },
+            "2": {
+              "n": 836,
+              "pos": 402,
+              "neg": 434,
+              "pairs": 174468,
+              "smallest_auroc_step": 5.731710113029324e-06
+            },
+            "3": {
+              "n": 836,
+              "pos": 405,
+              "neg": 431,
+              "pairs": 174555,
+              "smallest_auroc_step": 5.728853369997995e-06
+            },
+            "4": {
+              "n": 839,
+              "pos": 402,
+              "neg": 437,
+              "pairs": 175674,
+              "smallest_auroc_step": 5.692361988683584e-06
+            }
+          },
+          "train_labelled_seed0": 5405
+        },
+        "cyp2d6_inhibition": {
+          "type": "classification",
+          "per_seed": {
+            "0": {
+              "n": 855,
+              "pos": 176,
+              "neg": 679,
+              "pairs": 119504,
+              "smallest_auroc_step": 8.367920739054759e-06
+            },
+            "1": {
+              "n": 843,
+              "pos": 180,
+              "neg": 663,
+              "pairs": 119340,
+              "smallest_auroc_step": 8.379420144126027e-06
+            },
+            "2": {
+              "n": 852,
+              "pos": 180,
+              "neg": 672,
+              "pairs": 120960,
+              "smallest_auroc_step": 8.267195767195768e-06
+            },
+            "3": {
+              "n": 848,
+              "pos": 177,
+              "neg": 671,
+              "pairs": 118767,
+              "smallest_auroc_step": 8.419847263970632e-06
+            },
+            "4": {
+              "n": 838,
+              "pos": 182,
+              "neg": 656,
+              "pairs": 119392,
+              "smallest_auroc_step": 8.375770570892522e-06
+            }
+          },
+          "train_labelled_seed0": 5973
+        },
+        "cyp2c9_inhibition": {
+          "type": "classification",
+          "per_seed": {
+            "0": {
+              "n": 837,
+              "pos": 196,
+              "neg": 641,
+              "pairs": 125636,
+              "smallest_auroc_step": 7.95950205355153e-06
+            },
+            "1": {
+              "n": 844,
+              "pos": 191,
+              "neg": 653,
+              "pairs": 124723,
+              "smallest_auroc_step": 8.017767372497454e-06
+            },
+            "2": {
+              "n": 839,
+              "pos": 188,
+              "neg": 651,
+              "pairs": 122388,
+              "smallest_auroc_step": 8.170735693041802e-06
+            },
+            "3": {
+              "n": 837,
+              "pos": 200,
+              "neg": 637,
+              "pairs": 127400,
+              "smallest_auroc_step": 7.849293563579277e-06
+            },
+            "4": {
+              "n": 836,
+              "pos": 187,
+              "neg": 649,
+              "pairs": 121363,
+              "smallest_auroc_step": 8.239743579179816e-06
+            }
+          },
+          "train_labelled_seed0": 5238
+        }
+      },
+      "flags": [],
+      "val_jaccard": {
+        "min": 0.8987783595113438,
+        "max": 0.9393939393939394,
+        "pairs": {
+          "0-1": 0.9290780141843972,
+          "0-2": 0.9290780141843972,
+          "0-3": 0.9393939393939394,
+          "0-4": 0.8987783595113438,
+          "1-2": 0.9290780141843972,
+          "1-3": 0.9290780141843972,
+          "1-4": 0.9087719298245615,
+          "2-3": 0.9393939393939394,
+          "2-4": 0.9393939393939394,
+          "3-4": 0.9087719298245615
+        },
+        "in_all_five": 1000
+      }
+    },
+    "toxicity__cls": {
+      "pool_size": 14614,
+      "val_size": {
+        "0": 1827,
+        "1": 1827,
+        "2": 1827,
+        "3": 1827,
+        "4": 1827
+      },
+      "labels_lost_to_calibration_holdout": {
+        "herg_cardiotoxicity": 1056,
+        "ames_mutagenicity": 576
+      },
+      "tasks": {
+        "herg_cardiotoxicity": {
+          "type": "classification",
+          "per_seed": {
+            "0": {
+              "n": 19,
+              "pos": 2,
+              "neg": 17,
+              "pairs": 34,
+              "smallest_auroc_step": 0.029411764705882353
+            },
+            "1": {
+              "n": 18,
+              "pos": 2,
+              "neg": 16,
+              "pairs": 32,
+              "smallest_auroc_step": 0.03125
+            },
+            "2": {
+              "n": 18,
+              "pos": 2,
+              "neg": 16,
+              "pairs": 32,
+              "smallest_auroc_step": 0.03125
+            },
+            "3": {
+              "n": 18,
+              "pos": 2,
+              "neg": 16,
+              "pairs": 32,
+              "smallest_auroc_step": 0.03125
+            },
+            "4": {
+              "n": 24,
+              "pos": 6,
+              "neg": 18,
+              "pairs": 108,
+              "smallest_auroc_step": 0.009259259259259259
+            }
+          },
+          "train_labelled_seed0": 9418
+        },
+        "ames_mutagenicity": {
+          "type": "classification",
+          "per_seed": {
+            "0": {
+              "n": 1809,
+              "pos": 953,
+              "neg": 856,
+              "pairs": 815768,
+              "smallest_auroc_step": 1.2258387188514382e-06
+            },
+            "1": {
+              "n": 1810,
+              "pos": 958,
+              "neg": 852,
+              "pairs": 816216,
+              "smallest_auroc_step": 1.2251658874611622e-06
+            },
+            "2": {
+              "n": 1810,
+              "pos": 960,
+              "neg": 850,
+              "pairs": 816000,
+              "smallest_auroc_step": 1.2254901960784314e-06
+            },
+            "3": {
+              "n": 1810,
+              "pos": 956,
+              "neg": 854,
+              "pairs": 816424,
+              "smallest_auroc_step": 1.224853752461956e-06
+            },
+            "4": {
+              "n": 1804,
+              "pos": 953,
+              "neg": 851,
+              "pairs": 811003,
+              "smallest_auroc_step": 1.233041061500389e-06
+            }
+          },
+          "train_labelled_seed0": 3403
+        }
+      },
+      "flags": [
+        "herg_cardiotoxicity seed0: pos=2 neg=17 (< 70)",
+        "herg_cardiotoxicity seed1: pos=2 neg=16 (< 70)",
+        "herg_cardiotoxicity seed2: pos=2 neg=16 (< 70)",
+        "herg_cardiotoxicity seed3: pos=2 neg=16 (< 70)",
+        "herg_cardiotoxicity seed4: pos=6 neg=18 (< 70)"
+      ],
+      "val_jaccard": {
+        "min": 0.9730021598272138,
+        "max": 0.9901960784313726,
+        "pairs": {
+          "0-1": 0.9901960784313726,
+          "0-2": 0.9730021598272138,
+          "0-3": 0.9730021598272138,
+          "0-4": 0.9730021598272138,
+          "1-2": 0.9730021598272138,
+          "1-3": 0.9826370048833424,
+          "1-4": 0.9730021598272138,
+          "2-3": 0.9730021598272138,
+          "2-4": 0.9901960784313726,
+          "3-4": 0.9730021598272138
+        },
+        "in_all_five": 1802
+      }
+    }
+  }
+}

@@ -1,0 +1,249 @@
+{
+  "prep_id": "20260918T090433Z",
+  "margin": 0.02,
+  "n_boot": 4000,
+  "boot_rng_seed": 20261019,
+  "n_calibration_molecules": 1626,
+  "provenance": {
+    "stock_seed0": {
+      "holdout_calibration": true,
+      "prep_id": "20260918T090433Z",
+      "n_train": 12787,
+      "n_val": 1827,
+      "calibration_in_train": 0,
+      "calibration_in_val": 0,
+      "train_equals_recomputed_fold": true,
+      "val_equals_recomputed_fold": true
+    },
+    "stock_seed1": {
+      "holdout_calibration": true,
+      "prep_id": "20260918T090433Z",
+      "n_train": 12787,
+      "n_val": 1827,
+      "calibration_in_train": 0,
+      "calibration_in_val": 0,
+      "train_equals_recomputed_fold": true,
+      "val_equals_recomputed_fold": true
+    },
+    "stock_seed2": {
+      "holdout_calibration": true,
+      "prep_id": "20260918T090433Z",
+      "n_train": 12787,
+      "n_val": 1827,
+      "calibration_in_train": 0,
+      "calibration_in_val": 0,
+      "train_equals_recomputed_fold": true,
+      "val_equals_recomputed_fold": true
+    },
+    "stock_seed3": {
+      "holdout_calibration": true,
+      "prep_id": "20260918T090433Z",
+      "n_train": 12787,
+      "n_val": 1827,
+      "calibration_in_train": 0,
+      "calibration_in_val": 0,
+      "train_equals_recomputed_fold": true,
+      "val_equals_recomputed_fold": true
+    },
+    "stock_seed4": {
+      "holdout_calibration": true,
+      "prep_id": "20260918T090433Z",
+      "n_train": 12787,
+      "n_val": 1827,
+      "calibration_in_train": 0,
+      "calibration_in_val": 0,
+      "train_equals_recomputed_fold": true,
+      "val_equals_recomputed_fold": true
+    },
+    "mixed_seed0": {
+      "holdout_calibration": true,
+      "prep_id": "20260918T090433Z",
+      "n_train": 12787,
+      "n_val": 1827,
+      "calibration_in_train": 0,
+      "calibration_in_val": 0,
+      "train_equals_recomputed_fold": true,
+      "val_equals_recomputed_fold": true
+    },
+    "mixed_seed1": {
+      "holdout_calibration": true,
+      "prep_id": "20260918T090433Z",
+      "n_train": 12787,
+      "n_val": 1827,
+      "calibration_in_train": 0,
+      "calibration_in_val": 0,
+      "train_equals_recomputed_fold": true,
+      "val_equals_recomputed_fold": true
+    },
+    "mixed_seed2": {
+      "holdout_calibration": true,
+      "prep_id": "20260918T090433Z",
+      "n_train": 12787,
+      "n_val": 1827,
+      "calibration_in_train": 0,
+      "calibration_in_val": 0,
+      "train_equals_recomputed_fold": true,
+      "val_equals_recomputed_fold": true
+    },
+    "mixed_seed3": {
+      "holdout_calibration": true,
+      "prep_id": "20260918T090433Z",
+      "n_train": 12787,
+      "n_val": 1827,
+      "calibration_in_train": 0,
+      "calibration_in_val": 0,
+      "train_equals_recomputed_fold": true,
+      "val_equals_recomputed_fold": true
+    },
+    "mixed_seed4": {
+      "holdout_calibration": true,
+      "prep_id": "20260918T090433Z",
+      "n_train": 12787,
+      "n_val": 1827,
+      "calibration_in_train": 0,
+      "calibration_in_val": 0,
+      "train_equals_recomputed_fold": true,
+      "val_equals_recomputed_fold": true
+    }
+  },
+  "endpoints": {
+    "herg_cardiotoxicity": {
+      "n_scored": 1050,
+      "n_pos": 616,
+      "n_neg": 434,
+      "per_seed": {
+        "0": {
+          "auroc_stock": 0.8608983182715901,
+          "auroc_mixed": 0.8540008378718056,
+          "delta": -0.00689748039978455,
+          "ci90": [
+            -0.014588617098336809,
+            0.00042026349495776524
+          ],
+          "inside_margin": true
+        },
+        "1": {
+          "auroc_stock": 0.8532265545514393,
+          "auroc_mixed": 0.8422556705966846,
+          "delta": -0.010970883954754651,
+          "ci90": [
+            -0.02398721721256758,
+            0.0018223835398063358
+          ],
+          "inside_margin": false
+        },
+        "2": {
+          "auroc_stock": 0.8545432102459751,
+          "auroc_mixed": 0.849040936022503,
+          "delta": -0.005502274223472159,
+          "ci90": [
+            -0.016689863941885708,
+            0.005603640557683942
+          ],
+          "inside_margin": true
+        },
+        "3": {
+          "auroc_stock": 0.85792836196062,
+          "auroc_mixed": 0.8144300975522173,
+          "delta": -0.043498264408402654,
+          "ci90": [
+            -0.05900625220727731,
+            -0.027911316200848555
+          ],
+          "inside_margin": false
+        },
+        "4": {
+          "auroc_stock": 0.8559197139266264,
+          "auroc_mixed": 0.8256665569453587,
+          "delta": -0.030253156981267626,
+          "ci90": [
+            -0.03981860716792654,
+            -0.020526706139977438
+          ],
+          "inside_margin": false
+        }
+      },
+      "pooled": {
+        "mean_auroc_stock": 0.8565032317912502,
+        "mean_auroc_mixed": 0.8370788197977138,
+        "delta": -0.01942441199353633,
+        "ci90": [
+          -0.029170165476848645,
+          -0.009819423219232975
+        ],
+        "inside_margin": false
+      },
+      "stock_seed_sd": 0.002693197818931519,
+      "mixed_seed_sd": 0.014828695608413775
+    },
+    "ames_mutagenicity": {
+      "n_scored": 576,
+      "n_pos": 392,
+      "n_neg": 184,
+      "per_seed": {
+        "0": {
+          "auroc_stock": 0.8347937000887311,
+          "auroc_mixed": 0.8217197204968943,
+          "delta": -0.01307397959183676,
+          "ci90": [
+            -0.023553400734748185,
+            -0.002712724017555416
+          ],
+          "inside_margin": false
+        },
+        "1": {
+          "auroc_stock": 0.8191409716060336,
+          "auroc_mixed": 0.8286379769299024,
+          "delta": 0.009497005323868768,
+          "ci90": [
+            -0.004774430888777964,
+            0.02413391443757412
+          ],
+          "inside_margin": false
+        },
+        "2": {
+          "auroc_stock": 0.8097410159716061,
+          "auroc_mixed": 0.8264890195208519,
+          "delta": 0.01674800354924577,
+          "ci90": [
+            0.005975988384124942,
+            0.02766512632032443
+          ],
+          "inside_margin": false
+        },
+        "3": {
+          "auroc_stock": 0.8107531055900622,
+          "auroc_mixed": 0.8366653726708075,
+          "delta": 0.025912267080745344,
+          "ci90": [
+            0.008811710022018183,
+            0.0437049541780408
+          ],
+          "inside_margin": false
+        },
+        "4": {
+          "auroc_stock": 0.834516415261757,
+          "auroc_mixed": 0.8004935669920142,
+          "delta": -0.03402284826974278,
+          "ci90": [
+            -0.04613374307238484,
+            -0.02178702098891189
+          ],
+          "inside_margin": false
+        }
+      },
+      "pooled": {
+        "mean_auroc_stock": 0.821789041703638,
+        "mean_auroc_mixed": 0.8228011313220941,
+        "delta": 0.001012089618456069,
+        "ci90": [
+          -0.007572252924899811,
+          0.01004231251171394
+        ],
+        "inside_margin": true
+      },
+      "stock_seed_sd": 0.011000602370646219,
+      "mixed_seed_sd": 0.0121546974450606
+    }
+  }
+}

@@ -13,6 +13,75 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-19 — DRAFT, NOT ADOPTED: replacement for the frozen G3 equivalence rule (Tier-1 parity gate)
+
+**Status: DRAFT — NOT ADOPTED.** Written by an AI session at the maintainer's request as material for a decision. Nothing
+below is in force. **The frozen G3 rule (recorded below as superseded-if-adopted) remains the rule of record, its verdict
+remains FAIL, and `gates.py` is unchanged.** No gate was re-run. The maintainer chooses an option from the table; this entry
+is then edited to say which, and only then changes status.
+
+**Why the frozen rule is proposed for replacement.** It was applied to *validation-fold* AUROC of checkpoints chosen by two
+different selection rules. Evidence (all CPU/inference, `documentation/status/kermt_tier1_gates/diagnostics/`):
+(1) the hERG validation fold has 18-24 labelled molecules with 2-6 positives (32-108 pairs; smallest AUROC step 1/32-1/34,
+above the 0.02 paired tolerance) while AMES has ~1,810 (`fold_audit.json`); (2) the five seeds' validation sets overlap at
+Jaccard 0.973-0.990 (`scaffold_split` shuffles only among equal-size scaffold groups), so seeds are not independent
+validation draws; (3) hERG carries 97-100 % of the epoch-to-epoch variance of the task-mean AUROC that stock selects on
+(`selection_diagnostics.json`, mixed trajectories; the stock log has no per-task scores); (4) on the selection-free
+calibration holdouts the validation-fold ordering for hERG reverses: validation (stock-rule re-scoring) had mixed above stock
+(0.921 vs 0.888) while the holdout has mixed below stock by 0.019 (`selection_free_parity.json`).
+
+**Original rule (frozen 2026-10-14, to be recorded as SUPERSEDED if a replacement is adopted).** |mean_stock − mean_mixed| ≤
+0.5·max(std) (population std, ddof=0) AND paired per-seed |ΔAUROC| ≤ 0.02 on ≥ 4 of 5 seeds, per classification endpoint of
+`toxicity__cls`, on validation AUROC at each arm's own selected epoch. Result 2026-10-15: FAIL on both endpoints
+(hERG mean diff 0.0429 vs band 0.0406, paired 0/5; AMES 0.0046 vs 0.0018, paired 5/5). Post-hoc under stock's epoch rule
+(diagnostic only): AMES passes, hERG fails (0.0327 vs 0.0305, paired 1/5).
+
+### Proposed replacement (pending the maintainer's choice among the options)
+
+- **Estimand.** The *deployed checkpoint* of each arm: stock = the epoch KERMT saves (highest nan-mean validation AUROC,
+  verified in `task/train.py` at e402473: `select_by_loss` is False in every Tier-0 run); mixed = the trainer's own epoch
+  (lowest summed validation loss on scaled targets) unless option 1 is chosen. The gate therefore compares trainer **plus**
+  selection treatment, and says so; it cannot attribute a gap to either.
+- **Scoring fold.** The per-endpoint calibration holdout: molecules `train_pool(holdout_calibration=True)` removes, in no
+  train or validation set of either arm (verified from each run's `train.csv`/`val.csv`: 0 of 1,626 in any of the 20 files;
+  folds equal the recomputed ones). hERG n = 1,050 (616 pos / 434 neg), AMES n = 576 (392 / 184). AUROC computed host-side
+  with `eval.metrics.compute_metrics` on raw probabilities; invariant to temperature scaling, no calibrator is touched.
+- **Margin δ.** Start at 0.02 (the frozen per-seed tolerance). Check against spread: no same-seed stock-vs-stock replicate
+  exists. Closest available: stock seed-to-seed SD on these holdouts, hERG 0.0027, AMES 0.0110, so the SD of a difference of
+  two single stock runs is ≈ 0.004 (hERG) and ≈ 0.016 (AMES); at AMES a single-seed pair differs by more than 0.02 about one
+  time in five, and the mean of 5 seeds differs by more than 0.02 only ~3 SD out. δ = 0.02 is therefore defensible for a
+  **pooled** comparison and not for a per-seed one. A stock-vs-stock replicate (re-run of a stock seed with a different init
+  seed; needs GPU time) would be the proper derivation and is not part of this draft.
+- **Interval method.** Molecule-level paired bootstrap (same resample for both arms and all seeds), percentile 90 % interval
+  (two one-sided tests at 5 %), ≥ 4,000 resamples, fixed RNG. It conditions on the 10 trained models, so it does **not**
+  include training-seed variance; that is why the unit is the pooled 5-seed mean difference and per-seed deltas are reported.
+- **Pass rule.** Interval of the pooled (mean over 5 seeds) paired ΔAUROC (mixed − stock) lies inside [−δ, +δ].
+- **Seeds.** Paired by seed (identical train/val fold); per-seed deltas and intervals are reported, not gated (per-seed AMES
+  intervals are ≈ ±0.012 wide, so a per-seed gate at 0.02 fails for noise alone: 0 of 5 inside although the pooled delta is 0.001).
+- **hERG status.** Maintainer's choice (options 3/4 below). Observed, for reference only (not a gate verdict): hERG pooled
+  Δ −0.0194, 90 % CI [−0.0292, −0.0098] (lower bound outside −0.02); AMES pooled Δ +0.0010, CI [−0.0076, +0.0100] (inside).
+- **Primary endpoint.** AMES (n ≈ 1,810 validation labels, 576 holdout labels, both classes well populated).
+- **Single-task AMES half of G3.** Not run; neither a 5-seed stock single-task AMES nor a mixed single-task AMES run exists.
+
+### Options (maintainer chooses; the numbers behind each are in the session note)
+
+| # | Option | Gains | Costs / limits |
+|---|---|---|---|
+| 1 | Mixed trainer copies stock's mean-AUROC selection (a parity-only mode, not the shipped rule) | Removes the selection difference; the gate then tests the trainer | Still scored on a 18-24-label fold unless combined with 3; the shipped rule is then untested; extra GPU runs |
+| 2 | Keep the frozen rule on matched selection | Rule unchanged | hERG cannot pass: with 2-6 positives even identical trainers would rarely satisfy ≥ 4 of 5 within 0.02 (illustrative simulation, not a finding) |
+| 3 | Equivalence interval on the large selection-free calibration holdouts, deployed checkpoints | Best supported statistically; inference only; already computed here | Bundles trainer and selection; conditional on the 5 trained models; hERG interval currently outside ±0.02 |
+| 4 | AMES gates; hERG reported with its interval, non-gating | Gate rests on the endpoint that can discriminate | hERG regression could go unnoticed; pair with 3 |
+| 5 | Trajectory parity: per-epoch loss and AMES AUROC curves vs a stock-vs-stock replicate | Selection-free, uses the whole run | Needs the replicate (GPU); no pass threshold defined yet |
+| 6 | Repair the validation split (per-task stratified, group-aware, resampled by seed) | Fixes the cause; needed before reporting any toxicity result | Changes Tier-0 comparability: stock runs must be redone on the new split |
+
+AI-session recommendation (not a decision): 3 + 4 now (no GPU), 6 before any toxicity number is reported, 1 and 5 only if the
+hERG gap in 3 is to be attributed to the trainer vs selection.
+
+**Open follow-ups.** hERG gap cause (trainer vs early-epoch selection) is not established; see the G2-extension proposal in
+`documentation/status/kermt_tier1_gates_session_2026-10-15.md`.
+
+---
+
 ## 2026-10-14 — AI sessions may perform git write operations; no AI attribution is left behind
 
 **Status:** decided 2026-10-14 by the maintainer (chat). Process rule; changes no code or data.

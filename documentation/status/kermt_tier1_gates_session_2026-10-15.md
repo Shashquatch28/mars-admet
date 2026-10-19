@@ -150,3 +150,90 @@ ames_mutagenicity:   |mean diff| 0.0012 vs band 0.0029 (ok);   paired |dAUROC| <
 
 `kermt_tier1_gates/`: `g4_selfcheck.json`, `g1_result.txt`, `g2_result.txt`, `g3/g3_verdicts.json`, `g3/g3_state.json`, `g3/seed{0..4}/` (`config.json`, `run.json`, `provenance.json`,
 `metrics.jsonl`, `trainer_provenance.json`, `mixed_epochs.jsonl`, `model_metadata.json`, `wandb_artifact.json`), `scripts/`. Model weights are in W&B, not git.
+
+## Fold audit, selection-free parity and selection diagnostics (2026-10-19, CPU + inference only)
+
+Scope: no gate re-run, `gates.py` and the frozen G3 rule untouched, nothing trained, test set and `test_result.csv` not read.
+Scripts `ml/eval/{fold_audit,selection_free_parity,selection_diagnostics}.py`; results under
+`documentation/status/kermt_tier1_gates/diagnostics/`. A replacement-rule **draft** (not adopted) is the top entry of
+`documentation/AIMS/decisions.md`.
+
+### Result: scoring the deployed checkpoints on the calibration holdouts
+
+Paired ΔAUROC (mixed − stock), molecule-level paired bootstrap, 90 % interval, 4,000 resamples, fixed RNG, five seeds, margin ±0.02.
+
+| endpoint (n; pos/neg) | stock | mixed | pooled Δ | 90 % interval | inside ±0.02 |
+|---|---|---|---|---|---|
+| AMES (576; 392/184) | 0.8218 | 0.8228 | +0.0010 | [−0.0076, +0.0100] | yes |
+| hERG (1,050; 616/434) | 0.8565 | 0.8371 | −0.0194 | [−0.0292, −0.0098] | **no** |
+
+Per seed Δ (interval): AMES −0.013, +0.010, +0.017, +0.026, −0.034 (none of the five intervals is inside ±0.02; signs are mixed, so
+this is seed noise, not a shift). hERG −0.007, −0.011, −0.006, −0.044, −0.030 (seeds 3 and 4 are outside; every seed is negative).
+
+- **AMES: equivalent within ±0.02 pooled (verified).** Per-seed it cannot be shown: 576 molecules give per-seed intervals about ±0.012 wide.
+- **hERG: a real gap of about −0.02 on the deployed checkpoints (verified); its cause is not established.** The gap is concentrated in
+  seeds 3 and 4, whose mixed checkpoints are the epoch-2 ones (stock saved epochs 21 and 7). Ordered by the mixed epoch (2, 2, 3, 5, 6) the
+  hERG deltas are −0.044, −0.030, −0.011, −0.006, −0.007: nearly monotone, which points at early-epoch selection (inferred; n = 5, no
+  weights at other epochs were saved, so it cannot be tested without training). Mixed hERG seed SD on the holdout is 0.0148 vs 0.0027 for stock.
+- Not a finding about the four components. The interval conditions on these 10 trained models and excludes training-seed variance.
+- Provenance verified: `holdout_calibration=True` in all 10 configs; 0 of the 1,626 calibration molecules in any of the 20 `train.csv`/`val.csv`
+  files; train/val equal the recomputed `five_seed_train_val_folds` folds in both arms. The mixed trainer's `test_placeholder.csv` is a copy of `val.csv`.
+- Host-side AUROC equals a rank-based reimplementation to 1e-9. The mixed checkpoints were scored by the mixed code path, stock by the
+  stock path (G1 showed the two paths agree to 1e-5 on 64 molecules).
+- Single-task AMES half of G3: **not run**; no 5-seed stock single-task AMES and no mixed single-task AMES run exist (only a stock smoke run).
+
+### Step 0: facts re-checked on the runs' prep `20260918T090433Z` (all reproduce)
+
+Pool 14,614; validation 1,827 for every seed; hERG validation (molecules/positives/pairs) 19/2/34, 18/2/32, 18/2/32, 18/2/32, 24/6/108;
+AMES 1809/953, 1810/958, 1810/960, 1810/956, 1804/953; Jaccard 0.973-0.990; 1,802 molecules in all five folds; hERG labelled in pool 9,437 (19 in
+validation, 0.2 %), AMES 5,212 (1,809, 34.7 %); smallest AUROC step 1/34 or 1/32 on seeds 0-3. Stock selection (verified in `task/train.py`
+at e402473): keeps the epoch with the highest `np.nanmean` of per-task validation AUROC unless `select_by_loss`; the Tier-0 args show
+`select_by_loss=False`; the saved epoch equals the first argmax of the logged mean AUROC on all five seeds. The mixed trainer selects on the summed per-task validation loss.
+
+### Step 1: fold audit, all four multitask subgroups (`fold_audit.json`)
+
+Flagged (a classification task with < 70 positives or < 70 negatives in the validation fold, every seed):
+`toxicity__cls` hERG (2-6 positives); `absorption_distribution__cls` HIA (41 pos / 5 neg), P-gp (67 / 26-27), BBB (147 / 26-27).
+`metabolism__cls` (CYP3A4/2D6/2C9, ≥ 176 positives and ≥ 400 negatives) and AMES are not flagged. Regression validation n: 125-761
+(solubility), 433-451 (lipophilicity), 125-138 (Caco-2), 42-50 (PPB). Cross-seed Jaccard: toxicity 0.973-0.990, absorption cls 0.994,
+absorption reg 0.915-0.955, metabolism 0.899-0.939. The same fold design therefore also governs the Tier-0 absorption results; a
+caveat on any validation-selected number for those tasks (not re-analysed here).
+
+### Step 3: selection diagnostics (`selection_diagnostics.json`)
+
+- Picks (epochs, seeds 0-4): stock rule on stock runs 13, 21, 20, 21, 7 (range 7-21, SD 5.6); mixed own rule 6, 3, 5, 2, 2 (range 2-6); stock rule applied to
+  the mixed trajectories 3, 14, 24, 18, 11 (range 3-24); AMES-only argmax on the mixed trajectories 20, 24, 24, 11, 4.
+- hERG carries 97-100 % of the epoch-to-epoch variance of the task-mean AUROC (covariance share, epochs ≥ 5: 0.995, 0.979, 0.995, 1.004, 0.970; first
+  differences 0.97-1.01). Measured on the mixed trajectories. The stock log has only the task-mean AUROC (`show_individual_scores=False`), so for stock
+  this is inferred: its task-mean SD over epochs ≥ 5 (0.029-0.045) is as large as the mixed one (0.022-0.038), where hERG's SD is 0.04-0.08 against 0.002-0.004 for AMES.
+- Mean AUROC range over the 30 epochs is 0.69-0.90 for stock; AMES alone moves 0.83-0.865. Mixed AMES at its own epoch is 0.844-0.854, at epoch 29 0.855-0.862.
+- Stock's `loss_val` (0.36-0.37 at epoch 0) and the mixed `val_selection_loss` (1.92 at epoch 0) are different quantities (training-mode two-view sum vs mean of
+  per-task fused loss, inferred from the values); the two loss curves are not comparable as they stand. Stock's validation loss is lowest at epochs 27, 26, 28, 22, 26,
+  the mixed one at 6, 3, 5, 2, 2: the rules disagree because the mixed validation loss bottoms out early (inferred: AMES AUROC is still rising at epoch 29).
+
+### Side finding: CLI `--dist_coff`, `--dropout`, `--bond_drop_rate` do not reach the loss
+
+`load_checkpoint(..., current_args=args)` overwrites `args` with the pretrain checkpoint's values for every name in `get_model_args()`, which includes
+`dist_coff`, `dropout`, `bond_drop_rate`, `weight_decay`, `select_by_loss` (`kermt/util/utils.py`). The stock log prints `dist_coff=0.15` (the CLI value, before
+the overwrite) while the mixed trainer's own log records `dist_coff = 0.1` (after it). Both arms load the checkpoint before building the loss, so both use the same
+effective value; this is **not** a parity difference (stock side inferred from the source, mixed side measured). It does matter for tuning: a Tier-1 sweep over any
+of those flags would silently change nothing unless the overwrite is accounted for. I did not open the checkpoint to read its saved values (no torch on the host).
+
+### What failed to reproduce / what is missing
+
+- Failed to reproduce: nothing in Step 0.
+- Missing: the single-task AMES half of G3 (both arms); per-task per-epoch AUROC of stock runs; weights at any epoch other than each arm's saved one; a same-seed
+  stock-vs-stock replicate (so δ could not be derived from replicate spread); the second, crashed stock seed-4 directory is excluded, as before.
+
+### Proposal for approval (not done): extend G2 beyond epoch 0 if the hERG gap is to be attributed
+
+G2 compares only the epoch-0 mean training loss (0.41 % apart), which cannot see per-task weighting, per-view behaviour or batch composition. If you want the
+hERG gap traced to the trainer, check the four re-implemented components in this order, cheapest first, each on one fixed batch before any run:
+
+1. **Loss** (`train/kermt_mixed/losses.py` vs `KermtFinetuneTask.get_loss_func`): feed identical logits/targets/masks (including partially masked rows) to both and compare
+   per-element and reduced values; tolerance 1e-6. Includes the `dist_coff` term at the effective 0.1.
+2. **Two-view forward**: same weights, same batch, training mode with identical RNG for dropout and bond-drop; compare atom/bond logits (G1 covers eval mode only).
+3. **Per-column target scaling**: for classification columns the scaler must be the identity (logged means 0, std 1); compare with KERMT's scaler on a regression cluster, where it matters.
+4. **Batch composition**: compare the sampler's batches with stock's (order, size, labels per task per batch, epoch seed) over a full epoch; the mixed epoch-0 log shows labels per batch of 16-… for hERG (mean 23.5) and 2-… for AMES (mean 8.5) out of 32, no batch with zero labels.
+Then, if 1-4 agree, a G2b trajectory check (option 5 in the draft): per-epoch train loss and AMES validation AUROC for stock and mixed against a stock replicate. Steps 1-4 need
+no training; G2b needs GPU time and your approval.
