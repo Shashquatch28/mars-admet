@@ -291,3 +291,37 @@ Places that treat the four as tunable or as 0.0/0.1/0.15 facts (none edited; pro
 | `documentation/status/kermt_integration_status.md:63`, `kermt_gpu_session_2026-09-22/24/30.md`, Tier-0 `artifact_metadata.json` (`cmd_replay` values) | record the CLI values as applied | add a dated correction note (do not rewrite the records) |
 | `ml/models/kermt_model.py:200-202`, `kermt_mixed_model.py:262-264` | `KermtConfig.dropout/bond_drop_rate/dist_coff` become CLI flags | docstring: inert at present |
 | `train_mixed.py` start event | logs `dist_coff` only | also log the effective `dropout`, `bond_drop_rate`, `weight_decay` |
+
+## Phase B pre-registration (written 2026-10-19 BEFORE the diagnostic runs were launched; not to be changed afterwards)
+
+**What the runs are.** Diagnostic re-runs of the mixed trainer, `toxicity__cls` seeds 3 then 4, same prepared inputs and folds as the G3 runs (staged from them), stock values,
+`loss_mode="fixed"`, `min_per_task=0`, `hyperparameter_source="parity-gate"`. Run directories `ml/runs/diag_kermt_mx_toxicity__cls_seed{3,4}_fixed_<ts>/`, prefixed `diag_`, not created through
+`train_one_seed_mixed`/`ExperimentRun`, no W&B, **not part of the G3 record**; the five G3 runs are not touched. They are not under an `EXPECTED_SHA` (not a gate or a Tier-0 launch): the
+launch commit and a clean-tree flag are recorded in each run's `provenance.json`, and no git write happens while a run is going.
+Entry script `ml/train/diag/diag_run_mixed.py` (host driver `diag_host.py`) wraps the UNMODIFIED gate-staged `kermt_mixed` package: `fit()` is called as is, the read-only hook runs from its
+`log_fn`, which fires at the very end of each epoch, with a closure over the model. The staged trainer bytes are unchanged (`tests/test_diag_gate_files_unchanged.py` checks every file against the
+five G3 runs' `trainer_provenance.json`). Hook = eval mode, `torch.no_grad`, own DataLoader/collator; all RNG states (torch CPU/CUDA, numpy global, python) captured before and restored after, with an
+assertion of bitwise equality. Per epoch it records: train loss, validation selection loss and per-task losses, validation AUROC (hERG, AMES), holdout AUROC (hERG, AMES; the 1,050/576 calibration
+holdouts, AUROC only, no calibrator refit), LR, effective dropout/bond-drop/weight-decay/`dist_coff` (start event). It saves a checkpoint every epoch (`ckpt/epoch_NN/model.pt`) and an overwritten
+`last_checkpoint.pt` (model, optimizer, scheduler, torch CPU+CUDA RNG, numpy and python RNG, next epoch; batch composition is `default_rng([seed, epoch])`, stateless across epochs).
+
+**Definitions (per run).** E_loss = first epoch of minimum validation selection loss (the mixed trainer's own rule). E_stock = first epoch of maximum mean-over-tasks validation AUROC (stock's
+rule). E_final = epoch 29. Holdout bootstrap: molecule-level, paired, 4,000 resamples, 90 % percentile interval, RNG seed 20261019 + run seed (`ml/eval/diag_analysis.py`, committed before launch).
+
+**H_sel (selection-rule effect).** Holdout hERG AUROC at E_stock exceeds that at E_loss by at least 0.01 AND the E_stock checkpoint lies within 0.01 of the original stock checkpoint's holdout hERG AUROC
+for that seed. Interpretation fixed now: *primary form* = lower 90 % bound of the (E_stock − E_loss) difference ≥ +0.01, and |point difference to the original stock checkpoint| ≤ 0.01; the *weak form*
+(point estimate of the first difference ≥ +0.01, same second clause) is reported as well.
+**H_impl (implementation or dynamics).** The holdout hERG curve is flat or lower than stock's at every epoch from E_loss onward. Interpretation fixed now: for every epoch e ≥ E_loss the holdout hERG AUROC
+is below the original stock checkpoint's, AND max over e ≥ E_loss of AUROC(e) − AUROC(E_loss) < 0.01.
+**Uninformative rule.** If |E_stock − E_loss| ≤ 1 the run is uninformative about selection and is reported as such. If neither H holds the outcome is "neither". Two seeds do not give attribution; the report
+states what each outcome supports and does not. Also reported: matched-selection paired deltas (diag E_stock checkpoint − original stock checkpoint) for AMES and hERG, E_loss and E_final against stock, and
+how closely each diag run reproduces its original G3 run epoch by epoch.
+
+**CPU smoke tests (passed, all bitwise; CPU, 256-molecule subset, 3 epochs, batch 32).** (a) Hooked vs un-hooked run: train loss, validation losses, LR, model digest after every epoch, RNG digest at the end of
+every epoch and the final model and RNG digests are equal; the RNG digest before and after each hook call is equal. (b) Interrupted after epoch 0, process restarted with `--resume`, vs uninterrupted: per-epoch
+losses, validation and holdout AUROC, model and RNG digests, and the final digests are equal. Not covered by CPU tests: CUDA RNG restore (the CUDA state is captured and restored by the same code;
+verified on the GPU only by comparing each diag run with its original run). The extra un-hooked GPU epoch was not needed.
+
+**GPU estimate.** One mixed seed took 101.4-101.7 min in G3 (mixed epochs about 190 s). The hook adds a forward pass over 1,626 molecules (stock's 1,827-molecule validation pass took about 6 s; featurisation is
+cached features plus graph building) and the checkpoint writes add a few seconds, so about 6-10 s per epoch, i.e. +3-5 min per seed, plus about 3 min for per-epoch checkpoint writes: about 1.8 h per seed, about 3.6 h for the
+two (sequential, seed 3 then 4), RTX A4000 (no A100 on this workstation), no paid compute. Disk about 6.5 GB per seed of 307 GB free.
