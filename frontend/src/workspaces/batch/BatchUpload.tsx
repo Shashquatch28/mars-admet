@@ -2,18 +2,30 @@
 // watch the job. Everything the user needs to know about limits is written here in
 // words, not in a tooltip. Progress is a determinate bar only once the service has
 // reported a total; before that the status line says what is happening. Nothing animates.
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import styles from "./batch.module.css";
 import { useBatchSession } from "../../app/batchSession";
 import { SaveControl } from "../../components/SaveControl";
 import { saveReport } from "../../data/client";
 import { buildBatchReportRequest, reportKey, saveNote } from "../../domain/save";
-import { BATCH_INTERACTIVE_MAX, BATCH_MAX_MOLECULES, percentDone, phaseLabel } from "../../domain/batchJob";
+import { BATCH_INTERACTIVE_MAX, BATCH_MAX_MOLECULES, percentDone, phaseLabel, type BatchPhase } from "../../domain/batchJob";
+import { useAnnounce } from "../../app/announce";
+import { batchAnnouncement } from "../../domain/announce";
 
 export function BatchUpload() {
   const s = useBatchSession();
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
+
+  // The service reports every half second; the status line below is not live. What is announced is the start,
+  // each quarter and the finish (domain/announce.ts); a failure is a role="alert".
+  const announce = useAnnounce();
+  const prevPhase = useRef<BatchPhase>(s.phase);
+  useEffect(() => {
+    const message = batchAnnouncement(prevPhase.current, s.phase);
+    prevPhase.current = s.phase;
+    if (message) announce(message);
+  }, [s.phase, announce]);
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
@@ -75,7 +87,7 @@ export function BatchUpload() {
       </div>
 
       <div className={styles.upRow}>
-        <span className={failed ? styles.upErr : styles.upStatus} role={failed ? "alert" : "status"}>
+        <span className={failed ? styles.upErr : styles.upStatus} role={failed ? "alert" : undefined}>
           {s.fileProblem ?? phaseLabel(s.phase)}
         </span>
         {pct != null && (

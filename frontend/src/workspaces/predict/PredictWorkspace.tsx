@@ -3,7 +3,7 @@
 // real /predict response; otherwise it runs on the illustrative fixture (and the
 // shell shows the "design prototype" strip). The roster, state derivation and
 // reconciliation always come from ENDPOINT_METADATA, never the response (ADR-008).
-import { useEffect, useMemo, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCompareSession } from "../../app/compareSession";
 import styles from "./predict.module.css";
@@ -18,6 +18,8 @@ import { buildMoleculeRequest, moleculeKey, saveNote } from "../../domain/save";
 import { EndpointList } from "./EndpointList";
 import { downloadText } from "../../data/download";
 import { usePrintReport } from "../../components/report/usePrintReport";
+import { useAnnounce } from "../../app/announce";
+import { predictionAnnouncement } from "../../domain/announce";
 import { buildCsv, predictFileName } from "../../domain/exportCsv";
 import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
@@ -82,6 +84,14 @@ export function PredictWorkspace() {
           )
       : undefined;
   const printReport = usePrintReport();
+  // A finished prediction is announced once (WCAG 4.1.3); a failure announces itself through its role="alert".
+  const announce = useAnnounce();
+  const announcedFor = useRef<unknown>(null);
+  useEffect(() => {
+    if (!usingApi || !result || failure || announcedFor.current === result) return;
+    announcedFor.current = result;
+    announce(predictionAnnouncement(recon.counts));
+  }, [usingApi, result, failure, recon.counts, announce]);
   const openReport =
     usingApi && result && !failure
       ? () => printReport.print({ smilesInput: result.submitted, response: result.response, cells: recon.rows })

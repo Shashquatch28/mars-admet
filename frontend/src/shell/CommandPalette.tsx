@@ -134,7 +134,7 @@ export function CommandPalette() {
 
   return (
     <>
-      <div className={styles.scrim} onClick={() => setPaletteOpen(false)} />
+      <div className={styles.scrim} role="presentation" aria-hidden="true" onClick={() => setPaletteOpen(false)} />
       <div className={styles.palette} role="dialog" aria-modal="true" aria-label="Command palette">
         <div className={styles.palInput}>
           <span className={styles.palPrompt}>&gt;</span>

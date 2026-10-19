@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type Keyboard
 import styles from "./predict.module.css";
 import { useUiState } from "../../app/uiState";
 import type { Reconciliation, Row } from "../../domain/reconcile";
-import { EndpointRow } from "./EndpointRow";
+import { EndpointRow, rowId } from "./EndpointRow";
 
 export function EndpointList({
   recon,
@@ -93,9 +93,9 @@ export function EndpointList({
             </>
           ) : (
             <>
-              <b>{c.requested}</b> requested <span className={styles.reconD}>·</span> <b>{c.returned}</b> returned{" "}
-              <span className={styles.reconD}>·</span> <b className={styles.reconOod}>{c.outOfDomain}</b> out of domain{" "}
-              <span className={styles.reconD}>·</span> <b>{c.stubServed}</b> stub-served
+              <b>{c.requested}</b> requested <span className={styles.reconD} aria-hidden="true">·</span> <b>{c.returned}</b> returned{" "}
+              <span className={styles.reconD} aria-hidden="true">·</span> <b className={styles.reconOod}>{c.outOfDomain}</b> out of domain{" "}
+              <span className={styles.reconD} aria-hidden="true">·</span> <b>{c.stubServed}</b> stub-served
             </>
           )}
         </span>
@@ -132,30 +132,35 @@ export function EndpointList({
         </div>
       </div>
 
-      <div className={styles.colhead}>
-        <span>Endpoint</span>
-        <span>Task</span>
-        <span className={styles.colR}>Value</span>
-        <span>Unit</span>
-        <span>Seed spread ±1σ</span>
-        <span>Domain</span>
-        <span className={styles.colR}>Source</span>
-      </div>
-
       <div
         className={styles.rowscroll}
         role="grid"
         aria-label="Endpoint predictions"
-        aria-rowcount={rows.length}
+        aria-colcount={7}
+        aria-activedescendant={rows[focused] ? rowId(rows[focused].endpoint) : undefined}
         tabIndex={0}
         onKeyDown={onKeyDown}
       >
+        <div className={styles.colhead} role="row">
+          <span role="columnheader">Endpoint</span>
+          <span role="columnheader">Task</span>
+          <span role="columnheader" className={styles.colR}>Value</span>
+          <span role="columnheader">Unit</span>
+          <span role="columnheader">Seed spread ±1σ</span>
+          <span role="columnheader">Domain</span>
+          <span role="columnheader" className={styles.colR}>Source</span>
+        </div>
         {recon.groups.map((g) => (
-          <div key={g.group}>
+          <div key={g.group} role="rowgroup">
             <div className={styles.grouphd} role="row">
-              <span className={styles.grouphdName}>{g.label}</span>
-              <span className={styles.grouphdCt}>{g.rows.length}</span>
-              <span className={styles.grouphdCl}>{g.cluster}</span>
+              <div role="gridcell" aria-colspan={7} className={styles.grouphdCell}>
+                <h2 className={styles.grouphdName}>{g.label}</h2>
+                <span className={styles.grouphdCt}>
+                  {g.rows.length}
+                  <span className="sr-only"> endpoints</span>
+                </span>
+                <span className={styles.grouphdCl}>{g.cluster}</span>
+              </div>
             </div>
             {g.rows.map((row) => {
               const i = indexOfEndpoint.get(row.endpoint) ?? 0;
@@ -167,7 +172,6 @@ export function EndpointList({
                   focused={i === focused}
                   loading={loading}
                   onSelect={select}
-                  rowIndex={i + 1}
                   rowRef={(el) => (rowEls.current[i] = el)}
                 />
               );

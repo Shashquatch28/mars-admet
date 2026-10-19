@@ -44,7 +44,7 @@
   color: var(--caution) !important;
 }
 .reconD {
-  color: var(--line-default);
+  color: var(--text-quiet);
   margin: 0 2px;
 }
 
@@ -60,7 +60,7 @@
 }
 .search {
   width: 210px;
-  height: 22px;
+  height: 26px; /* 24px of input inside the 1px borders */
   display: flex;
   align-items: center;
   gap: 6px;
@@ -72,6 +72,7 @@
 }
 .search input {
   flex: 1;
+  align-self: stretch; /* the whole box is the target (WCAG 2.5.8) */
   min-width: 0;
   background: none;
   border: 0;
@@ -87,7 +88,7 @@
 }
 
 .chip {
-  height: 22px;
+  height: 24px;
   padding: 0 8px;
   display: inline-flex;
   align-items: center;
@@ -212,7 +213,7 @@
 .groupbarCt {
   font-family: var(--mono);
   letter-spacing: 0;
-  color: var(--text-disabled);
+  color: var(--text-quiet);
 }
 
 .colhead {
@@ -318,7 +319,7 @@
   text-align: right;
   font-family: var(--mono);
   font-size: 9.5px;
-  color: var(--text-disabled);
+  color: var(--text-quiet);
 }
 .molSmiles {
   flex: 1;
@@ -346,7 +347,7 @@
   opacity: 0.8;
 }
 .flagMissing {
-  color: var(--text-disabled);
+  color: var(--text-quiet);
 }
 
 /* the row-flag key — visible text, so the flags are not explained by a tooltip alone */
@@ -395,7 +396,7 @@
 /* a shape as well as a colour, so OOD survives greyscale and CVD */
 .oodMark {
   flex: none;
-  font-size: 8px;
+  font-size: 9px; /* the type floor */
   line-height: 1;
   color: var(--caution);
 }

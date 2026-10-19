@@ -14,6 +14,7 @@ export function AccountForm() {
   const [password, setPassword] = useState("");
   const [local, setLocal] = useState<string | null>(null);
   const id = useId();
+  const errId = `${id}-err`;
 
   const message = local ?? (error ? authErrorMessage(error, mode) : null);
 
@@ -54,7 +55,7 @@ export function AccountForm() {
       </div>
 
       {message && (
-        <p className={styles.error} role="alert">
+        <p id={errId} className={styles.error} role="alert">
           {message}
         </p>
       )}
@@ -69,6 +70,8 @@ export function AccountForm() {
           type="email"
           autoComplete="username"
           spellCheck={false}
+          aria-invalid={message ? true : undefined}
+          aria-describedby={message ? errId : undefined}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -82,10 +85,16 @@ export function AccountForm() {
           className={styles.input}
           type="password"
           autoComplete={mode === "signin" ? "current-password" : "new-password"}
+          aria-invalid={message ? true : undefined}
+          aria-describedby={[message ? errId : "", mode === "register" ? `${id}-hint` : ""].filter(Boolean).join(" ") || undefined}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        {mode === "register" && <span className={styles.hint}>At least 8 characters.</span>}
+        {mode === "register" && (
+          <span id={`${id}-hint`} className={styles.hint}>
+            At least 8 characters.
+          </span>
+        )}
       </div>
 
       <button type="submit" className={styles.submit} disabled={busy}>
