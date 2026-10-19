@@ -81,8 +81,18 @@ built image), so root-`.venv` runs are stub-only for `/predict` by design.
 ## Known limits
 
 - Cloud Tasks is not wired; async batch runs in-process.
-- The anonymous rate limiter keys on `request.client.host`. Behind Cloud Run
-  that address is unverified (frontend ADR-025 item 5).
+- The anonymous rate limiter counts per client address. By default that is the socket peer
+  (`request.client.host`), which behind a proxy is the proxy: everyone would share one bucket.
+  Set `TRUSTED_PROXY_HOPS=1` behind Cloud Run to read the entry Google's front end appended to
+  `X-Forwarded-For` (entries to its left are client-supplied and are never read; uvicorn's own
+  `--forwarded-allow-ips` is not used because it only trusts `127.0.0.1` by default and `*` would
+  trust a forgeable leftmost entry). That Cloud Run appends exactly one entry is the documented
+  load-balancer behaviour but has not been observed on a deployed service: after the first deploy,
+  send two requests with different forged `X-Forwarded-For` values and confirm they share a bucket.
+- Predictions run on a pool capped at one per CPU (`MAX_CONCURRENT_PREDICTIONS`, default the CPUs
+  this process may use). Cloud Run may not report its vCPU limit to the process, so set it there.
+- Batch files up to `BATCH_INTERACTIVE_THRESHOLD` (100) are answered in the upload request; larger
+  files are queued and report progress.
 - CORS is an explicit origin list with credentials (`CORS_ALLOW_ORIGINS`). The
   session cookie is `SameSite=Lax`, so SPA and API must be same-site.
 - No `/molecule/{id}/explain` or `/report` yet (see `contracts/API_ROUTES.md`).
