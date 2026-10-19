@@ -354,6 +354,42 @@ migrations already at head (`d5be9f4ca6e0`), a private Vite on :5174 against the
 - **Not checked:** a screen reader, the Ketcher panel, the Batch grid keyboard model, the real Tab order end to end (the in-app
   browser's Tab starts from its own focus point, so the skip link was focused and activated by script).
 
+### 2k. Final QA, 2026-10-19 (ship checklist D7) — what was run and what it found
+
+- **Setup:** the merged `main` (`67d47aa`) as the production topology: one container serving the built site and `/api` (the image
+  was built on top of the already-installed model dependencies, not from the full Dockerfile), real Postgres, Redis and MinIO from the
+  shared stack but a private database and Redis index, and the real trained artifacts. A second container had artifacts for only
+  `solubility_logs`, `hia_absorption` and `clearance_microsomal`, so the routing table served the other eleven from the stub: the first
+  mixed real-and-stub response (`celecoxib-mixed-real-and-stub.json`, pinned by `mixedResponse.test.ts`). Both containers, the
+  database and the Redis indexes were removed afterwards.
+- **LOCAL_TESTING walkthrough, all nine steps, in a browser at 1440 px:** (1) Predict anonymous: 15 rows, 14 returned, 5 out of
+  domain, Save says it needs an account with no form; (2) create account; (3) save a molecule, tags `a, A, b` stored as `a, b`, the
+  saved control becomes a status so it cannot be saved twice; (4) a 5-row Batch (the invalid row stays as a failed row, Save is
+  disabled with the reason, molecule and report saved) and a queued 520-row batch (3 worker slices, about 55 s, survived switching to
+  Predict and back, announced at start, 25, 50, 75 % and finish); (5) Library: newest first, filter by label, tag and no-match,
+  detail says model and date and "a frozen copy", delete molecule, report delete dialog closes on Esc and Cancel, backdrop click does
+  nothing, focus returns; (6) delete account: wrong password keeps the dialog open and says nothing was deleted, the right one signs
+  out, Library shows the gate, and the database holds no user, molecule, report or job rows; (7) Compare: 15 endpoint rows, no winner
+  column, an invalid SMILES is "Molecule rejected" and keeps what was typed; (8) held-out error band on all five regression rows and
+  none on classification rows; (9) CSV export: 16 lines, `mars-predict-<id>-<date>.csv`, no rank or winner column. The printed
+  report on this real result showed five out of domain rows and five held-out-error cells.
+- **Never-do audit:** #1 on live data, all 15 value cells (in domain, out of domain, rule-based) share one computed style
+  (text-primary, weight 400, mono, tabular); on the mixed response the 11 stub values all carry the hatch and the STUB tag, the 3
+  real ones never do, and the value style is still one. #2, #3, #4, #7, #9 are now a source guard, `tests/neverDoGuard.test.ts`.
+  #5 (NOT RETURNED rows) is covered by the fixture and domain tests only: the live service cannot be made to omit a row on demand.
+  #8 reviewed by hand: every `title=` is a hover hint on text that is also visible, or the full text of a truncated value shown
+  elsewhere; no state depends on a tooltip.
+- **Found and fixed:** the command palette was the one element with an enter animation (a 200 ms fade and scale), against rule 7
+  and ADR-013. It now opens instantly and the guard fails if an animation returns to the shell.
+- **Not run:** a full-scale 1,200-molecule queued batch on the slice runner (520 was run); the real print dialog and a saved PDF; a
+  screen reader; any browser other than the in-app one; NOT RETURNED against a live service; the full `api/Dockerfile` pip layer
+  (the image reused installed dependencies); Cloud Run, Cloud Tasks and R2 (not deployed). Saved-report tags: the script set them
+  but the report's detail view did not show a tags line; not re-checked, so treat as unconfirmed.
+- **Observations, not changed:** the first request after a container starts took 12.8 s (model load). The top-bar "SERVING
+  v0.2.0-dev" is the generation, so on a mixed response it reads the same as on a fully real one; the stub count and the per-row STUB
+  tag carry the difference, but a reader of the top bar alone could assume all fifteen came from a trained model. That is a design
+  call, not a defect fixed here.
+
 ## 3. What is broken or missing — read before touching anything
 
 These are ordered by how badly they would bite.

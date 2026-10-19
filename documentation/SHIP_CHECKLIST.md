@@ -51,7 +51,8 @@ approval, `[lab]` needs the GPU workstation.
   Done as a print-only light report (Save as PDF), frontend ADR-029; no server route. No 2D structure or drug-likeness flags: the service has neither.
 - [x] D6 `[here]` WCAG / accessibility pass.
   Done in code and verified in a browser (ADR-030, `ACCESSIBILITY.md`). Not done: a screen-reader test, the Ketcher panel, the Batch grid's keyboard re-test; no axe run. Plan these into D7 (final QA).
-- [ ] D7 `[here]` Final QA: re-run the AGENTS.md "Never do" audit in a browser at 1440 px, run every screen in `documentation/frontend/LOCAL_TESTING.md`, re-check the stub-served row state (no mixed real+stub response has ever been captured).
+- [x] D7 `[here]` Final QA: re-run the AGENTS.md "Never do" audit in a browser at 1440 px, run every screen in `documentation/frontend/LOCAL_TESTING.md`, re-check the stub-served row state (no mixed real+stub response has ever been captured).
+  Done 2026-10-19 on the merged `main` as the production topology with real models (HANDOFF 2k): all nine LOCAL_TESTING steps and the report pass; the first mixed real-and-stub response was captured and pinned; the never-do audit holds and is now a source guard; one violation fixed (the palette's enter animation). Not run: the real print dialog and PDF, a screen reader, other browsers, NOT RETURNED against a live service, a 1,200-row queued batch, the full Dockerfile build, and anything deployed.
 - [ ] D8 `[you]` Launch.
 
 ## E. Polish if time allows (not MVP-blocking)
