@@ -13,11 +13,13 @@ export function EndpointList({
   loading,
   idle,
   onExport,
+  onReport,
 }: {
   recon: Reconciliation;
   loading?: boolean;
   idle?: boolean; // live session, nothing run yet — there is no request to reconcile
   onExport?: () => void; // absent when there is no real result to export (sample data, nothing run, failure)
+  onReport?: () => void; // the same condition: a report is of a real result only
 }) {
   const { selectedEndpoint, setSelectedEndpoint, density, setDensity } = useUiState();
   const rows = recon.rows;
@@ -103,6 +105,14 @@ export function EndpointList({
             <path d="M8 2v8M5 7l3 3 3-3M3 13h10" />
           </svg>
           Export
+        </button>
+        <button
+          className={styles.exp}
+          onClick={onReport}
+          disabled={!onReport}
+          title="Open this result as a printable report; choose Save as PDF in the print dialog"
+        >
+          Report
         </button>
         <div className={styles.densetog} role="group" aria-label="Density">
           <button

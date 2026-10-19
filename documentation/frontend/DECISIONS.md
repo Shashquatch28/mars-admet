@@ -857,3 +857,55 @@ backend does can remove it.
   survives greyscale.
 - Docs changed with it: COMPONENTS (`ReliabilityTag` row, `EndpointRow` states), ACCESSIBILITY (both lists),
   UX_PRINCIPLES §3, DESIGN_SYSTEM (`--unavailable`).
+
+---
+
+## ADR-029 — The report is a print-only light document built in the client; PDF is the browser's "Save as PDF"
+
+**Date:** 2026-10-19 · **Status:** accepted · implemented 2026-10-19 (ship checklist D5)
+
+**Decision.**
+
+1. Predict (Report button beside Export) and Batch (Report in the inspector) open one molecule's report through the
+   browser's print dialog. The report is a `ReportModel` (`domain/report.ts`, pure, from the same `ExportMolecule` the CSV
+   uses) rendered by `PrintReport` into a portal on `document.body`. On screen it is `display: none`; in print it is the
+   only thing shown and `#root` is hidden. "Save as PDF" in the print dialog produces the PDF; the page title is set to
+   `MARS prediction report <molecule id>` for the duration, which is the file's default name.
+2. The report is a separate light treatment (ADR-004 deferred exactly this): ink on paper from `--report-*` tokens,
+   no semantic colour. Reliability is carried by words (Status column), a left edge (solid for OUT OF DOMAIN, solid
+   muted for NOT RETURNED, dashed for NOT REQUESTED) and, for a stub value, the diagonal hatch, which prints because
+   the report sets `print-color-adjust: exact`.
+3. It prints what the screen says and nothing more: the full roster including NOT RETURNED and NOT REQUESTED rows
+   (ADR-008), the value in one ink in every state, seed spread and held-out error as text (ADR-024), applicability domain
+   as a distance and cutoff in words, the served model per row, and the requested / returned / out-of-domain /
+   stub-served / not-returned counts. A fixed "How to read this report" block (scores are not probabilities, no validated
+   threshold or direction of good, what spread and held-out error are, what out of domain and stub mean, that every
+   endpoint is listed, what is not included) is printed on every report.
+4. Report is offered for a real result only, under the same condition as the CSV export: never the illustrative sample,
+   never after a failure. A Batch row that failed before inference prints its reason and no table.
+5. The blueprint's `GET /molecule/{id}/report` (server-side PDF) is **not built**. See rationale.
+
+**Rationale.** The honesty rules live in the client: `deriveRowState` and `reconcile` decide what each row is and
+guarantee the NOT RETURNED rows. A server-side PDF would need a second copy of that logic in Python, and the two would
+drift (ADR-009 exists for the same reason). A PDF library would also be a new dependency to install, pin and audit,
+and its output could not reuse the screen's formatters. The browser already makes a faithful PDF from a print stylesheet.
+This departs from the blueprint's wording ("Per-molecule PDF"); the deliverable is the same file, made by the browser.
+
+**Rejected.** *Server-side PDF (reportlab or similar)* - duplicates the reconcile logic and adds a dependency. *A
+client-side PDF library* - same dependency cost, and no better than the print engine. *Printing the live workspace* -
+it is a dark, fixed-height, overflow-hidden surface with controls in it. *Colouring rows on paper* - the semantic
+colours imply a scale (never-do #1); paper gets words, edges and a hatch.
+
+**Never-do audit.** (1) value cell is `--report-ink`, mono, tabular, in every state; (2) no prop on `EndpointRow`
+(it is not used); (3) nothing ranked or sorted; (4) no interval bar, intervals are text; (5) all 15 roster rows print,
+absence is a row; (6) stub values carry the hatch and the word STUB; (7) nothing animates; (8) every state is in
+words in the table, none only in a tooltip (the report has no tooltips); (9) no shadow, radius 2px, light only for the
+report as ADR-004 required.
+
+**Consequences.** Not included, and said so on the page: a 2D structure drawing (the service has no depiction route and
+the 3D viewer is not printable) and drug-likeness flags (the service does not compute them). Adding either is a new
+service capability first. The report cannot be previewed on screen except through the browser's print preview. The
+frontend tests cover the model (`report.test.ts`: roster completeness, no marker inside values, hatch only on stubs,
+NOT RETURNED versus NOT REQUESTED, no favourability wording, counts agree with the screen); the rendered layout was
+checked in a browser against a live API with the print stylesheet applied.
+

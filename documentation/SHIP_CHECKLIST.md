@@ -47,7 +47,8 @@ approval, `[lab]` needs the GPU workstation.
 - [ ] D2 `[here]` Calibration C1: recalibrate on label-representative data and validate per endpoint (or ship raw scores and say so; C0 is already live).
 - [ ] D3 `[here]` Evaluation: ablation matrix (agree a reduced scope; the full 14 x 3 x 5 x 5 is large), significance testing and self-audit.
 - [ ] D4 `[here]` TDC leaderboard comparison tables.
-- [ ] D5 `[here]` Report export (the CSV export is done; a report is a separate item).
+- [x] D5 `[here]` Report export (the CSV export is done; a report is a separate item).
+  Done as a print-only light report (Save as PDF), frontend ADR-029; no server route. No 2D structure or drug-likeness flags: the service has neither.
 - [ ] D6 `[here]` WCAG / accessibility pass.
 - [ ] D7 `[here]` Final QA: re-run the AGENTS.md "Never do" audit in a browser at 1440 px, run every screen in `documentation/frontend/LOCAL_TESTING.md`, re-check the stub-served row state (no mixed real+stub response has ever been captured).
 - [ ] D8 `[you]` Launch.

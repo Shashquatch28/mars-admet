@@ -158,6 +158,14 @@ that until you change it and recreate the container.
    Open the file: `state` says ok / out_of_domain / stub_served / not_returned / not_requested / rule_based, and there is
    no rank or winner column. The buttons are greyed out when nothing real is on screen.
 
+## The printed report
+
+On Predict with a real result, click **Report** (next to Export). The browser's print dialog opens on a light,
+one-molecule document: header, SMILES and model version, the counts, one table per group with every endpoint
+(stub values hatched, NOT RETURNED and NOT REQUESTED as rows), and a "How to read this report" block. Choose
+**Save as PDF**. In Batch, select a row and click **Report** in the inspector. The button is disabled on the
+sample data and after a failure.
+
 ## What to expect that is not finished
 
 - Batch's **Open in Predict** and the command palette's commands are placeholders with no handlers.

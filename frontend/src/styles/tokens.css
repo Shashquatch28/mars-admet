@@ -79,6 +79,19 @@
 
   /* density (user choice) */
   --row-h: 30px;
+
+  /* Report (print) tokens: the light treatment for paper (ADR-004 deferred it, ADR-029 defines it).
+     Used only by the print-only report. Ink and rules, no semantic colour: on paper the reliability
+     states are words, edges and a hatch, so no colour can imply a judgement. */
+  --report-paper: #ffffff;
+  --report-ink: #15191b;
+  --report-ink-muted: #4d5659;
+  --report-rule: #c4cbce;
+  --report-hatch-unreal: repeating-linear-gradient(
+    135deg,
+    rgba(21, 25, 27, 0.2) 0 1px,
+    transparent 1px 4px
+  );
 }
 
 * {

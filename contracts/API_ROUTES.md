@@ -31,7 +31,7 @@ Interactive docs are at `/api/docs`.
 | `/compare` | POST | none | `CompareRequest` | `CompareResponse` | M3 ✅ |
 | `/molecule/{id}/3d` | GET | none | — | `ConformerResponse` | M3 ✅ — `{id}` must have been seen by `/predict` in the current cache window (see below) |
 | `/molecule/{id}/explain?endpoint=<Endpoint>` | GET | none | query param `endpoint` | `ExplainResponse` (see below — not yet modelled) | M4 / Post-MVP |
-| `/molecule/{id}/report` | GET | none | — | `application/pdf` (binary; no JSON model) | M4 |
+| `/molecule/{id}/report` | GET | none | — | `application/pdf` (binary; no JSON model) | **Not built, superseded**: the report is made in the client (print, Save as PDF), frontend ADR-029 |
 
 `GET /molecule/{id}/3d` needs the id -> SMILES mapping `/predict` registers
 in Redis (same TTL as the prediction cache) — an id from a `/predict` call
