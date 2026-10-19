@@ -4,6 +4,7 @@ prod) — see `.env.example` for every key's meaning and default."""
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -57,6 +58,12 @@ class Settings(BaseSettings):
         "process. Cloud Run does not always report its vCPU limit to the process, so set this to the "
         "service's vCPU count there.",
     )
+    sentry_dsn: str = Field(default="", description="Sentry project DSN. Empty (default) turns error reporting off.")
+    sentry_environment: str = Field(default="development", description="Shown on every event, e.g. 'production'.")
+    sentry_release: str = Field(default="", description="Release label, e.g. the git commit the image was built from.")
+    sentry_traces_sample_rate: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="Share of requests traced for performance. 0 spends the free quota on errors."
+    )
     batch_size_cap: int = Field(default=50_000)
     batch_interactive_threshold: int = Field(
         default=100,
@@ -74,6 +81,33 @@ class Settings(BaseSettings):
     s3_access_key_id: str = Field(default="mars_minio")
     s3_secret_access_key: str = Field(default="mars_minio_password")
     s3_bucket_uploads: str = Field(default="mars-batch-uploads")
+    s3_region: str = Field(default="us-east-1", description="Cloudflare R2 wants 'auto'; MinIO ignores it.")
+
+    # --- Batch jobs: where their bytes live and what runs them (ship checklist C8) ---
+    batch_blob_backend: Literal["redis", "s3"] = Field(
+        default="redis",
+        description="Where job input, slice results and final results are stored. 'redis' for development; "
+        "'s3' (Cloudflare R2 in production, MinIO locally) for anything that must hold a large batch.",
+    )
+    batch_queue_backend: Literal["local", "cloud_tasks"] = Field(
+        default="local",
+        description="'local' runs jobs inside this process. 'cloud_tasks' enqueues each slice as a Cloud Task "
+        "that calls this service's /api/internal/batch/run endpoint.",
+    )
+    batch_slice_rows: int = Field(default=250, ge=1, description="Molecules predicted per worker invocation.")
+    batch_worker_secret: str = Field(
+        default="", description="Shared secret Cloud Tasks sends to the worker endpoint. Empty disables the endpoint."
+    )
+    batch_task_deadline_seconds: int = Field(
+        default=900, ge=15, le=1800, description="How long Cloud Tasks waits for one slice (HTTP targets: 15 s to 30 min)."
+    )
+    batch_task_max_attempts: int = Field(
+        default=5, ge=1, description="Must equal the queue's max attempts; after the last one the job is marked failed."
+    )
+    gcp_project_id: str = Field(default="")
+    gcp_region: str = Field(default="us-central1")
+    cloud_tasks_queue: str = Field(default="mars-batch")
+    worker_base_url: str = Field(default="", description="This service's public URL, e.g. https://mars-api-xyz.run.app")
 
 
 @lru_cache
