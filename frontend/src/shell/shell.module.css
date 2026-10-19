@@ -372,17 +372,7 @@
   transform-origin: top center;
   transform: translateX(-50%) scale(1);
   overflow: hidden;
-  animation: palIn var(--dur-enter) var(--ease);
-}
-@keyframes palIn {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
-  }
+  /* opens instantly: nothing in MARS animates in except the AD-gauge marker (ADR-013) */
 }
 .palInput {
   display: flex;
