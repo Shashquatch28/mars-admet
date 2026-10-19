@@ -1,0 +1,168 @@
+{
+ "rule": "max over epochs of mean-over-tasks val AUROC (first on ties)",
+ "repro_ok": true,
+ "seeds": [
+  {
+   "seed": 0,
+   "n_epochs": 30,
+   "own_epoch": 6,
+   "stock_rule_epoch": 3,
+   "repro_check_max_abs_err": 0.0,
+   "mixed_at_own": [
+    0.9705882352941176,
+    0.8488553118043367
+   ],
+   "mixed_at_stock_rule": [
+    1.0,
+    0.8455406439085623
+   ],
+   "val_labels": [
+    19,
+    1809
+   ]
+  },
+  {
+   "seed": 1,
+   "n_epochs": 30,
+   "own_epoch": 3,
+   "stock_rule_epoch": 14,
+   "repro_check_max_abs_err": 0.0,
+   "mixed_at_own": [
+    0.75,
+    0.8542873455065816
+   ],
+   "mixed_at_stock_rule": [
+    0.8125,
+    0.858704068530879
+   ],
+   "val_labels": [
+    18,
+    1810
+   ]
+  },
+  {
+   "seed": 2,
+   "n_epochs": 30,
+   "own_epoch": 5,
+   "stock_rule_epoch": 24,
+   "repro_check_max_abs_err": 0.0,
+   "mixed_at_own": [
+    0.90625,
+    0.8517585784313727
+   ],
+   "mixed_at_stock_rule": [
+    0.9375,
+    0.8624375
+   ],
+   "val_labels": [
+    18,
+    1810
+   ]
+  },
+  {
+   "seed": 3,
+   "n_epochs": 30,
+   "own_epoch": 2,
+   "stock_rule_epoch": 18,
+   "repro_check_max_abs_err": 0.0,
+   "mixed_at_own": [
+    0.8125,
+    0.8440932652641274
+   ],
+   "mixed_at_stock_rule": [
+    0.9375,
+    0.8592030611544982
+   ],
+   "val_labels": [
+    18,
+    1810
+   ]
+  },
+  {
+   "seed": 4,
+   "n_epochs": 30,
+   "own_epoch": 2,
+   "stock_rule_epoch": 11,
+   "repro_check_max_abs_err": 0.0,
+   "mixed_at_own": [
+    0.7870370370370371,
+    0.852576377645952
+   ],
+   "mixed_at_stock_rule": [
+    0.9166666666666667,
+    0.8544210070739564
+   ],
+   "val_labels": [
+    24,
+    1804
+   ]
+  }
+ ],
+ "endpoints": {
+  "herg_cardiotoxicity": {
+   "stock": [
+    0.9117647058823529,
+    0.84375,
+    0.875,
+    0.875,
+    0.9351851851851852
+   ],
+   "mixed_stock_rule": [
+    1.0,
+    0.8125,
+    0.9375,
+    0.9375,
+    0.9166666666666667
+   ],
+   "passed": false,
+   "summary": "|mean diff| 0.0327 vs band 0.0305 (FAIL); paired |dAUROC| <= 0.02 on 1/5 seeds (FAIL)",
+   "evidence": {
+    "mean_stock": 0.8881399782135077,
+    "mean_mixed": 0.9208333333333334,
+    "std_stock": 0.03189723335066438,
+    "std_mixed": 0.06095307849303248,
+    "paired_abs_diff": [
+     0.08823529411764708,
+     0.03125,
+     0.0625,
+     0.0625,
+     0.01851851851851849
+    ],
+    "band": 0.03047653924651624
+   }
+  },
+  "ames_mutagenicity": {
+   "stock": [
+    0.8532376852242305,
+    0.8509254903113881,
+    0.8575955882352941,
+    0.8579733079870263,
+    0.8547231021340242
+   ],
+   "mixed_stock_rule": [
+    0.8455406439085623,
+    0.858704068530879,
+    0.8624375,
+    0.8592030611544982,
+    0.8544210070739564
+   ],
+   "passed": true,
+   "summary": "|mean diff| 0.0012 vs band 0.0029 (ok); paired |dAUROC| <= 0.02 on 5/5 seeds (ok)",
+   "evidence": {
+    "mean_stock": 0.8548910347783927,
+    "mean_mixed": 0.8560612561335791,
+    "std_stock": 0.002657153611479092,
+    "std_mixed": 0.005846119748476417,
+    "paired_abs_diff": [
+     0.007697041315668174,
+     0.007778578219490906,
+     0.004841911764705831,
+     0.0012297531674718698,
+     0.0003020950600678418
+    ],
+    "band": 0.0029230598742382083
+   }
+  }
+ },
+ "both_pass": false
+}

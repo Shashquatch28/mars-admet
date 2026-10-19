@@ -82,11 +82,37 @@ Both must pass; **G3 (`toxicity__cls` half) = FAIL.** The single-task `ames_muta
 - **hERG is dominated by a tiny validation set** (18–24 labels per seed): with 6 positives and 18 negatives there are only 108 positive–negative pairs, so each re-ordered pair moves AUROC by 0.0093 (seed 4's 0.148 gap is exactly 16 pairs). The deltas change sign across seeds, so there is no consistent offset. The gate cannot tell "different trainer"
   from "hERG validation is too small to measure". This is the limitation recorded for Tier 0 and in the runbook arm table.
 - **G1 and G2 rule out gross implementation errors** (identical forward pass; epoch-0 loss within 0.41 %). What G3 adds is the whole training trajectory.
-- **A difference by design that G3 does not control:** epoch selection. Stock saves the epoch with the best validation AUROC; the mixed trainer saves the
-  epoch with the lowest summed per-task validation loss on scaled targets (`decisions.md` 2026-10-14, "Epoch-selection rule": an implementation choice, not
-  a result). The mixed runs selected epochs 2–6; stock saved epochs 7–21. **This is a hypothesis, not a finding:** it has not been tested. Because every
-  epoch's validation views are saved (`logs/val_views.npz`) and `posthoc.py` re-scores them, it could be tested on the existing runs with no GPU.
-  I did not do this: it is outside this session's scope (no tuning) and which selection rule G3 should compare is the maintainer's call.
+- **A difference by design that G3 does not control: epoch selection.** Stock saves the epoch with the best validation AUROC; the mixed trainer saves
+  the epoch with the lowest summed per-task validation loss on scaled targets (`decisions.md` 2026-10-14). The mixed runs selected epochs 2–6; stock saved
+  epochs 7–21. This was tested post hoc, with no GPU, on 2026-10-19 (next section).
+
+## Post-hoc diagnostic (2026-10-19, no GPU, validation fold only) — does not replace the official verdict
+
+`scripts/g3_posthoc_rescore.py`: for each mixed run, re-pick the epoch from the saved per-epoch validation views by **stock's rule** (maximum over epochs of
+the mean-over-tasks validation AUROC; ties → first epoch, as KERMT's strict `>`), then call `gates.g3_auroc_parity` again. Sanity check: at each run's own
+epoch the script reproduces the run's recorded validation AUROC with **zero error on all 5 seeds × 2 endpoints**, so fold alignment and metric are right.
+
+| Seed | Own epoch → stock-rule epoch | hERG own → stock-rule | AMES own → stock-rule |
+|---:|---|---:|---:|
+| 0 | 6 → 3 | 0.9706 → 1.0000 | 0.8489 → 0.8455 |
+| 1 | 3 → 14 | 0.7500 → 0.8125 | 0.8543 → 0.8587 |
+| 2 | 5 → 24 | 0.9062 → 0.9375 | 0.8518 → 0.8624 |
+| 3 | 2 → 18 | 0.8125 → 0.9375 | 0.8441 → 0.8592 |
+| 4 | 2 → 11 | 0.7870 → 0.9167 | 0.8526 → 0.8544 |
+
+```
+herg_cardiotoxicity: |mean diff| 0.0327 vs band 0.0305 (FAIL); paired |dAUROC| <= 0.02 on 1/5 seeds (FAIL)   passed=False
+ames_mutagenicity:   |mean diff| 0.0012 vs band 0.0029 (ok);   paired |dAUROC| <= 0.02 on 5/5 seeds (ok)     passed=True
+```
+
+- **AMES: the whole gap was the selection rule.** Under stock's rule AMES passes both parts of G3 (mean difference 0.0012, 5/5 paired).
+- **hERG: not explained by selection alone.** It improves (mean difference 0.043 → 0.033, paired 0/5 → 1/5) but still fails narrowly on the mean rule and clearly on the paired rule.
+  Under stock's rule the mixed hERG AUROC now *exceeds* stock's in four of five seeds (mixed mean 0.921 vs stock 0.888), and one seed reaches 1.0 on 24 molecules.
+  With 108 positive–negative pairs per fold and 30 candidate epochs to choose from, both paths are selecting the maximum of noisy validation scores, so
+  agreement to 0.02 on hERG is not a realistic bar for this fold. Whether the remaining hERG difference is trainer behaviour or noise is **not established**.
+- **Caveats.** (1) Diagnostic only: the official G3 result above stands, and the stock-rule epoch's model weights were not saved (only the mixed trainer's own best epoch was), so
+  this says what the validation AUROC would have been, not that a usable model exists. (2) Selection and scoring both use the validation fold, as stock's own numbers do. (3) The test set was not read.
+  (4) Re-picking among saved epochs is not the same as training with a different epoch count (KERMT's learning-rate schedule depends on the total epochs).
 
 ## Deviations, incidents and corrections (all reported, none hidden)
 
@@ -115,8 +141,8 @@ Both must pass; **G3 (`toxicity__cls` half) = FAIL.** The single-task `ames_muta
 
 ## Questions for the maintainer
 
-1. Is the G3 comparison meant to hold epoch selection fixed? If so, which rule: stock's (best mean validation AUROC) applied to the mixed run's saved views, or the mixed trainer's own?
-   Re-scoring the existing runs post hoc would answer it with no GPU.
+1. Should G3 hold epoch selection fixed? The post-hoc result above says that alone brings AMES inside the frozen rule. If yes, which rule, and does the mixed trainer's selection
+   (or the saved-views mechanism) change so that G3 compares like with like?
 2. hERG validation has 18–24 labels. Should G3's hERG verdict use a pooled or test-based comparison instead, or is hERG excluded from the rule? (Changing the rule needs a `decisions.md` entry first.)
 3. Should the AMES band be reconsidered? With std ≈ 0.003 the frozen `0.5·max(std)` band is tighter than the paired tolerance by an order of magnitude.
 
