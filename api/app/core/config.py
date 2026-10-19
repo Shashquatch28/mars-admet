@@ -63,6 +63,18 @@ class Settings(BaseSettings):
     ml_data_cache_dir: str = Field(default="./ml/data/cache")
     prediction_cache_ttl_seconds: int = Field(default=172_800)
 
+    kermt_service_url: str = Field(
+        default="",
+        description="Base URL of the KERMT inference service (ml/serve/kermt_service). Empty (default) turns KERMT "
+        "serving off: every endpoint is served by XGBoost, whatever ml/serve/routing.json says.",
+    )
+    kermt_service_token: str = Field(default="", description="Sent as X-Kermt-Token; must match the service's KERMT_TOKEN.")
+    kermt_timeout_seconds: float = Field(
+        default=30.0,
+        description="How long one prediction waits for the KERMT service before those endpoints fall back to XGBoost.",
+    )
+    kermt_routing_path: str = Field(default="", description="Override for ml/serve/routing.json (empty = the packaged table).")
+
     s3_endpoint_url: str = Field(default="http://localhost:9000")
     s3_access_key_id: str = Field(default="mars_minio")
     s3_secret_access_key: str = Field(default="mars_minio_password")

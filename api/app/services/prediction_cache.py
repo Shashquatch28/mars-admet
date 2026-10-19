@@ -41,7 +41,7 @@ def build_cache_key(smiles: str, endpoints: list[Endpoint] | None) -> str:
     served under a new version (they simply become unreachable, not
     invalidated in place — no explicit flush step needed)."""
     ep_part = ",".join(sorted(e.value for e in endpoints)) if endpoints else "ALL"
-    return f"predict_cache:{_cache_key_smiles(smiles)}:{ep_part}:{get_settings().model_version}"
+    return f"predict_cache:{_cache_key_smiles(smiles)}:{ep_part}:{prediction_service.serving_version()}"
 
 
 async def get_cached_prediction(r: redis.Redis, key: str) -> PredictionResponse | None:

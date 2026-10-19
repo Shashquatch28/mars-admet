@@ -9,6 +9,7 @@ from app.services.prediction_cache import (
     set_cached_prediction,
 )
 from app.services.prediction_pool import run_prediction
+from app.services.prediction_service import is_degraded
 from app.services.prediction_service import predict as predict_service
 from app.services.rate_limit import enforce_predict_rate_limit
 from app.services.redis_client import get_redis
@@ -43,7 +44,8 @@ async def predict(
         # invalid SMILES with a clear error — only enforced when the real ml
         # stack is present (see prediction_service.py's module docstring).
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    await set_cached_prediction(r, key, response)
+    if not is_degraded(response):  # a KERMT outage answered from XGBoost must not be cached for 48 h
+        await set_cached_prediction(r, key, response)
     # Registers molecule_id -> smiles so GET /molecule/{id}/3d can look it up
     # later (Module 8) — same cache window as the prediction itself.
     await register_molecule(r, response.molecule_id, response.smiles_standardized)

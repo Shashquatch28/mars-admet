@@ -36,6 +36,7 @@ that would just be wrong some of the time.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import sys
 import threading
@@ -58,8 +59,11 @@ try:
     if str(_ml_root) not in sys.path:
         sys.path.insert(0, str(_ml_root))
     from featurize.cache import FeatureCache  # noqa: E402
+    from serve.kermt_client import KermtClient  # noqa: E402
+    from serve.kermt_router import KermtRouter  # noqa: E402
     from serve.predictor import predict_endpoints, standardize_or_raise  # noqa: E402
     from serve.registry import ModelRegistry  # noqa: E402
+    from serve.routing import RoutingTable  # noqa: E402
     from serve.rule_based import SA_MODEL_ID, SA_UNIT, compute_sa_score  # noqa: E402
 
     _ml_available = True
@@ -71,6 +75,9 @@ logger = logging.getLogger("mars.prediction")
 
 _registry = None
 _registry_lock = threading.Lock()
+_router_lock = threading.Lock()
+_kermt_router = None
+_kermt_router_built = False
 
 
 def _get_registry():
@@ -85,6 +92,69 @@ def _get_registry():
             cache = FeatureCache(Path(settings.ml_data_cache_dir))
             _registry = ModelRegistry(cache, artifacts_root=Path(settings.model_artifact_dir))
         return _registry
+
+
+def _get_kermt_router():
+    """The KERMT router, or None when KERMT serving is off (no service URL configured, no ml
+    stack, or an unusable routing table). Built once; a bad table is logged loudly and then
+    treated as "everything on XGBoost" rather than taking the API down."""
+    global _kermt_router, _kermt_router_built
+    if not _ml_available or not get_settings().kermt_service_url:
+        return None
+    with _router_lock:
+        if _kermt_router_built:
+            return _kermt_router
+        settings = get_settings()
+        try:
+            routing = RoutingTable.load(settings.kermt_routing_path or None)
+            client = KermtClient(
+                settings.kermt_service_url,
+                token=settings.kermt_service_token,
+                timeout_seconds=settings.kermt_timeout_seconds,
+            )
+            _kermt_router = KermtRouter(routing, client, _get_registry())
+            logger.info("KERMT serving on: %s", routing.as_dict())
+        except Exception:
+            logger.exception("KERMT routing table unusable; serving every endpoint from XGBoost")
+        _kermt_router_built = True
+        return _kermt_router
+
+
+def reset_kermt_router() -> None:
+    """Forget the cached router (tests, and settings changes in a long-lived process)."""
+    global _kermt_router, _kermt_router_built
+    with _router_lock:
+        _kermt_router, _kermt_router_built = None, False
+
+
+def serving_version() -> str:
+    """The version string for responses and the cache key.
+
+    `settings.model_version` names the deployed generation. When KERMT serving is on, a short
+    digest of the routing table is appended, so a change of which endpoints KERMT serves can
+    never reuse a cache entry written under another routing (the .env's MODEL_VERSION is shared
+    and may not be bumped by whoever changes routing)."""
+    base = get_settings().model_version
+    router = _get_kermt_router()
+    if router is None:
+        return base
+    digest = hashlib.sha256(repr(sorted(router.routing.as_dict().items())).encode()).hexdigest()[:8]
+    return f"{base}+kermt.{digest}"
+
+
+def is_degraded(response: PredictionResponse) -> bool:
+    """True when an endpoint the routing sends to KERMT was answered by something else (the
+    service was unreachable). Such a response is correct but must not be cached for 48 h under
+    the healthy version key."""
+    router = _get_kermt_router()
+    if router is None:
+        return False
+    got = {p.endpoint.value: p.model_id for p in response.predictions}
+    for endpoint in router.served_by_kermt():
+        model_id = got.get(endpoint)
+        if model_id is not None and not model_id.startswith("mars-kermt"):
+            return True
+    return False
 
 
 def warm_up() -> int:
@@ -135,7 +205,9 @@ def _route_to_models(response: PredictionResponse, targets: list[Endpoint]) -> P
 
     endpoint_keys = [ep.value for ep in targets if ep != Endpoint.SA_SCORE]
     try:
-        real_results = predict_endpoints(registry, response.smiles_standardized, endpoint_keys)
+        real_results = predict_endpoints(
+            registry, response.smiles_standardized, endpoint_keys, kermt=_get_kermt_router()
+        )
     except ValueError as exc:
         warnings.warn(f"Real inference failed, falling back to stub: {exc}", stacklevel=2)
         return response
@@ -166,7 +238,7 @@ def _route_to_models(response: PredictionResponse, targets: list[Endpoint]) -> P
         # endpoint the response belongs to the deployed routing table, which is
         # what `model_version` (and the cache key) names. Per-row truth stays in
         # `EndpointPrediction.model_id`.
-        response.model_version = get_settings().model_version
+        response.model_version = serving_version()
     return response
 
 
