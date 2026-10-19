@@ -325,6 +325,21 @@ migrations already at head (`d5be9f4ca6e0`), a private Vite on :5174 against the
   browser (it shares the same builder). The command palette's "Export results" entry is still a placeholder, like the rest
   of the palette's commands.
 
+### 2i. Report (print / Save as PDF, ADR-029) — what was done and what was checked
+
+- **What it is:** a **Report** button beside Predict's Export and in Batch's molecule inspector opens the browser's print
+  dialog on a light, print-only document for that molecule; Save as PDF there makes the PDF. No server route (the blueprint's
+  `/molecule/{id}/report` is superseded, see ADR-029). Disabled in the same cases as the CSV export.
+- **Code:** `src/domain/report.ts` (pure model, tested in `report.test.ts`), `src/components/report/` (`PrintReport`,
+  `usePrintReport`, `report.module.css`), `--report-*` tokens in `tokens.css`.
+- **Checked:** against a live API (stub-served, so every value is hatched and the SA row is NOT RETURNED): the button mounts the
+  report, calls `window.print()` once, the report is `display: none` and `aria-hidden` on screen, and the page title becomes the
+  report name. The print stylesheet was re-applied on screen to look at the layout: 15 rows in 5 groups plus the rule-based
+  group, aligned columns, hatch on every stub value, the reading notes at the end. **Not checked:** the real print dialog and a
+  saved PDF (the in-app browser cannot drive one), the multi-page break behaviour on paper, an out-of-domain row and a
+  held-out-error cell rendered in the page (both are covered by the tests on real captured responses, not by a screenshot).
+- **Not in it:** a 2D structure drawing and drug-likeness flags. The service provides neither.
+
 ## 3. What is broken or missing — read before touching anything
 
 These are ordered by how badly they would bite.
