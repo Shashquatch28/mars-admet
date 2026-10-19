@@ -30,7 +30,7 @@ Get-NetTCPConnection -State Listen -LocalPort 5173,8000
    ```powershell
    docker compose up -d --build        # postgres :55432, redis :6379, minio :9000, api :8000
    docker compose ps                   # wait until postgres, redis, minio and api are healthy
-   curl localhost:8000/health
+   curl localhost:8000/api/health
    ```
 
 2. **Create the database tables.** The compose file does not run migrations, so accounts,

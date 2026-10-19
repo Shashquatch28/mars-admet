@@ -80,7 +80,7 @@ promoted artifacts the API serves the deterministic stub for every endpoint
 Smoke check:
 
 ```bash
-curl -X POST http://localhost:8000/predict \
+curl -X POST http://localhost:8000/api/predict \
   -H "Content-Type: application/json" \
   -d '{"smiles": "CCO", "endpoints": null}'
 ```
