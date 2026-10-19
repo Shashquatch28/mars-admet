@@ -1,0 +1,16 @@
+{
+  "files": {
+    "__init__.py": "6a4b02137460ca9ef0cd5015c744d9cf4cca73b35c85dde40e0b5596a9a50b17",
+    "common.py": "efac846b4a6a9f39c74b34d17fdd0dc3a74e4b6181c2d607cc903f69ba7170cf",
+    "forward.py": "75cfb17d108dee4c6ee3687acff471d82863857dbf8e21934ebd7dd89f3a06ca",
+    "gradnorm.py": "b8052876d1b804c0467b00a58fe3f7cca37c47bd308f33be63dc4812e2e80340",
+    "losses.py": "0a6c479fedf1c95caa6c6105bd7572e25efb442d4ac993593bf1fef9f0502e64",
+    "metrics_hooks.py": "0ea181d6deb1f7a23b00670e1c34d9a473f337832d2ee0c0c9226b61c5761d63",
+    "sampler.py": "7ffc4579f751a8e82ac659651a0b37f3e179f162b20ac5ceae809e085a895f34",
+    "scaling.py": "b16fe9f268559d64ba2fa87d90e2b15f95579bc2af6072129ce709c6af873cdf",
+    "selfcheck.py": "0b7684ffe5cc0d42b28431d72b6c5e9d36d53d127f15a2c76d36aee71399be2a",
+    "train_mixed.py": "cb5577605dceee4a37bcd50e36a528601d82ede83ab77a6af0a291a1bdd455ab",
+    "trainer.py": "74f452948c96466909cc32b98be53dec125db6838e027b5b02e19d73737ef212"
+  },
+  "trainer_version": "mars-kermt-mixed-trainer-v1"
+}

@@ -1,0 +1,13 @@
+{
+ "ok": true,
+ "torch": "2.9.1",
+ "cuda_available": true,
+ "checks": {
+  "fixed_matches_stock_classification": true,
+  "fixed_matches_stock_regression": true,
+  "G4_kendall_at_zero_is_1_per_cls_and_half_per_reg": true,
+  "empty_task_has_no_logsigma_gradient": true,
+  "all_empty_batch_is_zero": true,
+  "nan_in_unlabeled_slot_is_ignored": true
+ }
+}

@@ -5,6 +5,12 @@ banner and verify discipline (P-5, P-7) apply unchanged. Decision: `decisions.md
 workstation.** Commands were checked against the code in this repo and against KERMT's source at the pinned tag; they were not
 executed against the container. Where a step depends on something not established, it says so._
 
+> **UPDATE 2026-10-19 — first workstation execution.** G4, G1 and G2 were run on `5084d71` (2026-10-15) and **pass**; the `toxicity__cls`
+> half of G3 was run (5 mixed seeds, stock values) and **fails on both endpoints**. Nothing was tuned or changed. Results, commands, the
+> per-seed table and the open question: `status/kermt_tier1_gates_session_2026-10-15.md`; records: `status/kermt_tier1_gates/`.
+> Corrections found by running this runbook: a mixed run's files live under `<run>/artifacts/kermt/` (not `<run>/logs/`), run directories are
+> named `kermt_mx_<cluster>_seed<N>_<mode>_<UTC>`, and `git dirty` is in `provenance.json`. The single-task `ames_mutagenicity` half of G3 was not run.
+
 **Where the code is.** Tier-0 training stays on `milestone/m2-kermt`. The Tier-1/2 code is on `milestone/m2-kermt-tier1`; the lab
 session that runs Tier 1 checks out *that* branch and pins its tip as `EXPECTED_SHA`. The Tier-0 guard (P-2) still holds there:
 Tier 1 adds files and edits none of the protocol-critical list.
@@ -215,7 +221,7 @@ train_one_seed_mixed(cd, cfg, 0, checkpoint=CKPT, loss_mode="kendall", min_per_t
 
 Order: one arm, one seed, verify, next (Tier-0 P-7 discipline); `metabolism` before `absorption_distribution`.
 
-### Per-run checks (read `<run>/logs/mixed_epochs.jsonl`)
+### Per-run checks (read `<run>/artifacts/kermt/logs/mixed_epochs.jsonl`; `trainer_provenance.json` is beside it in `<run>/artifacts/kermt/`)
 
 | Check | Look for | If wrong |
 |---|---|---|

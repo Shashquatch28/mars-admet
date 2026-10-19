@@ -1,0 +1,58 @@
+{
+ "seeds": {
+  "0": {
+   "run_dir": "runs/kermt_mx_toxicity__cls_seed0_fixed_20261015T070652Z",
+   "run_id": "kermt_mx_toxicity__cls_seed0_fixed_20261015T070652Z",
+   "best_epoch": 6,
+   "peak_vram_mib": 3842,
+   "wall_s_approx": 6100,
+   "wall_note": "launch 12:36:38 IST, exit ~14:18 IST; driver path bug caused a false STOP, checks re-run by hand and passed",
+   "val_auroc_mixed": {
+    "herg_cardiotoxicity": 0.9705882352941176,
+    "ames_mutagenicity": 0.8488553118043367
+   },
+   "warnings": []
+  },
+  "1": {
+   "run_dir": "runs/kermt_mx_toxicity__cls_seed1_fixed_20261015T084925Z",
+   "run_id": "kermt_mx_toxicity__cls_seed1_fixed_20261015T084925Z",
+   "wall_s": 6110.1,
+   "peak_vram_mib": 3818,
+   "best_epoch": 3,
+   "warnings": [],
+   "log": "runs/lab_logs/g3_seed1_20261015T084912Z.log",
+   "vram": "runs/lab_logs/vram_g3_seed1_20261015T084912Z.csv"
+  },
+  "2": {
+   "run_dir": "runs/kermt_mx_toxicity__cls_seed2_fixed_20261015T103115Z",
+   "run_id": "kermt_mx_toxicity__cls_seed2_fixed_20261015T103115Z",
+   "wall_s": 6110.1,
+   "peak_vram_mib": 3950,
+   "best_epoch": 5,
+   "warnings": [],
+   "log": "runs/lab_logs/g3_seed2_20261015T103102Z.log",
+   "vram": "runs/lab_logs/vram_g3_seed2_20261015T103102Z.csv"
+  },
+  "3": {
+   "run_dir": "runs/kermt_mx_toxicity__cls_seed3_fixed_20261015T121306Z",
+   "run_id": "kermt_mx_toxicity__cls_seed3_fixed_20261015T121306Z",
+   "wall_s": 6130.1,
+   "peak_vram_mib": 3796,
+   "best_epoch": 2,
+   "warnings": [],
+   "log": "runs/lab_logs/g3_seed3_20261015T121252Z.log",
+   "vram": "runs/lab_logs/vram_g3_seed3_20261015T121252Z.csv"
+  },
+  "4": {
+   "run_dir": "runs/kermt_mx_toxicity__cls_seed4_fixed_20261015T135516Z",
+   "run_id": "kermt_mx_toxicity__cls_seed4_fixed_20261015T135516Z",
+   "wall_s": 316445.9,
+   "peak_vram_mib": 3786,
+   "best_epoch": 2,
+   "warnings": [],
+   "log": "runs/lab_logs/g3_seed4_20261015T135502Z.log",
+   "vram": "runs/lab_logs/vram_g3_seed4_20261015T135502Z.csv"
+  }
+ },
+ "all_complete": true
+}

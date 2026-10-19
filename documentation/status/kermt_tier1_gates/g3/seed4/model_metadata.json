@@ -1,0 +1,42 @@
+{
+  "fit_summary": {
+    "batch_stats_epoch0": {
+      "batches_with_zero_labels_per_task": [
+        0,
+        0
+      ],
+      "n_batches": 400,
+      "per_task_mean": [
+        23.532,
+        8.52
+      ],
+      "per_task_min": [
+        15,
+        2
+      ],
+      "size_max": 32,
+      "size_min": 19
+    },
+    "best_epoch": 2,
+    "best_selection_loss": 2.0051502926042475,
+    "event": "summary",
+    "log_sigma_final": null,
+    "trainer_version": "mars-kermt-mixed-trainer-v1"
+  },
+  "gradnorm": null,
+  "hyperparameter_source": "parity-gate",
+  "loss_mode": "fixed",
+  "min_per_task": 0,
+  "model_id": "mars-kermt-mixed-v1",
+  "pretrained_checkpoint": "data/checkpoints/kermt/NV-KERMT-70M-v2/kermt_contrastive_v2.0.pt",
+  "seed": 4,
+  "target_names": [
+    "herg_cardiotoxicity",
+    "ames_mutagenicity"
+  ],
+  "task_types": [
+    "classification",
+    "classification"
+  ],
+  "trainer_version": "mars-kermt-mixed-trainer-v1"
+}

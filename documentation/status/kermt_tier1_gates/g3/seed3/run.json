@@ -1,0 +1,14 @@
+{
+  "cluster": "toxicity__cls",
+  "endpoint": "toxicity__cls",
+  "finished_at": "2026-10-15T13:54:48.795249+00:00",
+  "model_family": "kermt_mixed",
+  "n_targets": 2,
+  "name": "kermt_mx_toxicity__cls_seed3_fixed",
+  "prep_id": "20260918T090433Z",
+  "run_id": "kermt_mx_toxicity__cls_seed3_fixed_20261015T121306Z",
+  "seed": 3,
+  "started_at": "2026-10-15T12:13:06.170361+00:00",
+  "status": "completed",
+  "variant": "fixed"
+}

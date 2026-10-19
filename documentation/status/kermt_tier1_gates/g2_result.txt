@@ -1,0 +1,2 @@
+fold: n_train=12787 n_val=1827
+G2_RESULT: GateResult(gate='G2', passed=True, summary='stock 1.181015 vs mixed 1.176209: relative difference 0.41% (tolerance 5%)', evidence={'stock': 1.181015, 'mixed': 1.1762088571488858, 'relative_difference': 0.004069501954771224})

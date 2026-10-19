@@ -1,0 +1,83 @@
+{
+ "stock_runs": {
+  "0": "runs/kermt_mtsub_toxicity__cls_seed0_20260922T062623Z",
+  "1": "runs/kermt_mtsub_toxicity__cls_seed1_20260924T080913Z",
+  "2": "runs/kermt_mtsub_toxicity__cls_seed2_20261014T062957Z",
+  "3": "runs/kermt_mtsub_toxicity__cls_seed3_20261014T080552Z",
+  "4": "runs/kermt_mtsub_toxicity__cls_seed4_20261014T101513Z"
+ },
+ "mixed_runs": {
+  "0": "runs/kermt_mx_toxicity__cls_seed0_fixed_20261015T070652Z",
+  "1": "runs/kermt_mx_toxicity__cls_seed1_fixed_20261015T084925Z",
+  "2": "runs/kermt_mx_toxicity__cls_seed2_fixed_20261015T103115Z",
+  "3": "runs/kermt_mx_toxicity__cls_seed3_fixed_20261015T121306Z",
+  "4": "runs/kermt_mx_toxicity__cls_seed4_fixed_20261015T135516Z"
+ },
+ "endpoints": {
+  "herg_cardiotoxicity": {
+   "stock": [
+    0.9117647058823529,
+    0.84375,
+    0.875,
+    0.875,
+    0.9351851851851852
+   ],
+   "mixed": [
+    0.9705882352941176,
+    0.75,
+    0.90625,
+    0.8125,
+    0.7870370370370371
+   ],
+   "passed": false,
+   "summary": "|mean diff| 0.0429 vs band 0.0406 (FAIL); paired |dAUROC| <= 0.02 on 0/5 seeds (FAIL)",
+   "evidence": {
+    "mean_stock": 0.8881399782135077,
+    "mean_mixed": 0.845275054466231,
+    "std_stock": 0.03189723335066438,
+    "std_mixed": 0.08119672917666018,
+    "paired_abs_diff": [
+     0.05882352941176472,
+     0.09375,
+     0.03125,
+     0.0625,
+     0.14814814814814814
+    ],
+    "band": 0.04059836458833009
+   }
+  },
+  "ames_mutagenicity": {
+   "stock": [
+    0.8532376852242305,
+    0.8509254903113881,
+    0.8575955882352941,
+    0.8579733079870263,
+    0.8547231021340242
+   ],
+   "mixed": [
+    0.8488553118043367,
+    0.8542873455065816,
+    0.8517585784313727,
+    0.8440932652641274,
+    0.852576377645952
+   ],
+   "passed": false,
+   "summary": "|mean diff| 0.0046 vs band 0.0018 (FAIL); paired |dAUROC| <= 0.02 on 5/5 seeds (ok)",
+   "evidence": {
+    "mean_stock": 0.8548910347783927,
+    "mean_mixed": 0.8503141757304741,
+    "std_stock": 0.002657153611479092,
+    "std_mixed": 0.0035726165683939684,
+    "paired_abs_diff": [
+     0.004382373419893781,
+     0.003361855195193497,
+     0.0058370098039214335,
+     0.013880042722898889,
+     0.0021467244880722935
+    ],
+    "band": 0.0017863082841969842
+   }
+  }
+ },
+ "G3_toxicity_cls_half_passed": false
+}
