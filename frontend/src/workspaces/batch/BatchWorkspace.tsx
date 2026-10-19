@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useBatchSession } from "../../app/batchSession";
 import { USING_API, saveMolecule } from "../../data/client";
 import { downloadText } from "../../data/download";
+import { usePrintReport } from "../../components/report/usePrintReport";
 import { batchFileName, batchRowFileName, buildCsv, type ExportMolecule } from "../../domain/exportCsv";
 import { SaveControl } from "../../components/SaveControl";
 import { buildMoleculeRequest, moleculeKey, saveNote } from "../../domain/save";
@@ -81,6 +82,7 @@ export function BatchWorkspace() {
     error: r.ok ? null : (r.error ?? "row failed"),
   });
   const canExport = USING_API && summary.rows.length > 0;
+  const printReport = usePrintReport();
   const toggle = (k: keyof FilterSpec) => setFilter((f) => ({ ...f, [k]: !f[k] }));
 
   return (
@@ -206,6 +208,7 @@ export function BatchWorkspace() {
         </div>
       </section>
 
+      {printReport.element}
       <aside className={styles.inspector} aria-label="Molecule detail">
         <div className={styles.insphd}>
           <span className={styles.panelTitle}>Molecule detail</span>
@@ -286,6 +289,13 @@ export function BatchWorkspace() {
             }
           >
             Export row
+          </button>
+          <button
+            disabled={!USING_API || !selectedRow}
+            title="Open this molecule as a printable report; choose Save as PDF in the print dialog"
+            onClick={() => selectedRow && printReport.print(toExport(selectedRow))}
+          >
+            Report
           </button>
           {USING_API && (
             <SaveControl

@@ -17,6 +17,7 @@ import { SaveControl } from "../../components/SaveControl";
 import { buildMoleculeRequest, moleculeKey, saveNote } from "../../domain/save";
 import { EndpointList } from "./EndpointList";
 import { downloadText } from "../../data/download";
+import { usePrintReport } from "../../components/report/usePrintReport";
 import { buildCsv, predictFileName } from "../../domain/exportCsv";
 import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
@@ -79,6 +80,11 @@ export function PredictWorkspace() {
             predictFileName(result.response.molecule_id),
             buildCsv([{ smilesInput: result.submitted, response: result.response, cells: recon.rows }]),
           )
+      : undefined;
+  const printReport = usePrintReport();
+  const openReport =
+    usingApi && result && !failure
+      ? () => printReport.print({ smilesInput: result.submitted, response: result.response, cells: recon.rows })
       : undefined;
   // Fixture: the response's own input field. Live: what was actually submitted.
   const inputShown = usingApi ? result?.submitted : response?.smiles_input;
@@ -177,8 +183,9 @@ export function PredictWorkspace() {
           </div>
         </section>
       ) : (
-        <EndpointList recon={recon} loading={placeholders} idle={idle} onExport={exportCsv} />
+        <EndpointList recon={recon} loading={placeholders} idle={idle} onExport={exportCsv} onReport={openReport} />
       )}
+      {printReport.element}
 
       {/* inspector */}
       <aside className={styles.inspector} aria-label="Endpoint detail">
