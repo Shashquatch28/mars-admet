@@ -19,6 +19,7 @@ from app.routers import (
     molecules,
     predict,
     reports,
+    worker,
 )
 from app.services import prediction_service
 from app.spa import mount_spa
@@ -117,6 +118,7 @@ app.include_router(auth.router, prefix=f"{API_PREFIX}/auth", tags=["auth"])
 app.include_router(molecules.router, prefix=f"{API_PREFIX}/molecules", tags=["molecules"])
 app.include_router(reports.router, prefix=f"{API_PREFIX}/reports", tags=["reports"])
 app.include_router(account.router, prefix=f"{API_PREFIX}/account", tags=["account"])
+app.include_router(worker.router, prefix=f"{API_PREFIX}/internal/batch")
 
 # Last, so the catch-all never shadows an API route.
 _static_dir = get_settings().static_dir

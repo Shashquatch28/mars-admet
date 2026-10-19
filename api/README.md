@@ -78,9 +78,36 @@ Without Postgres and Redis the integration tier skips rather than fails (see
 containers. Real inference is only exercised where rdkit is installed (the
 built image), so root-`.venv` runs are stub-only for `/predict` by design.
 
+## Batch worker deploy (not yet run against GCP)
+
+One Cloud Run service serves the site, the API and the worker endpoint. Set on that service:
+`BATCH_QUEUE_BACKEND=cloud_tasks`, `BATCH_BLOB_BACKEND=s3`, `BATCH_WORKER_SECRET` (long random),
+`WORKER_BASE_URL` (its own URL), `GCP_PROJECT_ID`, `GCP_REGION`, `CLOUD_TASKS_QUEUE`, the R2 `S3_*`
+values with `S3_REGION=auto`, and `MAX_CONCURRENT_PREDICTIONS` = its vCPU count. The service account
+needs `roles/cloudtasks.enqueuer`. Create the queue with the same attempt count the app expects:
+
+```bash
+gcloud tasks queues create mars-batch --location=us-central1   --max-attempts=5 --min-backoff=10s --max-backoff=300s --max-concurrent-dispatches=2
+```
+
+After the first deploy, check: (1) a 300-row upload reaches `done` and `/api/batch/progress` advances
+slice by slice; (2) `POST /api/internal/batch/run` without the secret answers 403; (3) stop the service
+mid-job and confirm Cloud Tasks retries the slice and the job still finishes; (4) the result is an object
+under `batch/<job>/results.json` and expires after 24 h.
+
 ## Known limits
 
-- Cloud Tasks is not wired; async batch runs in-process.
+- Async batch: by default (`BATCH_QUEUE_BACKEND=local`) a queued job runs inside this process and dies with
+  it. `BATCH_QUEUE_BACKEND=cloud_tasks` enqueues one Cloud Task per slice of `BATCH_SLICE_ROWS` molecules,
+  aimed at `POST /api/internal/batch/run` on this same service (guarded by `BATCH_WORKER_SECRET`; absent
+  unless that backend is on). That path is unit-tested against a fake Cloud Tasks client and has not run
+  against a real project: do the checks under "Batch worker deploy" after the first deploy.
+- Batch bytes (the uploaded molecules, slice results, the final result) go through `BATCH_BLOB_BACKEND`.
+  `redis` is for development only: a result is about 2.5 KB per molecule and Upstash's free plan allows
+  10 MB per request and 100 MB per record, so Redis holds a few thousand rows at most and the
+  50,000-molecule cap cannot fit. Production uses `s3` (Cloudflare R2). Each object carries an expiry
+  stamp that reads enforce, so the 24 h retention holds without a lifecycle rule; add one as well
+  (delete `batch/` objects after 1 day) so expired objects are removed.
 - The anonymous rate limiter counts per client address. By default that is the socket peer
   (`request.client.host`), which behind a proxy is the proxy: everyone would share one bucket.
   Set `TRUSTED_PROXY_HOPS=1` behind Cloud Run to read the entry Google's front end appended to
