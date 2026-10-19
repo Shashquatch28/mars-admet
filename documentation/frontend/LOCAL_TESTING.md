@@ -177,7 +177,7 @@ sample data and after a failure.
 ## Tests
 
 ```powershell
-cd frontend; npm test; npx tsc --noEmit; npm run lint     # 191 tests; lint has 0 errors
+cd frontend; npm test; npx tsc --noEmit; npm run lint     # 262 tests; lint has 0 errors (8 accepted fast-refresh warnings)
 cd ..; .venv\Scripts\ruff check contracts api ml
 .venv\Scripts\pytest contracts/tests api/tests -q          # DB/Redis tests skip unless the stack is up
 ```
