@@ -66,7 +66,7 @@ container); 501 in an environment without it.
 - `/compare` returns `per_endpoint_winner: null` always: MARS has no validated
   direction-of-good, so the field is never populated and the UI never consumes it.
 - Rate limits: anonymous 60 `/predict`/min per IP; per-account 5 concurrent
-  batch jobs, 50,000-molecule cap, interactive threshold 1,000.
+  batch jobs, 50,000-molecule cap, interactive threshold 100 (`BATCH_INTERACTIVE_THRESHOLD`).
 - Batch uploads (R2) auto-deleted 24h after job completion.
 - Retention: `retrain_opt_in` defaults `false`; opted-in data stored separately
   from the serving cache/upload bucket.

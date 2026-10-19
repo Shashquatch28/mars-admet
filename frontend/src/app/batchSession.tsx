@@ -4,7 +4,7 @@
 // so the client keeps no cache that could outlive or contradict it.
 //
 // Flow (API_ROUTES.md /batch/*): POST the file; if the answer carries results (up to
-// 1,000 molecules) it is done; otherwise follow the progress stream, then fetch results.
+// 100 molecules) it is done; otherwise follow the progress stream, then fetch results.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ApiError,

@@ -89,7 +89,7 @@ one it approximates.
 | Package | For | Why not hand-rolled |
 |---|---|---|
 | `@tanstack/react-table` | Batch grid: sorting, column sizing, grouping | correct headless table semantics are a genuine time sink |
-| `@tanstack/react-virtual` | Batch: up to 1,000 interactive rows | virtualization must be correct or nothing else matters |
+| `@tanstack/react-virtual` | Batch: up to 100 interactive rows | virtualization must be correct or nothing else matters |
 | `@tanstack/react-query` | `/predict`, `/batch`, `/compare` caching + SSE-adjacent polling | the API already has a 48h cache and a `cache_hit` flag; client cache must not contradict it |
 | `radix-ui` primitives | dialog, popover, dropdown, tooltip, tabs | focus trapping and ARIA wiring |
 | `3dmol` (already pinned) | Module 7 viewer, both modes | the blueprint already settled this |
@@ -148,7 +148,7 @@ against the same fixtures the API tests use.
 - `model_version` and per-endpoint `model_id` are surfaced, never averaged away.
 - `cache_hit` is displayed in the status bar; a cached result is still a result
   and is not visually distinguished beyond that readout.
-- Batch: `POST /batch/predict` returns either inline results (≤1,000) or a
+- Batch: `POST /batch/predict` returns either inline results (≤100) or a
   `job_id`. The UI treats these as one state machine with a progress phase, and
   consumes `/batch/progress/{job_id}` as SSE.
 
