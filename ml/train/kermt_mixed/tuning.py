@@ -64,14 +64,26 @@ KINDS = ("choice", "int", "uniform", "loguniform")
 
 #: Parameter names a trial may set, and where each one goes.
 KERMT_CONFIG_PARAMS = (
-    "epochs", "batch_size", "init_lr", "max_lr", "final_lr", "dropout",
-    "bond_drop_rate", "dist_coff", "ffn_hidden_size", "ffn_num_layers",
+    "epochs", "batch_size", "init_lr", "max_lr", "final_lr", "ffn_hidden_size", "ffn_num_layers",
 )
+#: Names that look tunable but are NOT: KERMT's ``load_checkpoint(..., current_args=args)`` overwrites them with the
+#: pretrain checkpoint's saved values (NV-KERMT-70M-v2: dropout 0.1, bond_drop_rate 0, dist_coff 0.1, weight_decay 1e-7)
+#: before the model, loss, optimizer and collator are built, so a trial that sets one changes nothing
+#: (verified 2026-10-19, ``documentation/status/kermt_tier1_gates/diagnostics/a2_all_model_args.json``).
+INERT_PARAMS = ("dropout", "bond_drop_rate", "dist_coff", "weight_decay")
 MIXED_PARAMS = ("min_per_task", "gradnorm_alpha", "gradnorm_lr")
 
 
 class ProtocolError(ValueError):
     """The protocol, its registration, or the results offered to it are invalid."""
+
+
+def _reject_inert(name: str) -> None:
+    if name in INERT_PARAMS:
+        raise ProtocolError(
+            f"{name!r} cannot be a tuning parameter: KERMT overwrites it with the pretrain checkpoint's value in "
+            "load_checkpoint(current_args=args), so every trial would train identically"
+        )
 
 
 @dataclass(frozen=True)
@@ -85,6 +97,7 @@ class Axis:
     high: float | None = None
 
     def __post_init__(self) -> None:
+        _reject_inert(self.name)
         if self.name not in KERMT_CONFIG_PARAMS + MIXED_PARAMS:
             raise ProtocolError(f"unknown parameter {self.name!r}")
         if self.kind not in KINDS:
@@ -139,6 +152,8 @@ class Protocol:
         if self.min_improvement_in_stds < 0:
             raise ProtocolError("min_improvement_in_stds must be >= 0")
         names = [a.name for a in self.space]
+        for n in [*names, *self.reference]:
+            _reject_inert(n)
         if len(set(names)) != len(names):
             raise ProtocolError("duplicate axis names")
         extra = set(self.reference) - set(names)

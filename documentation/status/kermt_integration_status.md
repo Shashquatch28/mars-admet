@@ -167,3 +167,7 @@ Full training log: `ml/runs/kermt_smoke_ames/logs/finetune.log`. Finetuned check
 | Multi-task (mixed-type, e.g. Metabolism) | **Not supported by the stock CLI.** Tier-0 baseline = type-homogeneous subgroups; **Tier 1 (revived 2026-10-14)** trains the mixed cluster through a MARS trainer, gates G1–G4 not yet run | Stock CLI architectural limitation — see §10 / decisions.md. |
 
 No claim of "full 14-endpoint training viable" is made — only what was actually run and measured above.
+
+> **CORRECTION 2026-10-19 (appended; nothing above is rewritten).** The KERMT defaults quoted here for `dropout` (0.0), `bond_drop_rate` (0.1) and `dist_coff` (0.15) are CLI
+> values. `load_checkpoint` overwrites them with the NV-KERMT-70M-v2 checkpoint's 0.1 / 0 / 0.1 (and `weight_decay` 1e-7) before training; those are the values in force in
+> every run. They cannot be tuned through the CLI. See `decisions.md` 2026-10-19 (correction).

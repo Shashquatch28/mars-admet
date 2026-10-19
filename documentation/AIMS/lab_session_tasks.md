@@ -1319,3 +1319,7 @@ Then:
 7. The Docker image id is not pinned anywhere and is **not** captured in run provenance (only the
    checkpoint sha and KERMT commit come from the lockfile) — the session log is its only record.
 8. Per-run W&B carries no test-metric dicts (section 8).
+
+> **CORRECTION 2026-10-19 (appended; nothing above is rewritten).** The KERMT defaults quoted here for `dropout` (0.0), `bond_drop_rate` (0.1) and `dist_coff` (0.15) are CLI
+> values. `load_checkpoint` overwrites them with the NV-KERMT-70M-v2 checkpoint's 0.1 / 0 / 0.1 (and `weight_decay` 1e-7) before training; those are the values in force in
+> every run. They cannot be tuned through the CLI. See `decisions.md` 2026-10-19 (correction).

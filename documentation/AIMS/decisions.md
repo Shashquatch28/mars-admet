@@ -13,6 +13,27 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-19 — Correction: `dist_coff`, `dropout`, `bond_drop_rate`, `weight_decay` are set by the pretrain checkpoint, not by the CLI
+
+**Status:** factual correction, verified in the KERMT container (maintainer accepted the result 2026-10-19). Corrects statements in earlier
+entries and notes; those texts are left as written. Evidence: `documentation/status/kermt_tier1_gates/diagnostics/{a2_all_model_args,g2_extension}.json`.
+
+**Fact.** `kermt.util.utils.load_checkpoint(path, current_args=args)` copies every name in `get_model_args()` that the checkpoint saved over `args`.
+For `NV-KERMT-70M-v2` the values in force are **`dist_coff` 0.1, `dropout` 0.1, `bond_drop_rate` 0, `weight_decay` 1e-7**, whatever
+`--dist_coff` (0.15), `--dropout` (0.0), `--bond_drop_rate` (0.1) and `--weight_decay` (0.0) say. Stock (`task/train.py`) and the mixed trainer both
+call it before building the loss, optimizer and collator, so every Tier-0 and G3 run used the checkpoint's values. `ffn_hidden_size`, `ffn_num_layers`,
+`hidden_size`, `depth` are not saved in the checkpoint and are not overwritten.
+
+**Corrections.** (1) The 2026-10-14 sentence "the earlier default of `dist_coff = 0.1` in the loss config was also wrong against KERMT's 0.15" is itself wrong:
+0.1 is the value in force. (2) Entries and notes that list dropout 0.0 / bond-drop 0.1 / dist-coff 0.15 as the applied stock values
+(this log's settings table, `lab_session_tasks.md`, `lab_session_tier1.md`, `status/kermt_integration_status.md`, `status/kermt_gpu_session_2026-09-22/24/30.md`,
+the `cmd_replay` field of Tier-0 `artifact_metadata.json`) report the CLI values, not the effective ones. (3) "Stock zeroes `bond_drop_rate` after the first validation
+pass" is a no-op: it is already 0. (4) These four are not tuning axes: `tuning.py` now rejects them with a `ProtocolError` (test added). Building a real override
+(applied after `load_checkpoint`) would be a new decision. The mixed trainer's start-event log still records only `dist_coff`; adding the other three is proposed
+for later because it changes the staged trainer bytes.
+
+---
+
 ## 2026-10-19 — DRAFT, NOT ADOPTED: replacement for the frozen G3 equivalence rule (Tier-1 parity gate)
 
 **Status: DRAFT — NOT ADOPTED.** Written by an AI session at the maintainer's request as material for a decision. Nothing

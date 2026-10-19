@@ -259,3 +259,7 @@ is a different training run, not an earlier stop — which is why it is a protoc
 *can* answer the selection half of that question for free, are not a substitute for it. The tuning seeds are among the five reporting
 seeds; that is acceptable because selection never reads the test split, but their validation numbers are optimistic and are not
 reported as results.
+
+> **CORRECTION 2026-10-19 (appended; nothing above is rewritten).** The KERMT defaults quoted here for `dropout` (0.0), `bond_drop_rate` (0.1) and `dist_coff` (0.15) are CLI
+> values. `load_checkpoint` overwrites them with the NV-KERMT-70M-v2 checkpoint's 0.1 / 0 / 0.1 (and `weight_decay` 1e-7) before training; those are the values in force in
+> every run. They cannot be tuned through the CLI. See `decisions.md` 2026-10-19 (correction).

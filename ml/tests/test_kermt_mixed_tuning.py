@@ -234,3 +234,20 @@ def test_mean_rank_lets_auroc_and_mae_be_combined_without_choosing_weights():
     assert posthoc.best_epoch([0, 1, 2, 3], scores, flags, rule="mean_rank") == 3
     assert posthoc.best_epoch([0, 1, 2, 3], scores, flags, rule="task:0") == 0
     assert posthoc.best_epoch([0, 1, 2, 3], scores, flags, rule="task:1") == 1
+
+
+# ---- parameters KERMT overwrites at load_checkpoint are not tunable ------------------
+
+
+@pytest.mark.parametrize("name", ["dropout", "bond_drop_rate", "dist_coff", "weight_decay"])
+def test_inert_parameters_rejected_as_axes(name):
+    with pytest.raises(ProtocolError, match="load_checkpoint"):
+        Axis(name, "uniform", low=0.0, high=0.3)
+    with pytest.raises(ProtocolError, match="load_checkpoint"):
+        _proto(reference={"epochs": 30, "max_lr": 1e-4, "min_per_task": 0, name: 0.1})
+
+
+@pytest.mark.parametrize("name", ["ffn_hidden_size", "ffn_num_layers"])
+def test_architecture_parameters_stay_tunable(name):
+    assert name in tuning.KERMT_CONFIG_PARAMS
+    Axis(name, "choice", values=(1, 2))
