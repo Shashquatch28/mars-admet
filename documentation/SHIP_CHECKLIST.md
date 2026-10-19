@@ -17,7 +17,8 @@ approval, `[lab]` needs the GPU workstation.
 - [x] A4 `[here]` Refresh HANDOFF §1 gate table: 202 frontend tests, 6 lint warnings, 63 API/contract passed.
 - [x] A5 `[here]` Fix the stale contract text: "probability" at `prediction.py:25`, "cluster" in `endpoints.py`. Change the frontend mirror and the drift test in the same commit.
 - [ ] A6 `[you]` Housekeeping, needs your OK to delete: local branch `perf/serving-model-cache` (merged in PR #9) and the stale worktree `.claude/worktrees/hopeful-franklin-202401`.
-- [ ] A7 `[here]` Refresh the project tracker artifact (last as-of 2026-10-18).
+- [x] A7 `[here]` Refresh the project tracker artifact (last as-of 2026-10-18).
+  Refreshed 2026-10-19 after the chunks below (same URL, version 24).
 
 ## B. Science that must be settled before any public claim
 
