@@ -41,7 +41,7 @@ def test_health_answers_while_a_prediction_is_running(monkeypatch):
 
     async def scenario() -> tuple[float, float, bool, int]:
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        async with httpx.AsyncClient(transport=transport, base_url="http://test/api") as client:
             started = time.perf_counter()
             slow = asyncio.create_task(client.post("/predict", json={"smiles": "CCO"}))
             await asyncio.sleep(0.1)  # let the prediction start

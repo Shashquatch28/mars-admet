@@ -51,7 +51,7 @@ From the repo root:
 ```bash
 cp .env.example .env
 docker compose up -d --build         # postgres, redis, minio, api on :8000
-curl localhost:8000/health
+curl localhost:8000/api/health
 ```
 
 Or without Docker, against a running Postgres and Redis:
@@ -62,7 +62,7 @@ pip install -r api/requirements.txt
 cd api && alembic upgrade head && uvicorn app.main:app --reload
 ```
 
-Docs: `http://localhost:8000/docs`. The Docker image copies `ml/serve`,
+Every route is under `/api` (ADR-025). Docs: `http://localhost:8000/api/docs`. The Docker image copies `ml/serve`,
 `ml/featurize`, `ml/models` and `ml/eval` and mounts `ml/artifacts/` and
 `ml/data/cache/` as volumes, so trained artifacts change independently of code.
 

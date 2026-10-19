@@ -4,7 +4,7 @@ from app.core.config import get_settings
 from app.main import app
 from fastapi.testclient import TestClient
 
-client = TestClient(app)
+client = TestClient(app, base_url="http://testserver/api")
 
 
 def test_generations_reports_only_the_deployed_generation_without_a_session():
