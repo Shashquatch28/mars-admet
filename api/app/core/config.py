@@ -29,6 +29,13 @@ class Settings(BaseSettings):
         "is accepted but disables credentials, because browsers reject '*' with cookies.",
     )
 
+    static_dir: str = Field(
+        default="",
+        description="Directory holding the built frontend (Vite `dist`). When set and it exists, the API "
+        "serves it at `/` with an index.html fallback for client routes (ADR-025). Empty in development, "
+        "where Vite serves the frontend. The Docker image sets it.",
+    )
+
     session_ttl_days: int = Field(default=7)
     session_cookie_name: str = Field(default="mars_session")
     session_cookie_secure: bool = Field(default=False)

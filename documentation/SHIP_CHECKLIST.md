@@ -29,7 +29,7 @@ approval, `[lab]` needs the GPU workstation.
 
 ## C. Make it deployable
 
-- [ ] C1 `[here]` Production topology (ADR-025, Q22): API under `/api`, frontend served from the API container (multi-stage Dockerfile), secure cookie.
+- [x] C1 `[here]` Production topology (ADR-025, Q22): API under `/api`, frontend served from the API container (multi-stage Dockerfile), secure cookie. (Verified 2026-10-19 in a container built from this branch's code on the compose image: bundle, client-route fallback, `/api` routes, real predict, direct and queued Batch, `Secure` cookie. The full Dockerfile's pip layer did not finish locally because the download was corrupted on a slow connection, so the CI `build-api-image` job is its first full build.)
 - [x] C2 `[here]` Verify the client address the rate limiter sees behind Cloud Run. (Code and tests done; observing it on a deployed service stays with C7.)
 - [x] C3 `[here]` Cap concurrent predictions to the container's CPUs (default thread pool is 40; each prediction is single-threaded).
 - [x] C4 `[here]` Interactive Batch tier (up to 1,000 rows) still holds one request open with no progress; add progress or lower the threshold.

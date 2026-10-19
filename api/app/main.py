@@ -2,6 +2,7 @@ import asyncio
 import logging
 import warnings
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,6 +21,7 @@ from app.routers import (
     reports,
 )
 from app.services import prediction_service
+from app.spa import mount_spa
 
 logger = logging.getLogger("mars.startup")
 
@@ -46,6 +48,12 @@ def _warn_on_insecure_config() -> None:
             stacklevel=1,
         )
         logger.warning("SECRET_KEY is at its insecure development default.")
+    if settings.static_dir and not settings.session_cookie_secure:
+        logger.warning(
+            "The frontend is served from this container (STATIC_DIR is set) but SESSION_COOKIE_SECURE is "
+            "false: the session cookie would travel over plain HTTP. Set SESSION_COOKIE_SECURE=true "
+            "behind HTTPS (ADR-025 item 3)."
+        )
     if not settings.cloudflare_turnstile_secret_key:
         logger.info(
             "CLOUDFLARE_TURNSTILE_SECRET_KEY is unset — registration Turnstile "
@@ -70,6 +78,12 @@ app = FastAPI(
     description="Molecular ADMET Rapid Screening — prediction, batch, and molecule-detail serving.",
     version="0.1.0-dev",
     lifespan=lifespan,
+    # Every route lives under /api in every environment (ADR-025): four SPA routes (/predict,
+    # /batch, /compare, /library) would otherwise collide with API routes of the same name.
+    docs_url="/api/docs",
+    swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
 def cors_policy() -> tuple[list[str], bool]:
@@ -92,13 +106,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(health.router)
-app.include_router(generations.router)
-app.include_router(predict.router, prefix="/predict", tags=["predict"])
-app.include_router(compare.router, prefix="/compare", tags=["compare"])
-app.include_router(molecule.router, prefix="/molecule", tags=["molecule"])
-app.include_router(batch.router, prefix="/batch", tags=["batch"])
-app.include_router(auth.router, prefix="/auth", tags=["auth"])
-app.include_router(molecules.router, prefix="/molecules", tags=["molecules"])
-app.include_router(reports.router, prefix="/reports", tags=["reports"])
-app.include_router(account.router, prefix="/account", tags=["account"])
+API_PREFIX = "/api"
+app.include_router(health.router, prefix=API_PREFIX)
+app.include_router(generations.router, prefix=API_PREFIX)
+app.include_router(predict.router, prefix=f"{API_PREFIX}/predict", tags=["predict"])
+app.include_router(compare.router, prefix=f"{API_PREFIX}/compare", tags=["compare"])
+app.include_router(molecule.router, prefix=f"{API_PREFIX}/molecule", tags=["molecule"])
+app.include_router(batch.router, prefix=f"{API_PREFIX}/batch", tags=["batch"])
+app.include_router(auth.router, prefix=f"{API_PREFIX}/auth", tags=["auth"])
+app.include_router(molecules.router, prefix=f"{API_PREFIX}/molecules", tags=["molecules"])
+app.include_router(reports.router, prefix=f"{API_PREFIX}/reports", tags=["reports"])
+app.include_router(account.router, prefix=f"{API_PREFIX}/account", tags=["account"])
+
+# Last, so the catch-all never shadows an API route.
+_static_dir = get_settings().static_dir
+if _static_dir and (Path(_static_dir) / "index.html").is_file():
+    mount_spa(app, Path(_static_dir))
+elif _static_dir:
+    logger.warning("STATIC_DIR=%s has no index.html; the frontend is not served.", _static_dir)

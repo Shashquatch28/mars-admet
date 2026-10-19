@@ -707,7 +707,7 @@ stays beside it.
 
 ## ADR-025 — Production serves the frontend and the API from one origin (resolves Q22)
 
-**Date:** 2026-10-08 · **Status:** accepted (design; implementation pending)
+**Date:** 2026-10-08 · **Status:** accepted · implemented 2026-10-19 (items 1-3; item 5 is code-complete, see its note; item 4, the blueprint amendment, is still the maintainer's)
 
 **Decision.**
 
@@ -739,6 +739,8 @@ third-party cookies by default. *Vercel rewrite to the API* - documented and sam
 documentation says nothing about timeouts, streaming or cookie handling, so batch progress (SSE) is unverified.
 *Firebase Hosting rewrite to Cloud Run* - documented 60-second request timeout. *Custom domain with subdomains* - needs
 a purchased domain.
+
+**Implementation (2026-10-19).** Every router is included under `/api` (`app/main.py`), and docs move to `/api/docs`. `app/spa.py` serves the bundle when `STATIC_DIR` is set (the image sets it): a real file is served as is (hashed `/assets/*` cached for a year, everything else `no-cache`), an extensionless path gets `index.html`, a missing file is a 404 rather than HTML, and an unknown `/api/...` path is a JSON 404. The Dockerfile is multi-stage (Node builds the bundle with `VITE_API_BASE=/api`, then it is copied beside the API) and starts uvicorn on `$PORT`. The Vite dev proxy no longer strips the prefix. The API warns at start-up if it serves the bundle with `SESSION_COOKIE_SECURE` unset; production sets it to `true` and leaves `CORS_ALLOW_ORIGINS` empty. Tests, the CI smoke test, the compose health check and `API_ROUTES.md` use the prefixed paths.
 
 **Consequences.** The first page load can include a Cloud Run cold start (the blueprint already accepts 1-3 s). The
 Dockerfile becomes multi-stage. CI does not deploy yet, so nothing needs migrating. The comment at the top of

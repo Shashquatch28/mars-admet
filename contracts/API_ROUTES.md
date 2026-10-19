@@ -14,10 +14,10 @@ real conformer generation reuses Module 3 Stage 5. `GET /health/ready`
 in Module 8's original table. `/molecule/{id}/explain` and `/molecule/{id}/report`
 remain M4/Post-MVP, undefined here beyond the sketch below.
 
-Base URL (local): `http://localhost:8000`. Routes are mounted at the root
-today. Frontend ADR-025 plans to mount the API under `/api` in every
-environment so one origin can serve both; that is accepted as a design and is
-**not implemented**, so the table below is the current truth.
+Base URL (local): `http://localhost:8000/api`. Every route is mounted under `/api` in every
+environment (frontend ADR-025), so one origin can serve the API and the built frontend; the
+paths in the table below are relative to that prefix, e.g. `/health` is `GET /api/health`.
+Interactive docs are at `/api/docs`.
 
 | Route | Method | Auth | Request model | Response model | Milestone |
 |---|---|---|---|---|---|
