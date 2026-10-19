@@ -24,7 +24,8 @@ class PredictionRequest(BaseModel):
 
 class EndpointPrediction(BaseModel):
     endpoint: Endpoint
-    value: float = Field(..., description="Regression value, or classification probability [0,1]")
+    value: float = Field(..., description="Regression value, or classification score in [0,1]. The score is a bounded model output, "
+        "not a validated probability: calibration has not been shown per endpoint (ADR-023).")
     unit: str | None = Field(default=None, description="e.g. 'logS', 'logP', 'mL/min/kg'; null for classification")
     confidence_low: float = Field(..., description="Lower bound of ensemble-spread confidence interval")
     confidence_high: float = Field(..., description="Upper bound of ensemble-spread confidence interval")
