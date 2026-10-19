@@ -1,6 +1,6 @@
-"""Module 8 batch prediction. Two-tier design (blueprint Module 12): <=1000
-molecules run synchronously inline (interactive tier); >1000 are enqueued
-(async tier) — see `services/task_queue.py` for what's real vs. a documented
+"""Module 8 batch prediction. Two-tier design (blueprint Module 12): up to
+`batch_interactive_threshold` molecules (default 100) run inline (interactive tier); more are
+enqueued (async tier) — see `services/task_queue.py` for what's real vs. a documented
 stub in that path. CSV always works (no rdkit needed); SDF needs rdkit,
 which is only installed in the production container
 (`ml/requirements-serving.txt`) — `sdf_parser.sdf_available` distinguishes
@@ -28,6 +28,7 @@ from app.db.models import BatchJob, User
 from app.db.session import SessionLocal, get_db
 from app.deps import get_current_user
 from app.services.batch_results import load_batch_results, store_batch_results
+from app.services.prediction_pool import run_prediction
 from app.services.prediction_service import predict as predict_one
 from app.services.redis_client import get_redis
 from app.services.sdf_parser import parse_sdf, sdf_available
@@ -84,7 +85,7 @@ async def _run_async_job(job_id: str, smiles_list: list[str], endpoints: list[En
 
         results: list[BatchRowResult] = []
         for i, smiles in enumerate(smiles_list):
-            results.append(await asyncio.to_thread(_predict_row, i, smiles, endpoints))
+            results.append(await run_prediction(_predict_row, i, smiles, endpoints))
             await set_job_progress(r, job_id, status="running", total=total, completed=i + 1)
 
         response = BatchPredictResponse(job_id=job_id, status="done", total=total, completed=total, results=results)
@@ -148,7 +149,7 @@ async def batch_predict(
     job_id = str(job.id)
 
     if total <= settings.batch_interactive_threshold:
-        results = await asyncio.to_thread(
+        results = await run_prediction(
             lambda: [_predict_row(i, s, endpoints) for i, s in enumerate(smiles_list)]
         )
         job.status = "done"
@@ -182,8 +183,6 @@ async def batch_progress(
     await _owned_job_or_404(job_id, user, db)
 
     async def event_stream():
-        import asyncio
-
         while True:
             progress = await get_job_progress(r, job_id)
             if progress is None:

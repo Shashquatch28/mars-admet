@@ -177,7 +177,7 @@ export async function fetchGenerations(): Promise<GenerationsResponse> {
 // --- batch (account required; API_ROUTES.md /batch/*) ---
 
 /**
- * Upload a CSV or SDF. Up to 1,000 molecules come back in this response (`job_id`
+ * Upload a CSV or SDF. Up to 100 molecules come back in this response (`job_id`
  * null, `status` "done"); more are queued and `job_id` is set. `endpoints` null means
  * no subset. Not sent as JSON: the body is multipart, so no Content-Type is set and the
  * browser adds the boundary.

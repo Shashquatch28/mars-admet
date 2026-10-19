@@ -592,8 +592,10 @@ ever added, allowlist `.dot`.
 6. Turnstile is not wired in the client for now. The server skips verification when
    `CLOUDFLARE_TURNSTILE_SECRET_KEY` is unset, and the register request sends a placeholder token. If the app is
    ever deployed publicly: honeypot field and a register rate limit first, then Turnstile (free).
-7. Password-reset UI is deferred. `/auth/password-reset/request` issues a token but Resend delivery is not wired,
-   so a form would promise an email that is never sent.
+7. MARS launches without account recovery (decided 2026-10-19). `/auth/password-reset/request` issues a token but
+   Resend delivery is not wired, so a reset form would promise an email that is never sent. The sign-in form says
+   in plain text that there is no password recovery and that a forgotten password loses the account. The two
+   `/auth/password-reset/*` routes stay in the API, unused by the client, until an email provider exists.
 8. Fixture mode (no API configured): Batch keeps working on its sample data, labelled as sample (`isSample`).
 9. Phase 1 = items 1-8 plus tests. Phase 2, which depends on Phase 1 = live Batch upload and SSE progress, Library,
    and a Settings account section with delete-account behind a confirmation modal (the one modal use that
@@ -719,9 +721,12 @@ stays beside it.
    `SameSite=Lax`. The explicit-origin CORS policy stays for development and for any future split deployment.
 4. This departs from blueprint Module 10, which names Vercel for the frontend. The blueprint amendment is the
    maintainer's and is pending.
-5. Before the first deploy, verify which client address the anonymous rate limiter sees behind Cloud Run: it keys on
-   `request.client.host` and the Dockerfile starts uvicorn without proxy flags. Unverified; uvicorn's default trust
-   setting could not be confirmed from its documentation.
+5. Before the first deploy, verify which client address the anonymous rate limiter sees behind Cloud Run. Checked
+   2026-10-19: uvicorn trusts `X-Forwarded-For` only from `127.0.0.1` by default, so behind Cloud Run the limiter
+   would see the proxy's address and every visitor would share one 60/min bucket. Fixed in the app, not with
+   `--forwarded-allow-ips '*'` (that trusts the forgeable leftmost entry): `TRUSTED_PROXY_HOPS=N` reads the N-th
+   entry from the right of the header. Set 1 on Cloud Run. Still unverified on a deployed service: after the first
+   deploy, send two requests with different forged `X-Forwarded-For` values and confirm they share a bucket.
 
 **Rationale.** The CORS configuration (explicit origins plus credentials) is correct for a cross-origin deployment,
 but it is not sufficient. The session cookie is `SameSite=Lax`, and MDN states that Lax cookies are not sent on

@@ -1,5 +1,3 @@
-import asyncio
-
 import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException
 from mars_contracts import PredictionRequest, PredictionResponse
@@ -10,6 +8,7 @@ from app.services.prediction_cache import (
     get_cached_prediction,
     set_cached_prediction,
 )
+from app.services.prediction_pool import run_prediction
 from app.services.prediction_service import predict as predict_service
 from app.services.rate_limit import enforce_predict_rate_limit
 from app.services.redis_client import get_redis
@@ -38,7 +37,7 @@ async def predict(
 
     try:
         # RDKit + 70 XGBoost predicts: CPU-bound and blocking, so never on the event loop.
-        response = await asyncio.to_thread(predict_service, req.smiles, req.endpoints)
+        response = await run_prediction(predict_service, req.smiles, req.endpoints)
     except ValueError as exc:
         # Module 3 Stage 1 validation (real RDKit standardization) rejects
         # invalid SMILES with a clear error — only enforced when the real ml

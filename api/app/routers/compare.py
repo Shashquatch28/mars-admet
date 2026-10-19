@@ -3,15 +3,16 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from mars_contracts import CompareRequest, CompareResponse
 
+from app.services.prediction_pool import run_prediction
 from app.services.prediction_service import predict as predict_one
 
 router = APIRouter()
 
 
 @router.post("", response_model=CompareResponse)
-def compare(req: CompareRequest) -> CompareResponse:
+async def compare(req: CompareRequest) -> CompareResponse:
     try:
-        molecules = [predict_one(smiles, req.endpoints) for smiles in req.smiles]
+        molecules = await run_prediction(lambda: [predict_one(smiles, req.endpoints) for smiles in req.smiles])
     except ValueError as exc:
         # Same Module 3 Stage 1 validation as /predict (real ml stack only) —
         # a single invalid SMILES fails the whole comparison rather than

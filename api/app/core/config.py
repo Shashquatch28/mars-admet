@@ -38,8 +38,24 @@ class Settings(BaseSettings):
     resend_api_key: str = Field(default="")
 
     rate_limit_anon_per_minute: int = Field(default=60)
+    trusted_proxy_hops: int = Field(
+        default=0,
+        description="How many proxies in front of the API append to X-Forwarded-For. 0 (default) means the "
+        "socket peer is the client. N > 0 means the client is the N-th entry from the right of the header, "
+        "the only entries an attacker cannot forge. Behind Cloud Run set 1, then verify after deploy.",
+    )
+    max_concurrent_predictions: int = Field(
+        default=0,
+        description="Cap on predictions running at once. 0 (default) means one per CPU available to this "
+        "process. Cloud Run does not always report its vCPU limit to the process, so set this to the "
+        "service's vCPU count there.",
+    )
     batch_size_cap: int = Field(default=50_000)
-    batch_interactive_threshold: int = Field(default=1_000)
+    batch_interactive_threshold: int = Field(
+        default=100,
+        description="Largest batch answered inside the upload request. Larger files are queued and report "
+        "progress. A real prediction costs about 0.2-0.5 s, so 100 rows is under a minute.",
+    )
     batch_upload_retention_hours: int = Field(default=24)
 
     model_version: str = Field(default="v0.2.0-dev")  # bump when the response shape or routing changes: it is part of the 48 h cache key

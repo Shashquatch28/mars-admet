@@ -30,10 +30,10 @@ approval, `[lab]` needs the GPU workstation.
 ## C. Make it deployable
 
 - [ ] C1 `[here]` Production topology (ADR-025, Q22): API under `/api`, frontend served from the API container (multi-stage Dockerfile), secure cookie.
-- [ ] C2 `[here]` Verify the client address the rate limiter sees behind Cloud Run.
-- [ ] C3 `[here]` Cap concurrent predictions to the container's CPUs (default thread pool is 40; each prediction is single-threaded).
-- [ ] C4 `[here]` Interactive Batch tier (up to 1,000 rows) still holds one request open with no progress; add progress or lower the threshold.
-- [ ] C5 `[here]` Decide password reset: build it (API issues a token, no email is sent) or launch without account recovery and say so (ADR-022 item 7).
+- [x] C2 `[here]` Verify the client address the rate limiter sees behind Cloud Run. (Code and tests done; observing it on a deployed service stays with C7.)
+- [x] C3 `[here]` Cap concurrent predictions to the container's CPUs (default thread pool is 40; each prediction is single-threaded).
+- [x] C4 `[here]` Interactive Batch tier (up to 1,000 rows) still holds one request open with no progress; add progress or lower the threshold.
+- [x] C5 `[here]` Decide password reset: build it (API issues a token, no email is sent) or launch without account recovery and say so (ADR-022 item 7).
 - [ ] C6 `[you]` Approve the cloud deploy and supply GCP credentials.
 - [ ] C7 `[you]` Deploy: Cloud Run, Neon, Upstash, R2. Rebuild the held-out error bands on the deploy machine (`build_error_bands.py`, about 6 min) or regression rows carry no band.
 - [ ] C8 `[here]` Cloud Tasks batch worker (needs a deployed worker).

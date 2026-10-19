@@ -93,8 +93,8 @@ sign-in and sign-up, and accepts the password `correct-horse` for delete-account
 
 ## Sample files for Batch
 
-Make two CSVs (any folder). The first returns directly (under 1,000 molecules), the second runs
-as a queued job with live progress (over 1,000):
+Make two CSVs (any folder). The first returns directly (up to 100 molecules), the second runs
+as a queued job with live progress (over 100):
 
 ```powershell
 python -c "open('batch_small.csv','w').write('smiles\nCCO\nc1ccccc1\nCC(=O)Oc1ccccc1C(=O)O\nnot-a-smiles\nCn1cnc2c1c(=O)n(C)c(=O)n2C\n')"
@@ -105,7 +105,9 @@ python -c "import itertools; s=itertools.cycle(['CCO','c1ccccc1','CC(=O)Oc1ccccc
 error, not disappear. (With the stand-in, a file of 20 or more lines takes the queued path, so
 `batch_large.csv` exercises the progress bar there too.) On the real stack the
 first request after the API starts takes about 15 seconds (it loads the models), then a new molecule
-takes about a second; a file of up to 1,000 rows still shows only "Uploading" until it finishes.
+takes about a second; a file of up to 100 rows (the direct tier) shows only "Uploading" until it finishes, which is under a minute.
+If your local `.env` still has `BATCH_INTERACTIVE_THRESHOLD=1000` (the old example value), the API container uses
+that until you change it and recreate the container.
 
 ---
 

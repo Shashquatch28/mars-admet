@@ -1,7 +1,7 @@
 // Sign in / create account. The cookie is set by the API; this only sends the
 // credentials and reports what the service said. Password reset is not offered:
-// the API issues a token but no email is sent (ADR-022 item 7), so a form would
-// promise something that never arrives.
+// the API issues a token but no email is sent, so MARS launches without account
+// recovery and says so here (ADR-022 item 7).
 import { useId, useState, type FormEvent } from "react";
 import styles from "./auth.module.css";
 import { useAuthSession } from "../app/authSession";
@@ -91,7 +91,10 @@ export function AccountForm() {
       <button type="submit" className={styles.submit} disabled={busy}>
         {busy ? "Working…" : mode === "signin" ? "Sign in" : "Create account"}
       </button>
-      <p className={styles.note}>Password reset is not available yet.</p>
+      <p className={styles.note}>
+        MARS has no password recovery. If you forget this password, the account and its saved items cannot be
+        recovered.
+      </p>
     </form>
   );
 }
