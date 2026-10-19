@@ -349,6 +349,13 @@
   color: var(--text-disabled);
 }
 
+/* the row-flag key — visible text, so the flags are not explained by a tooltip alone */
+.flagLegend b {
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
 /* cells */
 .cell {
   position: relative;
