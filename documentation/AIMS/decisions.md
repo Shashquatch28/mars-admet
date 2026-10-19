@@ -13,6 +13,37 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-19 — KERMT Tier 0 is wired into serving: per-endpoint routing, separate CPU service, XGBoost as the fallback
+
+**Decision (maintainer delegated the configuration: "as per the blueprint, or whatever is most optimal and production practice").**
+Blueprint Module 8's routing table is implemented: each endpoint is served by XGBoost or by a KERMT Tier-0 arm, chosen **per endpoint** by a written
+rule applied to the 5-seed raw test records (`ml/eval/kermt_routing_evidence.py`, evidence in `status/kermt_routing_evidence.md`, table in
+`ml/serve/routing.json`). KERMT serves an endpoint only if it beats XGBoost on the primary metric (AUROC; test MAE for regression) by more than the
+larger of the two seed standard deviations and, for classification, is not worse on raw Brier beyond the larger Brier std; ties and losses stay on XGBoost
+(the incumbent: cheaper, already carrying its AD index and error band). Result: KERMT serves **6 endpoints** (bbb_permeability, pgp_inhibition,
+herg_cardiotoxicity, cyp2d6_inhibition, lipophilicity_logp, clearance_microsomal) from 5 arms; XGBoost keeps the other 8, DILI included (the DILI KERMT
+pool is not like-for-like). `cyp2d6_inhibition` is the marginal one (AUROC +0.006 for a 3-checkpoint arm); it follows the rule, and a materiality floor
+would drop it. This is a routing choice, not a ranking: no client sees a winner, only each row's `model_id` (AGENTS.md rule 3 untouched).
+
+**Architecture.** The API image stays torch-free. `ml/serve/kermt_service/` is a separate CPU image (torch 2.9.1, KERMT at e402473) that loads the
+checkpoints once and returns per-seed values; the API (`serve/kermt_client.py`, `serve/kermt_router.py`) ensembles them (mean +/- std over seeds), attaches the
+same AD fields, and for the two regression endpoints a **KERMT-specific held-out-error band** (`kermt_error_band.json`, built by
+`train/build_kermt_error_bands.py`: clearance +/-42.6, n=495; logP +/-0.94, n=2226; the seed-0 validation folds regenerate identical to the `val.csv` KERMT
+trained on). If the service is down, slow, loading or malformed, the KERMT-routed endpoints are answered by XGBoost for that request (`model_id` says so),
+a circuit breaker skips the service for 10 s, and the response is not cached for 48 h. Classification is served raw (C0). KERMT calls overlap XGBoost work.
+`model_version` gains a `+kermt.<routing digest>` suffix when KERMT is on, so cache keys follow routing even though `.env` pins `MODEL_VERSION`.
+KERMT serving is off unless `KERMT_SERVICE_URL` is set.
+
+**Measured, 2026-10-19.** Parity with the GPU CLI: 3.6e-7 worst absolute difference (RDKit pinned to 2025.09.1; on 2025.9.6 it was 4e-3, so the pin is
+load-bearing). 30/30 checkpoints fetched from W&B and SHA-256 verified. Cost: ~0.19 GB and 0.15-0.3 s per checkpoint per molecule on 4 vCPUs; 3 seeds x 5 arms
+= 3.4 GB and 3.4-4.5 s per new molecule (XGBoost alone: ~1 s uncached). **Ensemble size: 3 seeds per arm by default** (`KERMT_SEEDS`), keeping the seed
+spread; 5 seeds is 5.5 GB and ~6-7 s. With KERMT on, set `BATCH_INTERACTIVE_THRESHOLD` to about 20.
+
+**Not done / open.** Batch calls the service once per molecule (a batched call is ~30% cheaper per molecule). Nothing is deployed (Cloud Run sizing
+for ~3.5 GB + a 4-CPU service is the input). The routing rule's test-molecule identity is verified for 12 of 14 endpoints (toxicity and DILI have no
+run-record artifact). The XGBoost-side `test_predict_returns_all_14_ml_endpoints` API test already fails on the base commit (15 predictions where 14 are expected) and is
+unrelated.
+
 ## 2026-10-18 — Held-out-error band: level 90%, served on the five regression endpoints (completes the 2026-10-08 follow-up)
 
 **Decision.** The band level is **90%**, the maintainer having asked for a recommended default and for item 10 to be finished
