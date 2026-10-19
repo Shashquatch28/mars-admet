@@ -237,3 +237,57 @@ hERG gap traced to the trainer, check the four re-implemented components in this
 4. **Batch composition**: compare the sampler's batches with stock's (order, size, labels per task per batch, epoch seed) over a full epoch; the mixed epoch-0 log shows labels per batch of 16-… for hERG (mean 23.5) and 2-… for AMES (mean 8.5) out of 32, no batch with zero labels.
 Then, if 1-4 agree, a G2b trajectory check (option 5 in the draft): per-epoch train loss and AMES validation AUROC for stock and mixed against a stock replicate. Steps 1-4 need
 no training; G2b needs GPU time and your approval.
+
+## Phase A (2026-10-19): G2 extension on one fixed batch, and the checkpoint-args overwrite (no training)
+
+Scripts `ml/eval/g2_extension{,_host,_a2_all}.py` (run inside the KERMT container on the RTX A4000; stock and mixed paths on mixed-run seed 3's staged inputs;
+that run's `clean_test.csv` was verified byte-identical to `clean_val.csv`, so no test data was used). Results `diagnostics/g2_extension.json`,
+`a2_all_model_args.json`, `lr_trace_first3_epochs.npy`. Gates, `gates.py`, the trainer and all existing runs untouched.
+
+| # | Check | Tolerance | Max abs / rel difference | Result |
+|---|---|---|---|---|
+| 1 | Loss, mode `fixed`, effective `dist_coff` 0.1: totals, per-element values and gradients w.r.t. both views' logits; 4 cases (random mask, dense mask, one task empty, real train-mode batch) | 1e-6 | 0.0 / 0.0 in all four | match |
+| 1b | Mask conventions: collator-style (0-filled targets + mask) and NaN-filled targets with the same mask | 1e-6 | 0.0 / 0.0 both | match |
+| 1c | Data layer: collator mask vs label matrix over the whole train (12,787) and val (1,827) folds; NaN floats among KERMT targets | exact | 0 mismatches; no NaN floats | match |
+| 2 | Two-view forward in TRAINING mode, identical RNG (dropout p = 0.1 active, `model.training` True) | 1e-5 | atom 0.0, bond 0.0; control (other seed) differs by 1.23 | match |
+| 3 | Scaling: fitted means 0,0 / stds 1,1; transform is the identity on train and val labels; inverse identity on probabilities; saved checkpoint `data_scaler` = (0,0)/(1,1) | exact | identity | match |
+| 4 | Batches, 5 epochs, seed 0: coverage, sizes, last batch | exact | each row exactly once; 400 batches; 399 × 32 + 19 in both; labels/batch mean 23.55 (hERG) and 8.51 (AMES) in both; no batch without labels | match |
+| 4b | Molecule order | — | **not identical** (0 % of positions equal in epoch 0) | differs, by construction |
+| 5 | LR per step, first 3 epochs (1,200 steps), both stepping rules built from the same args | exact | 0.0; and the stock-printed `cur_lr` equals the mixed `lr` to 5 decimals on all 30 epochs × 5 seeds | match |
+
+- **Check 4b is the only difference, and it is a different RNG, not a different design.** Stock draws the permutation from the global torch RNG (one stream across
+  epochs, continuing from model initialisation); the mixed trainer uses `default_rng([seed, epoch])`. The sampler docstring's claim "exactly what `DataLoader(shuffle=True)`
+  does" is true in distribution, not bitwise. Coverage, sizes, last-batch handling and per-batch label counts match; I treated this as not a divergence (it is the case your
+  instruction anticipated) and report it so you can overrule that.
+- **Check 5:** the schedule has no warmup in effect: `init_lr = max_lr = 1e-4`, so the rate is flat through epoch 0 and then decays (1.0e-4 → 9.996e-5 at epoch 1,
+  9.436e-5 at epoch 2, 2e-5 at epoch 29). `NoamLR` counts `train_data_size // batch_size` = 399 steps per epoch against 400 real batches, identically in both arms. The
+  saved mixed epochs 2-6 are therefore not "near the end of a warmup"; that hypothesis is excluded.
+- **What these checks do not cover:** the effect of the different data order on training, the fit loop's accumulation of state across steps (optimizer state, scheduler stepping
+  inside real training), and the validation-selection rule. They show the four re-implemented components are the same computation on a fixed batch, not that a full run is equivalent.
+
+### A2: the checkpoint-args overwrite (verified, inside the container)
+
+`NV-KERMT-70M-v2` saves `dist_coff` 0.1, `dropout` 0.1, `bond_drop_rate` 0, `weight_decay` 1e-7. The dry-run argv has 0.15, 0.0, 0.1, 0.0. After `load_checkpoint(..., current_args=args)`
+the values in force are the checkpoint's: `dist_coff` 0.1, `dropout` 0.1 (the built model's `nn.Dropout` modules have p = 0.1), `bond_drop_rate` 0, `weight_decay` 1e-7 (both optimizer
+groups). Of the 30 names in `get_model_args()`, six change: those four plus `backbone` and `num_tasks` (not hyperparameters). `ffn_hidden_size`, `ffn_num_layers`, `hidden_size`, `depth`
+are not saved in the checkpoint and are **not** overwritten.
+
+Both paths end with those values: the stock path (`task/train.py`) and the mixed path (`train_mixed.py`) each call `load_checkpoint(path, current_args=args)` before building the
+loss, optimizer and collator; the mixed log records `dist_coff` 0.1; the stock log prints the pre-overwrite argv values (`dist_coff=0.15, dropout=0.0, bond_drop_rate=0.1`). So every
+Tier-0 and G3 run trained with dropout 0.1, bond-drop 0, weight decay 1e-7, `dist_coff` 0.1 whatever the records say. Consequences: (1) the Tier-0 records and session notes that list
+dropout 0.0 / bond-drop 0.1 / dist-coff 0.15 as "applied" are wrong about the effective values; (2) `decisions.md` 2026-10-14 says the earlier `dist_coff = 0.1` default "was also wrong
+against KERMT's 0.15", but 0.1 is the value actually in force; (3) a tuning trial that sets any of the four changes nothing.
+
+Places that treat the four as tunable or as 0.0/0.1/0.15 facts (none edited; proposed edits below):
+
+| Place | What it says | Proposed edit |
+|---|---|---|
+| `ml/train/kermt_mixed/tuning.py:66-69` `KERMT_CONFIG_PARAMS` | allows `dropout`, `bond_drop_rate`, `dist_coff` as trial parameters (`weight_decay` is not listed) | remove those three, or make `Protocol` raise a `ProtocolError` naming the overwrite; add a test. (Alternatively implement a post-`load_checkpoint` override, a design choice for you.) |
+| `documentation/AIMS/decisions.md:131-132` settings table | `dropout`, `bond_drop_rate` "protocol axes"; `dist_coff` "from the stock argv (KERMT default 0.15) … optional axis" | state the effective values (0.1 / 0.1 / 0 / 1e-7), that the CLI flags are inert, and that these four are not axes unless an override is built |
+| `decisions.md:179` | "`dist_coff = 0.1` … was also wrong against KERMT's 0.15" | correct: 0.1 is the effective value |
+| `decisions.md:204` | stock zeroes `bond_drop_rate` after the first validation pass | add: it is already 0 from `load_checkpoint`, so the zeroing is a no-op |
+| `documentation/AIMS/lab_session_tier1.md:146` | "check `dist_coff` (… KERMT's default is 0.15)" | 0.1 effective; and §5 (axes) a one-line warning |
+| `documentation/AIMS/lab_session_tasks.md:163` | "dropout 0.0, bond-drop 0.1, dist-coff 0.15" listed as KERMT defaults | add "CLI defaults; overwritten by the checkpoint's 0.1 / 0 / 0.1 at load" |
+| `documentation/status/kermt_integration_status.md:63`, `kermt_gpu_session_2026-09-22/24/30.md`, Tier-0 `artifact_metadata.json` (`cmd_replay` values) | record the CLI values as applied | add a dated correction note (do not rewrite the records) |
+| `ml/models/kermt_model.py:200-202`, `kermt_mixed_model.py:262-264` | `KermtConfig.dropout/bond_drop_rate/dist_coff` become CLI flags | docstring: inert at present |
+| `train_mixed.py` start event | logs `dist_coff` only | also log the effective `dropout`, `bond_drop_rate`, `weight_decay` |

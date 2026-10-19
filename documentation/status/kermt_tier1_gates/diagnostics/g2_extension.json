@@ -1,0 +1,463 @@
+{
+ "A2": {
+  "checkpoint_saved_args": {
+   "dist_coff": 0.1,
+   "dropout": 0.1,
+   "bond_drop_rate": 0,
+   "weight_decay": 1e-07,
+   "select_by_loss": null
+  },
+  "cli_values_from_dry_run_argv": {
+   "dist_coff": 0.15,
+   "dropout": 0.0,
+   "bond_drop_rate": 0.1,
+   "weight_decay": 0.0,
+   "select_by_loss": false
+  },
+  "args_after_load_checkpoint_(stock_and_mixed_both_call_it_before_loss/optimizer/collator)": {
+   "dist_coff": 0.1,
+   "dropout": 0.1,
+   "bond_drop_rate": 0,
+   "weight_decay": 1e-07,
+   "select_by_loss": false
+  },
+  "nn.Dropout_p_values_in_built_model": [
+   0.1
+  ],
+  "optimizer_weight_decay_per_group": [
+   1e-07,
+   1e-07
+  ],
+  "get_model_args_includes": [
+   "dist_coff",
+   "dropout",
+   "bond_drop_rate",
+   "weight_decay",
+   "select_by_loss"
+  ]
+ },
+ "1_loss": {
+  "tolerance": 1e-06,
+  "effective_dist_coff": 0.1,
+  "cases": {
+   "random_mask_p=(0.7,0.27)": {
+    "total_stock": 5.808880805969238,
+    "total_mixed_A_zero_filled": 5.808880805969238,
+    "total_mixed_B_nan_filled": 5.808880805969238,
+    "total_diff_A": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "total_diff_B": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "per_element_diff": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "grad_wrt_logits_diff": 0.0,
+    "finite_B": true
+   },
+   "dense_mask": {
+    "total_stock": 3.58266019821167,
+    "total_mixed_A_zero_filled": 3.58266019821167,
+    "total_mixed_B_nan_filled": 3.58266019821167,
+    "total_diff_A": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "total_diff_B": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "per_element_diff": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "grad_wrt_logits_diff": 0.0,
+    "finite_B": true
+   },
+   "one_task_empty": {
+    "total_stock": 5.719064235687256,
+    "total_mixed_A_zero_filled": 5.719064235687256,
+    "total_mixed_B_nan_filled": 5.719064235687256,
+    "total_diff_A": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "total_diff_B": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "per_element_diff": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "grad_wrt_logits_diff": 0.0,
+    "finite_B": true
+   },
+   "real_batch_train_mode_logits": {
+    "total_stock": 1.5963852405548096,
+    "total_mixed_A_zero_filled": 1.5963852405548096,
+    "total_mixed_B_nan_filled": 1.5963852405548096,
+    "total_diff_A": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "total_diff_B": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "per_element_diff": {
+     "max_abs": 0.0,
+     "max_rel": 0.0
+    },
+    "grad_wrt_logits_diff": 0.0,
+    "finite_B": true
+   }
+  },
+  "data_layer_mask_convention": {
+   "train": {
+    "mask_vs_label_matrix_mismatches": 0,
+    "nan_floats_in_kermt_targets": false
+   },
+   "val": {
+    "mask_vs_label_matrix_mismatches": 0,
+    "nan_floats_in_kermt_targets": false
+   }
+  },
+  "pass": true
+ },
+ "2_forward_train_mode": {
+  "tolerance": 1e-05,
+  "atom_view": {
+   "max_abs": 0.0,
+   "max_rel": 0.0
+  },
+  "bond_view": {
+   "max_abs": 0.0,
+   "max_rel": 0.0
+  },
+  "control_different_seed_stock_vs_stock_atom": {
+   "max_abs": 1.2340132147073746,
+   "max_rel": 254.5649202938294
+  },
+  "model_is_training": true,
+  "effective_dropout_p": [
+   0.1
+  ],
+  "effective_bond_drop_rate": 0.0,
+  "pass": true
+ },
+ "3_scaling": {
+  "fitted_means": [
+   0.0,
+   0.0
+  ],
+  "fitted_stds": [
+   1.0,
+   1.0
+  ],
+  "is_regression": [
+   false,
+   false
+  ],
+  "transform_is_identity_train": true,
+  "transform_is_identity_val": true,
+  "inverse_is_identity_on_probabilities": true,
+  "saved_mixed_checkpoint_data_scaler": {
+   "means": [
+    0.0,
+    0.0
+   ],
+   "stds": [
+    1.0,
+    1.0
+   ]
+  },
+  "stock_path": "classification => scaler None in KERMT (load_data builds a StandardScaler only for dataset_type=='regression'); predict() skips inverse_transform when scaler is None",
+  "mixed_predict_path": "run_predict applies ColumnScaler.inverse_transform to all columns; mean=0,std=1 => identity for classification",
+  "pass": true
+ },
+ "4_batches": {
+  "n_train": 12787,
+  "batch_size": 32,
+  "epochs_compared": 5,
+  "molecule_order_identical_epoch0": false,
+  "fraction_of_positions_equal_epoch0": 0.0,
+  "stock_loader": "torch DataLoader(shuffle=True), RandomSampler on the global torch RNG, stream continues across epochs",
+  "mixed_loader": "numpy default_rng([seed, epoch]).permutation, chunked; DataLoader(batch_sampler=...)",
+  "stock": [
+   {
+    "n_batches": 400,
+    "covers_each_row_exactly_once": true,
+    "first_batch_size": 32,
+    "last_batch_size": 19,
+    "size_min": 19,
+    "size_max": 32,
+    "per_task_label_mean": [
+     23.548,
+     8.505
+    ],
+    "per_task_label_min": [
+     13,
+     1
+    ],
+    "batches_with_zero_labels_per_task": [
+     0,
+     0
+    ]
+   },
+   {
+    "n_batches": 400,
+    "covers_each_row_exactly_once": true,
+    "first_batch_size": 32,
+    "last_batch_size": 19,
+    "size_min": 19,
+    "size_max": 32,
+    "per_task_label_mean": [
+     23.548,
+     8.505
+    ],
+    "per_task_label_min": [
+     14,
+     3
+    ],
+    "batches_with_zero_labels_per_task": [
+     0,
+     0
+    ]
+   },
+   {
+    "n_batches": 400,
+    "covers_each_row_exactly_once": true,
+    "first_batch_size": 32,
+    "last_batch_size": 19,
+    "size_min": 19,
+    "size_max": 32,
+    "per_task_label_mean": [
+     23.548,
+     8.505
+    ],
+    "per_task_label_min": [
+     15,
+     1
+    ],
+    "batches_with_zero_labels_per_task": [
+     0,
+     0
+    ]
+   },
+   {
+    "n_batches": 400,
+    "covers_each_row_exactly_once": true,
+    "first_batch_size": 32,
+    "last_batch_size": 19,
+    "size_min": 19,
+    "size_max": 32,
+    "per_task_label_mean": [
+     23.548,
+     8.505
+    ],
+    "per_task_label_min": [
+     15,
+     2
+    ],
+    "batches_with_zero_labels_per_task": [
+     0,
+     0
+    ]
+   },
+   {
+    "n_batches": 400,
+    "covers_each_row_exactly_once": true,
+    "first_batch_size": 32,
+    "last_batch_size": 19,
+    "size_min": 19,
+    "size_max": 32,
+    "per_task_label_mean": [
+     23.548,
+     8.505
+    ],
+    "per_task_label_min": [
+     12,
+     2
+    ],
+    "batches_with_zero_labels_per_task": [
+     0,
+     0
+    ]
+   }
+  ],
+  "mixed": [
+   {
+    "n_batches": 400,
+    "covers_each_row_exactly_once": true,
+    "first_batch_size": 32,
+    "last_batch_size": 19,
+    "size_min": 19,
+    "size_max": 32,
+    "per_task_label_mean": [
+     23.548,
+     8.505
+    ],
+    "per_task_label_min": [
+     15,
+     3
+    ],
+    "batches_with_zero_labels_per_task": [
+     0,
+     0
+    ]
+   },
+   {
+    "n_batches": 400,
+    "covers_each_row_exactly_once": true,
+    "first_batch_size": 32,
+    "last_batch_size": 19,
+    "size_min": 19,
+    "size_max": 32,
+    "per_task_label_mean": [
+     23.548,
+     8.505
+    ],
+    "per_task_label_min": [
+     14,
+     2
+    ],
+    "batches_with_zero_labels_per_task": [
+     0,
+     0
+    ]
+   },
+   {
+    "n_batches": 400,
+    "covers_each_row_exactly_once": true,
+    "first_batch_size": 32,
+    "last_batch_size": 19,
+    "size_min": 19,
+    "size_max": 32,
+    "per_task_label_mean": [
+     23.548,
+     8.505
+    ],
+    "per_task_label_min": [
+     15,
+     1
+    ],
+    "batches_with_zero_labels_per_task": [
+     0,
+     0
+    ]
+   },
+   {
+    "n_batches": 400,
+    "covers_each_row_exactly_once": true,
+    "first_batch_size": 32,
+    "last_batch_size": 19,
+    "size_min": 19,
+    "size_max": 32,
+    "per_task_label_mean": [
+     23.548,
+     8.505
+    ],
+    "per_task_label_min": [
+     16,
+     1
+    ],
+    "batches_with_zero_labels_per_task": [
+     0,
+     0
+    ]
+   },
+   {
+    "n_batches": 400,
+    "covers_each_row_exactly_once": true,
+    "first_batch_size": 32,
+    "last_batch_size": 19,
+    "size_min": 19,
+    "size_max": 32,
+    "per_task_label_mean": [
+     23.548,
+     8.505
+    ],
+    "per_task_label_min": [
+     13,
+     1
+    ],
+    "batches_with_zero_labels_per_task": [
+     0,
+     0
+    ]
+   }
+  ],
+  "coverage_sizes_and_last_batch_match": true
+ },
+ "5_lr": {
+  "args": {
+   "warmup_epochs": 2.0,
+   "init_lr": 0.0001,
+   "max_lr": 0.0001,
+   "final_lr": 2e-05,
+   "epochs": 30,
+   "fine_tune_coff": 1.0,
+   "batch_size": 32,
+   "train_data_size": 12787
+  },
+  "steps_per_epoch_used_by_NoamLR": 399,
+  "batches_per_epoch_actual": 400,
+  "stepping": "both arms: scheduler.step() once per batch, after optimizer.step()",
+  "per_step_trace_max_abs_diff": 0.0,
+  "n_steps_traced": 1200,
+  "lr_at_step": {
+   "0": [
+    0.0001,
+    0.0001
+   ],
+   "1": [
+    0.0001,
+    0.0001
+   ],
+   "399": [
+    0.0001,
+    0.0001
+   ],
+   "400": [
+    0.0001,
+    0.0001
+   ],
+   "401": [
+    0.0001,
+    0.0001
+   ],
+   "800": [
+    9.995679134857197e-05,
+    9.995679134857197e-05
+   ],
+   "1199": [
+    9.437328928783418e-05,
+    9.437328928783418e-05
+   ],
+   "1200": [
+    9.435969485445251e-05,
+    9.435969485445251e-05
+   ]
+  },
+  "lr_end_of_epoch_0_1_2": [
+   [
+    0.0001,
+    0.0001
+   ],
+   [
+    9.995679134857197e-05,
+    9.995679134857197e-05
+   ],
+   [
+    9.435969485445251e-05,
+    9.435969485445251e-05
+   ]
+  ],
+  "pass": true
+ }
+}

@@ -1,0 +1,182 @@
+{
+ "model_type": {
+  "cli": "<absent>",
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": "<absent>",
+  "overwritten": false
+ },
+ "ensemble_size": {
+  "cli": 1,
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": 1,
+  "overwritten": false
+ },
+ "input_layer": {
+  "cli": "<absent>",
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": "<absent>",
+  "overwritten": false
+ },
+ "hidden_size": {
+  "cli": 800,
+  "checkpoint": 800,
+  "after_load": 800,
+  "overwritten": false
+ },
+ "bias": {
+  "cli": false,
+  "checkpoint": false,
+  "after_load": false,
+  "overwritten": false
+ },
+ "depth": {
+  "cli": 6,
+  "checkpoint": 6,
+  "after_load": 6,
+  "overwritten": false
+ },
+ "dropout": {
+  "cli": 0.0,
+  "checkpoint": 0.1,
+  "after_load": 0.1,
+  "overwritten": true
+ },
+ "activation": {
+  "cli": "PReLU",
+  "checkpoint": "PReLU",
+  "after_load": "PReLU",
+  "overwritten": false
+ },
+ "undirected": {
+  "cli": false,
+  "checkpoint": false,
+  "after_load": false,
+  "overwritten": false
+ },
+ "ffn_hidden_size": {
+  "cli": 700,
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": 700,
+  "overwritten": false
+ },
+ "ffn_num_layers": {
+  "cli": 3,
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": 3,
+  "overwritten": false
+ },
+ "atom_message": {
+  "cli": "<absent>",
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": "<absent>",
+  "overwritten": false
+ },
+ "weight_decay": {
+  "cli": 0.0,
+  "checkpoint": 1e-07,
+  "after_load": 1e-07,
+  "overwritten": true
+ },
+ "select_by_loss": {
+  "cli": false,
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": false,
+  "overwritten": false
+ },
+ "skip_epoch": {
+  "cli": "<absent>",
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": "<absent>",
+  "overwritten": false
+ },
+ "backbone": {
+  "cli": "<absent>",
+  "checkpoint": "gtrans",
+  "after_load": "gtrans",
+  "overwritten": true
+ },
+ "embedding_output_type": {
+  "cli": "both",
+  "checkpoint": "both",
+  "after_load": "both",
+  "overwritten": false
+ },
+ "self_attention": {
+  "cli": false,
+  "checkpoint": false,
+  "after_load": false,
+  "overwritten": false
+ },
+ "attn_hidden": {
+  "cli": 4,
+  "checkpoint": 4,
+  "after_load": 4,
+  "overwritten": false
+ },
+ "dense": {
+  "cli": false,
+  "checkpoint": false,
+  "after_load": false,
+  "overwritten": false
+ },
+ "bond_drop_rate": {
+  "cli": 0.1,
+  "checkpoint": 0,
+  "after_load": 0,
+  "overwritten": true
+ },
+ "distinct_init": {
+  "cli": false,
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": false,
+  "overwritten": false
+ },
+ "aug_rate": {
+  "cli": "<absent>",
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": "<absent>",
+  "overwritten": false
+ },
+ "nencoders": {
+  "cli": "<absent>",
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": "<absent>",
+  "overwritten": false
+ },
+ "dist_coff": {
+  "cli": 0.15,
+  "checkpoint": 0.1,
+  "after_load": 0.1,
+  "overwritten": true
+ },
+ "no_attach_fea": {
+  "cli": "<absent>",
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": "<absent>",
+  "overwritten": false
+ },
+ "coord": {
+  "cli": "<absent>",
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": "<absent>",
+  "overwritten": false
+ },
+ "num_attn_head": {
+  "cli": 4,
+  "checkpoint": 4,
+  "after_load": 4,
+  "overwritten": false
+ },
+ "num_mt_block": {
+  "cli": 1,
+  "checkpoint": 1,
+  "after_load": 1,
+  "overwritten": false
+ },
+ "num_tasks": {
+  "cli": "<absent>",
+  "checkpoint": "<absent in checkpoint>",
+  "after_load": 2,
+  "overwritten": true
+ }
+}
