@@ -24,7 +24,8 @@ approval, `[lab]` needs the GPU workstation.
 - [ ] B1 `[lab]` Commit and push the `toxicity__cls` seed 2-4 run records and session note (include the crashed seed-4 attempt).
 - [ ] B2 `[lab]` Aggregate the 5 seeds; run `tier0_artifacts`; write the Tier-0 results.
 - [ ] B3 `[lab]` Write the single-task CYP baseline driver (it does not exist), then run CYP3A4 / CYP2D6 / CYP2C9 on their full original splits.
-- [ ] B4 `[here]` Pool-matched KERMT vs XGBoost comparison table. **Fallback if B3 is not done:** make no KERMT-vs-XGBoost claim on classification, and say so in the write-up.
+- [x] B4 `[here]` Pool-matched KERMT vs XGBoost comparison table. **Fallback if B3 is not done:** make no KERMT-vs-XGBoost claim on classification, and say so in the write-up.
+  Done for 8 endpoints (5 regression, HIA, Pgp, BBB): `documentation/status/kermt_vs_xgboost_pool_matched.md`, from XGBoost retrained on exactly KERMT's pool (`ml/train/run_pool_matched_xgboost.py`, results in `kermt_pool_matched_xgboost.json`). Classification fallback table without a comparison: `kermt_vs_xgboost_classification.md`. Still no KERMT-vs-XGBoost claim for the CYPs (needs B3), DILI (base vs augmented pool) or toxicity (2 of 5 seeds).
 - [ ] B5 `[you]` Decide Tier 1: stays provisional / out of the MVP (your 2026-10-18 statement), so the Tier 1 gates, tuning and arms move to Beyond the MVP.
 
 ## C. Make it deployable
