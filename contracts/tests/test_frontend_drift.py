@@ -90,3 +90,14 @@ def test_enum_members_match(ts_name, enum):
 )
 def test_interface_fields_match(ts_name, model):
     assert _ts_interface_fields(ts_name) == set(model.model_fields)
+
+
+def test_classification_value_is_not_called_a_probability():
+    # ADR-023: the 0-1 classification output is a score. The contract description and its
+    # frontend mirror must say so; "probability" may only appear negated ("not a ... probability").
+    desc = EndpointPrediction.model_fields["value"].description or ""
+    assert "score" in desc
+    assert "probability" not in desc.replace("not a validated probability", "")
+    mirror = re.search(r"export interface EndpointPrediction\s*\{(.*?)^\}", _ts(), re.S | re.M).group(1)
+    assert "classification score" in mirror
+    assert "probability" not in mirror.replace("not a validated probability", "")

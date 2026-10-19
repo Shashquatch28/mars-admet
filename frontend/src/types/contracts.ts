@@ -35,6 +35,8 @@ export interface PredictionRequest {
 
 export interface EndpointPrediction {
   endpoint: Endpoint;
+  // Regression value, or a classification score in [0,1]. A score is a bounded
+  // model output, not a validated probability (ADR-023, prediction.py).
   value: number;
   unit: string | null;
   confidence_low: number;
