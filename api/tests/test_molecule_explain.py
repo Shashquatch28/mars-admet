@@ -4,6 +4,7 @@ cache are replaced with small stand-ins, so this runs in the fast tier."""
 
 from __future__ import annotations
 
+import app.main as app_main
 import pytest
 from app.main import app
 from app.routers import molecule as molecule_router
@@ -13,6 +14,8 @@ from fastapi.testclient import TestClient
 from mars_contracts import ExplainMethod, ExplainOutputSpace, ExplainResponse
 
 MOLECULE_ID = "0123456789abcdef"
+# Main mounts every route under /api (ADR-025); this branch predates that. Work with either.
+PREFIX = getattr(app_main, "API_PREFIX", "")
 
 
 class _Redis:
@@ -78,33 +81,33 @@ def env(monkeypatch):
 
 def test_explains_and_caches_per_version_molecule_and_endpoint(env):
     client, fake, calls = env
-    first = client.get(f"/molecule/{MOLECULE_ID}/explain", params={"endpoint": "solubility_logs"})
+    first = client.get(f"{PREFIX}/molecule/{MOLECULE_ID}/explain", params={"endpoint": "solubility_logs"})
     assert first.status_code == 200
     body = ExplainResponse.model_validate(first.json())
     assert body.method is ExplainMethod.TREE_SHAP and body.model_id == "mars-xgboost-ecfp-desc-v1"
-    second = client.get(f"/molecule/{MOLECULE_ID}/explain", params={"endpoint": "solubility_logs"})
+    second = client.get(f"{PREFIX}/molecule/{MOLECULE_ID}/explain", params={"endpoint": "solubility_logs"})
     assert second.status_code == 200 and second.json() == first.json()
     assert len(calls) == 1  # the second answer came from the cache
     assert list(fake.store) == [f"explain_cache:v-test:{MOLECULE_ID}:solubility_logs"]
-    other = client.get(f"/molecule/{MOLECULE_ID}/explain", params={"endpoint": "ames_mutagenicity"})
+    other = client.get(f"{PREFIX}/molecule/{MOLECULE_ID}/explain", params={"endpoint": "ames_mutagenicity"})
     assert other.status_code == 200 and len(calls) == 2  # another endpoint is another entry
 
 
 def test_unknown_or_expired_molecule_is_404(env):
     client, _, calls = env
-    r = client.get("/molecule/ffffffffffffffff/explain", params={"endpoint": "solubility_logs"})
+    r = client.get(f"{PREFIX}/molecule/ffffffffffffffff/explain", params={"endpoint": "solubility_logs"})
     assert r.status_code == 404 and not calls
 
 
 def test_unknown_endpoint_is_422(env):
     client, _, _ = env
-    assert client.get(f"/molecule/{MOLECULE_ID}/explain", params={"endpoint": "not_an_endpoint"}).status_code == 422
-    assert client.get(f"/molecule/{MOLECULE_ID}/explain").status_code == 422
+    assert client.get(f"{PREFIX}/molecule/{MOLECULE_ID}/explain", params={"endpoint": "not_an_endpoint"}).status_code == 422
+    assert client.get(f"{PREFIX}/molecule/{MOLECULE_ID}/explain").status_code == 422
 
 
 def test_rule_based_score_has_nothing_to_explain(env):
     client, _, calls = env
-    r = client.get(f"/molecule/{MOLECULE_ID}/explain", params={"endpoint": "synthetic_accessibility"})
+    r = client.get(f"{PREFIX}/molecule/{MOLECULE_ID}/explain", params={"endpoint": "synthetic_accessibility"})
     assert r.status_code == 409 and not calls
     assert "nothing to explain" in r.json()["detail"]
 
@@ -112,7 +115,7 @@ def test_rule_based_score_has_nothing_to_explain(env):
 def test_without_the_ml_stack_it_is_501_not_a_made_up_answer(env, monkeypatch):
     client, _, calls = env
     monkeypatch.setattr(molecule_router, "explain_available", False)
-    r = client.get(f"/molecule/{MOLECULE_ID}/explain", params={"endpoint": "solubility_logs"})
+    r = client.get(f"{PREFIX}/molecule/{MOLECULE_ID}/explain", params={"endpoint": "solubility_logs"})
     assert r.status_code == 501 and not calls
 
 
@@ -132,6 +135,6 @@ def test_failures_map_to_status_codes_and_are_never_cached(env, monkeypatch, exc
         raise exc("because")
 
     monkeypatch.setattr(molecule_router, "explain", boom)
-    r = client.get(f"/molecule/{MOLECULE_ID}/explain", params={"endpoint": "herg_cardiotoxicity"})
+    r = client.get(f"{PREFIX}/molecule/{MOLECULE_ID}/explain", params={"endpoint": "herg_cardiotoxicity"})
     assert r.status_code == status and r.json()["detail"] == "because"
     assert fake.store == {}
