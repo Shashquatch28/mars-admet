@@ -13,6 +13,37 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-20 — Explainability (Module 6): the serving model explains; TreeSHAP for XGBoost-served endpoints, Integrated Gradients for KERMT-served ones
+
+**Decision (maintainer, 2026-10-20: "the hybrid, the model which serves explains").** `GET /molecule/{id}/explain?endpoint=X` explains the artifact
+that `ml/serve/routing.json` says serves X. XGBoost-served (8 endpoints today): exact TreeSHAP over the promoted seeds (`ml/explain/tree_shap.py`;
+additivity to 1e-6 on the real artifacts, 40-60 ms for five seeds). KERMT-served (6 endpoints): Integrated Gradients on the KERMT service
+(blueprint Module 6's named method). No fallback between the two; a KERMT outage is a 503, not another model's explanation. Rule-based and
+stub-served rows have nothing to explain and say so. Frontend ADR-029 records the vocabulary (signed, never good or bad), the two new neutral
+attribution tokens, and the "computed on request" behaviour.
+
+**Why the blueprint changed.** Module 6 assumed one GNN behind every endpoint. Tier 0 is served per endpoint (2026-10-19 entry below), so
+"IG on the GNN" explains six endpoints and describes a non-serving model on eight. The blueprint's risk-red / safe-teal scale and the contract
+sketch's "+ increases predicted risk" imply a direction-of-good MARS cannot support (AGENTS.md rule 1); both are retired in favour of
+"pushed the output up / down".
+
+**What an explanation can and cannot show (measured 2026-10-19/20 on the promoted XGBoost seeds).** 81-91% of the absolute TreeSHAP mass sat on
+the 217 whole-molecule descriptors for the two endpoints probed, so an atom heatmap is a minority of the explanation. The response therefore splits
+into structure / whole-molecule / unplaced parts that sum to the output, and the UI prints the split before any heatmap. Fragment scores are sums
+over overlapping groups and are not additive.
+
+**Validation (blueprint "dual validation", `ml/eval/explain_validation.py`, report `documentation/status/explain_validation.md`).** Perturbation
+check and PAINS/Brenk cross-check on held-out test molecules, each against a size-matched random control. The UI claims no validation beyond what
+that report shows.
+
+**Open parameters, not fixed in advance.** IG baseline (descriptor part), IG step count / completeness tolerance, fragment catalogue
+(RDKit `Chem.Fragments` + ring systems). Each is echoed in the response (`baseline`, `n_steps`, `completeness_error`).
+
+**Follow-ups.** KERMT Integrated Gradients engine in `ml/serve/kermt_service/` (needs the KERMT image; not run on this machine without Docker);
+validation of the KERMT explanations; merge of `feat/explainability` onto main (it is based on `feat/kermt-serving`, which is itself not on main).
+
+---
+
 ## 2026-10-19 — KERMT Tier 0 is wired into serving: per-endpoint routing, separate CPU service, XGBoost as the fallback
 
 **Decision (maintainer delegated the configuration: "as per the blueprint, or whatever is most optimal and production practice").**

@@ -11,8 +11,8 @@ all implemented (M3, 2026-09-17) — stub predictor plus real registry-backed
 inference for endpoints with a promoted trained artifact (see `ml/serve/`);
 real conformer generation reuses Module 3 Stage 5. `GET /health/ready`
 (readiness: DB+Redis) exists alongside `/health` (liveness) though it isn't
-in Module 8's original table. `/molecule/{id}/explain` and `/molecule/{id}/report`
-remain M4/Post-MVP, undefined here beyond the sketch below.
+in Module 8's original table. `/molecule/{id}/explain` is implemented (ADR-029, modelled
+below as `ExplainResponse`); `/molecule/{id}/report` remains M4/Post-MVP.
 
 Base URL (local): `http://localhost:8000`. Routes are mounted at the root
 today. Frontend ADR-025 plans to mount the API under `/api` in every
@@ -30,7 +30,7 @@ environment so one origin can serve both; that is accepted as a design and is
 | `/batch/results/{job_id}` | GET | account | — | `BatchPredictResponse` (results populated) | M3 ✅ |
 | `/compare` | POST | none | `CompareRequest` | `CompareResponse` | M3 ✅ |
 | `/molecule/{id}/3d` | GET | none | — | `ConformerResponse` | M3 ✅ — `{id}` must have been seen by `/predict` in the current cache window (see below) |
-| `/molecule/{id}/explain?endpoint=<Endpoint>` | GET | none | query param `endpoint` | `ExplainResponse` (see below — not yet modelled) | M4 / Post-MVP |
+| `/molecule/{id}/explain?endpoint=<Endpoint>` | GET | none (IP rate-limited with `/predict`) | query param `endpoint` | `ExplainResponse` (see below) | M4 ✅ — `{id}` must have been seen by `/predict` in the current cache window, like `/3d` |
 | `/molecule/{id}/report` | GET | none | — | `application/pdf` (binary; no JSON model) | M4 |
 
 `GET /molecule/{id}/3d` needs the id -> SMILES mapping `/predict` registers
@@ -93,20 +93,38 @@ Session cookie: `SESSION_COOKIE_NAME` (default `mars_session`), HttpOnly,
 sliding 7-day TTL refreshed on activity. `session:{token} -> user_id` in
 Redis; logout/account-deletion deletes the key for instant revocation.
 
-## Not yet modelled in `mars_contracts` (documented target shapes)
+## `GET /molecule/{id}/explain` (Module 6, ADR-029)
 
-### `ExplainResponse` (M4, depends on Module 6)
+The model that serves the value explains it. `ml/serve/routing.json` decides, exactly as for `/predict`:
+an XGBoost-served endpoint is explained by exact TreeSHAP over the promoted seeds (`method: "tree_shap"`),
+a KERMT-served endpoint by Integrated Gradients on the KERMT service (`method: "integrated_gradients"`).
+There is no fallback between the two: if KERMT serves an endpoint and cannot answer, the answer is 503, never an
+explanation of a different model. `model_id` equals the `model_id` of the prediction explained (the client checks).
+
+Computed on request, cached 48 h under `explain_cache:<serving version>:<molecule_id>:<endpoint>`; a failure is
+never cached. It runs on its own two-worker pool so it cannot starve `/predict`.
+
+| Status | Meaning |
+|---|---|
+| 200 | `ExplainResponse` |
+| 404 | unknown or expired `molecule_id` (call `/predict` first) |
+| 409 | nothing to explain: the endpoint is stub-served, or is the rule-based `synthetic_accessibility` |
+| 422 | unknown `endpoint`, or the molecule cannot be explained |
+| 501 | no ml stack in this environment (no RDKit / XGBoost) |
+| 503 | the serving model cannot explain right now |
+
+`ExplainResponse` is in `mars_contracts/explain.py` (frontend mirror in `contracts.ts`, covered by the drift test).
+Every number is signed: positive pushed the model's output UP from its reference, negative DOWN. The contract never
+says "risk", "safe" or "favourable" (AGENTS.md rule 1; a test enforces it on the field descriptions).
+
 ```
-molecule_id: str
-endpoint: Endpoint
-method: str                       # "integrated_gradients"
-atom_attributions: list[float]    # per-atom signed importance, len == n_atoms
-fragment_attributions: list[{     # aggregated to functional-group level (Module 6)
-    smarts: str
-    atom_indices: list[int]
-    score: float                  # signed: + increases predicted risk, - decreases
-}]
-baseline: str                     # attribution baseline used
+base_value + structure_total + whole_molecule_total + unmapped_total == output_value   (to completeness_error)
+
+structure_total        = sum(atom_attributions)     # one value per atom of smiles_standardized, RDKit order
+whole_molecule_*       = RDKit 2D descriptors the model also reads; they cannot be placed on atoms
+unmapped_total         = TreeSHAP: fingerprint bits absent from the molecule; IG: the completeness residual
+fragment_attributions  = sums over named functional groups / ring systems; they overlap and do NOT add up
+output_space           = "log_odds" (XGBoost classification), "score" (KERMT classification), "native_unit" (regression)
 ```
 
 Auth + persistence routes are now modeled above (Module 13 section) rather
