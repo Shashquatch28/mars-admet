@@ -40,6 +40,10 @@ ml/runs/
 ml/artifacts/
 !ml/artifacts/.gitkeep
 
+# KERMT Tier-0 serving checkpoints (30 x ~200 MB) - fetched from W&B by
+# ml/serve/kermt_service/fetch_artifacts.py, never committed.
+ml/artifacts_kermt/
+
 ml/data/raw/*
 ml/data/processed/*
 !ml/data/raw/.gitkeep

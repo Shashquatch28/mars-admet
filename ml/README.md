@@ -70,8 +70,8 @@ directory.
   `runs/test_evaluations/`; the older `runs/evaluations/` are validation-fold and
   differ by up to +0.26 AUROC, so compare KERMT against the test set.
 - KERMT Tier 0 (stock KERMT, type-homogeneous subgroups, equal weighting) is the
-  shipped baseline: 27 of 30 seeds trained as of 2026-10-09 (`toxicity__cls` 2 of 5).
-  Status: `../documentation/status/kermt_gpu_session_2026-10-09.md`; live plan:
+  shipped baseline: 30 of 30 seeds trained as of 2026-10-14 (all six arms at 5 seeds).
+  Status: `../documentation/status/kermt_gpu_session_2026-10-14.md`; live plan:
   `../documentation/AIMS/next_steps.md`.
 
 ## Rules that hold across this directory

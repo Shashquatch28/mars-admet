@@ -20,6 +20,9 @@ torch>=2.2
 transformers>=4.40
 xgboost>=2.0
 
+# --- serving: KERMT service client (serve/kermt_client.py) ---
+httpx>=0.27
+
 # --- tracking (all milestones) ---
 wandb>=0.16
 

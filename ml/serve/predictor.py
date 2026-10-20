@@ -15,7 +15,10 @@ model, not a bug to paper over.
 
 from __future__ import annotations
 
+import logging
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 import numpy as np
@@ -23,6 +26,8 @@ from featurize.standardize import standardize
 from mars_contracts.endpoints import ENDPOINT_METADATA, Endpoint, TaskType
 
 from serve.registry import ModelRegistry
+
+logger = logging.getLogger("mars.predictor")
 
 # C0 (AIMS decisions.md 2026-10-08): the served Platt calibrators were worse than
 # the raw ensemble on held-out Brier for 9 of 9 classification endpoints, so they
@@ -59,6 +64,36 @@ def standardize_or_raise(smiles: str) -> str:
     if not result.ok:
         raise ValueError(f"Invalid SMILES ({result.reason}): {smiles!r}")
     return result.canonical_smiles
+
+
+_kermt_executor: ThreadPoolExecutor | None = None
+_kermt_executor_lock = threading.Lock()
+
+
+def _kermt_pool() -> ThreadPoolExecutor:
+    """Threads that wait on the KERMT service (I/O, not CPU), so the request thread can keep working."""
+    global _kermt_executor
+    with _kermt_executor_lock:
+        if _kermt_executor is None:
+            _kermt_executor = ThreadPoolExecutor(max_workers=16, thread_name_prefix="kermt-call")
+        return _kermt_executor
+
+
+def applicability_domain(registry: ModelRegistry, endpoint_key: str, smiles_standardized: str) -> tuple[bool, float, float | None]:
+    """(in_domain, knn_distance, threshold) from the endpoint's AD index.
+
+    The index is built from the endpoint's training pool and does not depend on which model
+    serves the endpoint, so XGBoost- and KERMT-served rows share it. No index -> not in domain,
+    distance NaN, threshold None."""
+    ad_index = registry.load_ad_index(endpoint_key)
+    if ad_index is None:
+        return False, float("nan"), None
+    from eval.applicability_domain import query_ad
+
+    ad_results = query_ad(ad_index, [smiles_standardized])
+    in_domain = ad_results[0].in_domain if ad_results else False
+    knn_distance = ad_results[0].knn_mean_distance if ad_results else float("nan")
+    return in_domain, knn_distance, ad_index.threshold
 
 
 def _model_predict(model, smiles_standardized: str, prepared: dict | None) -> float:
@@ -112,18 +147,7 @@ def predict_endpoint(
     mean = float(np.mean(raw_preds))
     std = float(np.std(raw_preds))
 
-    ad_index = registry.load_ad_index(endpoint_key)
-    if ad_index is not None:
-        from eval.applicability_domain import query_ad
-
-        ad_results = query_ad(ad_index, [smiles_standardized])
-        in_domain = ad_results[0].in_domain if ad_results else False
-        knn_distance = ad_results[0].knn_mean_distance if ad_results else float("nan")
-        ad_threshold = ad_index.threshold
-    else:
-        in_domain = False
-        knn_distance = float("nan")
-        ad_threshold = None
+    in_domain, knn_distance, ad_threshold = applicability_domain(registry, endpoint_key, smiles_standardized)
 
     band = registry.load_error_band(endpoint_key) if task_type == TaskType.REGRESSION else None
 
@@ -147,6 +171,8 @@ def predict_endpoints(
     registry: ModelRegistry,
     smiles: str,
     endpoint_keys: list[str],
+    *,
+    kermt=None,
 ) -> dict[str, RealPrediction | None]:
     """Real predictions for a batch of endpoints on one molecule.
 
@@ -154,7 +180,29 @@ def predict_endpoints(
     endpoints and all of their seed models.
     Value at each key is `None` when the registry has no promoted model for
     that endpoint — the caller (API layer) decides the fallback.
+
+    `kermt` is an optional `serve.kermt_router.KermtRouter`. Endpoints the routing table
+    sends to KERMT are asked of it in one call per arm; any endpoint it cannot answer
+    (service down, molecule not featurizable) falls through to the XGBoost path below, so
+    routing never turns an answerable endpoint into a missing one.
     """
     smiles_std = standardize_or_raise(smiles)
     prepared: dict = {}
-    return {ep: predict_endpoint(registry, ep, smiles_std, prepared=prepared) for ep in endpoint_keys}
+    results: dict[str, RealPrediction | None] = {}
+
+    routed = [ep for ep in endpoint_keys if ep in kermt.served_by_kermt()] if kermt is not None else []
+    # The KERMT call is the slow part (about 0.15 s per checkpoint). Start it first so the XGBoost
+    # endpoints are computed while it runs, instead of one after the other.
+    pending = _kermt_pool().submit(kermt.predict, smiles_std, endpoint_keys) if routed else None
+    for ep in endpoint_keys:
+        if ep not in routed:
+            results[ep] = predict_endpoint(registry, ep, smiles_std, prepared=prepared)
+    from_kermt: dict[str, RealPrediction] = {}
+    if pending is not None:
+        try:
+            from_kermt = pending.result()
+        except Exception:  # a KERMT-side bug must cost this request its KERMT rows, never the request
+            logger.exception("KERMT routing failed; serving %s from XGBoost", routed)
+    for ep in routed:
+        results[ep] = from_kermt[ep] if ep in from_kermt else predict_endpoint(registry, ep, smiles_std, prepared=prepared)
+    return {ep: results[ep] for ep in endpoint_keys}
