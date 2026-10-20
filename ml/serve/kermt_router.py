@@ -21,7 +21,9 @@ from __future__ import annotations
 import logging
 
 import numpy as np
+from explain.result import ExplanationResult, assemble
 from mars_contracts.endpoints import ENDPOINT_METADATA, Endpoint, TaskType
+from rdkit import Chem
 
 from serve.kermt_client import ArmValues, KermtClient, KermtUnavailable
 from serve.predictor import RealPrediction, applicability_domain
@@ -55,6 +57,39 @@ class KermtRouter:
             if pred is not None:
                 out[endpoint] = pred
         return out
+
+    def explain(self, smiles_standardized: str, endpoint: str, *, timeout_seconds: float = 120.0) -> ExplanationResult:
+        """Explain a KERMT-routed endpoint with the service's Integrated Gradients.
+
+        Raises KermtUnavailable when the service cannot answer; there is no fallback to another
+        model, because the explanation must describe the model that produced the value.
+        """
+        route = self.routing.route(endpoint)
+        if route is None or route.model != "kermt":
+            raise ValueError(f"{endpoint} is not routed to KERMT")
+        mol = Chem.MolFromSmiles(smiles_standardized)
+        if mol is None:
+            raise ValueError(f"Invalid SMILES: {smiles_standardized!r}")
+        raw = self.client.explain(smiles_standardized, route.kermt_arm, endpoint, timeout_seconds=timeout_seconds)
+        if len(raw.atom_scores) != mol.GetNumAtoms():
+            raise KermtUnavailable(f"explain reply has {len(raw.atom_scores)} atom scores for {mol.GetNumAtoms()} atoms")
+        return assemble(
+            endpoint=endpoint,
+            method="integrated_gradients",
+            model_id=raw.model_id,
+            output_space=raw.output_space,
+            n_seeds=raw.n_seeds,
+            base_value=raw.base_value,
+            output_value=raw.output_value,
+            baseline=raw.baseline,
+            mol=mol,
+            atom_scores=np.asarray(raw.atom_scores, dtype=float),
+            descriptor_names=raw.descriptor_names,
+            descriptor_values=np.array([np.nan if v is None else v for v in raw.descriptor_values], dtype=float),
+            descriptor_scores=np.asarray(raw.descriptor_scores, dtype=float),
+            unmapped_total=raw.unmapped_total,
+            n_steps=raw.n_steps,
+        )
 
     def _one(self, endpoint: str, arm: ArmValues | None, smiles_standardized: str) -> RealPrediction | None:
         if arm is None or endpoint not in arm.values:

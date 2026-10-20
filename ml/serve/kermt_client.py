@@ -27,6 +27,29 @@ class KermtUnavailable(RuntimeError):
 
 
 @dataclass(frozen=True)
+class RawExplanation:
+    """What the service computes for one (molecule, endpoint): Integrated Gradients, seed-averaged.
+
+    Raw on purpose: fragments and totals are derived API-side by `explain.result.assemble`, so both
+    explainers share one definition of them. Atom order is RDKit's for the SMILES that was sent.
+    """
+
+    arm: str
+    model_id: str
+    output_space: str
+    n_seeds: int
+    n_steps: int
+    base_value: float
+    output_value: float
+    baseline: str
+    atom_scores: list[float]
+    descriptor_names: list[str]
+    descriptor_values: list[float | None]
+    descriptor_scores: list[float]
+    unmapped_total: float
+
+
+@dataclass(frozen=True)
 class ArmValues:
     arm: str
     model_id: str
@@ -93,6 +116,49 @@ class KermtClient:
                 )
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise self._trip(f"malformed reply: {exc!r}") from exc
+        return out
+
+    def explain(self, smiles: str, arm: str, endpoint: str, *, timeout_seconds: float = 120.0) -> RawExplanation:
+        """Integrated Gradients for one endpoint of one arm (ADR-029). Slow: seconds, not milliseconds.
+
+        Shares the prediction breaker as a gate (a dead service is dead for both) but a slow or
+        failed explanation never opens it: explanations are optional and must not stop predictions.
+        """
+        with self._lock:
+            blocked = time.monotonic() < self._down_until
+        if blocked:
+            raise KermtUnavailable("circuit open after a recent failure")
+        try:
+            resp = self._http.post(
+                "/explain", json={"smiles": smiles, "arm": arm, "endpoint": endpoint}, timeout=timeout_seconds
+            )
+        except httpx.HTTPError as exc:
+            raise KermtUnavailable(f"{type(exc).__name__}: {exc}") from exc
+        if resp.status_code != 200:
+            raise KermtUnavailable(f"HTTP {resp.status_code}: {resp.text[:200]}")
+        try:
+            b = resp.json()
+            n_atoms = len(b["atom_scores"])
+            names = [str(n) for n in b["descriptor_names"]]
+            out = RawExplanation(
+                arm=str(b["arm"]),
+                model_id=str(b["model_id"]),
+                output_space=str(b["output_space"]),
+                n_seeds=int(b["n_seeds"]),
+                n_steps=int(b["n_steps"]),
+                base_value=float(b["base_value"]),
+                output_value=float(b["output_value"]),
+                baseline=str(b["baseline"]),
+                atom_scores=[float(v) for v in b["atom_scores"]],
+                descriptor_names=names,
+                descriptor_values=[None if v is None else float(v) for v in b["descriptor_values"]],
+                descriptor_scores=[float(v) for v in b["descriptor_scores"]],
+                unmapped_total=float(b["unmapped_total"]),
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise KermtUnavailable(f"malformed explain reply: {exc!r}") from exc
+        if not (len(out.descriptor_values) == len(out.descriptor_scores) == len(names)) or n_atoms == 0:
+            raise KermtUnavailable("malformed explain reply: inconsistent lengths")
         return out
 
     def ready(self) -> bool:

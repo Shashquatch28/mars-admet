@@ -43,3 +43,22 @@ def _get_executor() -> ThreadPoolExecutor:
 async def run_prediction(fn: Callable[..., T], *args: object) -> T:
     """Run blocking prediction work `fn(*args)` on the bounded pool."""
     return await asyncio.get_running_loop().run_in_executor(_get_executor(), fn, *args)
+
+
+# Explanations get their own small pool (ADR-029): a KERMT Integrated Gradients request waits
+# seconds on the inference service, and must neither occupy the per-CPU prediction workers nor let
+# a burst of explanations starve `/predict`. Two at a time; the rest queue.
+EXPLANATION_WORKERS = 2
+_explain_executor: ThreadPoolExecutor | None = None
+
+
+def _get_explain_executor() -> ThreadPoolExecutor:
+    global _explain_executor
+    if _explain_executor is None:
+        _explain_executor = ThreadPoolExecutor(max_workers=EXPLANATION_WORKERS, thread_name_prefix="explain")
+    return _explain_executor
+
+
+async def run_explanation(fn: Callable[..., T], *args: object) -> T:
+    """Run blocking explanation work `fn(*args)` on the explanation pool."""
+    return await asyncio.get_running_loop().run_in_executor(_get_explain_executor(), fn, *args)
