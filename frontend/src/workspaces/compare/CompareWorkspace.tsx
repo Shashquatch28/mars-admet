@@ -6,9 +6,8 @@
 //     stub, not returned) is a separate mark beside it and never recolours the value
 //   - every molecule has a cell on every endpoint; one the service did not return says so
 //   - /compare is anonymous, so unlike Batch and Library this screen is never gated
-import { useEffect, useMemo, type KeyboardEvent } from "react";
+import { useMemo, type KeyboardEvent } from "react";
 import styles from "./compare.module.css";
-import { useUiState } from "../../app/uiState";
 import { useCompareSession } from "../../app/compareSession";
 import { ApiError, USING_API } from "../../data/client";
 import {
@@ -65,8 +64,6 @@ function FlagLine({ c }: { c: CompareColumn }) {
 }
 
 export function CompareWorkspace() {
-  const { setIsSample } = useUiState();
-  useEffect(() => setIsSample(false), [setIsSample]); // no fixture here: nothing on screen is illustrative
 
   const s = useCompareSession();
   const comparison = useMemo(() => (s.result ? buildComparison(s.result) : null), [s.result]);

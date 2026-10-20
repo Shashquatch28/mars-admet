@@ -4,7 +4,6 @@ import { useUiState } from "../app/uiState";
 import { useAuthSession } from "../app/authSession";
 import { USING_API } from "../data/client";
 import { accountInitial } from "../domain/session";
-import { FIXTURE_RESPONSE } from "../domain/fixtures";
 import { useApiHealth, type ApiHealth } from "../data/useApiHealth";
 import { useGenerations } from "../data/useGenerations";
 
@@ -64,11 +63,11 @@ export function TopBar() {
         <kbd className={styles.kbd}>⌘K</kbd>
       </button>
       {/* A plain readout (ADR-026 part 1): not a control, because there is nothing to switch to
-          until the API lists a second generation. Fixture mode says so rather than showing "—". */}
+          until the API lists a second generation. "—" until the service has answered, or with no API. */}
       <div className={styles.serving}>
         <span className={styles.servingLbl}>Serving</span>
         <span className={styles.servingVal}>
-          {USING_API ? (generations?.active ?? "—") : `${FIXTURE_RESPONSE.model_version} · fixture`}
+          {USING_API ? (generations?.active ?? "—") : "—"}
         </span>
       </div>
       <div className={styles.apistat}>

@@ -48,12 +48,13 @@ const GROUP_CLUSTER_FALLBACK: Partial<Record<DisplayGroup, string>> = {
   "rule-based": "no model, no applicability domain",
 };
 
+/** `null` is "no response yet": the roster only, no predictions. */
 export function reconcile(
-  response: PredictionResponse,
+  response: Pick<PredictionResponse, "predictions"> | null,
   requested: Endpoint[] = ML_ENDPOINTS,
 ): Reconciliation {
   const byEndpoint = new Map<Endpoint, EndpointPrediction>();
-  for (const p of response.predictions) byEndpoint.set(p.endpoint, p);
+  for (const p of response?.predictions ?? []) byEndpoint.set(p.endpoint, p);
 
   const requestedSet = new Set<Endpoint>(requested);
   const rowFor = (endpoint: Endpoint): Row => {

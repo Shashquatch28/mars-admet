@@ -1,5 +1,5 @@
 // Typed API client. Talks to the real FastAPI service (API_ROUTES.md). When
-// VITE_API_BASE is unset the app never calls this — it runs on the fixture.
+// VITE_API_BASE is unset the app never calls this and shows no values (ADR-031).
 //
 // VITE_API_BASE is "/api" in dev and in the production build (ADR-025): Vite proxies
 // it to the API in dev, and the API container serves the bundle and /api together in

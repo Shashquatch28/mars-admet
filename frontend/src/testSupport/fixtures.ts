@@ -1,5 +1,5 @@
-// Prototype fixture — illustrative values only, NOT model output. The UI renders
-// a full-width "design prototype" strip whenever a fixture is in use (ADR-010).
+// Test-only fixture — illustrative values only, NOT model output. The app never imports it
+// (tests/noHardcodedGuard.test.ts); ADR-031 removed the no-API design-prototype mode.
 // Celecoxib, matching the design comps. clearance_microsomal is intentionally
 // absent so the roster shows a not_returned row; cyp2c9 is stub-served.
 // ad_threshold mirrors the contract field (Q19): a number where the endpoint has an
@@ -41,17 +41,3 @@ export const FIXTURE_RESPONSE: PredictionResponse = {
     { endpoint: "synthetic_accessibility", value: 2.84, unit: "SA score", confidence_low: 2.84, confidence_high: 2.84, in_domain: true, knn_distance: 0.0, model_id: "rdkit-sascore", ad_threshold: null },
   ],
 };
-
-// Roster-only response used while a real request is in flight: no predictions,
-// so every row reconciles to a placeholder the loading state renders.
-export function emptyResponse(smiles: string): PredictionResponse {
-  return {
-    smiles_input: smiles,
-    smiles_standardized: smiles,
-    molecule_id: "",
-    model_version: "mars-routing@v0.3.1",
-    served_at: new Date().toISOString(),
-    cache_hit: false,
-    predictions: [],
-  };
-}

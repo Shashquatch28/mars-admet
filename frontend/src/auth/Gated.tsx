@@ -2,11 +2,10 @@
 // and keeps its place in the rail; an anonymous user lands in the workspace, which
 // explains why an account is needed, what stays free, and offers the forms. The
 // reason lives here in words, never only in a tooltip (never-do #8).
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import styles from "./auth.module.css";
 import { AccountForm } from "./AccountForm";
 import { useAuthSession } from "../app/authSession";
-import { useUiState } from "../app/uiState";
 import { USING_API } from "../data/client";
 import { mustSignIn } from "../domain/session";
 
@@ -30,16 +29,10 @@ const COPY = {
 
 export function Gated({ name, children }: { name: keyof typeof COPY; children: ReactNode }) {
   const { status } = useAuthSession();
-  const { setIsSample } = useUiState();
   const gate = mustSignIn({ usingApi: USING_API, status, gated: true });
-  const checking = USING_API && status === "unknown";
-  // The sign-in and checking states show no values, so nothing on screen is illustrative.
-  useEffect(() => {
-    if (gate || checking) setIsSample(false);
-  }, [gate, checking, setIsSample]);
   if (!gate) {
     // Unknown: the first /auth/me has not answered. Say so rather than flash the sign-in
-    // state at someone who is already signed in, or sample data at someone who is not.
+    // state at someone who is already signed in.
     if (USING_API && status === "unknown") {
       return (
         <section className={styles.slot} aria-label={name}>

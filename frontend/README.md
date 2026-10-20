@@ -14,9 +14,9 @@ system), Module 7 viewer wiring, and the Module 12/13 UI.
 | **Settings** | Account section: sign in or out, delete account (confirmation modal). |
 | **Auth** | Sign in, create account, sign out, `GET /auth/me` session probe, global 401 handler. Password reset, Turnstile and delete-account are not built. |
 
-Without `VITE_API_BASE` the app runs on an illustrative fixture and shows a
-"design prototype" strip; Run is disabled. With it set, Predict shows only real
-service responses.
+Without `VITE_API_BASE` the app has no API to talk to: Run, Batch upload and Save are off and every
+workspace says so, with no sample values anywhere (ADR-031). With it set, the app shows only what the
+service returned.
 
 Where things stand, what is broken, and what to do next:
 `../documentation/frontend/HANDOFF.md`.
@@ -76,7 +76,8 @@ src/
     settings/     SettingsWorkspace, DeleteAccount
   components/dataviz/  scale, IntervalTrack, ADGauge, NumericInterval, ReliabilityTag
   domain/         endpoints, rowState, reconcile, format, conformer, session,
-                  batch, fixtures, real-responses/ (captured API payloads)
+                  batch, palette, real-responses/ (captured API payloads; tests only)
+  testSupport/    test-only fixtures (never imported by the app)
   data/           client (predict, conformer, health, auth), useApiHealth, useConformer
   types/          contracts.ts
   styles/         tokens.css

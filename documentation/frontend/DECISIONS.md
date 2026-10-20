@@ -946,3 +946,35 @@ slightly brighter than designed. `--error` is a touch lighter. The app now scrol
 refusing to run, which means small screens get an unrefined layout rather than a notice. Predict's rows carry no
 `aria-rowindex` any more (not virtualized, and the old values did not match the group rows between them). Not done:
 screen-reader testing, the Ketcher panel, the Batch grid's keyboard model (see ACCESSIBILITY.md, "Not built or not checked").
+
+## ADR-031 — Nothing on screen is invented: the no-API prototype mode and the palette's sample molecules are removed
+
+**Date:** 2026-10-20 · **Status:** accepted · implemented 2026-10-20 (demo-readiness pass)
+
+**Decision.**
+1. The app renders only what the service returned. The no-API "design prototype" mode is removed: no `FIXTURE_RESPONSE` on
+   Predict, no 240-molecule sample on Batch, no placeholder 3D geometry, no "design prototype" strip, no `isSample` state, no
+   `· fixture` serving label. With no `VITE_API_BASE` each workspace says there is no API and shows placeholders or an empty grid.
+   Production and dev both set `VITE_API_BASE=/api`, so this only changes a build made without it.
+2. The fixtures survive for tests only, in `src/testSupport/`. `tests/noHardcodedGuard.test.ts` fails if runtime code imports
+   them, names a sample molecule, or ships a `<button>` with no handler, no `disabled` and no submit type.
+3. The ⌘K palette lists only real things. Endpoints come from the fixed roster, with reliability tags taken from the last real
+   result (none before one exists). The one molecule it can offer is the one Predict last returned; it keeps no history and invents
+   none. Commands are Run prediction, Copy molecule_id, Export Predict result (CSV) and Toggle density; one that cannot run is
+   listed with the reason beside it (not a tooltip) and does nothing when chosen. The leftover "transform-origin" note in its
+   footer is gone.
+4. Batch's "Open in Predict" now loads the selected row's SMILES into Predict (it does not run it). Predict's inspector "Close"
+   button, which did nothing, is removed. The inspector no longer opens on a preselected endpoint (Caco-2) before any result.
+
+**Rationale.** The headline rule is that the UI never implies a capability or a result the system does not have. Illustrative
+values, an invented "recent" molecule and buttons that do nothing all imply one. For a demo, the cost of a fixture reaching a live
+screen is higher than the cost of losing the offline design preview.
+
+**Rejected.** *Keep the fixture mode behind a flag* - a flag is one config mistake from a fake celecoxib on a demo screen.
+*Add a real recents list to the palette* - nothing stores one, and a new store is a feature, not a fix. *Show the palette commands
+only when available* - a missing command is undiscoverable; a listed one with its reason teaches the screen.
+
+**Consequences.** There is no offline way to look at the design with data on it; use a real response (or the saved ones under
+`src/domain/real-responses/` in a test). Policy numbers still written in copy (Batch "50,000 molecules" in the sign-in panel,
+"24 hours" in the expired-results message) mirror backend settings and are not read from the service; a `GET /limits` route would
+remove that duplication.

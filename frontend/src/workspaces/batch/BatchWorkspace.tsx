@@ -1,8 +1,8 @@
 // Batch — high-density triage. Composes the matrix and a molecule inspector.
-// With an API (VITE_API_BASE) it takes a CSV or SDF, runs POST /batch/predict, follows
-// the progress stream for queued jobs and shows the returned rows. Without one it runs on
-// the illustrative fixture (240 molecules, so virtualization and the keyboard model are
-// genuinely exercised). Both go through the same buildBatch and the same grid.
+// It takes a CSV or SDF, runs POST /batch/predict, follows the progress stream for
+// queued jobs and shows the returned rows through buildBatch and the grid. It shows
+// only rows the service returned: with no API, or before a run, the grid is empty and
+// says why (ADR-031).
 //
 // Honesty rules that shape this screen specifically:
 //   - sorting is RAW numeric on one endpoint, never favourability (AGENTS.md #3)
@@ -10,7 +10,9 @@
 //   - a failed row stays a row, carrying its error
 //   - no aggregate score across endpoints, because no weighting is validated
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useBatchSession } from "../../app/batchSession";
+import { usePredictSession } from "../../app/predictSession";
 import { USING_API, saveMolecule } from "../../data/client";
 import { downloadText } from "../../data/download";
 import { usePrintReport } from "../../components/report/usePrintReport";
@@ -23,7 +25,6 @@ import {
   buildBatch,
   filterRows,
   isFiltered,
-  makeBatchFixture,
   sortRows,
   NO_FILTER,
   type BatchRow,
@@ -36,18 +37,15 @@ import { BatchGrid } from "./BatchGrid";
 import { BatchUpload } from "./BatchUpload";
 
 export function BatchWorkspace() {
-  const { density, setIsSample } = useUiState();
+  const { density } = useUiState();
   const rowH = density === "compact" ? 30 : 36;
 
   const session = useBatchSession();
-  // Only the fixture is illustrative; rows that came back from the service are real.
-  useEffect(() => setIsSample(!USING_API), [setIsSample]);
+  const navigate = useNavigate();
+  const predict = usePredictSession();
 
   const summary = useMemo(
-    () =>
-      USING_API
-        ? buildBatch(session.result ?? { status: "done", total: 0, completed: 0, results: [] })
-        : buildBatch(makeBatchFixture(240)),
+    () => buildBatch(session.result ?? { status: "done", total: 0, completed: 0, results: [] }),
     [session.result],
   );
   const [sort, setSort] = useState<SortSpec>({ kind: "input" });
@@ -73,7 +71,7 @@ export function BatchWorkspace() {
 
   const c = summary.counts;
   // Export covers the whole run in run order, not what the filter happens to show, and only real
-  // results (the 240-molecule sample is illustrative and is never exported).
+  // results.
   const toExport = (r: (typeof summary.rows)[number]): ExportMolecule => ({
     row: r.rowIndex + 1,
     smilesInput: r.smilesInput,
@@ -170,9 +168,11 @@ export function BatchWorkspace() {
         </div>
 
         <div className={styles.gridwrap} style={{ ["--row-h" as string]: `${rowH}px` }}>
-          {USING_API && summary.rows.length === 0 ? (
+          {summary.rows.length === 0 ? (
             <p className={styles.gridempty}>
-              {session.busy
+              {!USING_API
+                ? "No API is configured, so there is nothing to run. Batch needs the service."
+                : session.busy
                 ? "Waiting for the service. Rows appear here when the batch finishes."
                 : session.phase.kind === "failed"
                   ? "The last run returned no rows. The reason is above; fix it and run again."
@@ -280,7 +280,18 @@ export function BatchWorkspace() {
         )}
 
         <div className={styles.inspfoot} style={{ flexWrap: "wrap" }}>
-          <button>Open in Predict</button>
+          <button
+            disabled={!selectedRow}
+            title="Load this molecule's SMILES into Predict (nothing is run until you press Run)"
+            onClick={() => {
+              if (!selectedRow) return;
+              predict.clear(); // drop any result for a different molecule
+              predict.setSmiles(selectedRow.smilesInput);
+              navigate("/predict");
+            }}
+          >
+            Open in Predict
+          </button>
           <button
             disabled={!USING_API || !selectedRow}
             onClick={() =>

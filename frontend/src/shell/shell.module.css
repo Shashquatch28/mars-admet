@@ -6,39 +6,6 @@
   margin: 0 auto;
 }
 
-/* prototype strip (ADR-010) */
-.protostrip {
-  height: 22px;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 16px;
-  background: var(--caution-wash);
-  border-bottom: 1px solid var(--caution-line);
-  overflow: hidden;
-}
-.protoswatch {
-  width: 26px;
-  height: 12px;
-  flex: 0 0 auto;
-  background: var(--hatch-unreal);
-  border: 1px solid var(--caution-line);
-  border-radius: 1px;
-}
-.protolabel {
-  font-family: var(--cond);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-size: 9px;
-  color: var(--caution);
-  white-space: nowrap;
-}
-.protonote {
-  color: var(--text-quiet);
-  font-size: 10px;
-}
-
 /* top bar */
 .topbar {
   height: 44px;
@@ -457,6 +424,12 @@
   bottom: 0;
   width: 2px;
   background: var(--accent);
+}
+.palItem[aria-disabled="true"] {
+  cursor: default;
+}
+.palItem[aria-disabled="true"] .palName {
+  color: var(--text-disabled);
 }
 .palSel .palName {
   color: var(--text-primary);

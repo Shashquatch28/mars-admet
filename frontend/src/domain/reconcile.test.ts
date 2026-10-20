@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { reconcile } from "./reconcile";
-import { FIXTURE_RESPONSE } from "./fixtures";
+import { FIXTURE_RESPONSE } from "../testSupport/fixtures";
 import { displayGroupOf } from "./endpoints";
 
 describe("reconcile (fixture)", () => {

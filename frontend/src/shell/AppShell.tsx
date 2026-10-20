@@ -1,4 +1,4 @@
-// The 1440×900 frame: prototype strip, top bar, rail, workspace slot, status bar.
+// The 1440×900 frame: top bar, rail, workspace slot, status bar.
 // Owns the global keyboard shortcuts. Workspaces fill the slot with their own
 // columns (COMPONENTS.md). Below the supported width it shows the designed
 // minimum-width notice rather than a broken layout (RESPONSIVE_STRATEGY).
@@ -23,7 +23,7 @@ const WS_TITLE: Record<string, string> = {
 };
 
 export function AppShell() {
-  const { paletteOpen, setPaletteOpen, isSample, shortcutsEnabled } = useUiState();
+  const { paletteOpen, setPaletteOpen, shortcutsEnabled } = useUiState();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const workspace = "/" + (pathname.split("/")[1] || "predict");
@@ -58,13 +58,6 @@ export function AppShell() {
         MARS is laid out for a window 1080&nbsp;px wide or more. At this width, or at high zoom, scroll sideways to
         reach everything; nothing is hidden.
       </p>
-      {isSample && (
-        <div className={styles.protostrip}>
-          <span className={styles.protoswatch} aria-hidden="true" />
-          <span className={styles.protolabel}>Design prototype</span>
-          <span className={styles.protonote}>Every value below is illustrative, not model output.</span>
-        </div>
-      )}
       <TopBar />
       <div className={styles.main}>
         <NavRail />

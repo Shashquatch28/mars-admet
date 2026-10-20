@@ -1,6 +1,5 @@
 // Settings. Today it holds the Account section only: sign in or out, and delete the
 // account behind a confirmation modal (ADR-022 phase 2).
-import { useEffect } from "react";
 import styles from "../../auth/auth.module.css";
 import { AccountForm } from "../../auth/AccountForm";
 import { useAuthSession } from "../../app/authSession";
@@ -10,8 +9,7 @@ import { DeleteAccount } from "./DeleteAccount";
 
 export function SettingsWorkspace() {
   const { status, user, busy, signOut } = useAuthSession();
-  const { setIsSample, shortcutsEnabled, setShortcutsEnabled } = useUiState();
-  useEffect(() => setIsSample(false), [setIsSample]); // Settings shows no values: nothing is illustrative
+  const { shortcutsEnabled, setShortcutsEnabled } = useUiState();
 
   let body;
   if (!USING_API) {
