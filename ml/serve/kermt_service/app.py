@@ -1,6 +1,7 @@
 """HTTP front for `KermtEngine`: the KERMT inference service the API calls.
 
     POST /predict   {"smiles": [...standardized...], "arms": ["toxicity__cls", ...]}   (arms optional = all loaded)
+    POST /explain   {"smiles": "...standardized...", "arm": "toxicity__cls", "endpoint": "herg_cardiotoxicity"}   Integrated Gradients (ADR-029)
     GET  /health    readiness (200 only once every discovered checkpoint is loaded)
     GET  /models    arm -> model_id, task_type, targets, seeds, model.pt SHA-256 per seed
 
@@ -93,6 +94,26 @@ def _engine() -> KermtEngine:
 class PredictRequest(BaseModel):
     smiles: list[str] = Field(min_length=1, max_length=MAX_MOLECULES)
     arms: list[str] | None = None
+
+
+class ExplainRequest(BaseModel):
+    smiles: str = Field(min_length=1)
+    arm: str
+    endpoint: str
+    steps: list[int] | None = Field(default=None, description="Override the interpolation-step schedule (increasing)")
+
+
+@app.post("/explain")
+def explain(req: ExplainRequest, x_kermt_token: str | None = Header(default=None)):
+    """Integrated Gradients for one endpoint (ADR-029). Slow (seconds); holds the engine lock only per chunk."""
+    _auth(x_kermt_token)
+    engine = _engine()
+    try:
+        return engine.explain(req.smiles, req.arm, req.endpoint, schedule=tuple(req.steps) if req.steps else None)
+    except KeyError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.get("/health")

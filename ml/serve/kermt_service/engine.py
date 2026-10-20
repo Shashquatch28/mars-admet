@@ -257,6 +257,82 @@ class KermtEngine:
                 out[arm].by_seed[lm.seed] = full
             return out
 
+    def explain(
+        self,
+        smiles: str,
+        arm: str,
+        endpoint: str,
+        *,
+        schedule: tuple[int, ...] | None = None,
+        rel_tol: float | None = None,
+        abs_tol: float | None = None,
+        descriptor_baseline: float | None = None,
+    ) -> dict:
+        """Integrated Gradients for one endpoint of one arm, averaged over the loaded seeds (ADR-029).
+
+        Returns the raw wire shape the API's `KermtClient.explain` expects. The engine lock is taken per
+        chunk inside `attribute_checkpoint`, not here, so predictions interleave with an explanation.
+        Regression attributions are converted to the endpoint's own unit with each seed's target scaler;
+        classification stays in the 0-1 score the model outputs.
+        """
+        import explain_ig as ig
+
+        models = sorted(self._models.get(arm, []), key=lambda m: m.seed)
+        if not models:
+            raise KeyError(f"arm not loaded: {arm}")
+        if endpoint not in models[0].target_names:
+            raise KeyError(f"{endpoint} is not a target of {arm}")
+        target = models[0].target_names.index(endpoint)
+        with self._lock:
+            feats, ok = self._features([smiles])
+        if not ok[0]:
+            raise ValueError("KERMT could not featurize this molecule")
+        baseline = ig.DEFAULT_DESCRIPTOR_BASELINE if descriptor_baseline is None else descriptor_baseline
+        kwargs = {
+            "schedule": schedule or ig.DEFAULT_SCHEDULE,
+            "rel_tol": ig.DEFAULT_REL_TOL if rel_tol is None else rel_tol,
+            "abs_tol": ig.DEFAULT_ABS_TOL if abs_tol is None else abs_tol,
+            "descriptor_baseline": baseline,
+        }
+        shared_dict: dict = {}
+        atoms, descs, f_x, f_b, steps = [], [], [], [], []
+        for lm in models:
+            lm.args.features_size = len(feats[0])
+            sa = ig.attribute_checkpoint(
+                lm, smiles, feats[0], target, shared_dict=shared_dict, lock=self._lock, **kwargs
+            )
+            params = ig._scaler_params(lm, target) if lm.task_type == "regression" else None
+            mean, std = params if params else (0.0, 1.0)
+            atoms.append(sa.atom_scores * std)
+            descs.append(sa.descriptor_scores * std)
+            f_x.append(sa.f_x * std + mean)
+            f_b.append(sa.f_baseline * std + mean)
+            steps.append(sa.steps)
+        atom_scores = np.mean(atoms, axis=0)
+        desc_scores = np.mean(descs, axis=0)
+        base_value, output_value = float(np.mean(f_b)), float(np.mean(f_x))
+        unmapped = (output_value - base_value) - float(atom_scores.sum() + desc_scores.sum())
+        names = ig.descriptor_names(len(desc_scores))
+        raw = ig.raw_descriptor_values(smiles, names)
+        return {
+            "arm": arm,
+            "model_id": models[0].model_id,
+            "output_space": "score" if models[0].task_type == "classification" else "native_unit",
+            "n_seeds": len(models),
+            "n_steps": int(max(steps)),
+            "base_value": base_value,
+            "output_value": output_value,
+            "baseline": (
+                f"Integrated Gradients from an empty molecular graph (every atom and bond feature zero) with every "
+                f"normalised descriptor at {baseline:g}, along a straight line, averaged over {len(models)} seeds."
+            ),
+            "atom_scores": [float(v) for v in atom_scores],
+            "descriptor_names": names,
+            "descriptor_values": raw,
+            "descriptor_scores": [float(v) for v in desc_scores],
+            "unmapped_total": float(unmapped),
+        }
+
     def _forward(self, lm: LoadedModel, smiles: list[str], feats: list, good: list[int], shared_dict: dict) -> np.ndarray:
         """One checkpoint's predictions for the featurizable molecules; NaN rows for the rest."""
         from kermt.data import MoleculeDataset
