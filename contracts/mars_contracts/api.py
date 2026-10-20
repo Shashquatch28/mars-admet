@@ -48,8 +48,8 @@ class BatchRowResult(BaseModel):
 
 class BatchPredictResponse(BaseModel):
     """
-    Interactive tier (<=1000 molecules): job_id is None, results is populated.
-    Async tier (>1000): job_id is set, results is None; poll /batch/progress and
+    Interactive tier (<= the service's interactive threshold, 100 by default): job_id is None, results is populated.
+    Async tier (above that threshold): job_id is set, results is None; poll /batch/progress and
     fetch /batch/results.
     """
 

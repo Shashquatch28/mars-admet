@@ -1,0 +1,96 @@
+{
+  "calibration_stability_across_seeds": {
+    "ames_mutagenicity": {
+      "n_at_boundary": 0,
+      "n_ece_not_improved": 1,
+      "n_fitted": 5,
+      "n_nll_not_improved": 0,
+      "n_optimizer_failed": 0,
+      "n_seeds": 5,
+      "statuses": [
+        "fitted"
+      ],
+      "temperature_max": 1.5543140408803622,
+      "temperature_mean": 1.2696827512327584,
+      "temperature_min": 0.8912922842398173,
+      "temperature_std": 0.24899492078800292
+    },
+    "herg_cardiotoxicity": {
+      "n_at_boundary": 0,
+      "n_ece_not_improved": 0,
+      "n_fitted": 5,
+      "n_nll_not_improved": 0,
+      "n_optimizer_failed": 0,
+      "n_seeds": 5,
+      "statuses": [
+        "fitted"
+      ],
+      "temperature_max": 1.6027876016493918,
+      "temperature_mean": 1.424620337136218,
+      "temperature_min": 1.1284976983672492,
+      "temperature_std": 0.1945671284739036
+    }
+  },
+  "prep_id": "20260918T090433Z",
+  "subgroup": "toxicity__cls",
+  "test_metrics_across_seeds": {
+    "ames_mutagenicity": {
+      "calibrated": {
+        "auprc_mean": 0.8923754867081684,
+        "auprc_std": 0.0036710829955559025,
+        "auroc_mean": 0.8548599171423963,
+        "auroc_std": 0.004559356679076424,
+        "brier_score_mean": 0.151865348650211,
+        "brier_score_std": 0.003339176963850876,
+        "ece_mean": 0.0365681582413702,
+        "ece_std": 0.01597453328412457,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "n_calibrated_seeds": 5,
+      "n_seeds": 5,
+      "raw": {
+        "auprc_mean": 0.8923754867081684,
+        "auprc_std": 0.0036710829955559025,
+        "auroc_mean": 0.8548599171423963,
+        "auroc_std": 0.004559356679076424,
+        "brier_score_mean": 0.15475839143785172,
+        "brier_score_std": 0.0011837810189814048,
+        "ece_mean": 0.06038157160664541,
+        "ece_std": 0.017954141986889122,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "task_type": "classification"
+    },
+    "herg_cardiotoxicity": {
+      "calibrated": {
+        "auprc_mean": 0.9054922042881431,
+        "auprc_std": 0.003531616476248092,
+        "auroc_mean": 0.8921474050341113,
+        "auroc_std": 0.003722752184262726,
+        "brier_score_mean": 0.13338936938069057,
+        "brier_score_std": 0.002094552228235628,
+        "ece_mean": 0.031224097207741497,
+        "ece_std": 0.010506960147763703,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "n_calibrated_seeds": 5,
+      "n_seeds": 5,
+      "raw": {
+        "auprc_mean": 0.9054922042881431,
+        "auprc_std": 0.003531616476248092,
+        "auroc_mean": 0.8921474050341113,
+        "auroc_std": 0.003722752184262726,
+        "brier_score_mean": 0.1354146372658821,
+        "brier_score_std": 0.0017861305638123823,
+        "ece_mean": 0.04334771824572074,
+        "ece_std": 0.0147592943919149,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "task_type": "classification"
+    }
+  }
+}

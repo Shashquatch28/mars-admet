@@ -197,7 +197,11 @@ export function BatchWorkspace() {
             Every molecule carries one cell per endpoint, whether or not the service returned it. Sorting is a
             raw numeric sort on a single endpoint — MARS defines no direction of good, so nothing here is
             ranked, scored, or marked best, and rows with no value for the sorted endpoint always sort last
-            rather than being ordered as though they were numbers.
+            rather than being ordered as though they were numbers.{" "}
+            <span className={styles.flagLegend}>
+              Row flags: <b>▲N</b> means N of that molecule's endpoints are out of domain; <b>—N</b> means N
+              endpoints were not returned by the service.
+            </span>
           </p>
         </div>
       </section>

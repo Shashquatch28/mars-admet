@@ -38,14 +38,42 @@ class Settings(BaseSettings):
     resend_api_key: str = Field(default="")
 
     rate_limit_anon_per_minute: int = Field(default=60)
+    trusted_proxy_hops: int = Field(
+        default=0,
+        description="How many proxies in front of the API append to X-Forwarded-For. 0 (default) means the "
+        "socket peer is the client. N > 0 means the client is the N-th entry from the right of the header, "
+        "the only entries an attacker cannot forge. Behind Cloud Run set 1, then verify after deploy.",
+    )
+    max_concurrent_predictions: int = Field(
+        default=0,
+        description="Cap on predictions running at once. 0 (default) means one per CPU available to this "
+        "process. Cloud Run does not always report its vCPU limit to the process, so set this to the "
+        "service's vCPU count there.",
+    )
     batch_size_cap: int = Field(default=50_000)
-    batch_interactive_threshold: int = Field(default=1_000)
+    batch_interactive_threshold: int = Field(
+        default=100,
+        description="Largest batch answered inside the upload request. Larger files are queued and report "
+        "progress. A real prediction costs about 0.2-0.5 s, so 100 rows is under a minute.",
+    )
     batch_upload_retention_hours: int = Field(default=24)
 
     model_version: str = Field(default="v0.2.0-dev")  # bump when the response shape or routing changes: it is part of the 48 h cache key
     model_artifact_dir: str = Field(default="./ml/artifacts")
     ml_data_cache_dir: str = Field(default="./ml/data/cache")
     prediction_cache_ttl_seconds: int = Field(default=172_800)
+
+    kermt_service_url: str = Field(
+        default="",
+        description="Base URL of the KERMT inference service (ml/serve/kermt_service). Empty (default) turns KERMT "
+        "serving off: every endpoint is served by XGBoost, whatever ml/serve/routing.json says.",
+    )
+    kermt_service_token: str = Field(default="", description="Sent as X-Kermt-Token; must match the service's KERMT_TOKEN.")
+    kermt_timeout_seconds: float = Field(
+        default=30.0,
+        description="How long one prediction waits for the KERMT service before those endpoints fall back to XGBoost.",
+    )
+    kermt_routing_path: str = Field(default="", description="Override for ml/serve/routing.json (empty = the packaged table).")
 
     s3_endpoint_url: str = Field(default="http://localhost:9000")
     s3_access_key_id: str = Field(default="mars_minio")

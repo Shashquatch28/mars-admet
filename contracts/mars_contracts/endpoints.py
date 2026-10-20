@@ -41,7 +41,9 @@ class Endpoint(str, Enum):
 
 
 # endpoint -> (task_type, category, cluster)
-# cluster groups endpoints served by one multi-task forward pass (Module 4 / Module 8 routing table)
+# cluster groups endpoints trained together as one multi-task model (Module 4 / Module 8 routing table).
+# The served XGBoost generation predicts each endpoint on its own, so the cluster is a training and
+# routing label, not a statement about how a value was computed.
 ENDPOINT_METADATA: dict[Endpoint, dict] = {
     Endpoint.SOLUBILITY: {"task_type": TaskType.REGRESSION, "category": EndpointCategory.ABSORPTION, "cluster": "absorption_distribution"},
     Endpoint.LIPOPHILICITY: {"task_type": TaskType.REGRESSION, "category": EndpointCategory.ABSORPTION, "cluster": "absorption_distribution"},

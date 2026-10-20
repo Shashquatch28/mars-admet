@@ -8,6 +8,8 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
 
 ## Immediately
 
+- **STATE 2026-10-14 (Pass 2, session 5 — Tier 0 complete).** On `735ef89`: `toxicity__cls` seeds 2, 3 and 4 done (launched 12:00, 13:35 and 15:45 IST; 95.1, 95.9 and 94.7 min), so **30 of 30 Tier-0 seeds are trained and 30 KERMT models are in W&B**. All three `VERDICT: PASS` + `PROTOCOL: MATCH`, W&B upload and verify PASS; saved epochs 20, 21 and 7. The 5-seed aggregate is `status/kermt_tier0_results/toxicity__cls/aggregate_5seeds.json` (test AUROC: hERG 0.892 ± 0.004, AMES 0.855 ± 0.005; raw and calibrated side by side there). **One crashed run:** the first seed-4 launch (`…seed4_20261014T094244Z`, 15:12 IST) was lost to an unexplained workstation reboot at 15:42 IST (no shutdown record); it was left in place, `status: running`, excluded from the aggregate, and seed 4 was re-launched once. Session note: `status/kermt_gpu_session_2026-10-14.md`.
+  **Remaining Tier-0 work:** none. Tier-1/2 work lives on branch `milestone/m2-kermt-tier1` (its own runbook there); nothing further is run from this branch.
 - **2026-10-14 — TIER 1 REVIVED, TIER 2 CONDITIONAL, NOTHING TUNED YET.** Maintainer decisions (`decisions.md` 2026-10-14): Tier 1 is live work
   after Tier 0; **Tier 2 is not deferred — it is trained only if GPU-time budget remains at the end of Tier 1**; the Kendall / GradNorm axis is back;
   **no Tier-1/2 hyperparameter is fixed in advance** (epochs, learning rates, the batch floor, GradNorm α and lr are decided by a pre-registered
@@ -15,7 +17,7 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   Tier-0 training stays on `milestone/m2-kermt`; the Tier-1/2 code (new files only: `ml/train/kermt_mixed/`, `ml/models/kermt_mixed_model.py`,
   `ml/train/train_kermt_mixed.py`, `ml/train/train_kermt_ordinal.py`, `ml/tests/test_kermt_mixed_*.py`, `ml/tests/test_train_kermt_ordinal.py`) is on
   `milestone/m2-kermt-tier1`. **Verified only on CPU** (CPU torch in a throwaway env): loss and forward against verbatim KERMT source, the in-container
-  glue against a fake `kermt`. **Next, in order:** (1) finish Tier 0 (`toxicity__cls` 2–4); (2) the maintainer fixes the open items in the decisions
+  glue against a fake `kermt`. **Next, in order:** (1) Tier 0 is finished (30/30 seeds, 2026-10-14); (2) the maintainer fixes the open items in the decisions
   entry — `n_trials`, tuning seeds, axes, objective, evidence threshold, whether Tier 0 is tuned too; (3) register the protocol(s); (4) workstation
   gates **G4 → G1 → G2 → G3** at stock values (`lab_session_tier1.md`; G3's stock side for `toxicity__cls` exists, the single-task AMES half needs 5 stock +
   5 mixed runs); (5) re-run `train/preflight_clusters.py`; (6) tuning trials (`calibrate=False`, validation only); (7) the arm runs at the selected and
