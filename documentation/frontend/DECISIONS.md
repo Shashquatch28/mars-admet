@@ -876,8 +876,8 @@ backend does can remove it.
 **Rejected.** *IG on KERMT for all 14 endpoints* — explains a model other than the one serving the value on eight of them. *TreeSHAP only* — leaves the six KERMT endpoints, including hERG, unexplained although the blueprint's validation targets toxicity. *Risk-red / safe-teal* — imposes a direction-of-good. *Auto-explain on selection* — IG costs seconds, and a surprise cost on every row click breaks the speed the workstation promises. *Atom heatmap only, descriptors hidden* — would present a minority of the explanation as the whole.
 
 **Open parameters (not fixed in advance; each is echoed in the response so no number is silent).**
-- IG baseline: zero atom and bond feature tensors (an empty graph); descriptor baseline to be chosen after the spike (candidates: all zeros, or the normalised median 0.5). `baseline` states the choice in words.
-- IG step count: raised until the completeness error `|sum(attributions) - (f(x) - f(baseline))|` is within a tolerance, with a hard cap. The tolerance and the cap are for the maintainer; the achieved error is returned as `completeness_error`.
+- IG baseline: zero atom and bond feature tensors (an empty graph); the descriptor baseline is a constant, currently 0.0 (candidate: the normalised median 0.5). To be settled by measuring `f(baseline)` on the real checkpoints. `baseline` states the choice in words.
+- IG quadrature and step count: midpoint rule after the substitution alpha = u^3, because a uniform grid did not converge (measured on a randomly initialised KERMT: erratic 5-100% completeness error at 16-256 steps; the cubic substitution 0.1-2% by 128). Steps are raised through (64, 128, 256) until `|sum(attributions) - (f(x) - f(baseline))|` is within max(5% of the change, 0.001); the 5% / 0.001 and the cap are for the maintainer. The achieved error is returned as `completeness_error`. The toy-model measurement must be repeated on the real checkpoints.
 - Fragment catalogue: RDKit `Chem.Fragments` plus ring systems. Swappable without a contract change (each fragment carries its own SMARTS).
 
 **Consequences.**

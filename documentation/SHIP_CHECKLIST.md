@@ -59,7 +59,7 @@ approval, `[lab]` needs the GPU workstation.
 
 ## Beyond the MVP (blueprint items; move to FUTURE_SCOPE.md at ship, or keep if the full blueprint is the target)
 
-- [ ] F1 Explainability (Module 6). Built on `feat/explainability` 2026-10-20 for the 8 XGBoost-served endpoints (TreeSHAP, API route, inspector panel, validation harness). Open: Integrated Gradients for the 6 KERMT-served endpoints, and landing it on main.
+- [ ] F1 Explainability (Module 6). Built on `feat/explainability` 2026-10-20 for the 8 XGBoost-served endpoints (TreeSHAP, API route, inspector panel, validation harness). Integrated Gradients for the 6 KERMT-served endpoints is written and tested on a random-weight model only; open: run it on the real checkpoints in the KERMT image, and land the branch on main.
 - [ ] F2 Novelty-track features (Module 12)
 - [ ] F3 Tier 1: gates G4, G1, G2, G3; registered tuning protocol; arms at the selected and reference configuration. Needs your tuning numbers first.
 - [ ] F4 Tier 2 ordinal run, only if GPU budget remains after Tier 1

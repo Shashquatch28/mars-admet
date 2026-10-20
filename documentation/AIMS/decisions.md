@@ -39,8 +39,13 @@ that report shows.
 **Open parameters, not fixed in advance.** IG baseline (descriptor part), IG step count / completeness tolerance, fragment catalogue
 (RDKit `Chem.Fragments` + ring systems). Each is echoed in the response (`baseline`, `n_steps`, `completeness_error`).
 
-**Follow-ups.** KERMT Integrated Gradients engine in `ml/serve/kermt_service/` (needs the KERMT image; not run on this machine without Docker);
-validation of the KERMT explanations; merge of `feat/explainability` onto main (it is based on `feat/kermt-serving`, which is itself not on main).
+**State at the end of the session.** Built and tested: the contract, TreeSHAP, the API route and cache, the inspector panel and 3D highlight, the validation harness
+(AMES shows a signal, DILI/solubility/Caco-2 do not: `status/explain_validation.md`). The KERMT Integrated Gradients engine (`ml/serve/kermt_service/explain_ig.py`,
+`POST /explain`) is written and tested only on KERMT's own model class with random weights (forward parity 1e-5, completeness 0.1-2% at 128-256 steps with the cubic
+quadrature; the uniform grid failed to converge). It has NOT been run on a real checkpoint, in the Docker image, or through the API, because Docker was not available.
+
+**Follow-ups.** (1) Build the KERMT image, run `explain` on the real checkpoints: confirm completeness, measure latency and memory, settle the descriptor baseline,
+and run the validation harness on the six KERMT-served endpoints. (2) Land `feat/explainability` on main; it is based on `feat/kermt-serving`, which is itself not on main.
 
 ---
 
