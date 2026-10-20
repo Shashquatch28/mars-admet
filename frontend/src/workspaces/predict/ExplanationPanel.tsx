@@ -7,6 +7,7 @@ import type { Endpoint } from "../../types/contracts";
 import {
   GLYPH,
   fmtSigned,
+  fragmentKey,
   methodLabel,
   outputSpaceLabel,
   topFragments,
@@ -34,9 +35,20 @@ export interface ExplanationPanelProps {
   onAsk: () => void;
   showOnStructure: boolean;
   onShowOnStructure: (on: boolean) => void;
+  focusKey: string | null; // a group chosen from the list: only its atoms are drawn on the structure
+  onFocus: (key: string | null) => void;
 }
 
-export function ExplanationPanel({ endpoint, view, canAsk, onAsk, showOnStructure, onShowOnStructure }: ExplanationPanelProps) {
+export function ExplanationPanel({
+  endpoint,
+  view,
+  canAsk,
+  onAsk,
+  showOnStructure,
+  onShowOnStructure,
+  focusKey,
+  onFocus,
+}: ExplanationPanelProps) {
   const ask = (label: string) => (
     <button className={styles.xbtn} onClick={onAsk} disabled={!canAsk}>
       {label}
@@ -155,16 +167,25 @@ export function ExplanationPanel({ endpoint, view, canAsk, onAsk, showOnStructur
           ) : (
             <ul className={styles.xlist}>
               {topFragments(d).map((f) => (
-                <li key={`${f.name}:${f.atom_indices.join(",")}`}>
-                  <Mark sign={f.score === 0 ? "none" : f.score > 0 ? "up" : "down"} />
-                  <span className={styles.xname}>{f.name}</span>
-                  <span className={styles.xnum}>{fmtSigned(f.score, dp)}</span>
-                  <span className={styles.xcount}>{f.atom_indices.length} atoms</span>
+                <li key={fragmentKey(f)} className={styles.xli}>
+                  <button
+                    className={styles.xrow}
+                    aria-pressed={focusKey === fragmentKey(f)}
+                    onClick={() => onFocus(focusKey === fragmentKey(f) ? null : fragmentKey(f))}
+                  >
+                    <Mark sign={f.score === 0 ? "none" : f.score > 0 ? "up" : "down"} />
+                    <span className={styles.xname}>{f.name}</span>
+                    <span className={styles.xnum}>{fmtSigned(f.score, dp)}</span>
+                    <span className={styles.xcount}>{f.atom_indices.length} {f.atom_indices.length === 1 ? "atom" : "atoms"}</span>
+                  </button>
                 </li>
               ))}
             </ul>
           )}
-          <p className={styles.xnote}>Groups overlap, so their scores do not add up. The atoms do.</p>
+          <p className={styles.xnote}>
+            Groups overlap, so their scores do not add up. The atoms do.{" "}
+            {focusKey ? "Showing only the chosen group on the structure; choose it again to show every atom." : "Choose a group to show only its atoms on the structure."}
+          </p>
 
           <div className={styles.xsub}>Whole molecule: largest descriptors</div>
           <ul className={styles.xlist}>

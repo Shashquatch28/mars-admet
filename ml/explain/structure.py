@@ -123,21 +123,34 @@ def _catalogue() -> tuple[tuple[str, str, Chem.Mol], ...]:
     return tuple(out)
 
 
+def _merge_overlapping(groups: list[set[int]]) -> list[set[int]]:
+    """Merge atom sets that share an atom (a CF3 matches once per C-F bond; it is one group)."""
+    merged: list[set[int]] = []
+    for g in groups:
+        g = set(g)
+        rest = []
+        for m in merged:
+            if m & g:
+                g |= m
+            else:
+                rest.append(m)
+        merged = [*rest, g]
+    return merged
+
+
 def fragment_scores(mol: Chem.Mol, atom_scores: np.ndarray) -> list[FragmentScore]:
     """Sum atom attributions over each matched functional group and each ring system.
 
-    A group is reported once per distinct atom set it matches. Groups overlap (an amide carbonyl is
-    also a carbonyl), so these scores are a view over atoms and do not add up; the atoms do.
-    Sorted by absolute score, ties by name, so the output is deterministic.
+    Matches of one pattern that share an atom are one group (a CF3 is one alkyl-halide group, not
+    three). Separate groups of the same kind stay separate. Groups of different kinds overlap (an
+    amide carbonyl is also a carbonyl), so these scores are a view over atoms and do not add up; the
+    atoms do. Sorted by absolute score, ties by name, so the output is deterministic.
     """
-    found: dict[tuple[str, tuple[int, ...]], FragmentScore] = {}
+    found: list[FragmentScore] = []
     for name, smarts, patt in _catalogue():
-        for match in mol.GetSubstructMatches(patt):
-            atoms = tuple(sorted(set(match)))
-            key = (name, atoms)
-            if key not in found:
-                found[key] = FragmentScore(name, smarts, atoms, float(atom_scores[list(atoms)].sum()))
+        for atoms_set in _merge_overlapping([set(m) for m in mol.GetSubstructMatches(patt)]):
+            atoms = tuple(sorted(atoms_set))
+            found.append(FragmentScore(name, smarts, atoms, float(atom_scores[list(atoms)].sum())))
     for atoms in ring_systems(mol):
-        key = ("ring system", atoms)
-        found[key] = FragmentScore("ring system", RING_SYSTEM_SMARTS, atoms, float(atom_scores[list(atoms)].sum()))
-    return sorted(found.values(), key=lambda f: (-abs(f.score), f.name, f.atom_indices))
+        found.append(FragmentScore("ring system", RING_SYSTEM_SMARTS, atoms, float(atom_scores[list(atoms)].sum())))
+    return sorted(found, key=lambda f: (-abs(f.score), f.name, f.atom_indices))

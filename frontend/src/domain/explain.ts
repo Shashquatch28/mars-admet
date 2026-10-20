@@ -142,3 +142,13 @@ export function atomHighlights(scores: readonly number[], dp = 2): AtomHighlight
 export function topFragments(d: ExplainResponse, n = 8) {
   return d.fragment_attributions.slice(0, n);
 }
+
+// A fragment is identified by what it is and which atoms it covers: two groups of the same kind
+// share a name, never an atom set.
+export const fragmentKey = (f: { name: string; atom_indices: number[] }) => `${f.name}:${f.atom_indices.join(",")}`;
+
+// Show one group on the structure: every atom outside it goes back to the element palette.
+export function focusHighlights(all: AtomHighlight[], atoms: readonly number[]): AtomHighlight[] {
+  const keep = new Set(atoms);
+  return all.map((h) => (keep.has(h.index) ? h : { ...h, sign: "none", strength: 0 }));
+}

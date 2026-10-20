@@ -21,7 +21,7 @@ import { buildCsv, predictFileName } from "../../domain/exportCsv";
 import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
 import { StructureViewer } from "./StructureViewer";
-import { atomHighlights, explainView } from "../../domain/explain";
+import { atomHighlights, explainView, focusHighlights, fragmentKey } from "../../domain/explain";
 import { useExplanation } from "../../data/useExplanation";
 
 // Truncate for the identity grid; only mark it as truncated when it was.
@@ -69,6 +69,7 @@ export function PredictWorkspace() {
   // shared by the inspector and the structure viewer, which read the same query.
   const [asked, setAsked] = useState<ReadonlySet<string>>(new Set());
   const [showOnStructure, setShowOnStructure] = useState(true);
+  const [focusKey, setFocusKey] = useState<string | null>(null);
   const moleculeId = usingApi && result ? result.response.molecule_id : null;
   const explainKey = moleculeId && selectedRow ? `${moleculeId}:${selectedRow.endpoint}` : "";
   const explainAsked = asked.has(explainKey);
@@ -81,10 +82,12 @@ export function PredictWorkspace() {
     data: exp.data,
     error: exp.error as { status?: number; message: string } | null,
   });
-  const highlights = useMemo(
-    () => (explanation.kind === "ready" && showOnStructure ? atomHighlights(explanation.data.atom_attributions) : null),
-    [explanation, showOnStructure],
-  );
+  const highlights = useMemo(() => {
+    if (explanation.kind !== "ready" || !showOnStructure) return null;
+    const all = atomHighlights(explanation.data.atom_attributions);
+    const focused = focusKey ? explanation.data.fragment_attributions.find((f) => fragmentKey(f) === focusKey) : undefined;
+    return focused ? focusHighlights(all, focused.atom_indices) : all;
+  }, [explanation, showOnStructure, focusKey]);
 
   function onSmilesKey(e: KeyboardEvent<HTMLTextAreaElement>) {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -225,6 +228,8 @@ export function PredictWorkspace() {
               },
               showOnStructure,
               onShowOnStructure: setShowOnStructure,
+              focusKey,
+              onFocus: setFocusKey,
             }}
           />
         ) : (

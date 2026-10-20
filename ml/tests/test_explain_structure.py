@@ -86,3 +86,18 @@ def test_fragments_are_a_view_over_atoms():
     # sorted by absolute score, deterministic
     assert [abs(f.score) for f in frags] == sorted((abs(f.score) for f in frags), reverse=True)
     assert frags == fragment_scores(mol, atom_scores)
+
+
+def test_matches_that_share_an_atom_are_one_group():
+    # A CF3 matches the alkyl-halide pattern once per C-F bond; it is one group of four atoms.
+    mol = _mol("FC(F)(F)c1ccccc1")
+    frags = fragment_scores(mol, np.ones(mol.GetNumAtoms()))
+    halides = [f for f in frags if f.name == "alkyl halides"]
+    assert len(halides) == 1 and len(halides[0].atom_indices) == 4
+
+
+def test_separate_groups_of_the_same_kind_stay_separate():
+    mol = _mol("c1ccccc1CCc1ccccc1")
+    benzene = [f for f in fragment_scores(mol, np.ones(mol.GetNumAtoms())) if f.name == "benzene rings"]
+    assert len(benzene) == 2
+    assert not set(benzene[0].atom_indices) & set(benzene[1].atom_indices)

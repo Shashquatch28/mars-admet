@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { EndpointPrediction, ExplainResponse } from "../types/contracts";
-import { atomHighlights, explainView, fmtSigned, outputSpaceLabel, signOf, totalRows, type ExplainInputs } from "./explain";
+import {
+  atomHighlights,
+  explainView,
+  fmtSigned,
+  focusHighlights,
+  fragmentKey,
+  outputSpaceLabel,
+  signOf,
+  totalRows,
+  type ExplainInputs,
+} from "./explain";
 
 const PRED = { endpoint: "herg_cardiotoxicity", model_id: "mars-kermt-toxicity-cls-v1" } as EndpointPrediction;
 
@@ -112,5 +122,19 @@ describe("atomHighlights", () => {
   });
   it("an all-zero structure part highlights nothing", () => {
     expect(atomHighlights([0, 0]).every((a) => a.sign === "none" && a.strength === 0)).toBe(true);
+  });
+});
+
+describe("focusing one group", () => {
+  it("keys a group by kind and atoms, so two groups of one kind differ", () => {
+    expect(fragmentKey({ name: "benzene rings", atom_indices: [0, 1] })).not.toBe(
+      fragmentKey({ name: "benzene rings", atom_indices: [5, 6] }),
+    );
+  });
+  it("keeps the chosen atoms and returns every other atom to the element palette", () => {
+    const all = atomHighlights([0.2, -0.1, 0.4]);
+    const f = focusHighlights(all, [1]);
+    expect(f.map((h) => h.sign)).toEqual(["none", "down", "none"]);
+    expect(f.map((h) => h.strength)).toEqual([0, 0.25, 0]);
   });
 });
