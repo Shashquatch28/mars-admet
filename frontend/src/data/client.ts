@@ -16,6 +16,7 @@ import type {
   ConformerResponse,
   DeleteAccountRequest,
   Endpoint,
+  ExplainResponse,
   LoginResponse,
   MeResponse,
   GenerationsResponse,
@@ -121,6 +122,15 @@ export async function fetchComparison(smiles: string[]): Promise<CompareResponse
 export async function fetchConformer(moleculeId: string): Promise<ConformerResponse> {
   const res = await request(`/molecule/${encodeURIComponent(moleculeId)}/3d`);
   return (await res.json()) as ConformerResponse;
+}
+
+// Explanation of the model that served `endpoint` (ADR-029). Computed on request, so it can take
+// seconds for KERMT. 404 expired molecule, 409 nothing to explain, 501 no ml stack, 503 the serving
+// model cannot explain now: each is an answer with its own state, not a crash.
+export async function fetchExplanation(moleculeId: string, endpoint: Endpoint): Promise<ExplainResponse> {
+  const q = new URLSearchParams({ endpoint });
+  const res = await request(`/molecule/${encodeURIComponent(moleculeId)}/explain?${q}`);
+  return (await res.json()) as ExplainResponse;
 }
 
 const jsonBody = (body: unknown): RequestInit => ({

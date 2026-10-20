@@ -53,6 +53,15 @@
   --viewer-hetero: #c19a5b;
   --viewer-atom-focus: var(--accent);
 
+  /* attribution sign (ADR-029). Used ONLY for the sign of a model attribution: "pushed the
+     model's output up / down". Neither is good or bad, and neither is the accent, caution, error
+     or success. Sign is always also a glyph and a signed number, never hue alone. Provisional
+     hues (ADR-029 item 3); 7:1 or better on every surface. */
+  --attr-up: #8c9ef2;
+  --attr-down: #d79bbf;
+  --attr-up-wash: rgba(140, 158, 242, 0.14);
+  --attr-down-wash: rgba(215, 155, 191, 0.14);
+
   /* textures / effects */
   --hatch-unreal: repeating-linear-gradient(
     135deg,

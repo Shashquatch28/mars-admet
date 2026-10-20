@@ -3,7 +3,7 @@
 // real /predict response; otherwise it runs on the illustrative fixture (and the
 // shell shows the "design prototype" strip). The roster, state derivation and
 // reconciliation always come from ENDPOINT_METADATA, never the response (ADR-008).
-import { useEffect, useMemo, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCompareSession } from "../../app/compareSession";
 import styles from "./predict.module.css";
@@ -21,6 +21,8 @@ import { buildCsv, predictFileName } from "../../domain/exportCsv";
 import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
 import { StructureViewer } from "./StructureViewer";
+import { atomHighlights, explainView } from "../../domain/explain";
+import { useExplanation } from "../../data/useExplanation";
 
 // Truncate for the identity grid; only mark it as truncated when it was.
 const clip = (s: string, n = 34) => (s.length > n ? `${s.slice(0, n)}…` : s);
@@ -62,6 +64,27 @@ export function PredictWorkspace() {
   );
 
   const selectedRow = recon.rows.find((r) => r.endpoint === selectedEndpoint) ?? recon.rows[0];
+
+  // Explanation (ADR-029). Asked for per molecule + endpoint, never automatically; the answer is
+  // shared by the inspector and the structure viewer, which read the same query.
+  const [asked, setAsked] = useState<ReadonlySet<string>>(new Set());
+  const [showOnStructure, setShowOnStructure] = useState(true);
+  const moleculeId = usingApi && result ? result.response.molecule_id : null;
+  const explainKey = moleculeId && selectedRow ? `${moleculeId}:${selectedRow.endpoint}` : "";
+  const explainAsked = asked.has(explainKey);
+  const exp = useExplanation(moleculeId, selectedRow?.endpoint ?? "solubility_logs", explainAsked);
+  const explanation = explainView({
+    rowState: selectedRow?.state ?? { kind: "not_returned" },
+    prediction: selectedRow?.prediction,
+    asked: explainAsked,
+    isPending: exp.isFetching,
+    data: exp.data,
+    error: exp.error as { status?: number; message: string } | null,
+  });
+  const highlights = useMemo(
+    () => (explanation.kind === "ready" && showOnStructure ? atomHighlights(explanation.data.atom_attributions) : null),
+    [explanation, showOnStructure],
+  );
 
   function onSmilesKey(e: KeyboardEvent<HTMLTextAreaElement>) {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -134,7 +157,7 @@ export function PredictWorkspace() {
               <dd className={styles.idId}>{response?.molecule_id || "—"}</dd>
             </dl>
           </div>
-          <StructureViewer live={usingApi} moleculeId={response?.molecule_id} />
+          <StructureViewer live={usingApi} moleculeId={response?.molecule_id} highlights={highlights} />
           <p className={styles.vnote}>
             Conformer is generated on demand and expires with the prediction cache. A 404 here is a normal
             state, not an error.
@@ -189,7 +212,21 @@ export function PredictWorkspace() {
           </button>
         </div>
         {selectedRow && response && !failure ? (
-          <EndpointDetail row={selectedRow} response={response} />
+          <EndpointDetail
+            row={selectedRow}
+            response={response}
+            explanation={{
+              view: explanation,
+              canAsk: usingApi && !!moleculeId && !!explainKey,
+              onAsk: () => {
+                if (!explainKey) return;
+                if (explainAsked) void exp.refetch(); // "Try again" after a failure
+                else setAsked((prev) => new Set(prev).add(explainKey));
+              },
+              showOnStructure,
+              onShowOnStructure: setShowOnStructure,
+            }}
+          />
         ) : (
           <div className={styles.inspbody}>
             <p className={styles.nostate}>
