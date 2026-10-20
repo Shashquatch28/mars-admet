@@ -21,7 +21,7 @@ _TRAIN = [
 ]
 _ACID = Chem.MolFromSmarts("C(=O)[OH]")
 _LABELS = np.array([float(Chem.MolFromSmiles(s).HasSubstructMatch(_ACID)) for s in _TRAIN])
-_LOGS = np.array([-0.5 * Chem.MolFromSmiles(s).GetNumAtoms() / 3 + 0.4 * float(l) for s, l in zip(_TRAIN, _LABELS, strict=True)])
+_LOGS = np.array([-0.5 * Chem.MolFromSmiles(s).GetNumAtoms() / 3 + 0.4 * acid for s, acid in zip(_TRAIN, _LABELS, strict=True)])
 _QUERY = "CC(=O)Oc1ccccc1C(=O)O"
 
 
