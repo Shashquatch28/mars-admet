@@ -246,6 +246,17 @@ class XGBoostModel(MARSModel):
             out[orig_i] = valid_preds[new_i]
         return out
 
+    def contributions_prepared(self, feat: np.ndarray) -> np.ndarray:
+        """Exact TreeSHAP of an already-featurized batch (see `prepare`).
+
+        Shape (n_valid, n_features + 1). The last column is the expected value (bias); each row sums
+        to the model's raw margin: the prediction for a regressor, the log-odds for a classifier.
+        Rows follow the order of `prepare`'s valid_idx. Does not change what `predict` returns.
+        """
+        if self._model is None:
+            raise RuntimeError("Model has not been fitted. Call fit() first.")
+        return self._model.get_booster().predict(xgb.DMatrix(feat), pred_contribs=True)
+
     def save(self, path: Path) -> None:
         if self._model is None:
             raise RuntimeError("Model has not been fitted.")
