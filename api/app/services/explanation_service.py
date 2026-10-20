@@ -1,4 +1,4 @@
-"""Module 6 explanations for the API (ADR-029): pick the explainer the routing table names, run it,
+"""Module 6 explanations for the API (ADR-031): pick the explainer the routing table names, run it,
 and shape the result as the `ExplainResponse` contract.
 
 Like `prediction_service`, this only works in the built container (RDKit, XGBoost). Elsewhere

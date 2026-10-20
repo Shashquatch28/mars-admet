@@ -706,7 +706,7 @@
   color: var(--text-primary);
 }
 
-/* ---- Explanation (ADR-029). Sign hues are --attr-up / --attr-down only; sign is also a glyph. ---- */
+/* ---- Explanation (ADR-031). Sign hues are --attr-up / --attr-down only; sign is also a glyph. ---- */
 .xbody {
   display: flex;
   flex-direction: column;

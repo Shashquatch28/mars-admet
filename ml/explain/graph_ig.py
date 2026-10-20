@@ -1,4 +1,4 @@
-"""The torch-free parts of Integrated Gradients on KERMT's graph inputs (ADR-029). numpy only.
+"""The torch-free parts of Integrated Gradients on KERMT's graph inputs (ADR-031). numpy only.
 
 KERMT's input to the message-passing encoder is two tensors, both indexed from 1 (row 0 is padding):
 

@@ -1,6 +1,6 @@
 // What the Explanation section of the inspector should show, decided in one pure place (like
 // conformerView and deriveRowState) so every state, including the ones that are not errors, is
-// testable. ADR-029: the serving model explains; attribution is signed and never good or bad.
+// testable. ADR-031: the serving model explains; attribution is signed and never good or bad.
 import type { Endpoint, EndpointPrediction, ExplainMethod, ExplainOutputSpace, ExplainResponse } from "../types/contracts";
 import { DISPLAY_UNIT } from "./endpoints";
 import { fmtNum } from "./format";

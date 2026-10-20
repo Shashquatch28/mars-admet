@@ -1,4 +1,4 @@
-"""`GET /molecule/{id}/explain` (Module 6, ADR-029): status codes, caching, and that a failure is never
+"""`GET /molecule/{id}/explain` (Module 6, ADR-031): status codes, caching, and that a failure is never
 cached or replaced by another model's explanation. No Redis or RDKit needed: the explainer and the
 cache are replaced with small stand-ins, so this runs in the fast tier."""
 

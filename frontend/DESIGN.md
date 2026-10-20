@@ -76,7 +76,7 @@ accent ring: `inset 0 0 0 1px var(--accent), var(--highlight-selected)`
 These colour atoms and bonds in the 3D view and never carry interface meaning.
 The AD-gauge covered zone has its own token, `--ad-covered` (`#4A5558`).
 
-### Attribution sign (ADR-029)
+### Attribution sign (ADR-031)
 ```
 --attr-up   #8C9EF2   the model's output was pushed UP from its reference    NEVER good, bad, risky or favourable
 --attr-down #D79BBF   the model's output was pushed DOWN from its reference  NEVER good, bad, risky or favourable

@@ -119,7 +119,7 @@ class KermtClient:
         return out
 
     def explain(self, smiles: str, arm: str, endpoint: str, *, timeout_seconds: float = 120.0) -> RawExplanation:
-        """Integrated Gradients for one endpoint of one arm (ADR-029). Slow: seconds, not milliseconds.
+        """Integrated Gradients for one endpoint of one arm (ADR-031). Slow: seconds, not milliseconds.
 
         Shares the prediction breaker as a gate (a dead service is dead for both) but a slow or
         failed explanation never opens it: explanations are optional and must not stop predictions.

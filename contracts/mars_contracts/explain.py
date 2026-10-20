@@ -1,5 +1,5 @@
 """
-Explanation of one served prediction, `GET /molecule/{id}/explain?endpoint=X` (Module 6, ADR-029).
+Explanation of one served prediction, `GET /molecule/{id}/explain?endpoint=X` (Module 6, ADR-031).
 
 The model that served the value explains it: `method` and `model_id` say which. An attribution
 is signed: positive pushed the model's output UP from its reference, negative pushed it DOWN. It

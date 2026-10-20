@@ -1,4 +1,4 @@
-"""Routing an explanation to the model that serves the endpoint (ADR-029), with the KERMT service replaced
+"""Routing an explanation to the model that serves the endpoint (ADR-031), with the KERMT service replaced
 by an in-process HTTP stand-in. No torch, no checkpoints."""
 
 from __future__ import annotations

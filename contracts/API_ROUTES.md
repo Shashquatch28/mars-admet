@@ -11,7 +11,7 @@ all implemented (M3, 2026-09-17) — stub predictor plus real registry-backed
 inference for endpoints with a promoted trained artifact (see `ml/serve/`);
 real conformer generation reuses Module 3 Stage 5. `GET /health/ready`
 (readiness: DB+Redis) exists alongside `/health` (liveness) though it isn't
-in Module 8's original table. `/molecule/{id}/explain` is implemented (ADR-029, modelled
+in Module 8's original table. `/molecule/{id}/explain` is implemented (ADR-031, modelled
 below as `ExplainResponse`); `/molecule/{id}/report` remains M4/Post-MVP.
 
 Base URL (local): `http://localhost:8000`. Routes are mounted at the root
@@ -93,7 +93,7 @@ Session cookie: `SESSION_COOKIE_NAME` (default `mars_session`), HttpOnly,
 sliding 7-day TTL refreshed on activity. `session:{token} -> user_id` in
 Redis; logout/account-deletion deletes the key for instant revocation.
 
-## `GET /molecule/{id}/explain` (Module 6, ADR-029)
+## `GET /molecule/{id}/explain` (Module 6, ADR-031)
 
 The model that serves the value explains it. `ml/serve/routing.json` decides, exactly as for `/predict`:
 an XGBoost-served endpoint is explained by exact TreeSHAP over the promoted seeds (`method: "tree_shap"`),

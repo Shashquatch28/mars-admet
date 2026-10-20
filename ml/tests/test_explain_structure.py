@@ -1,4 +1,4 @@
-"""explain.structure: placing contributions on atoms and grouping them (ADR-029). RDKit only."""
+"""explain.structure: placing contributions on atoms and grouping them (ADR-031). RDKit only."""
 
 from __future__ import annotations
 
@@ -105,7 +105,7 @@ def test_separate_groups_of_the_same_kind_stay_separate():
 
 @pytest.mark.parametrize("smi", ["CC(=O)Oc1ccccc1C(=O)O", "Cc1ccc(cc1)-c1cc(nn1-c1ccc(cc1)S(N)(=O)=O)C(F)(F)F", "C[C@H](N)C(=O)O"])
 def test_conformer_heavy_atoms_are_in_rdkit_order(smi):
-    """The 3D highlight uses an attribution's atom index as the viewer's atom index (ADR-029). That holds
+    """The 3D highlight uses an attribution's atom index as the viewer's atom index (ADR-031). That holds
     only while the served conformer lists the heavy atoms first, in the order RDKit parsed the SMILES."""
     from featurize.conformers import generate_conformer
 

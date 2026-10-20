@@ -33,7 +33,7 @@ async function drawConformer(host: HTMLElement, c: ConformerResponse, mode: Mode
     viewer.setStyle({}, stick(0.1, carbon));
     viewer.setStyle({ not: { elem: ["C", "H"] as unknown as string } }, stick(0.1, hetero));
   }
-  // Explanation (ADR-029). Heavy atoms come first in the SDF, in RDKit order, so an attribution index is
+  // Explanation (ADR-031). Heavy atoms come first in the SDF, in RDKit order, so an attribution index is
   // the viewer's atom index. Colour is the SIGN of the attribution (--attr-up / --attr-down, nothing
   // else), size and opacity are its strength; atoms with no direction keep the element palette.
   if (highlights) {

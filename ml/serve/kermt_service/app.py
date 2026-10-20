@@ -1,7 +1,7 @@
 """HTTP front for `KermtEngine`: the KERMT inference service the API calls.
 
     POST /predict   {"smiles": [...standardized...], "arms": ["toxicity__cls", ...]}   (arms optional = all loaded)
-    POST /explain   {"smiles": "...standardized...", "arm": "toxicity__cls", "endpoint": "herg_cardiotoxicity"}   Integrated Gradients (ADR-029)
+    POST /explain   {"smiles": "...standardized...", "arm": "toxicity__cls", "endpoint": "herg_cardiotoxicity"}   Integrated Gradients (ADR-031)
     GET  /health    readiness (200 only once every discovered checkpoint is loaded)
     GET  /models    arm -> model_id, task_type, targets, seeds, model.pt SHA-256 per seed
 
@@ -105,7 +105,7 @@ class ExplainRequest(BaseModel):
 
 @app.post("/explain")
 def explain(req: ExplainRequest, x_kermt_token: str | None = Header(default=None)):
-    """Integrated Gradients for one endpoint (ADR-029). Slow (seconds); holds the engine lock only per chunk."""
+    """Integrated Gradients for one endpoint (ADR-031). Slow (seconds); holds the engine lock only per chunk."""
     _auth(x_kermt_token)
     engine = _engine()
     try:

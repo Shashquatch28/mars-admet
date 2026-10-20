@@ -80,7 +80,7 @@ async def get_molecule_explanation(
     r: redis.Redis = Depends(get_redis),
     _rate_limit: None = Depends(enforce_predict_rate_limit),
 ) -> ExplainResponse:
-    """Module 6 / ADR-029: explain the value the serving model gave this endpoint, computed on request.
+    """Module 6 / ADR-031: explain the value the serving model gave this endpoint, computed on request.
 
     404 unknown or expired molecule; 409 nothing to explain (stub-served, or the rule-based SA score);
     422 the molecule cannot be explained; 501 no ml stack here; 503 the serving model cannot explain

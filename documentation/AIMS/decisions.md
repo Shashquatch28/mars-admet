@@ -19,7 +19,7 @@ See the 2026-08-30 "documentation stays untracked" entry.
 that `ml/serve/routing.json` says serves X. XGBoost-served (8 endpoints today): exact TreeSHAP over the promoted seeds (`ml/explain/tree_shap.py`;
 additivity to 1e-6 on the real artifacts, 40-60 ms for five seeds). KERMT-served (6 endpoints): Integrated Gradients on the KERMT service
 (blueprint Module 6's named method). No fallback between the two; a KERMT outage is a 503, not another model's explanation. Rule-based and
-stub-served rows have nothing to explain and say so. Frontend ADR-029 records the vocabulary (signed, never good or bad), the two new neutral
+stub-served rows have nothing to explain and say so. Frontend ADR-031 records the vocabulary (signed, never good or bad), the two new neutral
 attribution tokens, and the "computed on request" behaviour.
 
 **Why the blueprint changed.** Module 6 assumed one GNN behind every endpoint. Tier 0 is served per endpoint (2026-10-19 entry below), so

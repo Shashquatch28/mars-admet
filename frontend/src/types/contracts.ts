@@ -93,7 +93,7 @@ export interface ConformerResponse {
   sdf_block: string; // full SDF, handed to 3Dmol as-is
 }
 
-// --- explanation (explain.py, ADR-029) ---
+// --- explanation (explain.py, ADR-031) ---
 // Signed attribution of the model's output; the sign is "pushed up / pushed down", never good or bad.
 export type ExplainMethod = "tree_shap" | "integrated_gradients";
 export type ExplainOutputSpace = "log_odds" | "score" | "native_unit";

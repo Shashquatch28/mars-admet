@@ -65,7 +65,7 @@ export function PredictWorkspace() {
 
   const selectedRow = recon.rows.find((r) => r.endpoint === selectedEndpoint) ?? recon.rows[0];
 
-  // Explanation (ADR-029). Asked for per molecule + endpoint, never automatically; the answer is
+  // Explanation (ADR-031). Asked for per molecule + endpoint, never automatically; the answer is
   // shared by the inspector and the structure viewer, which read the same query.
   const [asked, setAsked] = useState<ReadonlySet<string>>(new Set());
   const [showOnStructure, setShowOnStructure] = useState(true);

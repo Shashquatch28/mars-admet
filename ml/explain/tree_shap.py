@@ -1,4 +1,4 @@
-"""Exact TreeSHAP for the promoted XGBoost seeds (ADR-029: the serving model explains).
+"""Exact TreeSHAP for the promoted XGBoost seeds (ADR-031: the serving model explains).
 
 The feature matrix is [217 RDKit descriptors | 2048 Morgan bits] (`models.xgboost_model`). The
 descriptor part is whole-molecule and stays whole-molecule; the Morgan part is placed on atoms

@@ -1,4 +1,4 @@
-"""Blueprint Module 6 "dual validation" for the explainers (ADR-029), measured not asserted.
+"""Blueprint Module 6 "dual validation" for the explainers (ADR-031), measured not asserted.
 
 1. **Perturbation check.** Take the group with the largest absolute structure attribution, delete its
    atoms, re-run the model, and ask whether the output moved the way the attribution said it would

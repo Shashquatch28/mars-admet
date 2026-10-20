@@ -858,7 +858,7 @@ backend does can remove it.
 
 ---
 
-## ADR-029 — Explanations come from the model that served the value, are signed but never good or bad, and say what they cannot cover
+## ADR-031 — Explanations come from the model that served the value, are signed but never good or bad, and say what they cannot cover
 
 **Date:** 2026-10-20 · **Status:** proposed (maintainer chose the hybrid method, "the model which serves explains", 2026-10-20; the scale hues and the open parameters below are for review)
 

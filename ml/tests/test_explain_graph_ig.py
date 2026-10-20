@@ -1,4 +1,4 @@
-"""explain.graph_ig: the numpy half of Integrated Gradients on KERMT graph inputs (ADR-029)."""
+"""explain.graph_ig: the numpy half of Integrated Gradients on KERMT graph inputs (ADR-031)."""
 
 from __future__ import annotations
 

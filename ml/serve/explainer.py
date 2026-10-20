@@ -1,4 +1,4 @@
-"""Which explainer answers an endpoint (ADR-029: the model that serves the value explains it).
+"""Which explainer answers an endpoint (ADR-031: the model that serves the value explains it).
 
 The routing table decides, exactly as it does for `/predict`:
 

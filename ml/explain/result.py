@@ -1,4 +1,4 @@
-"""One explanation, independent of the method that produced it (ADR-029).
+"""One explanation, independent of the method that produced it (ADR-031).
 
 `assemble` is the single place where the totals are computed, so TreeSHAP and Integrated Gradients
 cannot disagree about what "structure", "whole-molecule" and "unmapped" mean, and where the

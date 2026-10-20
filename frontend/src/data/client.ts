@@ -124,7 +124,7 @@ export async function fetchConformer(moleculeId: string): Promise<ConformerRespo
   return (await res.json()) as ConformerResponse;
 }
 
-// Explanation of the model that served `endpoint` (ADR-029). Computed on request, so it can take
+// Explanation of the model that served `endpoint` (ADR-031). Computed on request, so it can take
 // seconds for KERMT. 404 expired molecule, 409 nothing to explain, 501 no ml stack, 503 the serving
 // model cannot explain now: each is an answer with its own state, not a crash.
 export async function fetchExplanation(moleculeId: string, endpoint: Endpoint): Promise<ExplainResponse> {

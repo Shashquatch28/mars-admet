@@ -1,4 +1,4 @@
-// Explanation section of the inspector (ADR-029). The model that served the value explains it.
+// Explanation section of the inspector (ADR-031). The model that served the value explains it.
 // Attribution is signed, never good or bad: the sign is a glyph and a signed number first, a hue
 // second. Every state is said in words in the panel itself, none only in a tooltip (never-do #8).
 // The panel computes nothing: `explainView` decides what to show and this renders it.

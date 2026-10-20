@@ -110,7 +110,7 @@ def test_interface_fields_match(ts_name, model):
 
 
 def test_explain_contract_never_speaks_of_risk_or_favourability():
-    # ADR-029 / AGENTS.md rule 1: attribution is "pushed up / pushed down", never a judgement.
+    # ADR-031 / AGENTS.md rule 1: attribution is "pushed up / pushed down", never a judgement.
     banned = re.compile(r"\b(risk|risky|safe|safety|toxic|toxicity|favourable|favorable|unfavourable|good|bad|better|worse)\b", re.I)
     texts: list[str] = []
     for model in (ExplainResponse, FragmentAttribution, DescriptorAttribution):

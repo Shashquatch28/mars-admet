@@ -1,4 +1,4 @@
-"""Putting attribution on a molecule's structure (Module 6, ADR-029). RDKit only.
+"""Putting attribution on a molecule's structure (Module 6, ADR-031). RDKit only.
 
 Two pieces both explainers share:
 

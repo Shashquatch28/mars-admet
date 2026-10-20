@@ -1,4 +1,4 @@
-"""The pure parts of the explainer validation (ADR-029): atom removal, random control sets, alert matching,
+"""The pure parts of the explainer validation (ADR-031): atom removal, random control sets, alert matching,
 and the two checks against stand-in explainers whose answers are known."""
 
 from __future__ import annotations

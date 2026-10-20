@@ -1,4 +1,4 @@
-"""Integrated Gradients on KERMT's real model class, with RANDOM weights (ADR-029).
+"""Integrated Gradients on KERMT's real model class, with RANDOM weights (ADR-031).
 
 This proves the machinery: that the differentiable forward is KERMT's own forward, that attributions are
 complete (sum to f(x) - f(baseline)), that atoms line up with RDKit's atom order, and that the engine lock is

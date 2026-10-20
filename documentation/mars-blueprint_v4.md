@@ -295,7 +295,7 @@ Explainability output is intended to feed directly into the Matched Molecular Pa
 ### Placement
 Remains in the deferred/novelty track (Module 12) — aggregation logic, dual validation, and downstream MMP integration make this a genuinely nontrivial build, appropriately isolated from the core MVP per Module 12's build philosophy.
 
-### Amendment 2026-10-20 (maintainer: "the model which serves explains"; `decisions.md` 2026-10-20, frontend ADR-029)
+### Amendment 2026-10-20 (maintainer: "the model which serves explains"; `decisions.md` 2026-10-20, frontend ADR-031)
 Tier 0 is served per endpoint (Module 8 routing table), so Module 6 explains **the model that serves each endpoint**: exact TreeSHAP for the XGBoost-served endpoints, Integrated Gradients for the KERMT-served ones. There is no fallback from one to the other. The method sections above remain the specification for the KERMT path. Two parts of the original text are retired: the "risk-red / safe-teal" scale (Module 9, component 3) and "+ increases predicted risk" wording, because MARS has no validated direction-of-good; attribution is "pushed the output up / down". Because both models read whole-molecule descriptors beside the structure, an explanation reports structure, whole-molecule and unplaced parts separately; a heatmap alone would show a minority of it.
 
 ## Module 7: 3D Rendering
@@ -403,7 +403,7 @@ Every response includes which model version served the prediction — extends Mo
 ### Gap-fill component specifications
 1. **[MVP] Prediction panel:** 5 ADMET-category sections, responsive card grid, Toxicity prioritized (larger cards, rendered first)
 2. **[MVP] Confidence intervals:** horizontal range bar per card — teal fill for interval, cyan tick for point estimate, exact numeric range in Plex Mono
-3. **[Post-MVP] Explainability color scale** *(amended 2026-10-20, ADR-029: a neutral signed scale, not risk-red/teal; see the Module 6 amendment)*: bidirectional — risk-red gradient (danger-increasing substructures) vs. teal-cyan gradient (danger-decreasing), shared neutral "grey-out" mechanism with Module 7; draggable magnitude threshold legend. Depends on Module 6's attribution output (Post-MVP) and Module 7's explainability integration subsection (Post-MVP) — ships together with those, not with the rest of Module 9.
+3. **[Post-MVP] Explainability color scale** *(amended 2026-10-20, ADR-031: a neutral signed scale, not risk-red/teal; see the Module 6 amendment)*: bidirectional — risk-red gradient (danger-increasing substructures) vs. teal-cyan gradient (danger-decreasing), shared neutral "grey-out" mechanism with Module 7; draggable magnitude threshold legend. Depends on Module 6's attribution output (Post-MVP) and Module 7's explainability integration subsection (Post-MVP) — ships together with those, not with the rest of Module 9.
 4. **[MVP] Batch upload:** full state set — idle/drag-over/uploading/per-row validation (non-blocking per-molecule errors)/complete summary
 5. **[MVP] Toast/notification system:** top-right stack, reuses the existing left-border-accent grammar (cyan=success, risk=error) already defined for table error rows
 6. **[MVP] Comparison mode:** 2-3 dense columns mirroring single-molecule cards, per-endpoint cyan-tint "winner" highlighting

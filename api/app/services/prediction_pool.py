@@ -45,7 +45,7 @@ async def run_prediction(fn: Callable[..., T], *args: object) -> T:
     return await asyncio.get_running_loop().run_in_executor(_get_executor(), fn, *args)
 
 
-# Explanations get their own small pool (ADR-029): a KERMT Integrated Gradients request waits
+# Explanations get their own small pool (ADR-031): a KERMT Integrated Gradients request waits
 # seconds on the inference service, and must neither occupy the per-CPU prediction workers nor let
 # a burst of explanations starve `/predict`. Two at a time; the rest queue.
 EXPLANATION_WORKERS = 2

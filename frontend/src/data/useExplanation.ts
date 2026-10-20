@@ -1,4 +1,4 @@
-// GET /molecule/{id}/explain for one endpoint, only after the user asks (ADR-029: an explanation
+// GET /molecule/{id}/explain for one endpoint, only after the user asks (ADR-031: an explanation
 // is computed on request). The answers that are states rather than failures are not retried.
 import { useQuery } from "@tanstack/react-query";
 import type { Endpoint } from "../types/contracts";

@@ -2,7 +2,7 @@
 
 Measured 2026-10-20 by `ml/eval/explain_validation.py` on the **held-out test split** (`ml/data/processed/20260830T200000Z`),
 against the promoted 5-seed XGBoost artifacts, using the same `explain_xgboost` the API serves. This is blueprint Module 6's
-"dual validation" (ADR-029). It covers **XGBoost-served endpoints only**; the KERMT-served endpoints (Integrated Gradients) are
+"dual validation" (ADR-031). It covers **XGBoost-served endpoints only**; the KERMT-served endpoints (Integrated Gradients) are
 not validated yet because that engine is not built.
 
 It tests whether the model's own output agrees with its explanation and whether the attribution lines up with published alert

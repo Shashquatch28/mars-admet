@@ -1,4 +1,4 @@
-"""Integrated Gradients for the Tier-0 KERMT checkpoints (ADR-029). Runs only inside the KERMT image.
+"""Integrated Gradients for the Tier-0 KERMT checkpoints (ADR-031). Runs only inside the KERMT image.
 
 What is attributed. One scalar: the checkpoint's own eval-mode output for one target, exactly what
 `engine.predict` returns before the inverse target scaler (classification: the mean of the two heads'

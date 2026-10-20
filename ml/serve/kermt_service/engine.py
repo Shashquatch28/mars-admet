@@ -268,7 +268,7 @@ class KermtEngine:
         abs_tol: float | None = None,
         descriptor_baseline: float | None = None,
     ) -> dict:
-        """Integrated Gradients for one endpoint of one arm, averaged over the loaded seeds (ADR-029).
+        """Integrated Gradients for one endpoint of one arm, averaged over the loaded seeds (ADR-031).
 
         Returns the raw wire shape the API's `KermtClient.explain` expects. The engine lock is taken per
         chunk inside `attribute_checkpoint`, not here, so predictions interleave with an explanation.
