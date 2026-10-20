@@ -24,6 +24,13 @@ from .endpoints import (
     EndpointCategory,
     TaskType,
 )
+from .explain import (
+    DescriptorAttribution,
+    ExplainMethod,
+    ExplainOutputSpace,
+    ExplainResponse,
+    FragmentAttribution,
+)
 from .persistence import (
     DeleteAccountRequest,
     SavedMoleculeResponse,
@@ -37,6 +44,7 @@ __all__ = [
     "Endpoint", "ENDPOINT_METADATA", "ALL_ENDPOINTS", "ML_ENDPOINTS", "TaskType", "EndpointCategory",
     "PredictionRequest", "PredictionResponse", "EndpointPrediction", "BatchJobStatus",
     "ConformerResponse", "Atom", "Bond",
+    "ExplainResponse", "ExplainMethod", "ExplainOutputSpace", "FragmentAttribution", "DescriptorAttribution",
     "BatchPredictOptions", "BatchRowResult", "BatchPredictResponse",
     "CompareRequest", "CompareResponse", "GenerationsResponse",
     "RegisterRequest", "RegisterResponse", "LoginRequest", "LoginResponse", "MeResponse",

@@ -93,6 +93,44 @@ export interface ConformerResponse {
   sdf_block: string; // full SDF, handed to 3Dmol as-is
 }
 
+// --- explanation (explain.py, ADR-029) ---
+// Signed attribution of the model's output; the sign is "pushed up / pushed down", never good or bad.
+export type ExplainMethod = "tree_shap" | "integrated_gradients";
+export type ExplainOutputSpace = "log_odds" | "score" | "native_unit";
+export interface FragmentAttribution {
+  name: string;
+  smarts: string;
+  atom_indices: number[];
+  score: number; // sum of member atoms; fragments overlap, so these do not add up
+}
+export interface DescriptorAttribution {
+  name: string;
+  value: number | null;
+  score: number;
+}
+export interface ExplainResponse {
+  molecule_id: string;
+  endpoint: Endpoint;
+  method: ExplainMethod;
+  model_id: string; // equals the model_id of the prediction explained
+  output_space: ExplainOutputSpace;
+  unit: string | null;
+  n_seeds: number;
+  base_value: number;
+  output_value: number;
+  baseline: string; // the reference, in words
+  atom_attributions: number[]; // one per atom of smiles_standardized, RDKit order, no hydrogens
+  fragment_attributions: FragmentAttribution[];
+  whole_molecule_attributions: DescriptorAttribution[];
+  whole_molecule_rest: number;
+  structure_total: number;
+  whole_molecule_total: number;
+  unmapped_total: number;
+  completeness_error: number;
+  n_steps: number | null;
+  model_version: string;
+}
+
 // --- batch (api.py) ---
 export interface BatchRowResult {
   row_index: number;
