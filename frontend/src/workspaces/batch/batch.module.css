@@ -909,3 +909,82 @@
   line-height: 1.6;
   color: var(--text-quiet);
 }
+
+/* --- view switch and coverage table (ADR-034 item 5) ------------------------ */
+
+.viewSw {
+  display: inline-flex;
+  gap: 6px;
+}
+.covwrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 14px 14px;
+}
+.cov {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+}
+.covCap {
+  caption-side: top;
+  text-align: left;
+  padding: 10px 0 8px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-quiet);
+}
+.covCap b {
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.cov th,
+.cov td {
+  padding: 0 10px;
+  height: 26px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line-hairline);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.cov thead th {
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  background: var(--surface-chrome);
+  border-bottom: 1px solid var(--line-default);
+}
+.cov .covL {
+  text-align: left;
+}
+.cov tbody th {
+  font-family: var(--mono);
+  font-weight: 400;
+}
+.covTask {
+  margin-left: 6px;
+  font-family: var(--cond);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-quiet);
+}
+.covObs {
+  color: var(--text-primary);
+}
+.covNotes {
+  margin: 12px 0 0;
+  padding-left: 16px;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--text-quiet);
+}
+.covNotes li + li {
+  margin-top: 3px;
+}

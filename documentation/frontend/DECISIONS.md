@@ -1120,3 +1120,8 @@ Healthy KERMT rows show `KERMT` and no dagger in all three places. Observation, 
 **Implementation note (2026-10-22), item 4.** The status bar shows the latest announcement as text (`useLastAnnouncement`), fed by the same `announce()` call as the live region, hidden from assistive technology so nothing
 is read twice, with no timer and no animation. `tests/a11yGuard.test.ts` fails if the echo becomes a second live region. Checked live, including the palette's Copy molecule_id.
 
+**Implementation note (2026-10-22), item 5.** Done and checked live. Batch has a Rows / Coverage by endpoint switch; the coverage view (`domain/coverage.ts`, `BatchCoverage.tsx`) is computed in the browser from the rows in hand over the whole run, not the
+filtered view, and replaces the filter bar while shown. One line per ML endpoint in roster order: requested, returned, not returned, out of domain, stub-served, XGBoost, KERMT, † fell back (kept out of both XGBoost and KERMT), and for
+regression endpoints the minimum, median and maximum returned in this batch (stub values left out, out-of-domain values included, and the table says so). Every number is in the one value ink. Failed rows are named in the caption and
+counted nowhere. The rule-based score is not in the table. `COVERAGE_NOTES` is printed with it and a test fails if it uses ranking or flagging words. Not built, by decision: a chart and an outlier flag.
+

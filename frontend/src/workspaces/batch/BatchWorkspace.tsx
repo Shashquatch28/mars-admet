@@ -34,6 +34,7 @@ import {
 import { SHORT_LABEL } from "../../domain/endpoints";
 import { fmtValue } from "../../domain/format";
 import { BatchGrid } from "./BatchGrid";
+import { BatchCoverage } from "./BatchCoverage";
 import { ModelSource } from "../../components/ModelSource";
 import { useGenerations } from "../../data/useGenerations";
 import { FALLBACK_NOTE, fallbackCountInRows } from "../../domain/modelFamily";
@@ -55,6 +56,8 @@ export function BatchWorkspace() {
   const [sort, setSort] = useState<SortSpec>({ kind: "input" });
   const [filter, setFilter] = useState<FilterSpec>(NO_FILTER);
   const [selected, setSelected] = useState<number | null>(null);
+  // Rows: the molecule grid. Coverage: counts per endpoint over the whole run (ADR-034 item 5).
+  const [view, setView] = useState<"rows" | "coverage">("rows");
 
   // A new result starts from input order with nothing filtered or selected.
   useEffect(() => {
@@ -93,6 +96,24 @@ export function BatchWorkspace() {
         {USING_API && <BatchUpload />}
         <div className={styles.bhd}>
           <span className={styles.bTitle}>Batch</span>
+          <div className={styles.viewSw} role="group" aria-label="Batch view">
+            <button
+              type="button"
+              className={`${styles.chip} ${view === "rows" ? styles.chipOn : ""}`}
+              aria-pressed={view === "rows"}
+              onClick={() => setView("rows")}
+            >
+              Rows
+            </button>
+            <button
+              type="button"
+              className={`${styles.chip} ${view === "coverage" ? styles.chipOn : ""}`}
+              aria-pressed={view === "coverage"}
+              onClick={() => setView("coverage")}
+            >
+              Coverage by endpoint
+            </button>
+          </div>
           <span className={styles.recon}>
             <b>{c.molecules}</b> molecules <span className={styles.reconD} aria-hidden="true">·</span>{" "}
             <b className={styles.reconOod}>{c.rowsWithOod}</b> with out-of-domain{" "}
@@ -118,6 +139,7 @@ export function BatchWorkspace() {
           )}
         </div>
 
+        {view === "rows" && (
         <div className={styles.filterbar}>
           <label className={styles.search}>
             <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -170,6 +192,7 @@ export function BatchWorkspace() {
             <span className={styles.sortnote}>input order · click a column to sort by raw value</span>
           )}
         </div>
+        )}
 
         <div className={styles.gridwrap} style={{ ["--row-h" as string]: `${rowH}px` }}>
           {summary.rows.length === 0 ? (
@@ -182,6 +205,8 @@ export function BatchWorkspace() {
                   ? "The last run returned no rows. The reason is above; fix it and run again."
                   : "No batch has been run. Choose a CSV or SDF above and run it; every molecule gets one cell per endpoint, including the ones the service did not return."}
             </p>
+          ) : view === "coverage" ? (
+            <BatchCoverage rows={summary.rows} />
           ) : (
             <BatchGrid
               rows={visible}
