@@ -591,12 +591,14 @@ ever added, allowlist `.dot`.
    "Sign in"; signed in shows the user's initial and a sign-out control.
 6. Turnstile is not wired in the client for now. The server skips verification when
    `CLOUDFLARE_TURNSTILE_SECRET_KEY` is unset, and the register request sends a placeholder token. If the app is
-   ever deployed publicly: honeypot field and a register rate limit first, then Turnstile (free).
+   ever deployed publicly: honeypot field and a register rate limit first, then Turnstile (free). Confirmed and
+   scheduled as a deploy gate by ADR-034 item 9.
 7. MARS launches without account recovery (decided 2026-10-19). `/auth/password-reset/request` issues a token but
    Resend delivery is not wired, so a reset form would promise an email that is never sent. The sign-in form says
    in plain text that there is no password recovery and that a forgotten password loses the account. The two
    `/auth/password-reset/*` routes stay in the API, unused by the client, until an email provider exists.
 8. Fixture mode (no API configured): Batch keeps working on its sample data, labelled as sample (`isSample`).
+   Superseded by ADR-032: the app has no fixture mode and shows no sample data.
 9. Phase 1 = items 1-8 plus tests. Phase 2, which depends on Phase 1 = live Batch upload and SSE progress, Library,
    and a Settings account section with delete-account behind a confirmation modal (the one modal use that
    INTERACTIONS.md allows).
@@ -707,7 +709,7 @@ stays beside it.
 
 ## ADR-025 — Production serves the frontend and the API from one origin (resolves Q22)
 
-**Date:** 2026-10-08 · **Status:** accepted (design; implementation pending)
+**Date:** 2026-10-08 · **Status:** accepted · implemented 2026-10-19 (items 1-3; item 5 is code-complete, see its note; item 4, the blueprint amendment, is still the maintainer's)
 
 **Decision.**
 
@@ -739,6 +741,8 @@ third-party cookies by default. *Vercel rewrite to the API* - documented and sam
 documentation says nothing about timeouts, streaming or cookie handling, so batch progress (SSE) is unverified.
 *Firebase Hosting rewrite to Cloud Run* - documented 60-second request timeout. *Custom domain with subdomains* - needs
 a purchased domain.
+
+**Implementation (2026-10-19).** Every router is included under `/api` (`app/main.py`), and docs move to `/api/docs`. `app/spa.py` serves the bundle when `STATIC_DIR` is set (the image sets it): a real file is served as is (hashed `/assets/*` cached for a year, everything else `no-cache`), an extensionless path gets `index.html`, a missing file is a 404 rather than HTML, and an unknown `/api/...` path is a JSON 404. The Dockerfile is multi-stage (Node builds the bundle with `VITE_API_BASE=/api`, then it is copied beside the API) and starts uvicorn on `$PORT`. The Vite dev proxy no longer strips the prefix. The API warns at start-up if it serves the bundle with `SESSION_COOKIE_SECURE` unset; production sets it to `true` and leaves `CORS_ALLOW_ORIGINS` empty. Tests, the CI smoke test, the compose health check and `API_ROUTES.md` use the prefixed paths.
 
 **Consequences.** The first page load can include a Cloud Run cold start (the blueprint already accepts 1-3 s). The
 Dockerfile becomes multi-stage. CI does not deploy yet, so nothing needs migrating. The comment at the top of
@@ -858,6 +862,93 @@ backend does can remove it.
 
 ---
 
+## ADR-029 — The report is a print-only light document built in the client; PDF is the browser's "Save as PDF"
+
+**Date:** 2026-10-19 · **Status:** accepted · implemented 2026-10-19 (ship checklist D5)
+
+**Decision.**
+
+1. Predict (Report button beside Export) and Batch (Report in the inspector) open one molecule's report through the
+   browser's print dialog. The report is a `ReportModel` (`domain/report.ts`, pure, from the same `ExportMolecule` the CSV
+   uses) rendered by `PrintReport` into a portal on `document.body`. On screen it is `display: none`; in print it is the
+   only thing shown and `#root` is hidden. "Save as PDF" in the print dialog produces the PDF; the page title is set to
+   `MARS prediction report <molecule id>` for the duration, which is the file's default name.
+2. The report is a separate light treatment (ADR-004 deferred exactly this): ink on paper from `--report-*` tokens,
+   no semantic colour. Reliability is carried by words (Status column), a left edge (solid for OUT OF DOMAIN, solid
+   muted for NOT RETURNED, dashed for NOT REQUESTED) and, for a stub value, the diagonal hatch, which prints because
+   the report sets `print-color-adjust: exact`.
+3. It prints what the screen says and nothing more: the full roster including NOT RETURNED and NOT REQUESTED rows
+   (ADR-008), the value in one ink in every state, seed spread and held-out error as text (ADR-024), applicability domain
+   as a distance and cutoff in words, the served model per row, and the requested / returned / out-of-domain /
+   stub-served / not-returned counts. A fixed "How to read this report" block (scores are not probabilities, no validated
+   threshold or direction of good, what spread and held-out error are, what out of domain and stub mean, that every
+   endpoint is listed, what is not included) is printed on every report.
+4. Report is offered for a real result only, under the same condition as the CSV export: never the illustrative sample,
+   never after a failure. A Batch row that failed before inference prints its reason and no table.
+5. The blueprint's `GET /molecule/{id}/report` (server-side PDF) is **not built**. See rationale.
+
+**Rationale.** The honesty rules live in the client: `deriveRowState` and `reconcile` decide what each row is and
+guarantee the NOT RETURNED rows. A server-side PDF would need a second copy of that logic in Python, and the two would
+drift (ADR-009 exists for the same reason). A PDF library would also be a new dependency to install, pin and audit,
+and its output could not reuse the screen's formatters. The browser already makes a faithful PDF from a print stylesheet.
+This departs from the blueprint's wording ("Per-molecule PDF"); the deliverable is the same file, made by the browser.
+
+**Rejected.** *Server-side PDF (reportlab or similar)* - duplicates the reconcile logic and adds a dependency. *A
+client-side PDF library* - same dependency cost, and no better than the print engine. *Printing the live workspace* -
+it is a dark, fixed-height, overflow-hidden surface with controls in it. *Colouring rows on paper* - the semantic
+colours imply a scale (never-do #1); paper gets words, edges and a hatch.
+
+**Never-do audit.** (1) value cell is `--report-ink`, mono, tabular, in every state; (2) no prop on `EndpointRow`
+(it is not used); (3) nothing ranked or sorted; (4) no interval bar, intervals are text; (5) all 15 roster rows print,
+absence is a row; (6) stub values carry the hatch and the word STUB; (7) nothing animates; (8) every state is in
+words in the table, none only in a tooltip (the report has no tooltips); (9) no shadow, radius 2px, light only for the
+report as ADR-004 required.
+
+**Consequences.** Not included, and said so on the page: a 2D structure drawing (the service has no depiction route and
+the 3D viewer is not printable) and drug-likeness flags (the service does not compute them). Adding either is a new
+service capability first. The report cannot be previewed on screen except through the browser's print preview. The
+frontend tests cover the model (`report.test.ts`: roster completeness, no marker inside values, hatch only on stubs,
+NOT RETURNED versus NOT REQUESTED, no favourability wording, counts agree with the screen); the rendered layout was
+checked in a browser against a live API with the print stylesheet applied.
+
+---
+
+## ADR-030 — Accessibility pass: AA text tokens, scroll instead of block, a switch for the 1-4 keys
+
+**Date:** 2026-10-19 · **Status:** accepted · implemented 2026-10-19 (ship checklist D6)
+
+**Decision.**
+
+1. **Text tokens are AA on every surface.** `--text-quiet` becomes `#848F92` and `--error` `#E06861`. An audit of the
+   running app found readable information in `--text-quiet` (3.5-4.4:1: the held-out-error explanation, the "illustrative,
+   not model output" note, key hints) and in `--text-disabled` (3.2:1: row numbers, the `-N` not-returned flag, group
+   counts), and error text under 4.5:1 on the dialog surface. `--text-disabled` is now for disabled controls only
+   (WCAG exempts them) and a test enforces it.
+2. **Narrow windows and high zoom scroll; nothing is blocked.** The blocking "minimum width" notice is replaced by a
+   1080px canvas that scrolls sideways, with a one-line note. This amends RESPONSIVE_STRATEGY ("a blocking notice
+   rather than a broken layout"): at 200% browser zoom on a 1440px screen the viewport is 720 CSS px, the notice
+   replaced the whole app, and zoom users could not use it at all (WCAG 1.4.4, 1.4.10).
+3. **The 1-4 keys can be turned off** (WCAG 2.1.4): Settings, Keyboard, "Single-key shortcuts", on by default, remembered
+   in this browser. The alternative (require Alt+1-4) was declined because it changes the documented keys.
+4. **Structure and announcements.** One `<main>`, a skip link, an `h1` per workspace and `h2` endpoint groups, per-workspace
+   page titles, a valid ARIA grid on Predict (headers inside the grid, `gridcell`s, `aria-activedescendant`), one polite
+   live region for "prediction complete" and batch start / quarters / finish, errors linked to their fields, a 24px
+   minimum target size.
+
+**Rationale.** WCAG 2.2 AA is the stated target (ACCESSIBILITY.md) and the doc already listed live regions, error
+association, headings and focus return as specified but not built. The audit measured the rest.
+
+**Rejected.** *Keep the block and record an exception* - fails 1.4.4 for exactly the users who need zoom. *Alt+1-4* -
+see above. *Announce every batch progress event* - the service reports every half second; a screen reader would
+talk over everything. *A new dependency (axe, jsx-a11y)* - not needed to catch the measured failures; the guards and
+the audit script cover them, and a dependency can be added later.
+
+**Consequences.** The `--text-quiet` rung of the hierarchy is nearly the same as `--text-tertiary`, so quiet text is
+slightly brighter than designed. `--error` is a touch lighter. The app now scrolls at narrow widths instead of
+refusing to run, which means small screens get an unrefined layout rather than a notice. Predict's rows carry no
+`aria-rowindex` any more (not virtualized, and the old values did not match the group rows between them). Not done:
+screen-reader testing, the Ketcher panel, the Batch grid's keyboard model (see ACCESSIBILITY.md, "Not built or not checked").
+
 ## ADR-031 — Explanations come from the model that served the value, are signed but never good or bad, and say what they cannot cover
 
 **Date:** 2026-10-20 · **Status:** proposed (maintainer chose the hybrid method, "the model which serves explains", 2026-10-20; the scale hues and the open parameters below are for review)
@@ -885,3 +976,188 @@ backend does can remove it.
 - `output_space` is part of the meaning of every number: `log_odds` (XGBoost classification: TreeSHAP on the margin), `score` (KERMT classification: the 0-1 value shown, the mean of the two heads' sigmoids), `native_unit` (regression). The inspector prints it beside the totals, and a classification attribution is never presented as a change in probability (ADR-023).
 - The KERMT service gains an explain route and must not block `/predict`: explanation runs in its own queue.
 - Docs changed with it: blueprint Module 6 (per-endpoint coverage, retired scale), `API_ROUTES.md` (`ExplainResponse`), COMPONENTS and DESIGN_SYSTEM (tokens, `ExplanationPanel`), `AIMS/decisions.md`.
+
+## ADR-032 — Nothing on screen is invented: the no-API prototype mode and the palette's sample molecules are removed
+
+**Date:** 2026-10-20 · **Status:** accepted · implemented 2026-10-20 (demo-readiness pass)
+
+**Decision.**
+1. The app renders only what the service returned. The no-API "design prototype" mode is removed: no `FIXTURE_RESPONSE` on
+   Predict, no 240-molecule sample on Batch, no placeholder 3D geometry, no "design prototype" strip, no `isSample` state, no
+   `· fixture` serving label. With no `VITE_API_BASE` each workspace says there is no API and shows placeholders or an empty grid.
+   Production and dev both set `VITE_API_BASE=/api`, so this only changes a build made without it.
+2. The fixtures survive for tests only, in `src/testSupport/`. `tests/noHardcodedGuard.test.ts` fails if runtime code imports
+   them, names a sample molecule, or ships a `<button>` with no handler, no `disabled` and no submit type.
+3. The ⌘K palette lists only real things. Endpoints come from the fixed roster, with reliability tags taken from the last real
+   result (none before one exists). The one molecule it can offer is the one Predict last returned; it keeps no history and invents
+   none. Commands are Run prediction, Copy molecule_id, Export Predict result (CSV) and Toggle density; one that cannot run is
+   listed with the reason beside it (not a tooltip) and does nothing when chosen. The leftover "transform-origin" note in its
+   footer is gone.
+4. Batch's "Open in Predict" now loads the selected row's SMILES into Predict (it does not run it). Predict's inspector "Close"
+   button, which did nothing, is removed. The inspector no longer opens on a preselected endpoint (Caco-2) before any result.
+
+**Rationale.** The headline rule is that the UI never implies a capability or a result the system does not have. Illustrative
+values, an invented "recent" molecule and buttons that do nothing all imply one. For a demo, the cost of a fixture reaching a live
+screen is higher than the cost of losing the offline design preview.
+
+**Rejected.** *Keep the fixture mode behind a flag* - a flag is one config mistake from a fake celecoxib on a demo screen.
+*Add a real recents list to the palette* - nothing stores one, and a new store is a feature, not a fix. *Show the palette commands
+only when available* - a missing command is undiscoverable; a listed one with its reason teaches the screen.
+
+**Consequences.** There is no offline way to look at the design with data on it; use a real response (or the saved ones under
+`src/domain/real-responses/` in a test). Policy numbers still written in copy (Batch "50,000 molecules" in the sign-in panel,
+"24 hours" in the expired-results message) mirror backend settings and are not read from the service; a `GET /limits` route would
+remove that duplication.
+
+## ADR-033 — KERMT serving is visible: the model that answered each row, one version string, and a stated fallback
+
+**Date:** 2026-10-20 · **Status:** accepted · implemented 2026-10-20, verified 2026-10-22 against a live KERMT service (see Consequences)
+
+**Decision.**
+1. Predict's SOURCE column shows the model family read from the row's own `model_id` (`XGBoost`, `KERMT`, `RDKit`; a stub row stays
+   blank because its hatch and STUB tag already say it). It replaces a constant "v1" that was printed on every real row. The
+   inspector's Provenance gains a `model` line above the raw `model_id`.
+2. `GET /generations` now reports the version `/predict` stamps (`<model_version>+kermt.<routing digest>` when KERMT serving is on),
+   so the top bar and a result name the same string, and a new `kermt_endpoints` list (empty when KERMT is off).
+3. A row the deployment routes to KERMT but that XGBoost answered (the KERMT service was down, slow or malformed) carries a `†`
+   in SOURCE, a `routing` line in the inspector and a sentence under the table saying how many such rows there are and why. The
+   fallback is derived in the component from the contract, not passed in as a prop (ADR-006).
+
+**Rationale.** A response that mixes two model families must say which answered which row, and a version shown in one place must not
+differ from the one shown in another. The fallback is correct output, but a reader who saw "KERMT serves bbb_permeability" and then
+got an XGBoost value would otherwise have to read raw ids to notice.
+
+**Rejected.** *Colour or order rows by family* - provenance only; nothing here says one family is better (AGENTS.md rules 1 and 3). The
+routing reasons (AUROC gaps, noise margins) are **not** sent to the client for the same reason. *Infer the fallback in the client from the
+`+kermt.` suffix alone* - it says KERMT is on, not which endpoints it serves. *Show family only in the inspector* - a column that is
+blank or constant is the defect being fixed.
+
+**Consequences.** Batch cells, Compare and the printed report still show no model family (Batch and Compare carry only the
+version, the report prints the raw `model_id`); the CSV already has `model_id`. The `†` footnote appears only on Predict.
+
+**Verified live, 2026-10-22** (private API and KERMT containers, 2 seeds per arm, real XGBoost and KERMT checkpoints, own Vite): while the
+KERMT service was still loading, the six routed rows were answered by XGBoost and showed the `†`, the footnote and the `routing`
+line, with the top bar and the inspector naming the same `v0.2.0-dev+kermt.<digest>`; once it was ready, those six rows showed `KERMT`
+(inspector: `mars-kermt-multitask-v1`, a KERMT-specific held-out error on the regression row), no `†`, and a repeat of the molecule was
+a cache hit, so the healthy response is cached and the degraded one was not. The palette (ADR-032) was checked in the same run: the one
+molecule it offers is the one Predict returned, Copy molecule_id and Run prediction work, commands without a result say why. Export from
+the palette was not clicked (it shares the Predict export builder). A fix found here: Copy molecule_id threw where the async Clipboard
+API is missing (plain http off localhost) and was refused in the embedded browser; it now falls back to a selection copy.
+
+
+## ADR-034 — Scope of the remaining frontend blueprint items: what is built, adapted and cut
+
+**Date:** 2026-10-22 · **Status:** accepted · decisions below are final; the build order is a plan, nothing in this ADR is implemented yet
+
+**Context.** An audit of `main` against `mars-blueprint_v4.md` (2026-10-20) found six blueprint UI items with no implementation and no
+recorded decision, plus three loose ends. Each was checked against the code, the contract, the headline rule in AGENTS.md (no
+invented scale, no direction of good, nothing ranked) and published work. Nothing below needs a new open question.
+
+**Decisions.**
+
+1. **Radar chart: cut.** Removed from the blueprint (Module 9 gap-fill, Module 12 core table). The 14 endpoints have five different units
+   plus nine uncalibrated scores (ADR-023), so one radius means inventing a scale (never-do #4); the blueprint's "ideal zone" and weight
+   sliders mean inventing a direction of good and a composite score (never-do #1; no weighting is validated). SwissADME's radar plots six
+   *computed* properties against published ranges, not model outputs
+   ([Daina 2017](https://pmc.ncbi.nlm.nih.gov/articles/PMC5335600)); ADMET-AI does not say how its radar axes are chosen or scaled
+   ([Swanson 2024](https://pmc.ncbi.nlm.nih.gov/articles/PMC11226862)); in a controlled comparison radar was the least effective of three
+   radial charts ([Albo 2016](https://cris.haifa.ac.il/en/publications/off-the-radar-comparative-evaluation-of-radial-visualization-solu/)).
+   The deferred "Target Product Profile scoring" bullet loses its "folded into the radar" clause and stays deferred.
+2. **Approved-drug percentile: cut.** Not built. Measured on the training labels, the 90% held-out error band around the median spans
+   percentiles 25-80 (solubility), 22-87 (logP), 25-84 (Caco-2), 18-100 (PPB) and 0-80 (clearance) (`ml/data/processed/20260830T200000Z/*/train_val.csv`
+   against `status/heldout_error_bands.md`), so a percentile would carry far more precision than the model has; an approved-drug set is
+   probably narrower, which would make it worse (not measured). ChEMBL is [CC BY-SA 3.0](https://chembl.gitbook.io/chembl-interface-documentation/frequently-asked-questions/general-questions):
+   open, but adaptations must be redistributed under the same licence, so the blueprint's "unambiguously open" is withdrawn (this is a reading,
+   not legal advice). Reference values would be needed per (endpoint, model family), so a row answered by XGBoost where KERMT is routed (†, ADR-033)
+   could not use the KERMT table. ADMET-AI itself needs ATC-class subsets because acceptable toxicity differs by class, which is the missing
+   direction of good again, and its paper does not discuss overlap between its reference drugs and its training data. Removed from the blueprint
+   (Module 12 core table and "known open items").
+3. **Drug-likeness: adapted to computed properties, not a verdict.** The service adds an optional `properties` object (`MoleculeProperties`) to
+   `PredictionResponse`: molecular weight, RDKit Crippen logP (named as that, not as Lipinski's CLogP), H-bond donors and acceptors, TPSA,
+   rotatable bonds, QED, the number of Lipinski criteria exceeded, and the PAINS and Brenk alerts matched (catalog and alert name). All come from RDKit
+   in `ml/serve`, are deterministic and independent of which model served a row. Citations: [Lipinski 1997](https://doi.org/10.1016/S0169-409X(96)00423-1),
+   [Bickerton 2012](https://pubmed.ncbi.nlm.nih.gov/22270643/), Baell and Holloway 2010 (PAINS), Brenk 2008 (ChemMedChem 3:435). Display rules: a
+   "Computed properties" table beside the RULE-BASED group, outside the 14-endpoint count and the reconciliation, source label `RDKit`; plain values in
+   the value-cell grammar, no colour, no pass or fail wording; QED is labelled as a published desirability function of eight properties that is not a MARS
+   prediction; each alert is shown as a substructure match with the sentence that PAINS concerns assay interference, not toxicity
+   ([Capuzzi 2017](https://pmc.ncbi.nlm.nih.gov/articles/PMC5778390) found most PAINS-flagged compounds show no interference), and no alert is drawn on the
+   structure. Shown on Predict and in the printed report (which closes ADR-029's "no drug-likeness flags"); Batch, Compare and the CSV do not carry them.
+   Shipping it adds a response field, so `MODEL_VERSION` is bumped when it lands (HANDOFF 2a item 8) and the drift test is updated in the same change.
+   Alert matching lives in one module under `ml/serve` that the explainability validation (`feat/explainability`, `ml/eval/explain_validation.py`) imports
+   instead of keeping its own copy.
+4. **Toasts: cut.** The toast stack (blueprint Module 9) is removed. The app already reports through inline messages and one polite live
+   region (ADR-030); toasts enter the screen (never-do #7) and raise timing and status-message problems
+   ([Primer](https://primer.style/accessibility/toasts/), [Roselli](https://adrianroselli.com/2020/01/defining-toast-messages.html)). The one gap found is
+   that the palette's Copy molecule_id has no visible confirmation. The status bar therefore echoes the latest announcement as text, fed by the same
+   `announce()` call as the live region, replaced by the next one, with no timer and no animation.
+5. **Batch summary stats: adapted to a coverage table; outlier flagging cut.** A text table computed in the browser from the rows in hand, one line per
+   endpoint: returned, not returned, out of domain, stub-served, count by model family, and the number of † fallbacks (counted separately from KERMT).
+   Regression endpoints add the minimum, median and maximum "observed in this batch". No chart (no axis to choose) and no outlier flag: marking a value by its
+   magnitude is never-do #1. No API change.
+6. **24-hour countdown: cut.** Interactive-tier results are never stored server-side, Save snapshots the results the client holds so the purge race the
+   countdown guarded does not exist (HANDOFF 2d), the job id lives only in memory and no route lists jobs, so after a reload there is no job to count
+   down to, and the API exposes no expiry. Module 13's countdown paragraph is replaced by one static sentence in the Batch panel, driven by `/limits`
+   (item 8): results of a queued batch are kept N hours, smaller batches are not stored.
+7. **Model family in Batch, Compare and the report: built, narrowed.** Compare shows the family label and † under each value cell; the report prints the
+   family label and † with a footnote in place of the raw `model_id`; Batch shows it in the molecule inspector's provenance and in item 5's table, and the
+   dense grid cells are unchanged. All use `domain/modelFamily.ts` and `kermt_endpoints` from `/generations` (ADR-033).
+8. **`GET /limits`: built.** Anonymous; returns `batch_size_cap`, `batch_interactive_threshold`, `batch_result_retention_hours` and
+   `anon_predict_rate_per_minute`. UI copy that states those numbers reads them from here. `blob_store` takes its retention from
+   `batch_upload_retention_hours` instead of the constant `RETENTION_SECONDS` it uses today (the setting is currently ignored). With KERMT serving on, the
+   interactive threshold is about 20 (AIMS 2026-10-19), which is why the UI must not hard-code it.
+9. **Turnstile: not built for the demo; a deploy gate.** The client keeps sending no real token and the server keeps skipping the check while
+   `CLOUDFLARE_TURNSTILE_SECRET_KEY` is unset (startup warning stays). Before any public deployment (ship checklist C6), in this order: a honeypot field and a
+   register rate limit, then the Turnstile widget with its site key served by `/limits` as `turnstile_site_key` (null when unset), tested with Cloudflare's published
+   always-pass test key. This confirms ADR-022 item 6 and replaces the blueprint's unconditional "required" with "required before a public deploy".
+10. **`retrain_opt_in`: removed.** The `BatchPredictOptions.retrain_opt_in` contract field is deleted. Nothing read it, no UI offered it, and no separate storage path
+    exists, so the blueprint's per-upload opt-in and "opted-in data stored separately" described a feature that was never built. MARS does not use submitted molecules to
+    train or improve models, and does not offer to. The stated posture changes accordingly and now names the one exception that always existed: what the user saves to
+    their Library stays until they delete it (Module 13).
+
+**Build order** (hours are estimates): `/limits` with the blob-store fix (3), model family in Batch/Compare/report (4), status-bar echo (1), Batch coverage
+table (6; needs the family work), drug-likeness properties (12; the only contract change, last), then Turnstile only when a public deploy is approved (4).
+About 26 hours before Turnstile. Tracked in `SHIP_CHECKLIST.md` D9-D14.
+
+**Degraded results and caching, per item.** Items 3 and 5-7 never present a † row as KERMT: family text always comes from the row's own `model_id`, and
+the coverage table counts † on its own. Properties (3) do not depend on the serving model, so a KERMT outage changes nothing about them, and a degraded response
+is still not cached for 48 hours (ADR-033). Item 5 and the report are computed from the response in hand, so they add no cache. `/limits` is configuration and is
+fetched with the same staleness as `/generations`.
+
+**Rejected.** *Percentile as a regression-only number with no rank wording* - same reference-set, licence and per-family costs for 16-24 hours, and the same
+spurious precision. *A physicochemical Bioavailability-style radar in place of the weighted one* - defensible (published ranges) but it is a second drug-likeness
+display over the same six numbers item 3 already shows. *Toasts with pause-on-hover and a dismiss button* - fixes the timing complaint, keeps the animation and a
+second place a state is explained. *Histograms in the batch table* - an axis decision for little information beyond min, median, maximum. *Keeping the retraining
+opt-in as a dormant contract field* - it is a promise in the schema the system cannot keep. *Turnstile now* - no public users or paid services (ADR-022 rationale) and
+nothing deployed.
+
+**Consequences.** The blueprint is amended to match: Module 8 (retraining, posture, registration gate), Module 9 (toast and radar items removed, remaining
+gap-fill items renumbered 5-8; only #4 is referenced elsewhere and keeps its number), Module 12 (radar, percentile, drug-likeness, batch summary, report rows and the
+known-open-items sentence), Module 13 (countdown). Not decided here and still in the blueprint as written: Compare's "winner highlighting" (Module 9) and the motion
+tiering and shimmer (Module 9), both of which conflict with never-do #3 and #7 and the decisions in ADR-007 and ADR-013.
+
+**Implementation note (2026-10-22).** Item 8 (`GET /limits`, the blob-store retention fix, and UI copy read from it) is done and checked on a private stack: with the cap set
+to 7,000, the interactive threshold to 20 and retention to 12 hours, the sign-in gate and the Batch note showed those numbers, and the Redis TTL of a queued job's result
+blob was about 43,200 seconds (it had been 86,400 whatever the setting said). Until the service answers, copy built from `/limits` leaves the numbers out. The retention
+sentence for item 6 is the Batch note. `turnstile_site_key` is added to `LimitsResponse` by the Turnstile work, not before.
+
+**Implementation note (2026-10-22), item 7.** Done and checked live. Compare cells carry the family label and a dagger on a second line; the header sentence counts the daggers and says why;
+the Batch inspector has a Source column and a note; the printed report's Model column prints the family (not the raw `model_id`), with a dagger and a footnote printed only when a row fell back.
+Healthy KERMT rows show `KERMT` and no dagger in all three places. Observation, not changed: KERMT's `clearance_microsomal` returned negative values for two small molecules (-6.26 and
+-29.34 mL/min/kg), which are shown as the model produced them; a value below zero is not a possible clearance, and the held-out error band (+/-42.6) is wider than any positive value near it.
+
+**Implementation note (2026-10-22), item 4.** The status bar shows the latest announcement as text (`useLastAnnouncement`), fed by the same `announce()` call as the live region, hidden from assistive technology so nothing
+is read twice, with no timer and no animation. `tests/a11yGuard.test.ts` fails if the echo becomes a second live region. Checked live, including the palette's Copy molecule_id.
+
+**Implementation note (2026-10-22), item 5.** Done and checked live. Batch has a Rows / Coverage by endpoint switch; the coverage view (`domain/coverage.ts`, `BatchCoverage.tsx`) is computed in the browser from the rows in hand over the whole run, not the
+filtered view, and replaces the filter bar while shown. One line per ML endpoint in roster order: requested, returned, not returned, out of domain, stub-served, XGBoost, KERMT, † fell back (kept out of both XGBoost and KERMT), and for
+regression endpoints the minimum, median and maximum returned in this batch (stub values left out, out-of-domain values included, and the table says so). Every number is in the one value ink. Failed rows are named in the caption and
+counted nowhere. The rule-based score is not in the table. `COVERAGE_NOTES` is printed with it and a test fails if it uses ranking or flagging words. Not built, by decision: a chart and an outlier flag.
+
+**Implementation note (2026-10-22), item 3.** Done and checked live. `ml/serve/properties.py` computes molecular weight, Wildman-Crippen logP, donors, acceptors, TPSA, rotatable bonds, QED, the rule-of-five count and the distinct PAINS and Brenk alerts;
+`ml/serve/alerts.py` is the one alert matcher (same `alert_matches(mol, catalogs)` signature and catalog labels as `feat/explainability`'s `explain_validation.py`, which now imports it instead of keeping its own copy; the catalog is now built once). `PredictionResponse.properties` is optional and
+null without RDKit, for an unparseable molecule, or on a response written before it existed; Batch and Compare responses carry it too but do not show it, as decided. Two refinements to the decision above, both recorded here instead of left implicit:
+(a) the panel is in the molecule column under Identity, not beside the RULE-BASED group: the group is part of a role="grid" roster whose semantics a second table would break, and these are facts about the molecule rather than about an endpoint; it is still outside the roster and its counts.
+(b) `MODEL_VERSION` is not bumped. The cache key gains a `RESPONSE_SHAPE` tag (`r2`) instead: `MODEL_VERSION` names a model generation, is pinned by each environment's `.env` (the shared one would have kept the old value), and a change that is not a model change should not move the generation shown in the top bar. Entries written before `properties`
+existed are unreachable under the new key. Rule-of-five: a count of limits exceeded out of four, with the four limits stated beside it and no pass or fail wording. QED is shown as a number with its source and "not a MARS prediction". Alerts are listed by catalog and name, "no match" when empty, with the PAINS caveat and its citation in text beside them. The printed report gets the same table and notes,
+and its fixed line "drug-likeness flags are not included" is gone. Checked live: a rhodanine returned PAINS `ene_rhod_A(235)` and the Brenk alerts `Michael_acceptor_1` and `Thiocarbonyl_group`; the cached repeat kept them; the panel (one ink, nothing coloured) and the report showed them; the roster and its counts were unchanged.
+

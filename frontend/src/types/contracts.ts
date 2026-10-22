@@ -62,6 +62,29 @@ export interface EndpointPrediction {
   heldout_error_n?: number | null;
 }
 
+/** One PAINS or Brenk substructure match. A match is not a prediction; PAINS concerns assay interference, not toxicity. */
+export interface StructuralAlert {
+  catalog: "PAINS" | "Brenk";
+  name: string;
+}
+
+/**
+ * RDKit-computed properties of the standardized molecule (ADR-034 item 3). Not model predictions:
+ * deterministic, no applicability domain, independent of which model answered. Plain numbers; no pass or
+ * fail meaning is attached to any of them.
+ */
+export interface MoleculeProperties {
+  mol_weight: number; // g/mol
+  crippen_logp: number; // Wildman-Crippen, not Lipinski's CLogP
+  h_bond_donors: number;
+  h_bond_acceptors: number;
+  tpsa: number; // A^2
+  rotatable_bonds: number;
+  qed?: number | null; // a published desirability function of eight properties, not a MARS prediction
+  lipinski_criteria_exceeded: number; // 0 to 4 of the four rule-of-five limits
+  alerts: StructuralAlert[];
+}
+
 export interface PredictionResponse {
   smiles_input: string;
   smiles_standardized: string;
@@ -70,6 +93,8 @@ export interface PredictionResponse {
   model_version: string;
   served_at: string; // ISO datetime
   cache_hit: boolean;
+  /** Absent or null on a response that predates it (cached or saved earlier) and when the service has no RDKit. */
+  properties?: MoleculeProperties | null;
 }
 
 // --- conformer (conformer.py) ---
@@ -224,10 +249,22 @@ export interface DeleteAccountRequest {
   password: string; // re-confirmation before a cascading, irreversible delete
 }
 
+// --- limits (api.py) ---
+// GET /limits (frontend ADR-034 item 8): the deployed policy numbers. UI copy that states a cap, a
+// threshold or a retention period reads them from here and never from a constant.
+export interface LimitsResponse {
+  batch_size_cap: number;
+  batch_interactive_threshold: number;
+  batch_result_retention_hours: number;
+  anon_predict_rate_per_minute: number;
+}
+
 // --- generations (api.py) ---
 // GET /generations (ADR-026). `available` is [active] until a second generation exists,
 // so a picker built from it never offers a choice that is not real.
 export interface GenerationsResponse {
   active: string;
   available: string[];
+  /** Endpoints this deployment routes to KERMT; empty when KERMT serving is off. Provenance, not a ranking. */
+  kermt_endpoints: string[];
 }

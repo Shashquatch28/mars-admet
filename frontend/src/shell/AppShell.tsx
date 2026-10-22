@@ -1,9 +1,9 @@
-// The 1440×900 frame: prototype strip, top bar, rail, workspace slot, status bar.
+// The 1440×900 frame: top bar, rail, workspace slot, status bar.
 // Owns the global keyboard shortcuts. Workspaces fill the slot with their own
 // columns (COMPONENTS.md). Below the supported width it shows the designed
 // minimum-width notice rather than a broken layout (RESPONSIVE_STRATEGY).
 import { useEffect } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import styles from "./shell.module.css";
 import { TopBar } from "./TopBar";
 import { NavRail } from "./NavRail";
@@ -13,9 +13,24 @@ import { useUiState } from "../app/uiState";
 
 const WS_KEYS: Record<string, string> = { "1": "/predict", "2": "/batch", "3": "/compare", "4": "/library" };
 
+// WCAG 2.4.2: the page title names the workspace. (The printed report sets its own while it prints.)
+const WS_TITLE: Record<string, string> = {
+  "/predict": "Predict",
+  "/batch": "Batch",
+  "/compare": "Compare",
+  "/library": "Library",
+  "/settings": "Settings",
+};
+
 export function AppShell() {
-  const { paletteOpen, setPaletteOpen, isSample } = useUiState();
+  const { paletteOpen, setPaletteOpen, shortcutsEnabled } = useUiState();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const workspace = "/" + (pathname.split("/")[1] || "predict");
+
+  useEffect(() => {
+    document.title = `${WS_TITLE[workspace] ?? "MARS"} · MARS ADMET Rapid Screening`;
+  }, [workspace]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -27,32 +42,28 @@ export function AppShell() {
       if (paletteOpen) return;
       const el = document.activeElement;
       const typing = el instanceof HTMLElement && /^(INPUT|TEXTAREA)$/.test(el.tagName);
-      if (!typing && WS_KEYS[e.key]) navigate(WS_KEYS[e.key]);
+      if (shortcutsEnabled && !typing && WS_KEYS[e.key]) navigate(WS_KEYS[e.key]);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [paletteOpen, setPaletteOpen, navigate]);
+  }, [paletteOpen, setPaletteOpen, navigate, shortcutsEnabled]);
 
   return (
     <>
-    <div className={styles.minwidth}>
-      <p>
-        MARS is a desktop workstation. Open it at <b>1280&nbsp;px</b> or wider.
-        <span>minimum width not met</span>
-      </p>
-    </div>
     <div className={styles.app}>
-      {isSample && (
-        <div className={styles.protostrip}>
-          <span className={styles.protoswatch} aria-hidden="true" />
-          <span className={styles.protolabel}>Design prototype</span>
-          <span className={styles.protonote}>Every value below is illustrative, not model output.</span>
-        </div>
-      )}
+      <a className={styles.skip} href="#main">
+        Skip to workspace
+      </a>
+      <p className={styles.narrow} role="note">
+        MARS is laid out for a window 1080&nbsp;px wide or more. At this width, or at high zoom, scroll sideways to
+        reach everything; nothing is hidden.
+      </p>
       <TopBar />
       <div className={styles.main}>
         <NavRail />
-        <Outlet />
+        <main id="main" tabIndex={-1} className={styles.workspace}>
+          <Outlet />
+        </main>
       </div>
       <StatusBar />
       {paletteOpen && <CommandPalette />}

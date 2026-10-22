@@ -236,21 +236,6 @@
   overflow: hidden;
 }
 
-/* Placeholder conformer geometry. SVG presentation attributes do not resolve
-   var(), so the element palette is applied through CSS rather than fill=""
-   attributes — which is also what keeps raw hex out of the component. */
-.vbond {
-  stroke: var(--viewer-bond);
-}
-.vatom {
-  fill: var(--viewer-atom);
-}
-.vatomHetero {
-  fill: var(--viewer-hetero);
-}
-.vatomFocus {
-  fill: var(--viewer-atom-focus);
-}
 .vhd {
   display: flex;
   align-items: center;
@@ -334,7 +319,7 @@
   font-weight: 500;
 }
 .reconD {
-  color: var(--text-disabled);
+  color: var(--text-quiet);
 }
 .reconOod {
   color: var(--caution) !important;
@@ -371,12 +356,17 @@
 
 .colhead {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 62px 66px 158px 50px 40px;
+  grid-template-columns: minmax(0, 1fr) 40px 62px 66px 158px 50px 76px;
   gap: 12px;
   align-items: center;
   height: 26px;
   padding: 0 18px 0 20px;
   border-bottom: 1px solid var(--line-subtle);
+  /* inside the grid so the headers are the grid's own; sticky so they stay put while it scrolls */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-panel);
 }
 .colhead span {
   font-family: var(--cond);
@@ -394,20 +384,29 @@
   outline: none;
 }
 .grouphd {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   height: 24px;
   padding: 0 18px 0 20px;
   background: var(--surface-chrome);
   border-bottom: 1px solid var(--line-hairline);
 }
+.grouphdCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+}
 .grouphdName {
+  margin: 0;
   font-family: var(--cond);
   font-size: 9px;
+  font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-secondary);
+}
+.cellfill {
+  display: block;
+  min-width: 0;
 }
 .grouphdCt {
   font-family: var(--mono);
@@ -424,7 +423,7 @@
 .erow {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 62px 66px 158px 50px 40px;
+  grid-template-columns: minmax(0, 1fr) 40px 62px 66px 158px 50px 76px;
   gap: 12px;
   align-items: center;
   height: var(--row-h);
@@ -519,7 +518,7 @@
   text-align: right;
 }
 .esourceDash {
-  color: var(--text-disabled);
+  color: var(--text-quiet);
 }
 
 .resfoot {
@@ -532,7 +531,7 @@
 .resfoot svg {
   flex: 0 0 auto;
   margin-top: 1px;
-  color: var(--text-disabled);
+  color: var(--text-quiet);
 }
 .resfoot p {
   margin: 0;
@@ -590,7 +589,7 @@
   color: var(--text-tertiary);
 }
 .imetaD {
-  color: var(--text-disabled);
+  color: var(--text-quiet);
 }
 .headline {
   margin: 22px 0 18px;
@@ -704,6 +703,37 @@
 .ibtn:hover {
   border-color: var(--text-tertiary);
   color: var(--text-primary);
+}
+
+/* computed properties (ADR-034 item 3) */
+.propSrc {
+  margin-left: 6px;
+  letter-spacing: 0.06em;
+  color: var(--text-quiet);
+}
+.propUnit {
+  color: var(--text-tertiary);
+}
+.propAlertHd {
+  margin-top: 12px;
+}
+.alertLine {
+  margin: 0 0 3px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.alertLine b {
+  margin-right: 6px;
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.propNote {
+  margin-top: 8px;
 }
 
 /* ---- Explanation (ADR-031). Sign hues are --attr-up / --attr-down only; sign is also a glyph. ---- */

@@ -1,0 +1,619 @@
+{
+  "prep_id": "20260830T200000Z",
+  "control": false,
+  "records": [
+    {
+      "endpoint": "solubility_logs",
+      "pool": "KERMT pool of absorption_distribution__reg",
+      "n_pool_labels": 6698,
+      "n_test": 1960,
+      "per_seed": [
+        {
+          "seed": 0,
+          "n_train": 5861,
+          "n_val": 837,
+          "test_metrics_raw": {
+            "mae": 0.8391467687837938,
+            "n_samples": 1960
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 1,
+          "n_train": 5861,
+          "n_val": 837,
+          "test_metrics_raw": {
+            "mae": 0.8507118202015325,
+            "n_samples": 1960
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 2,
+          "n_train": 5861,
+          "n_val": 837,
+          "test_metrics_raw": {
+            "mae": 0.8526037910317501,
+            "n_samples": 1960
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 3,
+          "n_train": 5861,
+          "n_val": 837,
+          "test_metrics_raw": {
+            "mae": 0.8352529755010948,
+            "n_samples": 1960
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 4,
+          "n_train": 5861,
+          "n_val": 837,
+          "test_metrics_raw": {
+            "mae": 0.8426169770745324,
+            "n_samples": 1960
+          },
+          "n_test_dropped": 0
+        }
+      ],
+      "aggregated_test_raw": {
+        "mae_mean": 0.8440664665185407,
+        "mae_std": 0.0074335170811007,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "arm": "absorption_distribution__reg"
+    },
+    {
+      "endpoint": "lipophilicity_logp",
+      "pool": "KERMT pool of absorption_distribution__reg",
+      "n_pool_labels": 2794,
+      "n_test": 840,
+      "per_seed": [
+        {
+          "seed": 0,
+          "n_train": 2445,
+          "n_val": 349,
+          "test_metrics_raw": {
+            "mae": 0.5421204269853022,
+            "n_samples": 840
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 1,
+          "n_train": 2445,
+          "n_val": 349,
+          "test_metrics_raw": {
+            "mae": 0.5343878372258124,
+            "n_samples": 840
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 2,
+          "n_train": 2445,
+          "n_val": 349,
+          "test_metrics_raw": {
+            "mae": 0.5380815940891348,
+            "n_samples": 840
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 3,
+          "n_train": 2445,
+          "n_val": 349,
+          "test_metrics_raw": {
+            "mae": 0.5313588154409302,
+            "n_samples": 840
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 4,
+          "n_train": 2445,
+          "n_val": 349,
+          "test_metrics_raw": {
+            "mae": 0.5416101550649673,
+            "n_samples": 840
+          },
+          "n_test_dropped": 0
+        }
+      ],
+      "aggregated_test_raw": {
+        "mae_mean": 0.5375117657612294,
+        "mae_std": 0.004636242676591986,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "arm": "absorption_distribution__reg"
+    },
+    {
+      "endpoint": "caco2_permeability",
+      "pool": "KERMT pool of absorption_distribution__reg",
+      "n_pool_labels": 608,
+      "n_test": 180,
+      "per_seed": [
+        {
+          "seed": 0,
+          "n_train": 532,
+          "n_val": 76,
+          "test_metrics_raw": {
+            "mae": 0.27100277111972393,
+            "n_samples": 180
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 1,
+          "n_train": 532,
+          "n_val": 76,
+          "test_metrics_raw": {
+            "mae": 0.271060075987142,
+            "n_samples": 180
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 2,
+          "n_train": 532,
+          "n_val": 76,
+          "test_metrics_raw": {
+            "mae": 0.26157067893754754,
+            "n_samples": 180
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 3,
+          "n_train": 532,
+          "n_val": 76,
+          "test_metrics_raw": {
+            "mae": 0.26599296194312205,
+            "n_samples": 180
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 4,
+          "n_train": 532,
+          "n_val": 76,
+          "test_metrics_raw": {
+            "mae": 0.27026035007805727,
+            "n_samples": 180
+          },
+          "n_test_dropped": 0
+        }
+      ],
+      "aggregated_test_raw": {
+        "mae_mean": 0.2679773676131186,
+        "mae_std": 0.004148845980543147,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "arm": "absorption_distribution__reg"
+    },
+    {
+      "endpoint": "ppb_binding",
+      "pool": "KERMT pool of absorption_distribution__reg",
+      "n_pool_labels": 989,
+      "n_test": 323,
+      "per_seed": [
+        {
+          "seed": 0,
+          "n_train": 865,
+          "n_val": 124,
+          "test_metrics_raw": {
+            "mae": 7.301875545159214,
+            "n_samples": 323
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 1,
+          "n_train": 865,
+          "n_val": 124,
+          "test_metrics_raw": {
+            "mae": 7.269220516807155,
+            "n_samples": 323
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 2,
+          "n_train": 865,
+          "n_val": 124,
+          "test_metrics_raw": {
+            "mae": 7.286727625135297,
+            "n_samples": 323
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 3,
+          "n_train": 865,
+          "n_val": 124,
+          "test_metrics_raw": {
+            "mae": 7.364882984456632,
+            "n_samples": 323
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 4,
+          "n_train": 865,
+          "n_val": 124,
+          "test_metrics_raw": {
+            "mae": 7.062121917441164,
+            "n_samples": 323
+          },
+          "n_test_dropped": 0
+        }
+      ],
+      "aggregated_test_raw": {
+        "mae_mean": 7.256965717799892,
+        "mae_std": 0.11474219668597023,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "arm": "absorption_distribution__reg"
+    },
+    {
+      "endpoint": "hia_absorption",
+      "pool": "KERMT pool of absorption_distribution__cls",
+      "n_pool_labels": 375,
+      "n_test": 117,
+      "per_seed": [
+        {
+          "seed": 0,
+          "n_train": 328,
+          "n_val": 47,
+          "test_metrics_raw": {
+            "auroc": 0.9567901234567902,
+            "auprc": 0.9841521900997009,
+            "brier_score": 0.07337004468170036,
+            "ece": 0.06612698058796743,
+            "n_samples": 117,
+            "n_positive": 90,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 1,
+          "n_train": 328,
+          "n_val": 47,
+          "test_metrics_raw": {
+            "auroc": 0.9530864197530864,
+            "auprc": 0.9836801636607648,
+            "brier_score": 0.09083565355156233,
+            "ece": 0.09224040003923271,
+            "n_samples": 117,
+            "n_positive": 90,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 2,
+          "n_train": 328,
+          "n_val": 47,
+          "test_metrics_raw": {
+            "auroc": 0.9584362139917696,
+            "auprc": 0.9863735647199445,
+            "brier_score": 0.07020813142090811,
+            "ece": 0.07732060729947865,
+            "n_samples": 117,
+            "n_positive": 90,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 3,
+          "n_train": 328,
+          "n_val": 47,
+          "test_metrics_raw": {
+            "auroc": 0.9613168724279835,
+            "auprc": 0.9874291914384727,
+            "brier_score": 0.09593329052392624,
+            "ece": 0.13262524232905135,
+            "n_samples": 117,
+            "n_positive": 90,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 4,
+          "n_train": 328,
+          "n_val": 47,
+          "test_metrics_raw": {
+            "auroc": 0.9510288065843622,
+            "auprc": 0.9837861102306479,
+            "brier_score": 0.09107412822201864,
+            "ece": 0.09067339010727717,
+            "n_samples": 117,
+            "n_positive": 90,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        }
+      ],
+      "aggregated_test_raw": {
+        "auroc_mean": 0.9561316872427984,
+        "auroc_std": 0.004121394554256535,
+        "auprc_mean": 0.9850842440299061,
+        "auprc_std": 0.001709272049974785,
+        "brier_score_mean": 0.08428424968002314,
+        "brier_score_std": 0.01164023702374653,
+        "ece_mean": 0.09179732407260147,
+        "ece_std": 0.025183925012665708,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "arm": "absorption_distribution__cls"
+    },
+    {
+      "endpoint": "pgp_inhibition",
+      "pool": "KERMT pool of absorption_distribution__cls",
+      "n_pool_labels": 842,
+      "n_test": 245,
+      "per_seed": [
+        {
+          "seed": 0,
+          "n_train": 737,
+          "n_val": 105,
+          "test_metrics_raw": {
+            "auroc": 0.9299520127965876,
+            "auprc": 0.9345571908380974,
+            "brier_score": 0.13205127391494864,
+            "ece": 0.12328795451190967,
+            "n_samples": 245,
+            "n_positive": 124,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 1,
+          "n_train": 737,
+          "n_val": 105,
+          "test_metrics_raw": {
+            "auroc": 0.9276193015195948,
+            "auprc": 0.9321464134690428,
+            "brier_score": 0.13210003881284563,
+            "ece": 0.1102236751143878,
+            "n_samples": 245,
+            "n_positive": 124,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 2,
+          "n_train": 737,
+          "n_val": 105,
+          "test_metrics_raw": {
+            "auroc": 0.9328179152226073,
+            "auprc": 0.937511525053743,
+            "brier_score": 0.12597225035868817,
+            "ece": 0.11211184179315305,
+            "n_samples": 245,
+            "n_positive": 124,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 3,
+          "n_train": 737,
+          "n_val": 105,
+          "test_metrics_raw": {
+            "auroc": 0.9292855238603039,
+            "auprc": 0.9354821564085356,
+            "brier_score": 0.12271583504988065,
+            "ece": 0.09964703791869842,
+            "n_samples": 245,
+            "n_positive": 124,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 4,
+          "n_train": 737,
+          "n_val": 105,
+          "test_metrics_raw": {
+            "auroc": 0.9341508930951746,
+            "auprc": 0.9378004083255469,
+            "brier_score": 0.1188517126245184,
+            "ece": 0.10117592540170468,
+            "n_samples": 245,
+            "n_positive": 124,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        }
+      ],
+      "aggregated_test_raw": {
+        "auroc_mean": 0.9307651292988537,
+        "auroc_std": 0.0026657058000667793,
+        "auprc_mean": 0.9354995388189931,
+        "auprc_std": 0.0023169948517844743,
+        "brier_score_mean": 0.1263382221521763,
+        "brier_score_std": 0.005812506779684265,
+        "ece_mean": 0.10928928694797073,
+        "ece_std": 0.009534177895710386,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "arm": "absorption_distribution__cls"
+    },
+    {
+      "endpoint": "bbb_permeability",
+      "pool": "KERMT pool of absorption_distribution__cls",
+      "n_pool_labels": 1379,
+      "n_test": 394,
+      "per_seed": [
+        {
+          "seed": 0,
+          "n_train": 1207,
+          "n_val": 172,
+          "test_metrics_raw": {
+            "auroc": 0.9161374902699823,
+            "auprc": 0.9771550168395999,
+            "brier_score": 0.08438843433094718,
+            "ece": 0.02260347056027667,
+            "n_samples": 394,
+            "n_positive": 317,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 1,
+          "n_train": 1207,
+          "n_val": 172,
+          "test_metrics_raw": {
+            "auroc": 0.9140071285181696,
+            "auprc": 0.9768672172162709,
+            "brier_score": 0.0874616823763377,
+            "ece": 0.045861501948137394,
+            "n_samples": 394,
+            "n_positive": 317,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 2,
+          "n_train": 1207,
+          "n_val": 172,
+          "test_metrics_raw": {
+            "auroc": 0.9134745380802164,
+            "auprc": 0.9767008940786497,
+            "brier_score": 0.08499936834228553,
+            "ece": 0.032771128054878404,
+            "n_samples": 394,
+            "n_positive": 317,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 3,
+          "n_train": 1207,
+          "n_val": 172,
+          "test_metrics_raw": {
+            "auroc": 0.9115899872997665,
+            "auprc": 0.9752528462637615,
+            "brier_score": 0.0855187194836384,
+            "ece": 0.031650972046752275,
+            "n_samples": 394,
+            "n_positive": 317,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 4,
+          "n_train": 1207,
+          "n_val": 172,
+          "test_metrics_raw": {
+            "auroc": 0.9017985169404729,
+            "auprc": 0.9715992591812576,
+            "brier_score": 0.0890506885885381,
+            "ece": 0.03799086629985101,
+            "n_samples": 394,
+            "n_positive": 317,
+            "auroc_valid": true
+          },
+          "n_test_dropped": 0
+        }
+      ],
+      "aggregated_test_raw": {
+        "auroc_mean": 0.9114015322217215,
+        "auroc_std": 0.005607343439469347,
+        "auprc_mean": 0.9755150467159078,
+        "auprc_std": 0.0023090172222184056,
+        "brier_score_mean": 0.08628377862434938,
+        "brier_score_std": 0.001928121057588449,
+        "ece_mean": 0.03417558778197915,
+        "ece_std": 0.008564126178370136,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "arm": "absorption_distribution__cls"
+    },
+    {
+      "endpoint": "clearance_microsomal",
+      "pool": "KERMT pool of metabolism__reg",
+      "n_pool_labels": 793,
+      "n_test": 221,
+      "per_seed": [
+        {
+          "seed": 0,
+          "n_train": 694,
+          "n_val": 99,
+          "test_metrics_raw": {
+            "mae": 27.561019956407502,
+            "n_samples": 221
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 1,
+          "n_train": 694,
+          "n_val": 99,
+          "test_metrics_raw": {
+            "mae": 27.07543049156126,
+            "n_samples": 221
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 2,
+          "n_train": 694,
+          "n_val": 99,
+          "test_metrics_raw": {
+            "mae": 26.78386403403131,
+            "n_samples": 221
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 3,
+          "n_train": 694,
+          "n_val": 99,
+          "test_metrics_raw": {
+            "mae": 27.256337364561418,
+            "n_samples": 221
+          },
+          "n_test_dropped": 0
+        },
+        {
+          "seed": 4,
+          "n_train": 694,
+          "n_val": 99,
+          "test_metrics_raw": {
+            "mae": 26.909174609993375,
+            "n_samples": 221
+          },
+          "n_test_dropped": 0
+        }
+      ],
+      "aggregated_test_raw": {
+        "mae_mean": 27.11716529131097,
+        "mae_std": 0.3051505672738011,
+        "n_seeds": 5.0,
+        "n_valid_seeds": 5.0
+      },
+      "arm": "metabolism__reg"
+    }
+  ]
+}

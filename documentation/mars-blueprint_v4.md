@@ -358,7 +358,7 @@ Matches Module 12's two-tier design: ≤1,000 molecules interactive (target <10s
 
 **Auth model:** stub accounts — email/password only, no OAuth/SSO/MFA scope in v1. Deliberately lightweight: exists so Module 13 (auth & persistence, not yet scoped) has a `user_id` to build on later, without Module 8 taking on Module 13's full scope now. This is a real dependency, not a nice-to-have — **Module 13's scoping session needs to start from "wire up persistence on top of this stub," not from a blank auth design.**
 
-**Registration gate — CAPTCHA required.** Gating the batch endpoint behind "an account" only controls abuse if creating an account costs an attacker something; without a check, a scripted adversary can mint accounts for free and route straight through the batch gate it's supposed to stop. **Cloudflare Turnstile** (free, low-friction, no third-party tracking cookie unlike reCAPTCHA) is required on the registration form specifically — this is the actual countermeasure to scripted account creation, not a nice-to-have alongside rate limiting. Login and password-reset requests are not gated (Turnstile at registration is what controls the supply of new accounts; gating login itself would just add friction for legitimate returning users without addressing the actual attack surface).
+**Registration gate — CAPTCHA required.** Gating the batch endpoint behind "an account" only controls abuse if creating an account costs an attacker something; without a check, a scripted adversary can mint accounts for free and route straight through the batch gate it's supposed to stop. **Cloudflare Turnstile** (free, low-friction, no third-party tracking cookie unlike reCAPTCHA) is required on the registration form specifically — this is the actual countermeasure to scripted account creation, not a nice-to-have alongside rate limiting. **Scope (frontend ADR-034 item 9): required before any public deployment, not built for the local demo.** Order when it is built: a honeypot field and a register rate limit first, then the Turnstile widget, with the site key served by `GET /limits`. Login and password-reset requests are not gated (Turnstile at registration is what controls the supply of new accounts; gating login itself would just add friction for legitimate returning users without addressing the actual attack surface).
 
 **What requires an account vs. not:**
 - Single-molecule prediction (`POST /predict`) — **no account required**, anonymous access, rate-limited by IP
@@ -372,13 +372,13 @@ Matches Module 12's two-tier design: ≤1,000 molecules interactive (target <10s
 ### Data retention & confidentiality
 `LAUNCH SCOPE: MVP` — a chemist won't paste a real candidate into a tool with an undefined data policy, so this needs to be explicit.
 
-**Cache TTL:** Redis-cached predictions, conformers, and explainability attributions expire after **48 hours**. This is a performance cache, not storage — nothing about a submitted molecule persists past this window unless the user explicitly opts in (below).
+**Cache TTL:** Redis-cached predictions, conformers, and explainability attributions expire after **48 hours**. This is a performance cache, not storage — nothing about a submitted molecule persists past this window unless the user saves it to their Library (Module 13).
 
 **Batch uploads (R2):** deleted automatically 24 hours after job completion. This grace period exists only so a user can retrieve results/re-download; it is not a retention feature.
 
-**Retraining use — opt-in only, per upload:** by default, no submitted molecule (single or batch) is used for anything beyond serving that user's own prediction. A per-upload opt-in checkbox ("allow this data to be used to improve future model versions") is required for any other use. Opted-in data is stored separately from the serving cache/upload bucket, not commingled with the default no-retention path, and its own retention terms are shown at the point of opt-in.
+**Retraining use — none:** no submitted molecule (single or batch) is used for anything beyond serving that user's own request. There is no opt-in, no second storage path and no contract field for one (frontend ADR-034 item 10). If a future version ever wants to learn from user data, it needs its own consent flow, storage and retention terms, designed at that point rather than implied here.
 
-**Stated posture (for the UI/ToS, not just internal policy):** "MARS does not retain your molecules beyond the time needed to serve your results, and never uses your data to improve our models unless you explicitly opt in for that specific upload."
+**Stated posture (for the UI/ToS, not just internal policy):** "MARS does not retain your molecules beyond the time needed to serve your results, except what you choose to save to your Library, which stays until you delete it. It never uses your data to train or improve its models."
 
 ### Versioning in responses
 Every response includes which model version served the prediction — extends Module 1's data-versioning discipline into serving for reproducibility.
@@ -401,16 +401,15 @@ Every response includes which model version served the prediction — extends Mo
 - **Responsive strategy:** desktop/workstation-first, honest degradation (batch triage explicitly unsupported below 768px rather than faking a broken mobile grid).
 
 ### Gap-fill component specifications
+The toast system and the radar chart were removed (frontend ADR-034 items 4 and 1); the items after them are renumbered, and #4 keeps its number.
 1. **[MVP] Prediction panel:** 5 ADMET-category sections, responsive card grid, Toxicity prioritized (larger cards, rendered first)
 2. **[MVP] Confidence intervals:** horizontal range bar per card — teal fill for interval, cyan tick for point estimate, exact numeric range in Plex Mono
 3. **[Post-MVP] Explainability color scale** *(amended 2026-10-20, ADR-031: a neutral signed scale, not risk-red/teal; see the Module 6 amendment)*: bidirectional — risk-red gradient (danger-increasing substructures) vs. teal-cyan gradient (danger-decreasing), shared neutral "grey-out" mechanism with Module 7; draggable magnitude threshold legend. Depends on Module 6's attribution output (Post-MVP) and Module 7's explainability integration subsection (Post-MVP) — ships together with those, not with the rest of Module 9.
 4. **[MVP] Batch upload:** full state set — idle/drag-over/uploading/per-row validation (non-blocking per-molecule errors)/complete summary
-5. **[MVP] Toast/notification system:** top-right stack, reuses the existing left-border-accent grammar (cyan=success, risk=error) already defined for table error rows
-6. **[MVP] Comparison mode:** 2-3 dense columns mirroring single-molecule cards, per-endpoint cyan-tint "winner" highlighting
-7. **[MVP] Radar chart:** low-opacity teal "ideal zone" polygon vs. solid cyan actual-trace, weight sliders positioned below for adjacent cause/effect — maps to Module 12's core "Multi-property radar/tradeoff view"
-8. **[MVP] Ultra-wide handling:** panel content max-width 1600px centered beyond 1920px; sidebar/viewer stay full-bleed
-9. **[MVP] Motion tiering:** full scan-line sweep reserved for ≥50% endpoint recompute; smaller in-card shimmer for partial/live-edit recomputes — keeps the signature element meaningful rather than firing on every keystroke
-10. **[MVP] Structure editor constraint (documented, not solved):** Ketcher/JSME contained in its own bordered panel, signals "specialized instrument" rather than attempting full re-skin of third-party canvas UI
+5. **[MVP] Comparison mode:** 2-3 dense columns mirroring single-molecule cards, per-endpoint cyan-tint "winner" highlighting
+6. **[MVP] Ultra-wide handling:** panel content max-width 1600px centered beyond 1920px; sidebar/viewer stay full-bleed
+7. **[MVP] Motion tiering:** full scan-line sweep reserved for ≥50% endpoint recompute; smaller in-card shimmer for partial/live-edit recomputes — keeps the signature element meaningful rather than firing on every keystroke
+8. **[MVP] Structure editor constraint (documented, not solved):** Ketcher/JSME contained in its own bordered panel, signals "specialized instrument" rather than attempting full re-skin of third-party canvas UI
 
 ### Technical stack
 3Dmol.js via `molecule-3d-for-react` (Mol* flagged as future upgrade path if protein targets are added later); Radix UI primitives for accessible custom sliders/tabs/tooltips; Recharts for standard charts, hand-rolled SVG for the scan-line/trace visuals; IBM Carbon patterns referenced for data-table density and dark-theme spacing.
@@ -536,7 +535,7 @@ Rather than build the full structural-frontier methodology from scratch (a paper
 One table per endpoint: rows = {XGBoost baseline, single-task fine-tune, multi-task cluster, verified TDC leaderboard best}, columns = {metric, mean ± std, significance vs. our best}.
 
 ## Module 12: Feature Catalog
-`LAUNCH SCOPE: N/A — this module IS the MVP/Post-MVP source of truth.` Its own CORE FEATURES / NOVELTY FEATURES split already implements the LAUNCH SCOPE system; other modules' tags should trace back to their corresponding row here. Known open items: MMP suggestions description overstates novelty relative to existing prior art (Interpretable-ADMET, OptADMET, ADMETopt2, admetSAR3.0 all ship this already — still a valid differentiator vs. SwissADME/ADMETlab 2.0, just needs reframing); ADMET-AI's ~2,500-approved-drug reference-set comparison is a cheap idea absent from this catalog entirely, worth adding to core.
+`LAUNCH SCOPE: N/A — this module IS the MVP/Post-MVP source of truth.` Its own CORE FEATURES / NOVELTY FEATURES split already implements the LAUNCH SCOPE system; other modules' tags should trace back to their corresponding row here. Known open items: MMP suggestions description overstates novelty relative to existing prior art (Interpretable-ADMET, OptADMET, ADMETopt2, admetSAR3.0 all ship this already — still a valid differentiator vs. SwissADME/ADMETlab 2.0, just needs reframing); ADMET-AI's approved-drug reference-set percentile was considered and cut (frontend ADR-034 item 2).
 
 **Competitive basis:** benchmarked against the free/academic tier (SwissADME, ADMETlab 2.0/3.0, admetSAR, pkCSM) and the enterprise tier (Optibrium StarDrop) to (a) match table-stakes expectations and (b) identify genuine gaps worth filling for differentiation/novelty.
 
@@ -559,10 +558,8 @@ One table per endpoint: rows = {XGBoost baseline, single-task fine-tune, multi-t
 | ADMET prediction panel | All 14 endpoints (Module 2), grouped by category, point estimate + confidence interval |
 | Basic uncertainty display | Confidence bands from model ensembling — standard technique (not the more elaborate conformal-prediction version, which is noted below) |
 | Applicability domain flag | 5-NN Tanimoto distance in ECFP4 space, per-endpoint self-calibrating threshold (Module 5) — in/out-of-domain flag alongside each prediction. Promoted to core: nearly free given Module 3's fingerprints and Module 1's training set are already built |
-| Multi-property radar/tradeoff view | Weighted radar across selected endpoints; open equivalent of SwissADME's Bioavailability Radar |
-| Drug-likeness rules & structural alerts | Lipinski Ro5, QED, PAINS/Brenk alerts (RDKit rule-based) — cheap, table-stakes |
+| Computed molecule properties & structural alerts | Adapted (frontend ADR-034 item 3): RDKit-computed molecular weight, Crippen logP, H-bond donors and acceptors, TPSA, rotatable bonds, QED, the number of Lipinski criteria exceeded, and the PAINS and Brenk alerts matched. Shown as plain values on Predict and in the printed report, with no pass or fail wording and no colour; alerts are substructure matches (PAINS = assay interference, not toxicity), not predictions. Outside the 14-endpoint count |
 | SA score | Rule-based synthetic accessibility (Ertl & Schuffenhauer) |
-| **Approved-drug reference comparison** | Absent from the original catalog until now. Each prediction paired with its percentile against a reference set of approved drugs, mirroring ADMET-AI's design (2,579 DrugBank-sourced drugs, percentile shown alongside every prediction, radar plot for a quick summary). **Reference set source: ChEMBL, max_phase=4 (approved) compounds** — not DrugBank, whose main content is CC BY-NC 4.0 (same NonCommercial pattern flagged for PharmaBench in Module 1 §7); ChEMBL's approved-drug filter is unambiguously open, and MARS already plans to use ChEMBL for the MMP feature below, so this reuses infrastructure rather than adding a new licensing dependency. **Compute cost: negligible** — a one-time batch prediction run through MARS's own already-trained models once training completes, not a per-request cost; doesn't reopen the Module 10 compute budget. UI: reuses Module 9's existing radar chart component (gap-fill component 7) rather than building a new visualization. Genuinely more actionable to a chemist than an absolute number — "how does this compare to actual approved drugs" is a real triage aid, matching the problem statement's "efficient triage/comparison" goal directly. |
 
 #### Exploration
 | Feature | Technical Description |
@@ -574,12 +571,12 @@ One table per endpoint: rows = {XGBoost baseline, single-task fine-tune, multi-t
 | Feature | Technical Description |
 |---|---|
 | Batch triage grid | Sortable/filterable table; per-property visual fingerprint per row; sort/filter by endpoint or pass/fail threshold |
-| Batch summary stats | Aggregate distributions per endpoint across uploaded set, outlier flagging |
+| Batch coverage table | Adapted (frontend ADR-034 item 5): per endpoint across the uploaded set, a text table of returned, not returned, out-of-domain and stub-served counts, counts by model family with † fallbacks separate, and min/median/max of regression values "observed in this batch". No chart and no outlier flagging (flagging a value by its magnitude is not allowed) |
 
 #### Output
 | Feature | Technical Description |
 |---|---|
-| Report export | Per-molecule PDF — structure, predictions, confidence, drug-likeness flags |
+| Report export | Per-molecule report, print-to-PDF built in the browser (frontend ADR-029): predictions, reliability marks, seed spread, held-out error and provenance, plus the computed-property table once built (ADR-034 item 3). No 2D structure |
 | Batch export | CSV/Excel of triaged batch results |
 
 ---
@@ -597,7 +594,7 @@ These are flagged separately because they are research-heavy, computationally no
 | Generative "suggest an improved analog" (de novo design) | Already deferred pre-emptively (see below) — full generative modeling scope | Not part of any near-term plan |
 
 ### Features considered and deliberately deferred entirely
-- **Multi-parameter optimization (Target Product Profile scoring)** — generalization of the tradeoff radar, folded into that core feature rather than built separately
+- **Multi-parameter optimization (Target Product Profile scoring)** — deferred entirely; no endpoint weighting is validated, and the radar it was to be folded into was cut (frontend ADR-034 item 1)
 - **Generative "suggest an improved analog" (de novo design)** — StarDrop's Nova module equivalent; a v2+ stretch goal at earliest, well beyond the novelty-feature track above
 - **Real-time team collaboration** — enterprise/multi-user feature, not relevant to single-user v1 scope
 
@@ -634,7 +631,7 @@ These are flagged separately because they are research-heavy, computationally no
 **The save-vs-purge race condition.** Module 8 purges batch results from R2 24 hours after job completion; a naive `saved_reports` row pointing at that R2 path via `source_batch_job_id` could reference already-deleted data if the user saves right at the edge of that window, or tries to save after it's closed. Two changes close this:
 
 1. **Snapshot-on-save (structural fix).** Saving a batch report **copies the result data into `results_snapshot` (Postgres) at the moment of saving**, rather than keeping a live pointer into the ephemeral R2 bucket as the source of truth. This is the same design already locked for `saved_molecules.predictions_snapshot` — extended here rather than invented fresh, since the same problem (data changing/disappearing out from under a saved reference) applies to both tables. Once snapshotted, `saved_reports` no longer depends on R2's 24h lifecycle at all; `source_batch_job_id` remains only as a provenance link (for job-history display), not a data dependency. This removes the race structurally: there is no window in which a completed save can point at deleted data, because nothing is deleted that a save still needs.
-2. **Countdown in the UI (user-facing courtesy, doesn't replace #1).** The batch results view shows a visible "N hours remaining to save this batch" countdown once a job completes, so a logged-in user isn't relying on knowing the 24h policy exists. This doesn't do any of the actual race-prevention work — #1 does — but it means a user who wants to save isn't surprised by a disappearing "Save" affordance, and it surfaces the real policy in-product rather than leaving it only in Module 8's internal spec.
+2. **Retention stated in the UI (user-facing courtesy, doesn't replace #1).** The Batch panel states, from `GET /limits`, how long the results of a queued batch are kept and that smaller batches are not stored. A live "N hours remaining" countdown was cut (frontend ADR-034 item 6): interactive-tier results are never stored, Save snapshots the results the client holds so there is no purge race, and no route lists jobs, so there is nothing to count down to after a reload. #1 does the actual race-prevention work.
 
 **What the user sees if they try to save after the window closes:** since the save action reads from the still-live batch job result (R2) at the moment `POST` to a future `/reports/save` endpoint is called, a save attempted after purge simply fails with a clear "these results have expired and can no longer be saved" message — not a silent success referencing dead data. This should be stated explicitly in the Module 8 API surface once that endpoint is specified, so it isn't left as an implicit assumption the way the original gap was.
 

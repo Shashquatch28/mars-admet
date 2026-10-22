@@ -44,7 +44,7 @@
   color: var(--caution) !important;
 }
 .reconD {
-  color: var(--line-default);
+  color: var(--text-quiet);
   margin: 0 2px;
 }
 
@@ -60,7 +60,7 @@
 }
 .search {
   width: 210px;
-  height: 22px;
+  height: 26px; /* 24px of input inside the 1px borders */
   display: flex;
   align-items: center;
   gap: 6px;
@@ -72,6 +72,7 @@
 }
 .search input {
   flex: 1;
+  align-self: stretch; /* the whole box is the target (WCAG 2.5.8) */
   min-width: 0;
   background: none;
   border: 0;
@@ -87,7 +88,7 @@
 }
 
 .chip {
-  height: 22px;
+  height: 24px;
   padding: 0 8px;
   display: inline-flex;
   align-items: center;
@@ -212,7 +213,7 @@
 .groupbarCt {
   font-family: var(--mono);
   letter-spacing: 0;
-  color: var(--text-disabled);
+  color: var(--text-quiet);
 }
 
 .colhead {
@@ -318,7 +319,7 @@
   text-align: right;
   font-family: var(--mono);
   font-size: 9.5px;
-  color: var(--text-disabled);
+  color: var(--text-quiet);
 }
 .molSmiles {
   flex: 1;
@@ -346,7 +347,7 @@
   opacity: 0.8;
 }
 .flagMissing {
-  color: var(--text-disabled);
+  color: var(--text-quiet);
 }
 
 /* the row-flag key — visible text, so the flags are not explained by a tooltip alone */
@@ -395,7 +396,7 @@
 /* a shape as well as a colour, so OOD survives greyscale and CVD */
 .oodMark {
   flex: none;
-  font-size: 8px;
+  font-size: 9px; /* the type floor */
   line-height: 1;
   color: var(--caution);
 }
@@ -706,6 +707,22 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.miniSrc {
+  flex: none;
+  width: 58px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.miniNote {
+  margin: 0;
+  padding: 8px 14px 8px 12px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
 .miniVal {
   flex: none;
   font-family: var(--mono);
@@ -891,4 +908,83 @@
   font-size: 11px;
   line-height: 1.6;
   color: var(--text-quiet);
+}
+
+/* --- view switch and coverage table (ADR-034 item 5) ------------------------ */
+
+.viewSw {
+  display: inline-flex;
+  gap: 6px;
+}
+.covwrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 14px 14px;
+}
+.cov {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+}
+.covCap {
+  caption-side: top;
+  text-align: left;
+  padding: 10px 0 8px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-quiet);
+}
+.covCap b {
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.cov th,
+.cov td {
+  padding: 0 10px;
+  height: 26px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line-hairline);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.cov thead th {
+  font-family: var(--cond);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  background: var(--surface-chrome);
+  border-bottom: 1px solid var(--line-default);
+}
+.cov .covL {
+  text-align: left;
+}
+.cov tbody th {
+  font-family: var(--mono);
+  font-weight: 400;
+}
+.covTask {
+  margin-left: 6px;
+  font-family: var(--cond);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-quiet);
+}
+.covObs {
+  color: var(--text-primary);
+}
+.covNotes {
+  margin: 12px 0 0;
+  padding-left: 16px;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--text-quiet);
+}
+.covNotes li + li {
+  margin-top: 3px;
 }

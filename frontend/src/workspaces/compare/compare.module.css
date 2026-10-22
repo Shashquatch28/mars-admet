@@ -235,14 +235,24 @@
 }
 .cell {
   position: relative;
-  height: 28px;
+  height: 40px;
   padding: 0 14px;
   text-align: right;
   white-space: nowrap;
   border-bottom: 1px solid var(--line-hairline);
 }
-.cell > * + * {
+.cellMain > * + * {
   margin-left: 8px;
+}
+.cellMain {
+  display: block;
+}
+.src {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  line-height: 1.2;
+  color: var(--text-tertiary);
 }
 .cell::before {
   content: "";

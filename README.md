@@ -45,45 +45,132 @@ docker-compose.yml       Local stack: Postgres, Redis, MinIO (R2 stand-in), API.
 AGENTS.md                Non-negotiable rules for any coding agent.
 ```
 
-## Quick start
+## Running MARS
+
+The app is two parts: the **API stack** (Docker: Postgres, Redis, MinIO and the
+FastAPI service on port 8000) and the **frontend** (Vite dev server on port
+5173). Commands below are PowerShell, run from the repo root unless a `cd` says
+otherwise.
+
+### Prerequisites
+
+- **Docker Desktop**, running. Its daemon is not started by default: open it and
+  wait 30-60 s until `docker ps` works. An immediate "pipe not found" error just
+  means it is still starting.
+- **Node 20+** and npm (the frontend).
+- **Python 3.11** with the root `.venv` (only for the database migration and the
+  tests; the API itself runs inside Docker).
+- **`ml/artifacts/`** with the promoted models. It is git-ignored, so it exists
+  only on a machine that trained or copied it. Without it the API still runs, but
+  every value is a stub (`model_id: "stub-v0"`, drawn with the diagonal hatch).
+
+### First time only
+
+```powershell
+# Environment file (the defaults work for local development)
+Copy-Item .env.example .env
+
+# Root venv: contracts + API dependencies (provides Alembic and pytest)
+python -m venv .venv
+.venv\Scripts\pip install -e ./contracts -r api/requirements.txt
+
+# Frontend dependencies and env file
+cd frontend
+npm ci
+Copy-Item .env.example .env.local
+```
+
+Then open `frontend/.env.local` and **uncomment `VITE_API_BASE=/api`**. Without
+it the UI has no API: it says so, shows no values, and Run, Save and Batch
+upload are off.
+
+### Every time you run it
+
+**1. Check what is already running.** Other sessions may share this machine.
+
+```powershell
+docker ps
+Get-NetTCPConnection -State Listen -LocalPort 5173,8000
+```
+
+**2. Start the API stack.** Docker Desktop must be up first.
+
+```powershell
+docker compose up -d --build
+docker compose ps
+```
+
+Wait until `postgres`, `redis`, `minio` and `api` all show `healthy` (the API
+needs a few seconds after the others). Add `--build` only when `api/` or
+`frontend/` changed; otherwise plain `docker compose up -d` is faster.
+
+**3. Create or update the database tables.** Compose does not run migrations. It
+is safe to repeat and is a no-op when the schema is current. Skip it only if you
+never sign in, save or use Batch.
+
+```powershell
+cd api
+..\.venv\Scripts\alembic upgrade head
+cd ..
+```
+
+**4. Start the frontend.**
+
+```powershell
+cd frontend
+npm run dev
+```
+
+**5. Open http://localhost:5173.** The first prediction after the API starts takes
+about 15 s because it loads the models; later ones take about a second.
+
+Verify the stack from another terminal:
+
+```powershell
+curl.exe http://localhost:8000/api/health
+curl.exe -X POST http://localhost:8000/api/predict -H "Content-Type: application/json" -d '{\"smiles\": \"CCO\", \"endpoints\": null}'
+```
+
+API docs are at http://localhost:8000/api/docs. The Docker image also serves the
+built UI, so http://localhost:8000 works without the Vite server (it reflects the
+last `docker compose up -d --build`, not live edits).
+
+KERMT (GNN) serving is optional and off by default: the stack above serves every
+endpoint from XGBoost. To enable it, see `ml/serve/kermt_service/README.md` and the
+KERMT block in `.env.example` (`docker compose --profile kermt up -d kermt`).
+
+### Stopping
+
+Press `Ctrl+C` in the frontend terminal, then:
+
+```powershell
+docker compose down      # keeps your data
+```
+
+Never add `-v` unless you want the Postgres and MinIO volumes deleted: that
+erases accounts, saved molecules and reports.
+
+### If something is off
+
+| Symptom | Cause and fix |
+|---|---|
+| `docker compose` fails with "pipe ... not found" | Docker Desktop is not running yet. Start it and wait. |
+| Sign-up, Save or Library says "relation does not exist" | Step 3 was skipped. Run the Alembic upgrade. |
+| Every value has the diagonal hatch | `ml/artifacts/` is missing or empty, so the API is serving the stub. |
+| UI says it has no API, Run disabled | `VITE_API_BASE=/api` is not set in `frontend/.env.local`. Restart `npm run dev` after editing it. |
+| UI results disagree with `curl localhost:8000` | The Vite proxy is aimed at a different API. POST the same SMILES to `:8000/api/predict` and `:5173/api/predict` and compare `model_version` and `served_at`. |
+| Port 8000 refused (`WinError 10013`) for a native uvicorn | Hyper-V/Docker reserves ranges on this machine. Use 8080 for a native uvicorn; the Docker API on 8000 is fine. |
+| Port 5173 or 8000 already in use | Another session owns it. Use your own ports; see `AGENTS.md`, "Shared dev environment". |
+
+### Python environments
 
 Three separate Python environments are used on purpose; do not merge them.
 
 | Environment | For |
 |---|---|
-| root `.venv` | `contracts/` and `api/` tests |
+| root `.venv` | `contracts/` and `api/` tests, Alembic |
 | `ml/.venv` | all `ml/` work (rdkit, xgboost, wandb) |
 | isolated acquisition env | PyTDC only (`ml/data/acquisition/README.md`) |
-
-```bash
-# 1. Environment file
-cp .env.example .env
-
-# 2. Contracts first; ml/, api/ and the drift test import them
-pip install -e ./contracts
-
-# 3. Local infra and the API (http://localhost:8000/docs)
-docker compose up -d --build
-
-# 4. Frontend (http://localhost:5173)
-cd frontend
-npm install
-cp .env.example .env.local     # then set VITE_API_BASE=/api
-npm run dev
-```
-
-The API image installs the inference subset of `ml/` and mounts
-`ml/artifacts/` as a volume. **`ml/artifacts/` is git-ignored.** Without
-promoted artifacts the API serves the deterministic stub for every endpoint
-(`model_id: "stub-v0"`), which the UI marks with a diagonal hatch.
-
-Smoke check:
-
-```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"smiles": "CCO", "endpoints": null}'
-```
 
 ## Tests
 
@@ -127,5 +214,5 @@ Full reasoning is in the blueprint; the log of changes is in
 - k-NN applicability domain (5-NN Tanimoto on ECFP4) is core, not deferred.
 - `/predict` is fast and cheap; 3D conformers and explainability are lazy.
 - 48 h Redis cache keyed on SMILES, endpoint set and `MODEL_VERSION`; 24 h
-  batch-upload retention; retraining use is opt-in only.
+  batch-upload retention; submitted molecules are never used for training.
 - No paid compute. Serving target is Google Cloud Run.

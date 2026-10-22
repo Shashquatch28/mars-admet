@@ -14,24 +14,25 @@ real conformer generation reuses Module 3 Stage 5. `GET /health/ready`
 in Module 8's original table. `/molecule/{id}/explain` is implemented (ADR-031, modelled
 below as `ExplainResponse`); `/molecule/{id}/report` remains M4/Post-MVP.
 
-Base URL (local): `http://localhost:8000`. Routes are mounted at the root
-today. Frontend ADR-025 plans to mount the API under `/api` in every
-environment so one origin can serve both; that is accepted as a design and is
-**not implemented**, so the table below is the current truth.
+Base URL (local): `http://localhost:8000/api`. Every route is mounted under `/api` in every
+environment (frontend ADR-025), so one origin can serve the API and the built frontend; the
+paths in the table below are relative to that prefix, e.g. `/health` is `GET /api/health`.
+Interactive docs are at `/api/docs`.
 
 | Route | Method | Auth | Request model | Response model | Milestone |
 |---|---|---|---|---|---|
 | `/health` | GET | none | — | `{"status": "ok"}` | M0 ✅ |
 | `/health/ready` | GET | none | — | `{"status", "checks": {"database", "redis"}}` | M3 ✅ (not in original Module 8 table; readiness vs. liveness split) |
-| `/generations` | GET | none | — | `GenerationsResponse` (`{"active", "available"}`; `active` is the configured `model_version`, `available` is `[active]` until a second generation exists; frontend ADR-026) | M4 ✅ (not in original Module 8 table) |
-| `/predict` | POST | none (IP rate-limited) | `PredictionRequest` | `PredictionResponse` | M3 ✅ (real per-endpoint routing + stub fallback; M0 shipped the stub-only version) |
+| `/generations` | GET | none | — | `GenerationsResponse` (`{"active", "available", "kermt_endpoints"}`; `active` is the version `/predict` stamps: the configured `model_version` plus `+kermt.<digest>` when KERMT serving is on; `available` is `[active]` until a second generation exists; `kermt_endpoints` lists the endpoints routed to KERMT, empty when it is off; frontend ADR-026, ADR-033) | M4 ✅ (not in original Module 8 table) |
+| `/limits` | GET | none | — | `LimitsResponse` (`{"batch_size_cap", "batch_interactive_threshold", "batch_result_retention_hours", "anon_predict_rate_per_minute"}`), read from the settings the service enforces so no client writes them into its own copy; frontend ADR-034 item 8 | ✅ (not in original Module 8 table) |
+| `/predict` | POST | none (IP rate-limited) | `PredictionRequest` | `PredictionResponse` (now with an optional `properties`: RDKit-computed molecule properties and PAINS/Brenk alerts, frontend ADR-034 item 3; null without RDKit or for an older cached response) | M3 ✅ (real per-endpoint routing + stub fallback; M0 shipped the stub-only version) |
 | `/batch/predict` | POST | account | multipart file (CSV or SDF) + `smiles_column`/`endpoints` query params | `BatchPredictResponse` | M3 ✅ |
 | `/batch/progress/{job_id}` | GET (SSE) | account | — | `text/event-stream` of `BatchJobStatus`-shaped JSON | M3 ✅ |
 | `/batch/results/{job_id}` | GET | account | — | `BatchPredictResponse` (results populated) | M3 ✅ |
 | `/compare` | POST | none | `CompareRequest` | `CompareResponse` | M3 ✅ |
 | `/molecule/{id}/3d` | GET | none | — | `ConformerResponse` | M3 ✅ — `{id}` must have been seen by `/predict` in the current cache window (see below) |
 | `/molecule/{id}/explain?endpoint=<Endpoint>` | GET | none (IP rate-limited with `/predict`) | query param `endpoint` | `ExplainResponse` (see below) | M4 ✅ — `{id}` must have been seen by `/predict` in the current cache window, like `/3d` |
-| `/molecule/{id}/report` | GET | none | — | `application/pdf` (binary; no JSON model) | M4 |
+| `/molecule/{id}/report` | GET | none | — | `application/pdf` (binary; no JSON model) | **Not built, superseded**: the report is made in the client (print, Save as PDF), frontend ADR-029 |
 
 `GET /molecule/{id}/3d` needs the id -> SMILES mapping `/predict` registers
 in Redis (same TTL as the prediction cache) — an id from a `/predict` call
@@ -66,10 +67,10 @@ container); 501 in an environment without it.
 - `/compare` returns `per_endpoint_winner: null` always: MARS has no validated
   direction-of-good, so the field is never populated and the UI never consumes it.
 - Rate limits: anonymous 60 `/predict`/min per IP; per-account 5 concurrent
-  batch jobs, 50,000-molecule cap, interactive threshold 100 (`BATCH_INTERACTIVE_THRESHOLD`).
-- Batch uploads (R2) auto-deleted 24h after job completion.
-- Retention: `retrain_opt_in` defaults `false`; opted-in data stored separately
-  from the serving cache/upload bucket.
+  batch jobs, 50,000-molecule cap, interactive threshold `BATCH_INTERACTIVE_THRESHOLD` (default 100; `GET /limits` reports the deployed value).
+- Batch uploads (R2) auto-deleted after `BATCH_UPLOAD_RETENTION_HOURS` (default 24) from job completion; `GET /limits` reports it.
+- Retention: submitted molecules are not retained beyond serving, and are never used for training; there is no
+  retraining opt-in (frontend ADR-034 item 10).
 
 ## Module 13 — Auth & Persistence (M3)
 

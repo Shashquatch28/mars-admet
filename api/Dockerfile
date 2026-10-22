@@ -1,3 +1,14 @@
+# Stage 1: build the frontend bundle. Same origin as the API (ADR-025), so the base is /api.
+FROM node:20-slim AS frontend
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/index.html frontend/tsconfig.json frontend/tsconfig.node.json frontend/vite.config.ts ./
+COPY frontend/src ./src
+ENV VITE_API_BASE=/api
+RUN npm run build
+
+# Stage 2: the API, with the bundle beside it.
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -17,6 +28,8 @@ RUN pip install --no-cache-dir -e /contracts \
     && pip install --no-cache-dir -r requirements-ml-serving.txt
 
 COPY api/app ./app
+COPY --from=frontend /frontend/dist ./static
+ENV STATIC_DIR=/app/static
 # ml/ subset the serving path actually imports (serve/, featurize/, models/,
 # eval/) — NOT ml/data (training-only loaders), ml/train, ml/tracking,
 # ml/tests, ml/runs, ml/.venv. Trained artifacts (ml/artifacts/) are mounted
@@ -31,4 +44,6 @@ ENV PYTHONPATH=/app/ml
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Cloud Run supplies $PORT; 8000 is the local default. Production also sets SESSION_COOKIE_SECURE=true
+# (the app warns at start-up if it serves the bundle without it) and leaves CORS_ALLOW_ORIGINS empty.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

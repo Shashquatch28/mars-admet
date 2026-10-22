@@ -192,3 +192,20 @@
     border-bottom: 1px solid var(--line-default);
   }
 }
+
+/* a labelled checkbox row (Settings > Keyboard) */
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+.check input {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--accent);
+}

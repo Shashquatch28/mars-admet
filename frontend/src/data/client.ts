@@ -1,13 +1,12 @@
 // Typed API client. Talks to the real FastAPI service (API_ROUTES.md). When
-// VITE_API_BASE is unset the app never calls this — it runs on the fixture.
+// VITE_API_BASE is unset the app never calls this and shows no values (ADR-032).
 //
-// In dev VITE_API_BASE is "/api": Vite proxies it to the API (vite.config.ts), so
-// the browser only ever makes same-origin requests and CORS never applies.
-// Requests send `credentials: "include"` for the HttpOnly session cookie. That
-// also works cross-origin because the API answers with an explicit origin list
-// and allow_credentials (CORS_ALLOW_ORIGINS) — never `*`, which browsers reject
-// together with credentials. Cookies are SameSite=Lax, so the SPA and API must
-// be same-site (e.g. app.x.com and api.x.com).
+// VITE_API_BASE is "/api" in dev and in the production build (ADR-025): Vite proxies
+// it to the API in dev, and the API container serves the bundle and /api together in
+// production, so the browser only ever makes same-origin requests and CORS never
+// applies. Requests send `credentials: "include"` for the HttpOnly session cookie.
+// Cookies are SameSite=Lax, so the SPA and API must be same-site; one origin is.
+// A split deployment would need the API's explicit CORS origin list (CORS_ALLOW_ORIGINS).
 import { parseProgressEvents, type JobProgress } from "../domain/batchJob";
 import type {
   BatchPredictResponse,
@@ -20,6 +19,7 @@ import type {
   LoginResponse,
   MeResponse,
   GenerationsResponse,
+  LimitsResponse,
   PredictionResponse,
   RegisterResponse,
   SaveMoleculeRequest,
@@ -184,11 +184,16 @@ export async function fetchGenerations(): Promise<GenerationsResponse> {
   return (await (await request("/generations")).json()) as GenerationsResponse;
 }
 
+// The deployed policy numbers (batch cap, interactive threshold, retention, anonymous rate). Anonymous.
+export async function fetchLimits(): Promise<LimitsResponse> {
+  return (await (await request("/limits")).json()) as LimitsResponse;
+}
+
 // --- batch (account required; API_ROUTES.md /batch/*) ---
 
 /**
- * Upload a CSV or SDF. Up to 100 molecules come back in this response (`job_id`
- * null, `status` "done"); more are queued and `job_id` is set. `endpoints` null means
+ * Upload a CSV or SDF. Up to the service's interactive threshold (`GET /limits`) come back in this response
+ * (`job_id` null, `status` "done"); more are queued and `job_id` is set. `endpoints` null means
  * no subset. Not sent as JSON: the body is multipart, so no Content-Type is set and the
  * browser adds the boundary.
  */

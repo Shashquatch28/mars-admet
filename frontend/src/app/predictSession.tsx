@@ -5,7 +5,6 @@
 // `cache_hit`, so the client does not keep a second cache that could contradict it.
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { CELECOXIB_SMILES } from "../domain/fixtures";
 import { ML_ENDPOINTS } from "../domain/endpoints";
 import { endpointsForRequest } from "../domain/reconcile";
 import type { Endpoint } from "../types/contracts";
@@ -29,8 +28,7 @@ interface PredictSession {
 const Ctx = createContext<PredictSession | null>(null);
 
 export function PredictSessionProvider({ children }: { children: ReactNode }) {
-  // Without an API the workspace shows the illustrative fixture, whose molecule is celecoxib.
-  const [smiles, setSmiles] = useState(USING_API ? "" : CELECOXIB_SMILES);
+  const [smiles, setSmiles] = useState("");
   const [selected, setSelectedRaw] = useState<Endpoint[]>(ML_ENDPOINTS);
   const mutation = useMutation({
     mutationFn: ({ s, endpoints }: { s: string; endpoints: Endpoint[] | null }) => fetchPrediction(s, endpoints),

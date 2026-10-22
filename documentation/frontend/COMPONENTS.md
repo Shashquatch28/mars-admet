@@ -11,7 +11,8 @@ components are named where the shell already implies them, and specified later.
 > (`workspaces/predict/`); `IntervalTrack`, `ADGauge`, `NumericInterval`,
 > `ReliabilityTag` and the `scale.ts` helper that is `BoundedTrack`'s role
 > (`components/dataviz/`); `BatchWorkspace`/`BatchGrid`; `Gated` and
-> `AccountForm` (`auth/`), `ConfirmDialog`, `SaveControl`, `CompareWorkspace` and
+> `AccountForm` (`auth/`), `ConfirmDialog`, `SaveControl`, `PrintReport` and `usePrintReport`
+> (`components/report/`, ADR-029), `CompareWorkspace` and
 > `LibraryWorkspace` (not in this inventory).
 > Named below but **not separate components**: `MoleculeInput`,
 > `MoleculeIdentity`, `EndpointGroup`, `WorkspaceHeader`, `WorkspacePanel` and

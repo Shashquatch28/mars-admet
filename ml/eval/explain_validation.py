@@ -25,12 +25,10 @@ from dataclasses import dataclass
 
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem.FilterCatalog import FilterCatalog, FilterCatalogParams
 
-ALERT_CATALOGS = {
-    "PAINS": FilterCatalogParams.FilterCatalogs.PAINS,
-    "Brenk": FilterCatalogParams.FilterCatalogs.BRENK,
-}
+# the one PAINS/Brenk matcher, shared with the serving layer's computed properties (frontend ADR-034 item 3)
+from serve.alerts import alert_matches
+
 # Where the blueprint expects explanations to surface known toxicophores.
 ALERT_ENDPOINTS = ("ames_mutagenicity", "dili_liver_injury", "herg_cardiotoxicity")
 
@@ -76,19 +74,6 @@ def random_connected_atoms(mol: Chem.Mol, size: int, rng: random.Random) -> set[
                 nxt.append(b)
         frontier = nxt
     return set(chosen)
-
-
-def alert_matches(mol: Chem.Mol, catalogs: dict[str, FilterCatalogParams.FilterCatalogs] = ALERT_CATALOGS) -> list[tuple[str, str, set[int]]]:
-    """(catalog, alert description, matched atoms) for every PAINS/Brenk match in `mol`."""
-    out = []
-    for name, which in catalogs.items():
-        params = FilterCatalogParams()
-        params.AddCatalog(which)
-        catalog = FilterCatalog(params)
-        for entry in catalog.GetMatches(mol):
-            for match in entry.GetFilterMatches(mol):
-                out.append((name, entry.GetDescription(), {mol_idx for _q, mol_idx in match.atomPairs}))
-    return out
 
 
 @dataclass(frozen=True)

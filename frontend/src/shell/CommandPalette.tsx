@@ -1,22 +1,30 @@
-// ⌘K palette — the signature keyboard moment (UX principle 7). Fuzzy search over
-// endpoints, molecules and commands; opens focused, arrows move, Enter commits,
-// Esc closes. Reliability language travels with the results: a stub endpoint
-// shows its STUB tag here exactly as in the table.
+// ⌘K palette — the signature keyboard moment (UX principle 7). Search over endpoints, the
+// current molecule and commands; opens focused, arrows move, Enter commits, Esc closes.
+// Everything here is real (ADR-032): the roster is the fixed endpoint list, the one molecule is
+// whatever Predict last returned, and a command that cannot run says why instead of pretending.
+// Reliability language travels with the endpoints: a stub endpoint shows its STUB tag here
+// exactly as in the table.
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./shell.module.css";
 import { useUiState } from "../app/uiState";
+import { useAnnounce } from "../app/announce";
+import { usePredictSession } from "../app/predictSession";
+import { USING_API } from "../data/client";
+import { copyText } from "../data/clipboard";
+import { downloadText } from "../data/download";
 import { ALL_ENDPOINTS } from "../domain/endpoints";
-import { reconcile } from "../domain/reconcile";
-import { FIXTURE_RESPONSE } from "../domain/fixtures";
+import { buildCsv, predictFileName } from "../domain/exportCsv";
+import { clipLine, paletteCommands, type PaletteCommandId } from "../domain/palette";
+import { reconcile, requestedMlEndpoints } from "../domain/reconcile";
 import { ReliabilityTag } from "../components/dataviz/ReliabilityTag";
 import type { Endpoint } from "../types/contracts";
 import type { Reliability } from "../domain/rowState";
 
 type Item =
-  | { type: "endpoint"; id: Endpoint; meta: string; reliability: Reliability }
-  | { type: "molecule"; id: string; meta: string }
-  | { type: "command"; id: string; meta: string };
+  | { type: "endpoint"; id: Endpoint; reliability: Reliability }
+  | { type: "molecule"; id: string; search: string; meta: string }
+  | { type: "command"; id: PaletteCommandId; label: string; reason: string | null };
 
 const endpointIcon = (
   <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -39,39 +47,53 @@ const commandIcon = (
 
 export function CommandPalette() {
   const { setPaletteOpen, setSelectedEndpoint, setDensity, density } = useUiState();
+  const { smiles, selected, result, running, run } = usePredictSession();
+  const announce = useAnnounce();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
 
+  // Reliability tags come from the last real result; with none, an endpoint carries no tag.
+  const recon = useMemo(
+    () => (result ? reconcile(result.response, requestedMlEndpoints(result.sent)) : null),
+    [result],
+  );
   const relByEndpoint = useMemo(() => {
     const m = new Map<Endpoint, Reliability>();
-    for (const row of reconcile(FIXTURE_RESPONSE).rows) m.set(row.endpoint, row.reliability);
+    for (const row of recon?.rows ?? []) m.set(row.endpoint, row.reliability);
     return m;
-  }, []);
+  }, [recon]);
 
   const endpoints: Item[] = ALL_ENDPOINTS.map((id) => ({
     type: "endpoint",
     id,
-    meta: "",
     reliability: relByEndpoint.get(id) ?? null,
   }));
-  const molecules: Item[] = [
-    { type: "molecule", id: "a3f2c81d9b4e6027", meta: "current · celecoxib" },
-    { type: "molecule", id: "CN1C=NC2=C1C(=O)N(C)…", meta: "recent · 11m" },
-  ];
-  const commands: Item[] = [
-    { type: "command", id: "Run prediction", meta: "⌘⏎" },
-    { type: "command", id: "Copy molecule_id", meta: "" },
-    { type: "command", id: "Export results", meta: "" },
-    { type: "command", id: "Toggle density", meta: "" },
-  ];
+  // The only molecule the app has is the one Predict last returned. No history is kept, so none is listed.
+  const molecules: Item[] = result
+    ? [
+        {
+          type: "molecule",
+          id: clipLine(result.submitted),
+          search: `${result.submitted} ${result.response.molecule_id}`,
+          meta: `current · ${result.response.molecule_id}`,
+        },
+      ]
+    : [];
+  const commands: Item[] = paletteCommands({
+    usingApi: USING_API,
+    smiles,
+    endpointsSelected: selected.length,
+    running,
+    hasResult: !!result,
+  }).map((c) => ({ type: "command", id: c.id, label: c.label, reason: c.disabledReason }));
 
   const query = q.trim().toLowerCase();
   const match = (s: string) => !query || s.toLowerCase().includes(query);
-  const eps = endpoints.filter((e) => match(e.id));
-  const mols = molecules.filter((m) => match(m.id) || match(m.meta));
-  const cmds = commands.filter((c) => match(c.id));
+  const eps = endpoints.filter((e) => e.type === "endpoint" && match(e.id));
+  const mols = molecules.filter((m) => m.type === "molecule" && match(m.search));
+  const cmds = commands.filter((c) => c.type === "command" && match(c.label));
   const items: Item[] = [...eps, ...mols, ...cmds];
 
   useEffect(() => {
@@ -81,18 +103,35 @@ export function CommandPalette() {
     setSel(0);
   }, [q]);
 
+  function runCommand(id: PaletteCommandId) {
+    if (id === "density") {
+      setDensity(density === "compact" ? "comfortable" : "compact");
+    } else if (id === "run") {
+      navigate("/predict");
+      run();
+    } else if (id === "copy_id" && result) {
+      const moleculeId = result.response.molecule_id;
+      void copyText(moleculeId).then((ok) => announce(ok ? "Copied molecule_id" : "Could not copy molecule_id"));
+    } else if (id === "export" && result && recon) {
+      downloadText(
+        predictFileName(result.response.molecule_id),
+        buildCsv([{ smilesInput: result.submitted, response: result.response, cells: recon.rows }]),
+      );
+    }
+  }
+
   function activate(it: Item | undefined) {
     if (!it) return;
-    if (it.type === "endpoint") {
+    if (it.type === "command") {
+      if (it.reason) return; // cannot run: the palette stays open and the reason stays visible
+      runCommand(it.id);
+    } else if (it.type === "endpoint") {
       setSelectedEndpoint(it.id);
       navigate("/predict");
-      setPaletteOpen(false);
-    } else if (it.type === "command") {
-      if (it.id === "Toggle density") setDensity(density === "compact" ? "comfortable" : "compact");
-      setPaletteOpen(false);
     } else {
-      setPaletteOpen(false);
+      navigate("/predict");
     }
+    setPaletteOpen(false);
   }
 
   function onKeyDown(e: ReactKeyboardEvent) {
@@ -117,9 +156,10 @@ export function CommandPalette() {
     const i = idx;
     return (
       <div
-        key={`${it.type}-${name}`}
+        key={`${it.type}-${it.id}`}
         role="option"
         aria-selected={i === sel}
+        aria-disabled={it.type === "command" && it.reason ? true : undefined}
         className={i === sel ? `${styles.palItem} ${styles.palSel}` : styles.palItem}
         onMouseMove={() => setSel(i)}
         onClick={() => activate(it)}
@@ -134,7 +174,7 @@ export function CommandPalette() {
 
   return (
     <>
-      <div className={styles.scrim} onClick={() => setPaletteOpen(false)} />
+      <div className={styles.scrim} role="presentation" aria-hidden="true" onClick={() => setPaletteOpen(false)} />
       <div className={styles.palette} role="dialog" aria-modal="true" aria-label="Command palette">
         <div className={styles.palInput}>
           <span className={styles.palPrompt}>&gt;</span>
@@ -162,15 +202,14 @@ export function CommandPalette() {
             ),
           )}
           {mols.length > 0 && <div className={styles.palGroup}>Molecules</div>}
-          {mols.map((m) => renderItem(m, moleculeIcon, m.id, m.meta))}
+          {mols.map((m) => m.type === "molecule" && renderItem(m, moleculeIcon, m.id, m.meta))}
           {cmds.length > 0 && <div className={styles.palGroup}>Commands</div>}
-          {cmds.map((c) => renderItem(c, commandIcon, c.id, c.meta))}
+          {cmds.map((c) => c.type === "command" && renderItem(c, commandIcon, c.label, c.reason ?? ""))}
         </div>
         <div className={styles.palFoot}>
           <span><b>↑↓</b> navigate</span>
           <span><b>⏎</b> open</span>
           <span><b>esc</b> close</span>
-          <span className={styles.palFootR}>transform-origin: the ⌘K field</span>
         </div>
       </div>
     </>

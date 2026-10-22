@@ -1,6 +1,5 @@
 // Settings. Today it holds the Account section only: sign in or out, and delete the
 // account behind a confirmation modal (ADR-022 phase 2).
-import { useEffect } from "react";
 import styles from "../../auth/auth.module.css";
 import { AccountForm } from "../../auth/AccountForm";
 import { useAuthSession } from "../../app/authSession";
@@ -10,8 +9,7 @@ import { DeleteAccount } from "./DeleteAccount";
 
 export function SettingsWorkspace() {
   const { status, user, busy, signOut } = useAuthSession();
-  const { setIsSample } = useUiState();
-  useEffect(() => setIsSample(false), [setIsSample]); // Settings shows no values: nothing is illustrative
+  const { shortcutsEnabled, setShortcutsEnabled } = useUiState();
 
   let body;
   if (!USING_API) {
@@ -45,6 +43,19 @@ export function SettingsWorkspace() {
         <div className={`${styles.formcol} ${styles.stack}`}>
           <span className={styles.kicker}>Account</span>
           {body}
+          <span className={styles.kicker}>Keyboard</span>
+          <label className={styles.check}>
+            <input
+              type="checkbox"
+              checked={shortcutsEnabled}
+              onChange={(e) => setShortcutsEnabled(e.target.checked)}
+            />
+            <span>Single-key shortcuts: keys 1 to 4 switch workspace</span>
+          </label>
+          <p className={styles.body}>
+            Turn this off if a stray key press moves you between workspaces. Ctrl or ⌘ + K for the command palette is
+            not affected. The choice is remembered in this browser.
+          </p>
         </div>
       </div>
     </section>

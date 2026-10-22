@@ -8,6 +8,7 @@ frontend/src/types/contracts.ts (checked by contracts/tests/test_frontend_drift.
 """
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -71,6 +72,40 @@ class EndpointPrediction(BaseModel):
     )
 
 
+class StructuralAlert(BaseModel):
+    """One PAINS or Brenk substructure match. A match is not a prediction: PAINS concerns assay interference, not
+    toxicity (frontend ADR-034 item 3)."""
+
+    catalog: Literal["PAINS", "Brenk"]
+    name: str = Field(..., description="the alert's own name in the RDKit catalog, e.g. 'ene_rhod_A(235)'")
+
+
+class MoleculeProperties(BaseModel):
+    """RDKit-computed properties of the standardized molecule, not model predictions: deterministic, no training set,
+    no applicability domain, and independent of which model answered any endpoint (frontend ADR-034 item 3). Plain
+    numbers; MARS attaches no pass or fail meaning to any of them."""
+
+    mol_weight: float = Field(..., description="g/mol (RDKit MolWt)")
+    crippen_logp: float = Field(..., description="Wildman-Crippen logP (RDKit); not the CLogP Lipinski used")
+    h_bond_donors: int = Field(..., description="RDKit Lipinski.NumHDonors")
+    h_bond_acceptors: int = Field(..., description="RDKit Lipinski.NumHAcceptors")
+    tpsa: float = Field(..., description="topological polar surface area, A^2 (RDKit)")
+    rotatable_bonds: int = Field(..., description="RDKit Lipinski.NumRotatableBonds")
+    qed: float | None = Field(
+        default=None,
+        description="quantitative estimate of drug-likeness (Bickerton 2012), a published desirability function of eight "
+        "properties; not a MARS prediction. null when RDKit cannot compute it.",
+    )
+    lipinski_criteria_exceeded: int = Field(
+        ...,
+        ge=0,
+        le=4,
+        description="how many rule-of-five limits (Lipinski 1997) are passed: more than 5 donors, more than 10 acceptors, "
+        "weight above 500, logP above 5 (Crippen logP here)",
+    )
+    alerts: list[StructuralAlert] = Field(default_factory=list, description="distinct PAINS and Brenk matches, each once")
+
+
 class PredictionResponse(BaseModel):
     smiles_input: str
     smiles_standardized: str
@@ -79,6 +114,12 @@ class PredictionResponse(BaseModel):
     model_version: str = Field(..., description="Routing-table version tag; also part of the Redis cache key (Module 8)")
     served_at: datetime
     cache_hit: bool = False
+    properties: MoleculeProperties | None = Field(
+        default=None,
+        description="RDKit-computed molecule properties and structural alerts (frontend ADR-034 item 3). null when the "
+        "service has no RDKit (stub-only environments) or cannot parse the molecule. Older cached or saved responses "
+        "predate it and also read null.",
+    )
 
 
 class BatchJobStatus(BaseModel):

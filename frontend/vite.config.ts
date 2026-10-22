@@ -4,10 +4,11 @@ import react from "@vitejs/plugin-react";
 // MARS frontend — Vite SPA (ADR-001). No SSR; emits a static bundle the API
 // container or a CDN can serve.
 //
-// Dev talks to the API through a same-origin proxy: VITE_API_BASE=/api and the
-// dev server forwards /api/* to the API with the prefix stripped. The browser
-// never makes a cross-origin request, so the API's CORS policy does not apply in
-// dev. (The proxy is dev-only; `vite build` output needs a real API origin.)
+// The API lives under /api in every environment (ADR-025). Dev talks to it through
+// a same-origin proxy that forwards /api/* unchanged, so the browser never makes a
+// cross-origin request and the API's CORS policy does not apply. In production the
+// API container serves this bundle and /api itself, so the build (VITE_API_BASE=/api)
+// needs no proxy either.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const apiTarget = env.MARS_API_PROXY_TARGET || "http://localhost:8000";
@@ -19,7 +20,6 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target: apiTarget,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ""),
         },
       },
     },

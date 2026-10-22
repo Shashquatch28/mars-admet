@@ -29,11 +29,6 @@ class BatchPredictOptions(BaseModel):
     endpoints: list[Endpoint] | None = Field(
         default=None, description="Subset to predict. None = all 14 ML endpoints, plus the rule-based SA score when the server can compute it."
     )
-    retrain_opt_in: bool = Field(
-        default=False,
-        description="Module 8 per-upload opt-in: allow this data to improve future models. "
-        "Default False = no retention beyond serving results.",
-    )
 
 
 class BatchRowResult(BaseModel):
@@ -76,6 +71,23 @@ class CompareResponse(BaseModel):
     )
 
 
+# --- GET /limits (no account; frontend ADR-034 item 8) --------------------------
+class LimitsResponse(BaseModel):
+    """The deployed service's policy numbers, so no client writes them into its own copy. Each is the
+    setting the service itself enforces (`batch_size_cap`, `batch_interactive_threshold`,
+    `batch_upload_retention_hours`, `rate_limit_anon_per_minute`)."""
+
+    batch_size_cap: int = Field(..., description="most molecules one batch file may hold; larger files are refused")
+    batch_interactive_threshold: int = Field(
+        ...,
+        description="largest batch answered inside the upload request; larger files are queued as a job with progress",
+    )
+    batch_result_retention_hours: int = Field(
+        ..., description="how long the results of a queued batch job are kept; smaller batches are never stored"
+    )
+    anon_predict_rate_per_minute: int = Field(..., description="single-molecule predictions per minute per IP without an account")
+
+
 # --- GET /generations (no account; ADR-026 parts 1-2) ---------------------------
 class GenerationsResponse(BaseModel):
     """Which model generation this deployment serves. Minimal on purpose: `available` holds
@@ -84,3 +96,9 @@ class GenerationsResponse(BaseModel):
 
     active: str = Field(..., description="the deployed generation: the same string stamped on predictions as `model_version`")
     available: list[str] = Field(..., description="every generation this deployment can serve; today exactly [active]")
+    kermt_endpoints: list[str] = Field(
+        default_factory=list,
+        description="endpoint names this deployment routes to KERMT (empty when KERMT serving is off). Provenance, "
+        "not a ranking: a row's own `model_id` says what actually answered it, and differs from this when the "
+        "KERMT service did not answer and XGBoost served the endpoint for that request.",
+    )

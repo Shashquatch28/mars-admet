@@ -1,0 +1,208 @@
+/* The printed report (ADR-029). Not displayed on screen; in print it is the only thing shown.
+   Light ink on paper from the --report-* tokens. No semantic colour: reliability is words, an edge and a hatch. */
+.report {
+  display: none;
+}
+
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+@media print {
+  /* The app shell is a fixed-height, overflow-hidden dark surface; none of that may reach paper. */
+  :global(html),
+  :global(body) {
+    height: auto !important;
+    overflow: visible !important;
+    background: var(--report-paper) !important;
+  }
+  :global(#root) {
+    display: none !important;
+  }
+
+  .report {
+    display: block;
+    color: var(--report-ink);
+    background: var(--report-paper);
+    font-family: var(--sans);
+    font-size: 9pt;
+    line-height: 1.35;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .report h1 {
+    margin: 0;
+    font-size: 15pt;
+    font-weight: 600;
+  }
+  .report h2 {
+    margin: 0 0 4pt;
+    font-size: 10pt;
+    font-weight: 600;
+  }
+  .sub {
+    margin: 2pt 0 10pt;
+    color: var(--report-ink-muted);
+  }
+  .mono,
+  .num,
+  .value,
+  .model {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 2pt 12pt;
+    margin: 0 0 8pt;
+    padding: 6pt 0;
+    border-top: 1px solid var(--report-ink);
+    border-bottom: 1px solid var(--report-rule);
+  }
+  .facts dt {
+    color: var(--report-ink-muted);
+  }
+  .facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .recon {
+    margin: 0 0 8pt;
+  }
+  .failure {
+    margin: 0 0 8pt;
+    padding: 6pt 8pt;
+    border: 1px solid var(--report-ink);
+    border-radius: var(--radius-sm);
+  }
+
+  .group {
+    margin: 0 0 8pt;
+    break-inside: avoid;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* one set of column widths, so every group lines up under the same headings */
+  }
+  thead th:nth-child(1) {
+    width: 19%;
+  }
+  thead th:nth-child(2) {
+    width: 8%;
+  }
+  thead th:nth-child(3) {
+    width: 9%;
+  }
+  thead th:nth-child(4) {
+    width: 14%;
+  }
+  thead th:nth-child(5) {
+    width: 13%;
+  }
+  thead th:nth-child(6) {
+    width: 18%;
+  }
+  thead th:nth-child(7) {
+    width: 9%;
+  }
+  thead th:nth-child(8) {
+    width: 10%;
+  }
+  caption {
+    padding: 0 0 2pt;
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 8pt;
+  }
+  thead {
+    display: table-header-group;
+  }
+  th,
+  td {
+    padding: 2.5pt 4pt;
+    border-bottom: 1px solid var(--report-rule);
+    text-align: left;
+    vertical-align: top;
+    font-weight: 400;
+  }
+  thead th {
+    border-bottom: 1px solid var(--report-ink);
+    color: var(--report-ink-muted);
+    font-size: 7.5pt;
+    font-weight: 600;
+  }
+  tbody th {
+    font-family: var(--mono);
+    font-size: 8pt;
+    overflow-wrap: anywhere;
+  }
+  tr {
+    break-inside: avoid;
+  }
+  .value {
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  /* A stub value is not a real prediction: the diagonal hatch, never a colour (ADR-007). */
+  .hatch {
+    background-image: var(--report-hatch-unreal);
+  }
+  .status {
+    font-weight: 600;
+    font-size: 7.5pt;
+    white-space: nowrap;
+  }
+  .model {
+    font-size: 7.5pt;
+    color: var(--report-ink-muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* Reliability edge. Solid = the model's own reliability or the service's absence; dashed = the user's omission (ADR-028). */
+  .edgeOod th {
+    border-left: 3px solid var(--report-ink);
+  }
+  .edgeNotReturned th {
+    border-left: 3px solid var(--report-ink-muted);
+  }
+  .edgeNotRequested th {
+    border-left: 3px dashed var(--report-ink-muted);
+  }
+
+  /* the computed-properties table has its own three columns, not the roster's eight */
+  .propTable {
+    width: 70%;
+    table-layout: auto;
+  }
+  .propTable thead th:nth-child(n) {
+    width: auto;
+  }
+  .propNotes {
+    margin: 4pt 0 0;
+    padding-left: 12pt;
+    font-size: 7.5pt;
+  }
+  .propNotes li {
+    margin: 0 0 2pt;
+  }
+  .notes {
+    margin-top: 10pt;
+    padding-top: 6pt;
+    border-top: 1px solid var(--report-ink);
+    break-inside: avoid;
+  }
+  .notes ul {
+    margin: 0;
+    padding-left: 12pt;
+  }
+  .notes li {
+    margin: 0 0 3pt;
+  }
+}

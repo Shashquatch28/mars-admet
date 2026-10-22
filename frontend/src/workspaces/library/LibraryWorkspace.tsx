@@ -9,11 +9,10 @@
 //     marked row, never a gap (ADR-008)
 //   - no ranking, no score across entries; the list is newest first and filterable by text
 //   - an empty list says why it is empty and where entries come from
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import styles from "./library.module.css";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { useUiState } from "../../app/uiState";
 import {
   ApiError,
   USING_API,
@@ -42,8 +41,6 @@ type Tab = "molecules" | "reports";
 const KEYS = { molecules: ["library", "molecules"], reports: ["library", "reports"] } as const;
 
 export function LibraryWorkspace() {
-  const { setIsSample } = useUiState();
-  useEffect(() => setIsSample(false), [setIsSample]); // saved snapshots are real, not illustrative
 
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("molecules");

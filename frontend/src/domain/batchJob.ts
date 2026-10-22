@@ -2,14 +2,11 @@
 // how the server's progress stream is read, and the one derived phase the workspace
 // shows. Pure and unit-tested; the network lives in data/client.ts.
 //
-// The service has two tiers (API_ROUTES.md): up to 100 molecules come back in the
+// The service has two tiers (API_ROUTES.md): up to its interactive threshold (GET /limits) come back in the
 // POST response itself (job_id null, status "done"); more are queued, and the browser
 // follows GET /batch/progress/{job_id} (server-sent events) and then fetches
 // GET /batch/results/{job_id}.
 import type { BatchPredictResponse } from "../types/contracts";
-
-export const BATCH_MAX_MOLECULES = 50_000; // service cap (settings.batch_size_cap), for the copy only
-export const BATCH_INTERACTIVE_MAX = 100; // service default (settings.batch_interactive_threshold), for the copy only
 
 export type JobStatus = "queued" | "running" | "done" | "failed" | "unknown";
 
