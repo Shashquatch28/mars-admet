@@ -38,7 +38,7 @@ below is a CSS custom property to emit once and reference by name.
 --text-primary    #E9EDEE   16.5:1   values, endpoint names, headings
 --text-secondary  #A8B2B5    9.0:1   supporting prose, metadata values
 --text-tertiary   #859093    5.9:1   field labels, units, section labels
---text-quiet      #6E797C    4.4:1   BELOW AA — duplicated/non-essential text ONLY,
+--text-quiet      #848F92    4.5:1+  AA on every surface (ADR-030); one step from tertiary
                                      never a meaning-carrying graphical mark (ADR-015)
 --text-disabled   #5C6669    3.3:1   disabled controls only (WCAG-exempt)
 ```
@@ -48,7 +48,7 @@ below is a CSS custom property to emit once and reference by name.
 --accent       #49AEC4   interaction, focus, selection   NEVER a data value or judgement
 --on-accent    #07191D   ink on an --accent fill
 --caution      #D99A3C   reliability compromised: OOD, stub, sample   NEVER "risky"
---error        #D9615A   a request/upload/row genuinely failed   NEVER a high value
+--error        #E06861   a request/upload/row genuinely failed   NEVER a high value
 --success      #6FA860   a named op completed: saved, exported   NEVER a favourable value
 --unavailable  #859093   requested-but-not-returned, or n/a   NEVER anything hidden
 ```

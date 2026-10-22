@@ -1,8 +1,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  // Base URL of the MARS API (e.g. http://localhost:8000). When unset, the UI
-  // runs on the illustrative fixture and shows the "design prototype" strip.
+  // Base URL of the MARS API: "/api" in dev and in the production build. When unset, the UI
+  // has no API: it says so and shows no values (ADR-032).
   readonly VITE_API_BASE?: string;
 }
 interface ImportMeta {

@@ -1,9 +1,9 @@
 // Predict — single molecule. Composes the three columns: molecule input, the
-// endpoint roster, and the inspector. When VITE_API_BASE is set it drives the
-// real /predict response; otherwise it runs on the illustrative fixture (and the
-// shell shows the "design prototype" strip). The roster, state derivation and
-// reconciliation always come from ENDPOINT_METADATA, never the response (ADR-008).
-import { useEffect, useMemo, type KeyboardEvent } from "react";
+// endpoint roster, and the inspector. It shows only what /predict returned: with no
+// result yet (or no API configured) the roster is placeholders, never invented values
+// (ADR-032). The roster, state derivation and reconciliation always come from
+// ENDPOINT_METADATA, never the response (ADR-008).
+import { useEffect, useMemo, useRef, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCompareSession } from "../../app/compareSession";
 import styles from "./predict.module.css";
@@ -11,16 +11,19 @@ import { useUiState } from "../../app/uiState";
 import { usePredictSession } from "../../app/predictSession";
 import { reconcile, requestedMlEndpoints } from "../../domain/reconcile";
 import { ML_ENDPOINTS } from "../../domain/endpoints";
-import { FIXTURE_RESPONSE, emptyResponse } from "../../domain/fixtures";
 import { USING_API, ApiError, saveMolecule } from "../../data/client";
 import { SaveControl } from "../../components/SaveControl";
 import { buildMoleculeRequest, moleculeKey, saveNote } from "../../domain/save";
 import { EndpointList } from "./EndpointList";
 import { downloadText } from "../../data/download";
+import { usePrintReport } from "../../components/report/usePrintReport";
+import { useAnnounce } from "../../app/announce";
+import { predictionAnnouncement } from "../../domain/announce";
 import { buildCsv, predictFileName } from "../../domain/exportCsv";
 import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
 import { StructureViewer } from "./StructureViewer";
+import { PropertiesPanel } from "./PropertiesPanel";
 
 // Truncate for the identity grid; only mark it as truncated when it was.
 const clip = (s: string, n = 34) => (s.length > n ? `${s.slice(0, n)}…` : s);
@@ -35,30 +38,24 @@ function requestFailure(error: Error): { title: string; detail: string } {
 }
 
 export function PredictWorkspace() {
-  const { selectedEndpoint, setIsSample } = useUiState();
+  const { selectedEndpoint } = useUiState();
   const { smiles, setSmiles, selected, setSelected, result, running, error, canRun, run, clear } = usePredictSession();
   const usingApi = USING_API;
   const navigate = useNavigate();
   const compare = useCompareSession();
 
-  // The prototype strip is shown only while the values on screen are the fixture.
-  // A live session with no result has no values at all, so nothing there is illustrative.
-  useEffect(() => {
-    setIsSample(!usingApi);
-  }, [usingApi, setIsSample]);
-
-  const response = usingApi ? (result?.response ?? null) : FIXTURE_RESPONSE;
-  const idle = usingApi && !result && !running && !error;
+  const response = result?.response ?? null;
+  const idle = !result && !running && !error;
   const placeholders = running || idle; // roster known, values not: quiet placeholder rows
   // Rows follow what the *last run* asked for, not the selector's current ticks, so
   // editing the selector never relabels results that were already produced.
   const requested = useMemo(
-    () => (usingApi && result ? requestedMlEndpoints(result.sent) : ML_ENDPOINTS),
-    [usingApi, result],
+    () => (result ? requestedMlEndpoints(result.sent) : ML_ENDPOINTS),
+    [result],
   );
   const recon = useMemo(
-    () => reconcile(response ?? emptyResponse(smiles), requested),
-    [response, smiles, requested],
+    () => reconcile(response, requested),
+    [response, requested],
   );
 
   const selectedRow = recon.rows.find((r) => r.endpoint === selectedEndpoint) ?? recon.rows[0];
@@ -71,7 +68,7 @@ export function PredictWorkspace() {
   }
 
   const failure = error ? requestFailure(error) : null;
-  // Export is of a real result only: never the illustrative sample, never a stale one after a failure.
+  // Export is of a real result only, never a stale one after a failure.
   const exportCsv =
     usingApi && result && !failure
       ? () =>
@@ -80,8 +77,21 @@ export function PredictWorkspace() {
             buildCsv([{ smilesInput: result.submitted, response: result.response, cells: recon.rows }]),
           )
       : undefined;
-  // Fixture: the response's own input field. Live: what was actually submitted.
-  const inputShown = usingApi ? result?.submitted : response?.smiles_input;
+  const printReport = usePrintReport();
+  // A finished prediction is announced once (WCAG 4.1.3); a failure announces itself through its role="alert".
+  const announce = useAnnounce();
+  const announcedFor = useRef<unknown>(null);
+  useEffect(() => {
+    if (!usingApi || !result || failure || announcedFor.current === result) return;
+    announcedFor.current = result;
+    announce(predictionAnnouncement(recon.counts));
+  }, [usingApi, result, failure, recon.counts, announce]);
+  const openReport =
+    usingApi && result && !failure
+      ? () => printReport.print({ smilesInput: result.submitted, response: result.response, cells: recon.rows })
+      : undefined;
+  // What was actually submitted (the response's own input field is already standardized).
+  const inputShown = result?.submitted;
   const rewritten = !!response && !!inputShown && inputShown !== response.smiles_standardized;
 
   return (
@@ -116,8 +126,7 @@ export function PredictWorkspace() {
           </div>
           {!usingApi && (
             <p className={styles.vnote}>
-              No API configured (VITE_API_BASE is unset), so Run is disabled and the roster shows the
-              illustrative fixture.
+              No API is configured (VITE_API_BASE is unset), so Run is disabled and no values are shown.
             </p>
           )}
           <div>
@@ -139,6 +148,7 @@ export function PredictWorkspace() {
             Conformer is generated on demand and expires with the prediction cache. A 404 here is a normal
             state, not an error.
           </p>
+          {response?.properties && !failure && <PropertiesPanel properties={response.properties} />}
         </div>
       </section>
 
@@ -177,16 +187,14 @@ export function PredictWorkspace() {
           </div>
         </section>
       ) : (
-        <EndpointList recon={recon} loading={placeholders} idle={idle} onExport={exportCsv} />
+        <EndpointList recon={recon} loading={placeholders} idle={idle} onExport={exportCsv} onReport={openReport} />
       )}
+      {printReport.element}
 
       {/* inspector */}
       <aside className={styles.inspector} aria-label="Endpoint detail">
         <div className={styles.insphd}>
           <span className={styles.panelTitle}>Endpoint detail</span>
-          <button className={styles.inspx} aria-label="Close">
-            ✕
-          </button>
         </div>
         {selectedRow && response && !failure ? (
           <EndpointDetail row={selectedRow} response={response} />
@@ -225,7 +233,7 @@ export function PredictWorkspace() {
               usingApi && result && !failure
                 ? null
                 : !usingApi
-                  ? "Saving needs the API. These values are sample data."
+                  ? "Saving needs the API."
                   : running
                     ? "Wait for the run to finish."
                     : "Run a molecule to save it."

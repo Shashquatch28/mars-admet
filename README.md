@@ -80,7 +80,7 @@ promoted artifacts the API serves the deterministic stub for every endpoint
 Smoke check:
 
 ```bash
-curl -X POST http://localhost:8000/predict \
+curl -X POST http://localhost:8000/api/predict \
   -H "Content-Type: application/json" \
   -d '{"smiles": "CCO", "endpoints": null}'
 ```
@@ -127,5 +127,5 @@ Full reasoning is in the blueprint; the log of changes is in
 - k-NN applicability domain (5-NN Tanimoto on ECFP4) is core, not deferred.
 - `/predict` is fast and cheap; 3D conformers and explainability are lazy.
 - 48 h Redis cache keyed on SMILES, endpoint set and `MODEL_VERSION`; 24 h
-  batch-upload retention; retraining use is opt-in only.
+  batch-upload retention; submitted molecules are never used for training.
 - No paid compute. Serving target is Google Cloud Run.

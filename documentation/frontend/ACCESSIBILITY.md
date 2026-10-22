@@ -9,28 +9,26 @@ document as much as a compliance one.
 
 Measured against `--surface-void` (`#0B0D0E`):
 
-| Token | Ratio | Verdict |
-|---|---|---|
-| `--text-primary` `#E9EDEE` | 16.5:1 | any size |
-| `--text-secondary` `#A8B2B5` | 9.0:1 | any size |
-| `--text-tertiary` `#859093` | 5.9:1 | any size |
-| `--text-quiet` `#6E797C` | 4.4:1 | **below AA** — non-essential or duplicated text only |
-| `--accent` `#49AEC4` | 7.2:1 | any size |
-| `--caution` `#D99A3C` | 7.6:1 | any size |
-| `--error` `#D9615A` | 5.1:1 | any size |
-| `--success` `#6FA860` | 6.6:1 | any size |
+| Token | Ratio on void | Worst surface (overlay, washes) | Verdict |
+|---|---|---|---|
+| `--text-primary` `#E9EDEE` | 16.5:1 | 12.8:1 | any size |
+| `--text-secondary` `#A8B2B5` | 9.0:1 | 6.9:1 | any size |
+| `--text-tertiary` `#859093` | 5.9:1 | 4.6:1 | any size |
+| `--text-quiet` `#848F92` | 5.9:1 | 4.5:1 | any size (since 2026-10-19; was `#6E797C`, 4.4:1 on void and 3.4:1 on overlay) |
+| `--accent` `#49AEC4` | 7.6:1 | 5.8:1 | any size |
+| `--caution` `#D99A3C` | 8.0:1 | 6.2:1 | any size |
+| `--error` `#E06861` | 5.9:1 | 4.5:1 | any size (since 2026-10-19; was `#D9615A`, 4.3:1 on overlay) |
+| `--success` `#6FA860` | 6.9:1 | 5.3:1 | any size |
 
-`--text-quiet` is the one token that fails AA for small body text. It is
-permitted only for status-bar readouts and explanatory asides whose information
-also appears elsewhere at an AA-compliant contrast. Any new use requires a
-check that the information is genuinely duplicated.
+Every text token clears 4.5:1 on every surface and on both washes (`accent-wash`, `caution-wash` over the panel);
+`tests/a11yGuard.test.ts` computes this from `tokens.css`, so a changed value cannot slip below AA unnoticed.
+`--text-quiet` is now one step from `--text-tertiary`: AA on the overlay surface leaves no room for a dimmer step,
+so the hierarchy has one fewer rung (ADR-030). `--text-disabled` (`#5C6669`, 3.2:1) is below AA on purpose and is
+allowed **only** on disabled controls, which WCAG exempts; a test fails if a non-disabled rule uses it. A readable
+separator or placeholder uses `--text-quiet`, and a decorative separator is `aria-hidden`.
 
-**It is not permitted for graphical marks that carry meaning.** The AD-gauge
-threshold tick initially used it; a sole-carrier reference line must clear 3:1
-against everything it crosses, so it moved to `--text-tertiary` — 5.4:1 against
-the gauge track (`#14181A`) and 5.6:1 against the panel ground. Non-text
-contrast is a separate budget from text contrast, and `--text-quiet` clears
-neither reliably.
+**Non-text marks that carry meaning** (the AD-gauge threshold tick) must clear 3:1 against everything they cross, so
+they use `--text-tertiary`.
 
 ### Colour is never the only channel
 
@@ -120,26 +118,50 @@ Text zoom to 200% must not break the shell. This is the constraint that keeps
 the layout on flexible regions rather than fixed pixel columns, even though the
 canvas is drawn at a fixed 1440×900.
 
-## Implementation status (verified against `frontend/src` 2026-10-14)
+## Target size
 
-Present in the code: `role="grid"` / `row` / `gridcell` / `columnheader` with a
-single Tab stop on both the endpoint list and the batch grid; `aria-rowcount`
-and `aria-rowindex` (plus `aria-colcount` / `aria-colindex` on the batch grid);
-`aria-selected`; real `<label>`s on forms and the SMILES `<textarea>`;
-`aria-label` on icon-only controls; `NavLink`'s `aria-current="page"`; a visible
-focus outline in `tokens.css`; `prefers-reduced-motion` zeroing every transition
-and animation; the NOT RETURNED / NOT REQUESTED wording in the row itself.
+WCAG 2.5.8 (Target Size, Minimum): no control is smaller than 24 x 24 CSS px. The base `button` rule sets
+`min-width` and `min-height` of 24px, the Batch filter chips and search box are 24px or taller, and the Settings
+checkbox is 24px. The dense 30px grid rows are already larger.
 
-**Not built, although specified above:** `aria-live` regions (none exist, so no
-prediction-complete or batch-progress announcement); `aria-describedby` linking
-inline errors to their field; endpoint group headers as real headings; "Closing
-the inspector returns focus to the row" and "Every overlay closes with Escape"
-hold for the palette and the subset popover only. The icon-only `aria-label`
-requirement is a convention here, not enforced in a component type, because no
-shared `Button` primitive exists. The `CSS guard` test and ESLint do not check
-accessibility.
+## Reflow, zoom and narrow windows
 
-**Not verified:** nothing has been tested against NVDA or VoiceOver, and no
-automated axe/contrast run exists. The contrast ratios above are computed from
-the token values, not measured on rendered pages. Verification with a real
-screen reader remains an explicit gate before Batch and Compare ship.
+The shell keeps a 1080px canvas. Below that width (a narrow window, or browser zoom beyond about 133% on a 1440px
+screen) the page **scrolls sideways** and a one-line note says so; nothing is blocked or hidden (ADR-030, which
+replaces the blocking "minimum width" notice). Text zoom to 200% therefore works by scrolling, not by reflow.
+Two-dimensional content (the grids) is the WCAG 1.4.10 exception for content that needs both axes.
+
+## Keyboard shortcuts
+
+The 1-4 workspace keys are single-character shortcuts (WCAG 2.1.4), so they can be turned off: Settings, Keyboard,
+"Single-key shortcuts". On by default, remembered in this browser. They already ignore keystrokes while a text field
+has focus. Ctrl or Command + K (command palette) is a modifier shortcut and is not affected.
+
+## Implementation status (verified in a browser 2026-10-19, branch `feat/a11y-pass`)
+
+**Built and checked**
+- Landmarks: `header`, `nav` ("Workspaces"), one `main` (id `main`), `aside` inspectors, `footer`. A **skip link**
+  ("Skip to workspace") is the first Tab stop, visible only while focused, and moves focus to `main`.
+- Headings: the workspace name is the page `h1` (top bar); the Predict endpoint groups are `h2`. Each workspace sets
+  its own page title ("Predict · MARS ADMET Rapid Screening").
+- The Predict endpoint list is a valid ARIA grid: the column headers are `columnheader`s inside the grid, every cell is
+  a `gridcell` (the endpoint name a `rowheader`), group rows are `rowgroup`s with a heading, and the roving focus is
+  exposed with `aria-activedescendant`. Decorative edges and separators are `aria-hidden`. The Batch grid already
+  had this structure.
+- One polite live region (`app/announce.tsx`) announces a finished prediction ("Prediction complete. 14 of 14
+  endpoints returned, 2 out of domain.") and a batch's start, each quarter and finish. Nothing else is live; the
+  per-event progress line is not (it fired every half second). Failures are `role="alert"`.
+- Sign-in errors are linked to their fields (`aria-invalid`, `aria-describedby`).
+- Contrast, the 9px floor, the 24px targets, icon-only button names and "no clickable non-control without a role" are
+  guarded by `tests/a11yGuard.test.ts`. An in-browser audit of every workspace (computed contrast of every visible
+  text node, accessible names, target sizes) reported nothing after the fixes.
+- Reduced motion, real labels, `aria-label` on icon-only controls, `aria-current` on the rail, the visible focus ring.
+
+**Not built or not checked**
+- Not tested with a screen reader (NVDA, VoiceOver) or by keyboard in a real session: the announcements and the grid
+  structure were verified from the DOM and the accessibility roles, not by listening.
+- "Closing the inspector returns focus to the row" and "every overlay closes with Escape" hold for the command palette,
+  the subset popover and the confirm dialog; the Ketcher sketcher panel was not audited.
+- The Batch grid's keyboard model (arrow keys between cells) was not re-tested in this pass.
+- No automated engine (axe) ran: it is not a dependency. The audit script and the guards are the substitute.
+- The icon-only `aria-label` rule is a test, not a component type, because no shared `Button` exists.

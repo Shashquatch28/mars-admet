@@ -49,3 +49,19 @@ The auth captures used a throwaway `@example.com` account on the dev database, d
 - `smiles_input` is returned already standardized, not as submitted.
 - A cache hit returns the original `served_at`.
 - Celecoxib is out of domain on 5 of 14 endpoints (the design fixture had 2).
+
+## celecoxib-mixed-real-and-stub.json (2026-10-19)
+
+The first captured response in which some endpoints were served by a trained model and the rest by the stub. Captured from
+the real API container running `main` (image built from `api/app` and `ml/serve` of the merge at `67d47aa`) with trained
+artifacts mounted for `solubility_logs`, `hia_absorption` and `clearance_microsomal` only; the routing table's per-endpoint
+fallback served the other eleven from `stub-v0`. It is the same SMILES as the other celecoxib captures.
+
+- Three rows have `model_id: "mars-xgboost-ecfp-desc-v1"`, eleven have `"stub-v0"`, and the SA row `"rdkit-sascore"`.
+- Several stub rows carry `in_domain: false` (the stub has no applicability domain; its flag is arbitrary). The UI's stub state
+  takes precedence, so none of them is counted or shown as out of domain.
+- Stub rows have `ad_threshold: null` and no held-out error; the trained regression rows (`solubility_logs`,
+  `clearance_microsomal`) carry the held-out-error band fields. This is why the file has the additive fields the older
+  captures predate and is not part of the exact-key-set test in `realResponses.test.ts`.
+- Top-level `model_version` is `v0.2.0-dev` even though eleven rows are stubs: it names the serving generation, and
+  per-endpoint `model_id` is the ground truth (contracts/prediction.py). `mixedResponse.test.ts` pins the states derived from it.

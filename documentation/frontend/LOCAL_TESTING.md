@@ -10,7 +10,7 @@ A queued batch of 1,200 molecules has also been run on the real stack with real 
 minutes) since serving keeps its models in memory (§2e, AIMS decisions 2026-10-18); the stand-in (B)
 is still the quickest way to see the progress bar. If a step fails, that is a finding worth reporting.
 
-Use a browser window at least **1280 px wide**; narrower shows a "desktop workstation" notice.
+Use a browser window at least **1280 px wide**. Narrower than 1080 px the page scrolls sideways with a short note (it no longer blocks).
 
 ---
 
@@ -30,7 +30,7 @@ Get-NetTCPConnection -State Listen -LocalPort 5173,8000
    ```powershell
    docker compose up -d --build        # postgres :55432, redis :6379, minio :9000, api :8000
    docker compose ps                   # wait until postgres, redis, minio and api are healthy
-   curl localhost:8000/health
+   curl localhost:8000/api/health
    ```
 
 2. **Create the database tables.** The compose file does not run migrations, so accounts,
@@ -54,7 +54,7 @@ Get-NetTCPConnection -State Listen -LocalPort 5173,8000
 
    `frontend/.env.local` must contain `VITE_API_BASE=/api` (it does on this machine; on a fresh
    clone copy `frontend/.env.example` to `.env.local` and uncomment that line). Without it the app
-   runs on its illustrative fixture and Run, Save and Batch upload are off.
+   shows no values at all and Run, Save and Batch upload are off (ADR-032).
 
 4. **Real predictions need promoted models.** `ml/artifacts/` is git-ignored and is mounted into
    the API container. With it present you get trained XGBoost predictions; without it every value
@@ -158,6 +158,14 @@ that until you change it and recreate the container.
    Open the file: `state` says ok / out_of_domain / stub_served / not_returned / not_requested / rule_based, and there is
    no rank or winner column. The buttons are greyed out when nothing real is on screen.
 
+## The printed report
+
+On Predict with a real result, click **Report** (next to Export). The browser's print dialog opens on a light,
+one-molecule document: header, SMILES and model version, the counts, one table per group with every endpoint
+(stub values hatched, NOT RETURNED and NOT REQUESTED as rows), and a "How to read this report" block. Choose
+**Save as PDF**. In Batch, select a row and click **Report** in the inspector. The button is disabled on the
+sample data and after a failure.
+
 ## What to expect that is not finished
 
 - Batch's **Open in Predict** and the command palette's commands are placeholders with no handlers.
@@ -169,7 +177,7 @@ that until you change it and recreate the container.
 ## Tests
 
 ```powershell
-cd frontend; npm test; npx tsc --noEmit; npm run lint     # 191 tests; lint has 0 errors
+cd frontend; npm test; npx tsc --noEmit; npm run lint     # 262 tests; lint has 0 errors (8 accepted fast-refresh warnings)
 cd ..; .venv\Scripts\ruff check contracts api ml
 .venv\Scripts\pytest contracts/tests api/tests -q          # DB/Redis tests skip unless the stack is up
 ```

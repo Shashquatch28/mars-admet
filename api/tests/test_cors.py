@@ -9,7 +9,7 @@ from app import main
 from app.main import app
 from fastapi.testclient import TestClient
 
-client = TestClient(app)
+client = TestClient(app, base_url="http://testserver/api")
 
 DEV_ORIGIN = "http://localhost:5173"
 

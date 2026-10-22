@@ -68,7 +68,7 @@ repeat it.
   and servers you created.
 - **If the UI disagrees with `curl localhost:8000`**, suspect a different backend
   before suspecting the code: POST the same SMILES to
-  `localhost:8000/predict` and `localhost:5173/api/predict` and compare
+  `localhost:8000/api/predict` and `localhost:5173/api/predict` and compare
   `model_version` (`v0.2.0-dev` on the current image) and `served_at`.
 
 ## Roster (resolved 2026-10-01)

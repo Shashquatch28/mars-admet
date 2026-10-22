@@ -14,48 +14,34 @@ import csv
 import io
 import json
 import uuid
-from datetime import UTC, datetime
 
 import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
-from mars_contracts import BatchPredictResponse, BatchRowResult, Endpoint
+from mars_contracts import BatchPredictResponse, Endpoint
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
 from app.core.config import get_settings
 from app.db.models import BatchJob, User
-from app.db.session import SessionLocal, get_db
+from app.db.session import get_db
 from app.deps import get_current_user
-from app.services.batch_results import load_batch_results, store_batch_results
+from app.services.batch_runner import (
+    fail_job,
+    get_task_queue,
+    now_naive_utc,
+    predict_row,
+    store_job_input,
+)
+from app.services.blob_store import get_blob_store, results_key
 from app.services.prediction_pool import run_prediction
-from app.services.prediction_service import predict as predict_one
 from app.services.redis_client import get_redis
 from app.services.sdf_parser import parse_sdf, sdf_available
-from app.services.task_queue import LocalTaskQueue, get_job_progress, set_job_progress
+from app.services.task_queue import get_job_progress, set_job_progress
 
 router = APIRouter()
-_queue = LocalTaskQueue()
 
 _MAX_CONCURRENT_JOBS_PER_ACCOUNT = 5
-
-
-def _now_naive_utc() -> datetime:
-    """`batch_jobs.completed_at` is a naive `TIMESTAMP WITHOUT TIME ZONE`
-    column — asyncpg rejects a tz-aware value against it ("can't subtract
-    offset-naive and offset-aware datetimes"). Store naive UTC consistently
-    rather than adding `timezone=True` to one column and not others."""
-    return datetime.now(UTC).replace(tzinfo=None)
-
-
-def _predict_row(row_index: int, smiles: str, endpoints: list[Endpoint] | None) -> BatchRowResult:
-    if not smiles or not smiles.strip():
-        return BatchRowResult(row_index=row_index, smiles_input=smiles, ok=False, error="empty SMILES")
-    try:
-        prediction = predict_one(smiles, endpoints)
-    except ValueError as exc:
-        return BatchRowResult(row_index=row_index, smiles_input=smiles, ok=False, error=str(exc))
-    return BatchRowResult(row_index=row_index, smiles_input=smiles, ok=True, prediction=prediction)
 
 
 def _parse_csv(content: bytes, smiles_column: str | None) -> list[str]:
@@ -67,41 +53,6 @@ def _parse_csv(content: bytes, smiles_column: str | None) -> list[str]:
         (c for c in reader.fieldnames if c.lower() == "smiles"), reader.fieldnames[0]
     )
     return [row.get(column, "") for row in reader]
-
-
-async def _run_async_job(job_id: str, smiles_list: list[str], endpoints: list[Endpoint] | None) -> None:
-    """Background job body — its own Redis client and DB session, since the
-    request that enqueued it has already returned. This is a fire-and-forget
-    `asyncio.create_task` (see `LocalTaskQueue`) — an uncaught exception here
-    would otherwise vanish into the event loop's default exception handler
-    and leave the job stuck at "queued"/"running" forever, so failures are
-    caught explicitly and written back as `status="failed"`."""
-    from app.services.redis_client import get_redis as _get_redis
-
-    r = _get_redis()
-    total = len(smiles_list)
-    try:
-        await set_job_progress(r, job_id, status="running", total=total, completed=0)
-
-        results: list[BatchRowResult] = []
-        for i, smiles in enumerate(smiles_list):
-            results.append(await run_prediction(_predict_row, i, smiles, endpoints))
-            await set_job_progress(r, job_id, status="running", total=total, completed=i + 1)
-
-        response = BatchPredictResponse(job_id=job_id, status="done", total=total, completed=total, results=results)
-        await store_batch_results(r, job_id, response.model_dump_json())
-        await set_job_progress(r, job_id, status="done", total=total, completed=total)
-        final_status = "done"
-    except Exception:
-        await set_job_progress(r, job_id, status="failed", total=total, completed=0)
-        final_status = "failed"
-
-    async with SessionLocal() as session:
-        job = await session.get(BatchJob, uuid.UUID(job_id))
-        if job is not None:
-            job.status = final_status
-            job.completed_at = _now_naive_utc()
-            await session.commit()
 
 
 @router.post("/predict", response_model=BatchPredictResponse)
@@ -150,15 +101,20 @@ async def batch_predict(
 
     if total <= settings.batch_interactive_threshold:
         results = await run_prediction(
-            lambda: [_predict_row(i, s, endpoints) for i, s in enumerate(smiles_list)]
+            lambda: [predict_row(i, s, endpoints) for i, s in enumerate(smiles_list)]
         )
         job.status = "done"
-        job.completed_at = _now_naive_utc()
+        job.completed_at = now_naive_utc()
         await db.commit()
         return BatchPredictResponse(job_id=None, status="done", total=total, completed=total, results=results)
 
+    await store_job_input(get_blob_store(r), job_id, smiles_list, endpoints)
     await set_job_progress(r, job_id, status="queued", total=total, completed=0)
-    await _queue.enqueue(job_id, lambda: _run_async_job(job_id, smiles_list, endpoints))
+    try:
+        await get_task_queue().enqueue(job_id, 0)
+    except Exception:
+        await fail_job(r, job_id, total)
+        raise HTTPException(status_code=503, detail="Could not queue the batch job; try again shortly") from None
     return BatchPredictResponse(job_id=job_id, status="queued", total=total, completed=0, results=None)
 
 
@@ -207,9 +163,10 @@ async def batch_results(
     if job.status not in ("done", "failed"):
         raise HTTPException(status_code=409, detail=f"Job is still {job.status}")
 
-    raw = await load_batch_results(r, job_id)
+    raw = await get_blob_store(r).get(results_key(job_id))
     if raw is None:
         raise HTTPException(
-            status_code=410, detail="Results have expired and are no longer available (24h retention)"
+            status_code=410,
+            detail=f"Results have expired and are no longer available ({get_settings().batch_upload_retention_hours}h retention)",
         )
     return BatchPredictResponse.model_validate_json(raw)

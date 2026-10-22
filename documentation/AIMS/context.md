@@ -450,7 +450,7 @@ docker compose up -d postgres redis minio
   state**, synced to Cloudflare R2. Mandatory (lab A100 sessions get preempted).
 - `/predict` fast/cheap; 3D conformers + explainability computed lazily.
 - Redis cache key includes **serving model version**. 48h TTL. 24h batch upload
-  retention. Retraining use = per-upload opt-in only.
+  retention. Submitted molecules are never used for training (no opt-in; frontend ADR-034 item 10).
 - Explainability (Module 6) = Post-MVP: Integrated Gradients, atom-level →
   functional-group aggregation, dual validation.
 - Training: lab A100s primary (personal research permitted). **No paid compute

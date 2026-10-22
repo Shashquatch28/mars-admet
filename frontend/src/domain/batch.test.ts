@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   buildBatch,
   filterRows,
-  makeBatchFixture,
   sortRows,
   NO_FILTER,
   type BatchRow,
 } from "./batch";
 import { ALL_ENDPOINTS, ML_ENDPOINTS } from "./endpoints";
+import { makeBatchFixture } from "../testSupport/batchFixture";
 import type { BatchPredictResponse, PredictionResponse } from "../types/contracts";
 
 function pred(over: Partial<PredictionResponse> = {}): PredictionResponse {

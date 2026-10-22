@@ -2,6 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { queryClient } from "./app/queryClient";
 import { UiStateProvider } from "./app/uiState";
+import { AnnouncerProvider } from "./app/announce";
 import { PredictSessionProvider } from "./app/predictSession";
 import { AuthSessionProvider } from "./app/authSession";
 import { BatchSessionProvider } from "./app/batchSession";
@@ -19,6 +20,7 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <AnnouncerProvider>
         <UiStateProvider>
           <AuthSessionProvider>
             <SavedMarksProvider>
@@ -42,6 +44,7 @@ export function App() {
             </SavedMarksProvider>
           </AuthSessionProvider>
         </UiStateProvider>
+        </AnnouncerProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );

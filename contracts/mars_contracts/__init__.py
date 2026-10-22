@@ -5,6 +5,7 @@ from .api import (
     CompareRequest,
     CompareResponse,
     GenerationsResponse,
+    LimitsResponse,
 )
 from .auth import (
     LoginRequest,
@@ -31,14 +32,22 @@ from .persistence import (
     SaveMoleculeRequest,
     SaveReportRequest,
 )
-from .prediction import BatchJobStatus, EndpointPrediction, PredictionRequest, PredictionResponse
+from .prediction import (
+    BatchJobStatus,
+    EndpointPrediction,
+    MoleculeProperties,
+    PredictionRequest,
+    PredictionResponse,
+    StructuralAlert,
+)
 
 __all__ = [
     "Endpoint", "ENDPOINT_METADATA", "ALL_ENDPOINTS", "ML_ENDPOINTS", "TaskType", "EndpointCategory",
     "PredictionRequest", "PredictionResponse", "EndpointPrediction", "BatchJobStatus",
+    "MoleculeProperties", "StructuralAlert",
     "ConformerResponse", "Atom", "Bond",
     "BatchPredictOptions", "BatchRowResult", "BatchPredictResponse",
-    "CompareRequest", "CompareResponse", "GenerationsResponse",
+    "CompareRequest", "CompareResponse", "GenerationsResponse", "LimitsResponse",
     "RegisterRequest", "RegisterResponse", "LoginRequest", "LoginResponse", "MeResponse",
     "PasswordResetRequestModel", "PasswordResetConfirmRequest",
     "SaveMoleculeRequest", "SavedMoleculeResponse", "SaveReportRequest", "SavedReportResponse",

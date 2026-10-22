@@ -8,6 +8,8 @@ import { DISPLAY_UNIT, PROB_DOMAIN } from "../../domain/endpoints";
 import { decimalPlaces, fmtValue, fmtInterval, fmtDateTime, fmtNum } from "../../domain/format";
 import { ADGauge } from "../../components/dataviz/ADGauge";
 import { errorBandNote, errorBandOf } from "../../domain/errorBand";
+import { familyLabel, servedByFallback } from "../../domain/modelFamily";
+import { useGenerations } from "../../data/useGenerations";
 
 function Rule() {
   return <div className={styles.irule} />;
@@ -15,6 +17,7 @@ function Rule() {
 
 export function EndpointDetail({ row, response }: { row: Row; response: PredictionResponse }) {
   const { endpoint, meta, prediction, state } = row;
+  const fellBack = servedByFallback(prediction, useGenerations()?.kermt_endpoints ?? []);
 
   const chips: string[] = [];
   chips.push(
@@ -33,7 +36,7 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
       <div className={styles.imeta}>
         {chips.map((c, i) => (
           <span key={c}>
-            {i > 0 && <span className={styles.imetaD}>· </span>}
+            {i > 0 && <span className={styles.imetaD} aria-hidden="true">· </span>}
             {c}
           </span>
         ))}
@@ -212,12 +215,22 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
             </>
           ) : (
             <>
+              <dt>model</dt>
+              <dd className={styles.ddProv}>{familyLabel(prediction.model_id) || "stub"}</dd>
               <dt>model_id</dt>
               <dd className={styles.ddProv}>{prediction.model_id}</dd>
             </>
           )}
           <dt>generation</dt>
           <dd>{response.model_version}</dd>
+          {fellBack && (
+            <>
+              <dt>routing</dt>
+              <dd className={styles.ddProv}>
+                Routed to KERMT; XGBoost answered for this request because the KERMT service did not.
+              </dd>
+            </>
+          )}
           <dt>served at</dt>
           <dd>{fmtDateTime(response.served_at)}</dd>
           <dt>cache</dt>

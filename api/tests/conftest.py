@@ -55,7 +55,8 @@ requires_infra = pytest.mark.skipif(
 def client():
     from app.main import app
 
-    with TestClient(app) as c:
+    # every route lives under /api (ADR-025)
+    with TestClient(app, base_url="http://testserver/api") as c:
         yield c
 
 

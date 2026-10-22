@@ -6,39 +6,6 @@
   margin: 0 auto;
 }
 
-/* prototype strip (ADR-010) */
-.protostrip {
-  height: 22px;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 16px;
-  background: var(--caution-wash);
-  border-bottom: 1px solid var(--caution-line);
-  overflow: hidden;
-}
-.protoswatch {
-  width: 26px;
-  height: 12px;
-  flex: 0 0 auto;
-  background: var(--hatch-unreal);
-  border: 1px solid var(--caution-line);
-  border-radius: 1px;
-}
-.protolabel {
-  font-family: var(--cond);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-size: 9px;
-  color: var(--caution);
-  white-space: nowrap;
-}
-.protonote {
-  color: var(--text-quiet);
-  font-size: 10px;
-}
-
 /* top bar */
 .topbar {
   height: 44px;
@@ -80,12 +47,14 @@
   font-size: 12px;
 }
 .crumbW {
+  margin: 0; /* it is the page's <h1> */
+  font-size: inherit;
   color: var(--text-primary);
   font-weight: 600;
   letter-spacing: 0.04em;
 }
 .crumbSep {
-  color: var(--text-disabled);
+  color: var(--text-quiet);
 }
 .crumbSub {
   color: var(--text-tertiary);
@@ -222,6 +191,32 @@
   display: flex;
   min-height: 0;
 }
+/* the <main> landmark wraps the workspace's own columns; it must not change their layout */
+.workspace {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+.workspace:focus {
+  outline: none; /* focused only by the skip link; the ring belongs on controls */
+}
+
+/* Skip link (WCAG 2.4.1): the first Tab stop, visible only while it has focus. */
+.skip {
+  position: absolute;
+  left: 8px;
+  top: -40px;
+  z-index: 100;
+  padding: 6px 12px;
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+.skip:focus {
+  top: 8px;
+}
 
 /* nav rail */
 .rail {
@@ -315,6 +310,14 @@
   border-radius: 2px;
   color: var(--text-secondary);
 }
+.echo {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
 .hints {
   display: flex;
   gap: 14px;
@@ -344,17 +347,7 @@
   transform-origin: top center;
   transform: translateX(-50%) scale(1);
   overflow: hidden;
-  animation: palIn var(--dur-enter) var(--ease);
-}
-@keyframes palIn {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
-  }
+  /* opens instantly: nothing in MARS animates in except the AD-gauge marker (ADR-013) */
 }
 .palInput {
   display: flex;
@@ -440,6 +433,12 @@
   width: 2px;
   background: var(--accent);
 }
+.palItem[aria-disabled="true"] {
+  cursor: default;
+}
+.palItem[aria-disabled="true"] .palName {
+  color: var(--text-disabled);
+}
 .palSel .palName {
   color: var(--text-primary);
 }
@@ -471,41 +470,26 @@
   letter-spacing: 0;
 }
 
-/* minimum-width notice (RESPONSIVE_STRATEGY): below the supported width, show a
-   stated minimum rather than a broken layout. */
-.minwidth {
+/* Narrow windows and high zoom scroll instead of being blocked (WCAG 1.4.4, 1.4.10; ADR-030). */
+.narrow {
   display: none;
-  position: fixed;
-  inset: 0;
-  place-content: center;
-  text-align: center;
-  padding: 24px;
-  background: var(--surface-void);
-}
-.minwidth p {
-  max-width: 30ch;
-  margin: 0 auto;
+  margin: 0;
+  padding: 6px 16px;
+  background: var(--surface-chrome);
+  border-bottom: 1px solid var(--line-default);
   color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.6;
-}
-.minwidth b {
-  color: var(--text-primary);
-  font-family: var(--mono);
-}
-.minwidth span {
-  display: block;
-  margin-top: 12px;
-  font-family: var(--mono);
-  color: var(--text-tertiary);
   font-size: 11px;
 }
 @media (max-width: 1079px) {
   .app {
-    display: none;
+    min-width: 1080px;
   }
-  .minwidth {
-    display: grid;
+  .narrow {
+    display: block;
+    position: sticky;
+    left: 0;
+    width: 100vw;
   }
 }
+
 
