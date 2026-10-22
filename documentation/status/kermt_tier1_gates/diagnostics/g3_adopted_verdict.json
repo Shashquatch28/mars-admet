@@ -1,0 +1,32 @@
+{
+  "margin": 0.02,
+  "gating": [
+    "ames_mutagenicity"
+  ],
+  "endpoints": {
+    "herg_cardiotoxicity": {
+      "n_scored": 1050,
+      "delta": -0.01942441199353633,
+      "ci90": [
+        -0.029170165476848645,
+        -0.009819423219232975
+      ],
+      "inside_margin": false,
+      "gating": false,
+      "status": "WATCH"
+    },
+    "ames_mutagenicity": {
+      "n_scored": 576,
+      "delta": 0.001012089618456069,
+      "ci90": [
+        -0.007572252924899811,
+        0.01004231251171394
+      ],
+      "inside_margin": true,
+      "gating": true,
+      "status": "PASS"
+    }
+  },
+  "passed": true,
+  "verdict": "PASS"
+}

@@ -13,6 +13,33 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-22 — ADOPTED: G3 replacement rule = options 3 + 4 (equivalence interval on the selection-free holdouts; AMES gates, hERG reported)
+
+**Decision (maintainer, 2026-10-22: "proceed with evidence favoured data", on the AI-session recommendation in the 2026-10-19 draft).** The frozen G3
+validation-fold rule (2026-10-14) is **superseded for the Tier-1 parity gate**; its recorded verdict (FAIL, 2026-10-15) and `gates.py` stay as they are,
+and no gate run was repeated. The rule now in force:
+
+- **Estimand.** Deployed checkpoint of each arm (stock: epoch KERMT saves; mixed: the trainer's own epoch). The gate therefore bundles trainer and selection.
+- **Scoring fold.** Per-endpoint calibration holdout (hERG 1,050; AMES 576), in no train or validation set of either arm. AUROC on raw probabilities.
+- **Gate.** AMES only: the 90 % molecule-level paired-bootstrap interval of the pooled 5-seed mean ΔAUROC (mixed − stock) must lie inside ±0.02.
+- **hERG.** Reported with its interval, non-gating. If the interval is not inside ±0.02 it is flagged **WATCH** in the result so a regression cannot go unnoticed.
+- **Single-task AMES half of G3: waived.** It was a comparator for the frozen rule; the adopted rule scores the multi-task models directly. Not built, not run.
+- Code: `ml/eval/g3_adopted.py` (tests `ml/tests/test_g3_adopted.py`); result `documentation/status/kermt_tier1_gates/diagnostics/g3_adopted_verdict.json`.
+
+**Result on the existing evidence (no new training).** AMES Δ +0.0010, 90 % CI [−0.0076, +0.0100], inside ±0.02: **PASS**. hERG Δ −0.0194,
+CI [−0.0292, −0.0098]: **WATCH** (lower bound outside −0.02).
+
+**Disclosure.** The rule was chosen after the G3 result and the diagnostics were seen. The margin 0.02 is the frozen per-seed tolerance, not fitted to the
+outcome, but the choice of fold and of AMES as the gating endpoint was made with the data in view, so this is a post-hoc rule and not a pre-registered pass.
+The interval conditions on the 10 trained models (no training-seed variance). The calibration holdouts have been used for development diagnostics (AUROC only;
+no calibrator refit), so they are not a clean test set for later claims.
+
+**hERG, what is and is not known (Phase B, `kermt_tier1_gates_session_2026-10-15.md`).** Under the mixed trainer's own selection the mean hERG gap is −0.019;
+replaying stock's selection rule inside the mixed run brings it to −0.006. Epoch selection explains much of it, not all: seeds 0 and 4 stay below stock.
+The trainer-vs-selection split stays unattributed; hERG validation has 2-6 positives, so neither arm's selection is stable there.
+
+---
+
 ## 2026-10-19 — Correction: `dist_coff`, `dropout`, `bond_drop_rate`, `weight_decay` are set by the pretrain checkpoint, not by the CLI
 
 **Status:** factual correction, verified in the KERMT container (maintainer accepted the result 2026-10-19). Corrects statements in earlier
@@ -36,7 +63,7 @@ for later because it changes the staged trainer bytes.
 
 ## 2026-10-19 — DRAFT, NOT ADOPTED: replacement for the frozen G3 equivalence rule (Tier-1 parity gate)
 
-**Status: DRAFT — NOT ADOPTED.** Written by an AI session at the maintainer's request as material for a decision. Nothing
+**Status: SUPERSEDED BY THE 2026-10-22 ADOPTION ENTRY ABOVE (options 3 + 4 adopted); the text below is kept as written and as the evidence record. It was DRAFT — NOT ADOPTED when written.** Written by an AI session at the maintainer's request as material for a decision. Nothing
 below is in force. **The frozen G3 rule (recorded below as superseded-if-adopted) remains the rule of record, its verdict
 remains FAIL, and `gates.py` is unchanged.** No gate was re-run. The maintainer chooses an option from the table; this entry
 is then edited to say which, and only then changes status.
