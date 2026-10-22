@@ -198,9 +198,14 @@ def descriptor_names(n: int) -> list[str]:
     try:
         from descriptastorus.descriptors import rdNormalizedDescriptors
 
-        names = [c[0] if isinstance(c, (tuple, list)) else str(c) for c in rdNormalizedDescriptors.RDKit2DNormalized().columns][1:]
+        names = [c[0] if isinstance(c, (tuple, list)) else str(c) for c in rdNormalizedDescriptors.RDKit2DNormalized().columns]
+        # `process(smiles)` returns a leading 'calculated' flag that the generator drops ([1:]); `.columns` has
+        # exactly the descriptor names (200 in the pinned image, checked 2026-10-23). Older descriptastorus
+        # versions list the flag as a column too, so accept either.
         if len(names) == n:
             return names
+        if len(names) == n + 1:
+            return names[1:]
         logger.warning("descriptastorus lists %d descriptors but the model reads %d", len(names), n)
     except Exception:  # pragma: no cover - depends on the image
         logger.warning("could not read descriptor names from descriptastorus")

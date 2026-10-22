@@ -154,3 +154,25 @@ def test_attributions_are_finite_for_another_descriptor_vector(lm):
     base = np.random.default_rng(1).uniform(0, 1, size=D)
     a = _attribute(lm, base, 0, schedule=(64,))
     assert np.isfinite(a.atom_scores).all() and np.isfinite(a.descriptor_scores).all()
+
+
+class _FakeNormalized:
+    def __init__(self, columns):
+        self.columns = columns
+
+
+def _with_columns(monkeypatch, columns):
+    fake = types.SimpleNamespace(RDKit2DNormalized=lambda: _FakeNormalized(columns))
+    monkeypatch.setattr(sys.modules["descriptastorus.descriptors"], "rdNormalizedDescriptors", fake, raising=False)
+
+
+def test_descriptor_names_match_the_vector_the_model_reads(monkeypatch):
+    """`.columns` holds exactly the descriptor names (200 in the pinned image); `process()` has a leading flag that
+    the feature generator drops. Stripping a column that is not there made the names 199 long and every name generic."""
+    names = [f"desc{i}" for i in range(200)]
+    _with_columns(monkeypatch, [(n, float) for n in names])
+    assert ig.descriptor_names(200) == names
+    _with_columns(monkeypatch, [("RDKit2D_calculated", bool), *[(n, float) for n in names]])  # older versions list the flag
+    assert ig.descriptor_names(200) == names
+    _with_columns(monkeypatch, [(n, float) for n in names[:150]])  # cannot be matched: say so with generic names
+    assert ig.descriptor_names(200)[0] == "rdkit2d_feature_0"
