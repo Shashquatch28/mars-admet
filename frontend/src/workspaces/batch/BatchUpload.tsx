@@ -8,12 +8,15 @@ import { useBatchSession } from "../../app/batchSession";
 import { SaveControl } from "../../components/SaveControl";
 import { saveReport } from "../../data/client";
 import { buildBatchReportRequest, reportKey, saveNote } from "../../domain/save";
-import { BATCH_INTERACTIVE_MAX, BATCH_MAX_MOLECULES, percentDone, phaseLabel, type BatchPhase } from "../../domain/batchJob";
+import { percentDone, phaseLabel, type BatchPhase } from "../../domain/batchJob";
+import { batchUploadNote } from "../../domain/limitsCopy";
+import { useLimits } from "../../data/useLimits";
 import { useAnnounce } from "../../app/announce";
 import { batchAnnouncement } from "../../domain/announce";
 
 export function BatchUpload() {
   const s = useBatchSession();
+  const limits = useLimits();
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
 
@@ -110,11 +113,7 @@ export function BatchUpload() {
         </div>
       )}
 
-      <p className={styles.upNote}>
-        Up to {BATCH_INTERACTIVE_MAX.toLocaleString()} molecules are returned directly. Larger files, up to{" "}
-        {BATCH_MAX_MOLECULES.toLocaleString()}, run as a queued job with live progress. Results are kept for 24
-        hours. Each batch belongs to your account.
-      </p>
+      <p className={styles.upNote}>{batchUploadNote(limits)}</p>
     </div>
   );
 }

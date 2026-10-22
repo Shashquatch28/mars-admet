@@ -5,6 +5,7 @@ from .api import (
     CompareRequest,
     CompareResponse,
     GenerationsResponse,
+    LimitsResponse,
 )
 from .auth import (
     LoginRequest,
@@ -38,7 +39,7 @@ __all__ = [
     "PredictionRequest", "PredictionResponse", "EndpointPrediction", "BatchJobStatus",
     "ConformerResponse", "Atom", "Bond",
     "BatchPredictOptions", "BatchRowResult", "BatchPredictResponse",
-    "CompareRequest", "CompareResponse", "GenerationsResponse",
+    "CompareRequest", "CompareResponse", "GenerationsResponse", "LimitsResponse",
     "RegisterRequest", "RegisterResponse", "LoginRequest", "LoginResponse", "MeResponse",
     "PasswordResetRequestModel", "PasswordResetConfirmRequest",
     "SaveMoleculeRequest", "SavedMoleculeResponse", "SaveReportRequest", "SavedReportResponse",

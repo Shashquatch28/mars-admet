@@ -166,6 +166,7 @@ async def batch_results(
     raw = await get_blob_store(r).get(results_key(job_id))
     if raw is None:
         raise HTTPException(
-            status_code=410, detail="Results have expired and are no longer available (24h retention)"
+            status_code=410,
+            detail=f"Results have expired and are no longer available ({get_settings().batch_upload_retention_hours}h retention)",
         )
     return BatchPredictResponse.model_validate_json(raw)

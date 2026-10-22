@@ -14,7 +14,9 @@ import {
   postBatch,
 } from "../data/client";
 import { settleProgress, validateUpload, type BatchPhase } from "../domain/batchJob";
-import type { BatchPredictResponse } from "../types/contracts";
+import { expiredResultsMessage } from "../domain/limitsCopy";
+import { useLimits } from "../data/useLimits";
+import type { BatchPredictResponse, LimitsResponse } from "../types/contracts";
 
 interface BatchSession {
   file: File | null;
@@ -36,11 +38,11 @@ interface BatchSession {
 
 const Ctx = createContext<BatchSession | null>(null);
 
-function describeError(e: unknown): string {
+function describeError(e: unknown, limits: LimitsResponse | undefined): string {
   if (e instanceof ApiError) {
     if (e.status === 0) return "The API is unreachable.";
     if (e.status === 401) return "Your session has ended. Sign in again to run a batch.";
-    if (e.status === 410) return "The results have expired. Results are kept for 24 hours; run the batch again.";
+    if (e.status === 410) return expiredResultsMessage(limits);
     return e.message;
   }
   return e instanceof Error ? e.message : "The batch failed.";
@@ -53,6 +55,9 @@ export function BatchSessionProvider({ children }: { children: ReactNode }) {
   const [result, setResult] = useState<BatchPredictResponse | null>(null);
   const [resultId, setResultId] = useState(0);
   const abort = useRef<AbortController | null>(null);
+  const limits = useLimits();
+  const limitsRef = useRef(limits);
+  limitsRef.current = limits;
   const runToken = useRef(0);
 
   useEffect(() => () => abort.current?.abort(), []);
@@ -106,7 +111,7 @@ export function BatchSessionProvider({ children }: { children: ReactNode }) {
         setPhase({ kind: "done" });
       } catch (e) {
         if (!live() || ctl.signal.aborted) return;
-        setPhase({ kind: "failed", message: describeError(e) });
+        setPhase({ kind: "failed", message: describeError(e, limitsRef.current) });
       }
     })();
   }, [canRun, file, smilesColumn]);

@@ -71,6 +71,23 @@ class CompareResponse(BaseModel):
     )
 
 
+# --- GET /limits (no account; frontend ADR-034 item 8) --------------------------
+class LimitsResponse(BaseModel):
+    """The deployed service's policy numbers, so no client writes them into its own copy. Each is the
+    setting the service itself enforces (`batch_size_cap`, `batch_interactive_threshold`,
+    `batch_upload_retention_hours`, `rate_limit_anon_per_minute`)."""
+
+    batch_size_cap: int = Field(..., description="most molecules one batch file may hold; larger files are refused")
+    batch_interactive_threshold: int = Field(
+        ...,
+        description="largest batch answered inside the upload request; larger files are queued as a job with progress",
+    )
+    batch_result_retention_hours: int = Field(
+        ..., description="how long the results of a queued batch job are kept; smaller batches are never stored"
+    )
+    anon_predict_rate_per_minute: int = Field(..., description="single-molecule predictions per minute per IP without an account")
+
+
 # --- GET /generations (no account; ADR-026 parts 1-2) ---------------------------
 class GenerationsResponse(BaseModel):
     """Which model generation this deployment serves. Minimal on purpose: `available` holds

@@ -58,7 +58,8 @@ approval, `[lab]` needs the GPU workstation.
 
 ## D2. Frontend scope decided in ADR-034 (build order, hours are estimates)
 
-- [ ] D9 `[here]` `GET /limits` (batch cap, interactive threshold, result retention hours, anon rate) and `blob_store` reading `batch_upload_retention_hours`; UI copy reads it (about 3 h).
+- [x] D9 `[here]` `GET /limits` (batch cap, interactive threshold, result retention hours, anon rate) and `blob_store` reading `batch_upload_retention_hours`; UI copy reads it (about 3 h).
+  Done 2026-10-22. Checked on a private stack with cap 7,000, threshold 20 and retention 12 h: the sign-in gate and the Batch note showed those numbers, and a queued job's result blob in Redis had a TTL of about 43,200 s (it was 86,400 whatever the setting said). A guard test fails if "50,000", "24 hours" or "100 molecules" is written into runtime copy.
 - [ ] D10 `[here]` Model family and † in Batch inspector, Compare and the printed report (about 4 h).
 - [ ] D11 `[here]` Status-bar echo of the latest announcement, no timer (about 1 h).
 - [ ] D12 `[here]` Batch coverage table, text only, no outlier flag (about 6 h; needs D10).

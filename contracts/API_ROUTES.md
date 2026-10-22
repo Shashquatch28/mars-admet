@@ -24,6 +24,7 @@ Interactive docs are at `/api/docs`.
 | `/health` | GET | none | — | `{"status": "ok"}` | M0 ✅ |
 | `/health/ready` | GET | none | — | `{"status", "checks": {"database", "redis"}}` | M3 ✅ (not in original Module 8 table; readiness vs. liveness split) |
 | `/generations` | GET | none | — | `GenerationsResponse` (`{"active", "available", "kermt_endpoints"}`; `active` is the version `/predict` stamps: the configured `model_version` plus `+kermt.<digest>` when KERMT serving is on; `available` is `[active]` until a second generation exists; `kermt_endpoints` lists the endpoints routed to KERMT, empty when it is off; frontend ADR-026, ADR-033) | M4 ✅ (not in original Module 8 table) |
+| `/limits` | GET | none | — | `LimitsResponse` (`{"batch_size_cap", "batch_interactive_threshold", "batch_result_retention_hours", "anon_predict_rate_per_minute"}`), read from the settings the service enforces so no client writes them into its own copy; frontend ADR-034 item 8 | ✅ (not in original Module 8 table) |
 | `/predict` | POST | none (IP rate-limited) | `PredictionRequest` | `PredictionResponse` | M3 ✅ (real per-endpoint routing + stub fallback; M0 shipped the stub-only version) |
 | `/batch/predict` | POST | account | multipart file (CSV or SDF) + `smiles_column`/`endpoints` query params | `BatchPredictResponse` | M3 ✅ |
 | `/batch/progress/{job_id}` | GET (SSE) | account | — | `text/event-stream` of `BatchJobStatus`-shaped JSON | M3 ✅ |
@@ -66,8 +67,8 @@ container); 501 in an environment without it.
 - `/compare` returns `per_endpoint_winner: null` always: MARS has no validated
   direction-of-good, so the field is never populated and the UI never consumes it.
 - Rate limits: anonymous 60 `/predict`/min per IP; per-account 5 concurrent
-  batch jobs, 50,000-molecule cap, interactive threshold 100 (`BATCH_INTERACTIVE_THRESHOLD`).
-- Batch uploads (R2) auto-deleted 24h after job completion.
+  batch jobs, 50,000-molecule cap, interactive threshold `BATCH_INTERACTIVE_THRESHOLD` (default 100; `GET /limits` reports the deployed value).
+- Batch uploads (R2) auto-deleted after `BATCH_UPLOAD_RETENTION_HOURS` (default 24) from job completion; `GET /limits` reports it.
 - Retention: submitted molecules are not retained beyond serving, and are never used for training; there is no
   retraining opt-in (frontend ADR-034 item 10).
 

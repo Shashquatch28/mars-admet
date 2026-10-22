@@ -44,6 +44,16 @@ describe("no invented data in the app", () => {
     expect(hits).toEqual([]);
   });
 
+  it("policy numbers are read from GET /limits, never written into copy (ADR-034 item 8)", () => {
+    const banned = [/50,000/, /50_000/, /24 hours/i, /24 ?h/, /100 molecules/];
+    const hits: string[] = [];
+    for (const f of runtime) {
+      const code = stripComments(read(f));
+      for (const re of banned) if (re.test(code)) hits.push(`${rel(f)}: ${re}`);
+    }
+    expect(hits).toEqual([]);
+  });
+
   it("no development note is printed in the interface", () => {
     const shell = read(join(SRC, "shell", "CommandPalette.tsx"));
     expect(shell).not.toMatch(/transform-origin/);

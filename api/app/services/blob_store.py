@@ -21,11 +21,15 @@ import redis.asyncio as redis
 
 from app.core.config import Settings, get_settings
 
-RETENTION_SECONDS = 86_400  # 24 h, Module 8 batch retention
+
+def retention_seconds() -> int:
+    """How long a batch blob lives: `BATCH_UPLOAD_RETENTION_HOURS` (24 by default, Module 8). This used to be
+    a constant that ignored the setting, so the setting and `GET /limits` could say one thing and the store do another."""
+    return get_settings().batch_upload_retention_hours * 3600
 
 
 class BlobStore(Protocol):
-    async def put(self, key: str, data: str, *, ttl_seconds: int = RETENTION_SECONDS) -> None: ...
+    async def put(self, key: str, data: str, *, ttl_seconds: int | None = None) -> None: ...
     async def get(self, key: str) -> str | None: ...
     async def delete(self, *keys: str) -> None: ...
 
@@ -38,8 +42,8 @@ class RedisBlobStore:
     def _key(key: str) -> str:
         return f"blob:{key}"
 
-    async def put(self, key: str, data: str, *, ttl_seconds: int = RETENTION_SECONDS) -> None:
-        await self._r.set(self._key(key), data, ex=ttl_seconds)
+    async def put(self, key: str, data: str, *, ttl_seconds: int | None = None) -> None:
+        await self._r.set(self._key(key), data, ex=ttl_seconds if ttl_seconds is not None else retention_seconds())
 
     async def get(self, key: str) -> str | None:
         return await self._r.get(self._key(key))
@@ -110,8 +114,8 @@ class S3BlobStore:
         for key in keys:
             self._client.delete_object(Bucket=self._bucket, Key=key)
 
-    async def put(self, key: str, data: str, *, ttl_seconds: int = RETENTION_SECONDS) -> None:
-        await asyncio.to_thread(self._put, key, data, ttl_seconds)
+    async def put(self, key: str, data: str, *, ttl_seconds: int | None = None) -> None:
+        await asyncio.to_thread(self._put, key, data, ttl_seconds if ttl_seconds is not None else retention_seconds())
 
     async def get(self, key: str) -> str | None:
         return await asyncio.to_thread(self._get, key)

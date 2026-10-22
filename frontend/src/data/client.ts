@@ -18,6 +18,7 @@ import type {
   LoginResponse,
   MeResponse,
   GenerationsResponse,
+  LimitsResponse,
   PredictionResponse,
   RegisterResponse,
   SaveMoleculeRequest,
@@ -173,11 +174,16 @@ export async function fetchGenerations(): Promise<GenerationsResponse> {
   return (await (await request("/generations")).json()) as GenerationsResponse;
 }
 
+// The deployed policy numbers (batch cap, interactive threshold, retention, anonymous rate). Anonymous.
+export async function fetchLimits(): Promise<LimitsResponse> {
+  return (await (await request("/limits")).json()) as LimitsResponse;
+}
+
 // --- batch (account required; API_ROUTES.md /batch/*) ---
 
 /**
- * Upload a CSV or SDF. Up to 100 molecules come back in this response (`job_id`
- * null, `status` "done"); more are queued and `job_id` is set. `endpoints` null means
+ * Upload a CSV or SDF. Up to the service's interactive threshold (`GET /limits`) come back in this response
+ * (`job_id` null, `status` "done"); more are queued and `job_id` is set. `endpoints` null means
  * no subset. Not sent as JSON: the body is multipart, so no Content-Type is set and the
  * browser adds the boundary.
  */

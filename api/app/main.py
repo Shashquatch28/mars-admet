@@ -16,6 +16,7 @@ from app.routers import (
     compare,
     generations,
     health,
+    limits,
     molecule,
     molecules,
     predict,
@@ -114,6 +115,7 @@ app.add_middleware(
 API_PREFIX = "/api"
 app.include_router(health.router, prefix=API_PREFIX)
 app.include_router(generations.router, prefix=API_PREFIX)
+app.include_router(limits.router, prefix=API_PREFIX)
 app.include_router(predict.router, prefix=f"{API_PREFIX}/predict", tags=["predict"])
 app.include_router(compare.router, prefix=f"{API_PREFIX}/compare", tags=["compare"])
 app.include_router(molecule.router, prefix=f"{API_PREFIX}/molecule", tags=["molecule"])

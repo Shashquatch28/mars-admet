@@ -1106,3 +1106,9 @@ nothing deployed.
 gap-fill items renumbered 5-8; only #4 is referenced elsewhere and keeps its number), Module 12 (radar, percentile, drug-likeness, batch summary, report rows and the
 known-open-items sentence), Module 13 (countdown). Not decided here and still in the blueprint as written: Compare's "winner highlighting" (Module 9) and the motion
 tiering and shimmer (Module 9), both of which conflict with never-do #3 and #7 and the decisions in ADR-007 and ADR-013.
+
+**Implementation note (2026-10-22).** Item 8 (`GET /limits`, the blob-store retention fix, and UI copy read from it) is done and checked on a private stack: with the cap set
+to 7,000, the interactive threshold to 20 and retention to 12 hours, the sign-in gate and the Batch note showed those numbers, and the Redis TTL of a queued job's result
+blob was about 43,200 seconds (it had been 86,400 whatever the setting said). Until the service answers, copy built from `/limits` leaves the numbers out. The retention
+sentence for item 6 is the Batch note. `turnstile_site_key` is added to `LimitsResponse` by the Turnstile work, not before.
+

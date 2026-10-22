@@ -186,6 +186,16 @@ export interface DeleteAccountRequest {
   password: string; // re-confirmation before a cascading, irreversible delete
 }
 
+// --- limits (api.py) ---
+// GET /limits (frontend ADR-034 item 8): the deployed policy numbers. UI copy that states a cap, a
+// threshold or a retention period reads them from here and never from a constant.
+export interface LimitsResponse {
+  batch_size_cap: number;
+  batch_interactive_threshold: number;
+  batch_result_retention_hours: number;
+  anon_predict_rate_per_minute: number;
+}
+
 // --- generations (api.py) ---
 // GET /generations (ADR-026). `available` is [active] until a second generation exists,
 // so a picker built from it never offers a choice that is not real.
