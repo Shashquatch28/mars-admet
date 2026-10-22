@@ -54,7 +54,7 @@ Get-NetTCPConnection -State Listen -LocalPort 5173,8000
 
    `frontend/.env.local` must contain `VITE_API_BASE=/api` (it does on this machine; on a fresh
    clone copy `frontend/.env.example` to `.env.local` and uncomment that line). Without it the app
-   shows no values at all and Run, Save and Batch upload are off (ADR-031).
+   shows no values at all and Run, Save and Batch upload are off (ADR-032).
 
 4. **Real predictions need promoted models.** `ml/artifacts/` is git-ignored and is mounted into
    the API container. With it present you get trained XGBoost predictions; without it every value

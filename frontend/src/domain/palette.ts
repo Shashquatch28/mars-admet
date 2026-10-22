@@ -1,6 +1,6 @@
 // What the ⌘K palette offers. Pure and tested: every command is either really available or says
 // why not, and nothing is listed that the app cannot do. The palette holds no sample molecules and
-// no history: the only molecule it knows is the one Predict last returned (ADR-031).
+// no history: the only molecule it knows is the one Predict last returned (ADR-032).
 
 export type PaletteCommandId = "run" | "copy_id" | "export" | "density";
 

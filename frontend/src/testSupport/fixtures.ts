@@ -1,5 +1,5 @@
 // Test-only fixture — illustrative values only, NOT model output. The app never imports it
-// (tests/noHardcodedGuard.test.ts); ADR-031 removed the no-API design-prototype mode.
+// (tests/noHardcodedGuard.test.ts); ADR-032 removed the no-API design-prototype mode.
 // Celecoxib, matching the design comps. clearance_microsomal is intentionally
 // absent so the roster shows a not_returned row; cyp2c9 is stub-served.
 // ad_threshold mirrors the contract field (Q19): a number where the endpoint has an

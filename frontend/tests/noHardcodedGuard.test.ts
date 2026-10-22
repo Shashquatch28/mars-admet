@@ -1,4 +1,4 @@
-// ADR-031: nothing on screen is invented. The app renders what the service returned and nothing else, so the
+// ADR-032: nothing on screen is invented. The app renders what the service returned and nothing else, so the
 // sample data that used to back the no-API "design prototype" mode lives only in tests, and no control is a
 // stand-in that does nothing. Reads the filesystem, so it lives in tests/ (see cssGuard.test.ts).
 import { readdirSync, readFileSync, statSync } from "node:fs";

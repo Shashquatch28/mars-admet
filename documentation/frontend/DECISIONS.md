@@ -947,7 +947,7 @@ refusing to run, which means small screens get an unrefined layout rather than a
 `aria-rowindex` any more (not virtualized, and the old values did not match the group rows between them). Not done:
 screen-reader testing, the Ketcher panel, the Batch grid's keyboard model (see ACCESSIBILITY.md, "Not built or not checked").
 
-## ADR-031 — Nothing on screen is invented: the no-API prototype mode and the palette's sample molecules are removed
+## ADR-032 — Nothing on screen is invented: the no-API prototype mode and the palette's sample molecules are removed
 
 **Date:** 2026-10-20 · **Status:** accepted · implemented 2026-10-20 (demo-readiness pass)
 
@@ -979,7 +979,7 @@ only when available* - a missing command is undiscoverable; a listed one with it
 "24 hours" in the expired-results message) mirror backend settings and are not read from the service; a `GET /limits` route would
 remove that duplication.
 
-## ADR-032 — KERMT serving is visible: the model that answered each row, one version string, and a stated fallback
+## ADR-033 — KERMT serving is visible: the model that answered each row, one version string, and a stated fallback
 
 **Date:** 2026-10-20 · **Status:** accepted · implemented 2026-10-20, verified 2026-10-22 against a live KERMT service (see Consequences)
 
@@ -1009,7 +1009,7 @@ version, the report prints the raw `model_id`); the CSV already has `model_id`. 
 KERMT service was still loading, the six routed rows were answered by XGBoost and showed the `†`, the footnote and the `routing`
 line, with the top bar and the inspector naming the same `v0.2.0-dev+kermt.<digest>`; once it was ready, those six rows showed `KERMT`
 (inspector: `mars-kermt-multitask-v1`, a KERMT-specific held-out error on the regression row), no `†`, and a repeat of the molecule was
-a cache hit, so the healthy response is cached and the degraded one was not. The palette (ADR-031) was checked in the same run: the one
+a cache hit, so the healthy response is cached and the degraded one was not. The palette (ADR-032) was checked in the same run: the one
 molecule it offers is the one Predict returned, Copy molecule_id and Run prediction work, commands without a result say why. Export from
 the palette was not clicked (it shares the Predict export builder). A fix found here: Copy molecule_id threw where the async Clipboard
 API is missing (plain http off localhost) and was refused in the embedded browser; it now falls back to a selection copy.

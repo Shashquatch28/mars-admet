@@ -1,7 +1,7 @@
 // Predict — single molecule. Composes the three columns: molecule input, the
 // endpoint roster, and the inspector. It shows only what /predict returned: with no
 // result yet (or no API configured) the roster is placeholders, never invented values
-// (ADR-031). The roster, state derivation and reconciliation always come from
+// (ADR-032). The roster, state derivation and reconciliation always come from
 // ENDPOINT_METADATA, never the response (ADR-008).
 import { useEffect, useMemo, useRef, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";

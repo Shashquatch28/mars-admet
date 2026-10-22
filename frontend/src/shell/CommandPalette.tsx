@@ -1,6 +1,6 @@
 // ⌘K palette — the signature keyboard moment (UX principle 7). Search over endpoints, the
 // current molecule and commands; opens focused, arrows move, Enter commits, Esc closes.
-// Everything here is real (ADR-031): the roster is the fixed endpoint list, the one molecule is
+// Everything here is real (ADR-032): the roster is the fixed endpoint list, the one molecule is
 // whatever Predict last returned, and a command that cannot run says why instead of pretending.
 // Reliability language travels with the endpoints: a stub endpoint shows its STUB tag here
 // exactly as in the table.

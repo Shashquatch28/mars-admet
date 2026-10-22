@@ -15,7 +15,7 @@ system), Module 7 viewer wiring, and the Module 12/13 UI.
 | **Auth** | Sign in, create account, sign out, `GET /auth/me` session probe, global 401 handler. Password reset, Turnstile and delete-account are not built. |
 
 Without `VITE_API_BASE` the app has no API to talk to: Run, Batch upload and Save are off and every
-workspace says so, with no sample values anywhere (ADR-031). With it set, the app shows only what the
+workspace says so, with no sample values anywhere (ADR-032). With it set, the app shows only what the
 service returned.
 
 Where things stand, what is broken, and what to do next:

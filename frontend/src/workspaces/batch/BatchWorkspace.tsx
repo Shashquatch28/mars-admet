@@ -2,7 +2,7 @@
 // It takes a CSV or SDF, runs POST /batch/predict, follows the progress stream for
 // queued jobs and shows the returned rows through buildBatch and the grid. It shows
 // only rows the service returned: with no API, or before a run, the grid is empty and
-// says why (ADR-031).
+// says why (ADR-032).
 //
 // Honesty rules that shape this screen specifically:
 //   - sorting is RAW numeric on one endpoint, never favourability (AGENTS.md #3)
