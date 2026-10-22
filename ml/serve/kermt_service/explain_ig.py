@@ -131,8 +131,9 @@ def attribute_checkpoint(
         values = y.detach().cpu().numpy().astype(np.float64)
         if not grad:
             return values, None
-        g_atoms = grads[0][1:].reshape(k, n_atoms, -1).sum(0).cpu().numpy()
-        g_bonds = grads[1][1:].reshape(k, n_bonds, -1).sum(0).cpu().numpy()
+        # explicit widths, not -1: a molecule with no bonds (methane) has zero bond rows and -1 is ambiguous
+        g_atoms = grads[0][1:].reshape(k, n_atoms, grads[0].shape[1]).sum(0).cpu().numpy()
+        g_bonds = grads[1][1:].reshape(k, n_bonds, grads[1].shape[1]).sum(0).cpu().numpy()
         g_desc = sum(g[:, -d:] for g in grads[2:]).sum(0).cpu().numpy()
         return values, (g_atoms, g_bonds, g_desc)
 

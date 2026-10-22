@@ -141,6 +141,15 @@ def test_the_engine_lock_is_released_between_chunks(lm, descriptors):
     assert lock.entered >= 64 // 16  # taken once per chunk (plus the two endpoint evaluations), not once overall
 
 
+def test_a_molecule_with_no_bonds_is_explained(lm, descriptors):
+    """Methane has one heavy atom and no bonds; the bond tensor has no rows, which broke a reshape(-1)."""
+    sa = ig.attribute_checkpoint(
+        lm, "C", descriptors, 0, shared_dict={}, lock=threading.Lock(), schedule=(32,), chunk=8, rel_tol=0.0, abs_tol=0.0
+    )
+    assert sa.atom_scores.shape == (1,) and np.isfinite(sa.atom_scores).all()
+    assert np.isfinite(sa.descriptor_scores).all()
+
+
 def test_attributions_are_finite_for_another_descriptor_vector(lm):
     base = np.random.default_rng(1).uniform(0, 1, size=D)
     a = _attribute(lm, base, 0, schedule=(64,))
