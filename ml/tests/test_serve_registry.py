@@ -83,6 +83,15 @@ def test_covered_endpoint_returns_real_prediction(promoted_registry):
     assert not np.isnan(result.knn_distance)
 
 
+def test_real_prediction_carries_the_ad_index_threshold(promoted_registry):
+    """The cutoff in_domain was judged against travels with the prediction (Q19)."""
+    registry, endpoint_data = promoted_registry
+    smiles = endpoint_data.test["standardized_smiles"].iloc[0]
+    result = predict_endpoint(registry, ENDPOINT, smiles)
+    assert result.ad_threshold == registry.load_ad_index(ENDPOINT).threshold
+    assert result.in_domain == (result.knn_distance <= result.ad_threshold)
+
+
 def test_predict_endpoints_mixes_covered_and_uncovered(promoted_registry):
     registry, endpoint_data = promoted_registry
     smiles = endpoint_data.test["standardized_smiles"].iloc[0]

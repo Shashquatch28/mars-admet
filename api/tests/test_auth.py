@@ -69,3 +69,27 @@ def test_password_reset_request_always_202_no_enumeration(client):
 def test_password_reset_confirm_rejects_bad_token(client):
     r = client.post("/auth/password-reset/confirm", json={"token": "not-a-real-token", "new_password": "newpass123"})
     assert r.status_code == 400
+
+
+@requires_infra
+def test_me_requires_a_session(client):
+    r = client.get("/auth/me")
+    assert r.status_code == 401
+
+
+@requires_infra
+def test_me_returns_the_signed_in_user(registered_user):
+    client = registered_user["client"]
+    r = client.get("/auth/me")
+    assert r.status_code == 200
+    assert r.json() == {"user_id": registered_user["user_id"], "email": registered_user["email"]}
+
+
+@requires_infra
+def test_me_is_401_again_after_logout(registered_user):
+    client = registered_user["client"]
+    assert client.get("/auth/me").status_code == 200
+    assert client.post("/auth/logout").status_code == 204
+    assert client.get("/auth/me").status_code == 401
+    # registered_user teardown deletes the account with the password; log back in so it can
+    client.post("/auth/login", json={"email": registered_user["email"], "password": registered_user["password"]})

@@ -50,7 +50,7 @@ def test_test_set_is_frozen(report):
     assert report["leakage_audit"]["test_set_frozen"] is True
 
 
-def test_calibration_is_disjoint_from_test():
+def test_calibration_is_disjoint_from_test(report):
     tv = _smis(AUG / "train_val.csv")
     te = _smis(AUG / "test.csv")
     cal = _smis(AUG / "calibration.csv")

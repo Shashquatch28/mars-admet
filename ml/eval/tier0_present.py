@@ -67,7 +67,7 @@ def validate_presentable(aggregate: dict, seeds_summaries: list[dict]) -> str:
     if entry["task_type"] != "classification":
         raise NotImplementedError(
             f"{endpoint_key} is a {entry['task_type']} endpoint; this presenter is classification-only "
-            "(regression reporting is a separate P1 item)"
+            "(regression arms: see eval/tier0_regression.py)"
         )
     seeds = sorted(s["seed"] for s in seeds_summaries)
     if tuple(seeds) != tuple(FIXED_SEEDS):

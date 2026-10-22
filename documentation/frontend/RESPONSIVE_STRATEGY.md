@@ -13,6 +13,20 @@ into a card list, and the card list would then leak back into the desktop
 design as the "shared" component — which is precisely how a workstation turns
 into a generic dashboard.
 
+## As built (verified against `frontend/src` 2026-10-14)
+
+The boundaries below are the design. The implementation differs, and the code is
+current:
+
+| Concern | Design | Built |
+|---|---|---|
+| Minimum width | blocking notice below 1280 | blocking notice below **1080px** (`@media (max-width: 1079px)` in `shell.module.css`) |
+| Maximum width | content centred at 1920 | app frame capped at **1680px** (`.app`, `shell.module.css`) |
+| Molecule column | 356, narrowing to 320 | `clamp(300px, 24vw, 356px)` |
+| Inspector | 332, collapsing to a toggle under 1440 | `clamp(300px, 23vw, 332px)`; no collapse toggle |
+| Batch grid | scrolls inside a bounded region | `min-width: 1056px` for the grid, scrolls horizontally inside its region |
+| Prototype strip | design only | shown whenever a fixture is in use (ADR-010) |
+
 ## Canonical viewport
 
 **1440 × 900**, the size every artboard is drawn at.

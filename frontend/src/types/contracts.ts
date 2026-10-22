@@ -1,20 +1,65 @@
-// Hand-mirrored from contracts/mars_contracts/*.py (Phase 0 lock).
-// If these drift from the Python contracts, that's a sync bug — flag it at the next handoff.
+// Mirror of contracts/mars_contracts/*.py (Phase 0 lock). Drift from the Python
+// contract is a sync bug — ADR-009 proposes a CI check that fails the build on
+// drift. Field names and shapes match prediction.py / endpoints.py / api.py.
+
+export type TaskType = "regression" | "classification" | "rule_based";
+
+export type EndpointCategory =
+  | "absorption"
+  | "distribution"
+  | "metabolism"
+  | "excretion"
+  | "toxicity";
 
 export type Endpoint =
-  | "solubility_logs" | "lipophilicity_logp" | "caco2_permeability" | "hia_absorption"
-  | "pgp_inhibition" | "bbb_permeability" | "ppb_binding" | "cyp3a4_inhibition"
-  | "cyp2d6_inhibition" | "cyp2c9_inhibition" | "clearance_microsomal"
-  | "herg_cardiotoxicity" | "ames_mutagenicity" | "dili_liver_injury" | "synthetic_accessibility";
+  | "solubility_logs"
+  | "lipophilicity_logp"
+  | "caco2_permeability"
+  | "hia_absorption"
+  | "pgp_inhibition"
+  | "bbb_permeability"
+  | "ppb_binding"
+  | "cyp3a4_inhibition"
+  | "cyp2d6_inhibition"
+  | "cyp2c9_inhibition"
+  | "clearance_microsomal"
+  | "herg_cardiotoxicity"
+  | "ames_mutagenicity"
+  | "dili_liver_injury"
+  | "synthetic_accessibility";
+
+export interface PredictionRequest {
+  smiles: string;
+  endpoints?: Endpoint[] | null;
+}
 
 export interface EndpointPrediction {
   endpoint: Endpoint;
+  // Regression value, or a classification score in [0,1]. A score is a bounded
+  // model output, not a validated probability (ADR-023, prediction.py).
   value: number;
   unit: string | null;
   confidence_low: number;
   confidence_high: number;
   in_domain: boolean;
   knn_distance: number;
+  // Additive field (M3). Which trained artifact served THIS endpoint;
+  // "stub-v0" means no promoted model. Defaults to the stub so older
+  // callers are unaffected (prediction.py).
+  model_id: string;
+  // Additive field (Q19). The cutoff in_domain was judged against: the 90th
+  // percentile of the training set's own 5-NN distances (Module 5), so
+  // in_domain === (knn_distance <= ad_threshold). null when the endpoint has no
+  // applicability-domain index (stub-served, rule-based): there is no tick to
+  // draw and the client must not invent one.
+  ad_threshold: number | null;
+  // Additive fields (ADR-024). Regression endpoints only: heldout_error_level of the absolute errors the
+  // promoted seeds made on molecules held out of their own training were at most heldout_error_halfwidth,
+  // taken over heldout_error_n pooled residuals. One constant per endpoint, not a per-molecule interval.
+  // null (or absent, in a response produced before they existed) means no band: show none, invent none.
+  heldout_error_halfwidth?: number | null;
+  heldout_error_level?: number | null;
+  heldout_error_n?: number | null;
 }
 
 export interface PredictionResponse {
@@ -23,6 +68,128 @@ export interface PredictionResponse {
   molecule_id: string;
   predictions: EndpointPrediction[];
   model_version: string;
-  served_at: string;
+  served_at: string; // ISO datetime
   cache_hit: boolean;
+}
+
+// --- conformer (conformer.py) ---
+export interface ConformerAtom {
+  element: string;
+  x: number;
+  y: number;
+  z: number;
+  partial_charge: number | null;
+}
+export interface ConformerBond {
+  atom_index_1: number;
+  atom_index_2: number;
+  order: number; // 1, 1.5 (aromatic), 2, 3
+}
+export interface ConformerResponse {
+  molecule_id: string;
+  atoms: ConformerAtom[];
+  bonds: ConformerBond[];
+  energy_kcal_mol: number; // MMFF94 energy of the returned (lowest-energy) conformer
+  sdf_block: string; // full SDF, handed to 3Dmol as-is
+}
+
+// --- batch (api.py) ---
+export interface BatchRowResult {
+  row_index: number;
+  smiles_input: string;
+  ok: boolean;
+  error?: string | null;
+  prediction?: PredictionResponse | null;
+}
+export interface BatchPredictResponse {
+  job_id?: string | null;
+  status: "done" | "queued" | "running" | "failed";
+  total: number;
+  completed: number;
+  results?: BatchRowResult[] | null;
+}
+
+// --- compare (api.py) ---
+export interface CompareRequest {
+  smiles: string[]; // 2 or 3
+  endpoints?: Endpoint[] | null;
+}
+export interface CompareResponse {
+  molecules: PredictionResponse[];
+  // per_endpoint_winner is intentionally NOT consumed anywhere in the UI
+  // (ADR-007): direction-of-good is unresolved. Typed for completeness only.
+  per_endpoint_winner?: Record<Endpoint, number> | null;
+}
+
+// --- auth (auth.py) ---
+// Session strategy is an HttpOnly cookie: no response body carries a token.
+export interface RegisterRequest {
+  email: string;
+  password: string; // min 8 characters
+  turnstile_token: string; // not wired in the client yet (ADR-022 item 6): the server skips verification when unset
+}
+export interface RegisterResponse {
+  user_id: string;
+}
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+export interface LoginResponse {
+  user_id: string;
+}
+// GET /auth/me. 401 means there is no valid session (ADR-022).
+export interface MeResponse {
+  user_id: string;
+  email: string;
+}
+
+// --- persistence (persistence.py): Library and delete-account ---
+// A saved molecule or report is a frozen snapshot of a response the user already
+// received. It is never recomputed, so it carries the `model_version` it was made with.
+export interface SaveMoleculeRequest {
+  prediction: PredictionResponse; // exactly as received from /predict
+  label?: string | null;
+  notes?: string | null;
+  tags?: string[];
+}
+export interface SaveReportRequest {
+  type: string; // "single" | "batch"
+  source_batch_job_id?: string | null; // provenance only, not a live dependency
+  results: BatchPredictResponse | PredictionResponse; // the result set to freeze
+  molecule_ids?: string[]; // references to separately saved molecules
+  notes?: string | null;
+  tags?: string[];
+}
+export interface SavedMoleculeResponse {
+  id: string;
+  smiles: string; // standardized SMILES, from predictions_snapshot
+  label: string | null;
+  notes: string | null;
+  tags: string[];
+  predictions_snapshot: PredictionResponse;
+  model_version: string;
+  created_at: string; // ISO datetime
+  updated_at: string;
+}
+export interface SavedReportResponse {
+  id: string;
+  type: string; // "single" | "batch"
+  source_batch_job_id: string | null;
+  results_snapshot: Record<string, unknown>; // frozen BatchPredictResponse or PredictionResponse
+  molecule_ids: string[];
+  notes: string | null;
+  tags: string[];
+  created_at: string;
+}
+export interface DeleteAccountRequest {
+  password: string; // re-confirmation before a cascading, irreversible delete
+}
+
+// --- generations (api.py) ---
+// GET /generations (ADR-026). `available` is [active] until a second generation exists,
+// so a picker built from it never offers a choice that is not real.
+export interface GenerationsResponse {
+  active: string;
+  available: string[];
 }

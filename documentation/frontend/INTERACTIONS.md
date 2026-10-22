@@ -1,5 +1,20 @@
 # MARS interaction model
 
+> **Implemented vs specified (verified against `frontend/src` 2026-10-14).**
+> Built: ⌘K/Ctrl+K palette; ⌘⏎ run; ↑ ↓ Home End ⏎ on the endpoint list; ↑ ↓ ← →
+> Home End ⏎ on the batch grid (single Tab stop); 1–4 workspace switch; Esc in
+> the palette and the subset popover; the instant, zero-animation workspace switch;
+> reduced-motion zeroing in `tokens.css`; rows hold their height while loading
+> (placeholder cells, no shimmer). **Not built yet**: Esc to close the
+> inspector (it has a close button only); Batch multi-selection and its count;
+> the drawer and modal surfaces; the 429 countdown on the input (a 429 is
+> shown as an inline request error); the `/batch/progress` rail (no batch
+> client); the springs. Where this file says "spring", the code uses the
+> `--dur-*` / `--ease` tokens with a CSS transition; the AD-gauge marker
+> settles with `transition: left var(--dur-enter)`, once per endpoint (ADR-013).
+> The molecule hand-off between workspaces: Predict → Compare is wired (2026-10-18).
+> Batch → Predict and Library → Predict/Compare are not.
+
 ## Navigation
 
 Four destinations in the rail: Predict, Batch, Compare, Library. They are one
@@ -56,7 +71,7 @@ application frame itself never scrolls, and never scrolls horizontally.
 | Inspector (inline column) | endpoint or row detail | Esc, close button — not modal |
 | Drawer | batch job detail, export configuration | Esc, backdrop click |
 | Modal | destructive confirmation only (delete account, delete saved report) | explicit action only |
-| Popover | endpoint subset selector, serving-generation picker | Esc, outside click |
+| Popover | endpoint subset selector, serving-generation picker (only when more than one generation exists, ADR-026) | Esc, outside click |
 | Tooltip | shortcut hints and icon labels only | hover or focus out |
 
 A tooltip is never the only place a state is explained. Every reliability state

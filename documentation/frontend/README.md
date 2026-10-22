@@ -1,24 +1,28 @@
 # documentation/frontend/ — MARS frontend design & engineering
 
 This directory is the **written source of truth** for MARS frontend work.
-The **visual source of truth** is the Claude Design canvas:
+The **visual source of truth** is the *MARS Frontend Design System* design
+canvas. It is a rendered artefact held outside this repository and is not linked
+from here; the tokens and states it shows are all written down in this directory
+and in `frontend/DESIGN.md`.
 
-> **MARS Frontend Design System** — https://claude.ai/artifact/G4Xn8GJCABLWRZ2qXrotzg
-
-Five artboards, with strict ownership (ADR-015 — do not duplicate a taxonomy
-across two of them):
+The canvas has five artboards, with strict ownership (ADR-015 — do not
+duplicate a taxonomy across two of them):
 
 | Artboard | Owns |
 |---|---|
 | Predict — result state | the canonical workspace, on a freshly computed result |
 | Predict — entry state | the empty workspace and the endpoint roster |
-| Semantic state language | the six data/contract states |
+| Semantic state language | the data/contract states (six drawn; `not_requested` was added later, ADR-028) |
 | Interaction & motion | interaction taxonomy, ⌘K palette, gauge anatomy, motion spec |
 | Design system foundations | tokens |
 
-Phase status: **design phase, pass 1 (2026-09-30).** No production frontend
-code has been written. `frontend/` remains the M4 scaffold described in
-`frontend/README.md` — do not treat anything here as implemented.
+Phase status (2026-10-14): **design locked** (passes 1–2.1). **M4 is in
+progress**: the shell and Predict workspace run against the live API (typed
+SMILES, 3D viewer, auth UI); Batch is still a fixture; Compare and Library are
+placeholders. **Start with `HANDOFF.md`**: it states what exists, what is
+broken, and the recommended order. Where a design doc and the code disagree, the
+code and `HANDOFF.md` are current.
 
 ## Why this directory exists separately
 
@@ -34,12 +38,13 @@ directory holds those, and does not restate what the blueprint already says.
 | `contracts/mars_contracts/*.py` | field names, endpoint list, task types |
 | `contracts/API_ROUTES.md` | routes, auth, rate limits, cache semantics |
 | `documentation/frontend/` (here) | tokens, IA, interaction, a11y, component architecture |
-| the Design canvas | the rendered visual system |
+| the design canvas (external) | the rendered visual system |
 
 ## Files
 
 | File | Contents |
 |---|---|
+| `HANDOFF.md` | **read first** — current state, verified gaps, next steps, branch hazards |
 | `UX_PRINCIPLES.md` | the eight rules every screen is judged against |
 | `DESIGN_SYSTEM.md` | tokens: colour, type, spacing, surfaces, borders, motion, icons, data-viz |
 | `CRAFT_AND_INTERACTION.md` | pass-2 craft layer: machined surfaces, composing state channels, the AD gauge, motion spec, robustness |

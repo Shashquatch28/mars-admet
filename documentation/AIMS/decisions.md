@@ -105,6 +105,99 @@ hERG gap in 3 is to be attributed to the trainer vs selection.
 
 **Addendum 2026-10-22 (still NOT ADOPTED).** Phase B diagnostic re-runs finished (5 seeds; seeds 0-2 added post-hoc after seed 3 was seen, criteria unchanged). Mean hERG holdout gap vs stock: -0.019 under the mixed trainer's own selection, -0.006 under stock's selection rule; residual unattributed in seeds 0 and 4. See Phase B results in `kermt_tier1_gates_session_2026-10-15.md`. This is evidence for the maintainer's choice, not a decision.
 
+---
+
+## 2026-10-19 — KERMT Tier 0 is wired into serving: per-endpoint routing, separate CPU service, XGBoost as the fallback
+
+**Decision (maintainer delegated the configuration: "as per the blueprint, or whatever is most optimal and production practice").**
+Blueprint Module 8's routing table is implemented: each endpoint is served by XGBoost or by a KERMT Tier-0 arm, chosen **per endpoint** by a written
+rule applied to the 5-seed raw test records (`ml/eval/kermt_routing_evidence.py`, evidence in `status/kermt_routing_evidence.md`, table in
+`ml/serve/routing.json`). KERMT serves an endpoint only if it beats XGBoost on the primary metric (AUROC; test MAE for regression) by more than the
+larger of the two seed standard deviations and, for classification, is not worse on raw Brier beyond the larger Brier std; ties and losses stay on XGBoost
+(the incumbent: cheaper, already carrying its AD index and error band). Result: KERMT serves **6 endpoints** (bbb_permeability, pgp_inhibition,
+herg_cardiotoxicity, cyp2d6_inhibition, lipophilicity_logp, clearance_microsomal) from 5 arms; XGBoost keeps the other 8, DILI included (the DILI KERMT
+pool is not like-for-like). `cyp2d6_inhibition` is the marginal one (AUROC +0.006 for a 3-checkpoint arm); it follows the rule, and a materiality floor
+would drop it. This is a routing choice, not a ranking: no client sees a winner, only each row's `model_id` (AGENTS.md rule 3 untouched).
+
+**Architecture.** The API image stays torch-free. `ml/serve/kermt_service/` is a separate CPU image (torch 2.9.1, KERMT at e402473) that loads the
+checkpoints once and returns per-seed values; the API (`serve/kermt_client.py`, `serve/kermt_router.py`) ensembles them (mean +/- std over seeds), attaches the
+same AD fields, and for the two regression endpoints a **KERMT-specific held-out-error band** (`kermt_error_band.json`, built by
+`train/build_kermt_error_bands.py`: clearance +/-42.6, n=495; logP +/-0.94, n=2226; the seed-0 validation folds regenerate identical to the `val.csv` KERMT
+trained on). If the service is down, slow, loading or malformed, the KERMT-routed endpoints are answered by XGBoost for that request (`model_id` says so),
+a circuit breaker skips the service for 10 s, and the response is not cached for 48 h. Classification is served raw (C0). KERMT calls overlap XGBoost work.
+`model_version` gains a `+kermt.<routing digest>` suffix when KERMT is on, so cache keys follow routing even though `.env` pins `MODEL_VERSION`.
+KERMT serving is off unless `KERMT_SERVICE_URL` is set.
+
+**Measured, 2026-10-19.** Parity with the GPU CLI: 3.6e-7 worst absolute difference (RDKit pinned to 2025.09.1; on 2025.9.6 it was 4e-3, so the pin is
+load-bearing). 30/30 checkpoints fetched from W&B and SHA-256 verified. Cost: ~0.19 GB and 0.15-0.3 s per checkpoint per molecule on 4 vCPUs; 3 seeds x 5 arms
+= 3.4 GB and 3.4-4.5 s per new molecule (XGBoost alone: ~1 s uncached). **Ensemble size: 3 seeds per arm by default** (`KERMT_SEEDS`), keeping the seed
+spread; 5 seeds is 5.5 GB and ~6-7 s. With KERMT on, set `BATCH_INTERACTIVE_THRESHOLD` to about 20.
+
+**Not done / open.** Batch calls the service once per molecule (a batched call is ~30% cheaper per molecule). Nothing is deployed (Cloud Run sizing
+for ~3.5 GB + a 4-CPU service is the input). The routing rule's test-molecule identity is verified for 12 of 14 endpoints (toxicity and DILI have no
+run-record artifact). The XGBoost-side `test_predict_returns_all_14_ml_endpoints` API test already fails on the base commit (15 predictions where 14 are expected) and is
+unrelated.
+
+## 2026-10-18 — Held-out-error band: level 90%, served on the five regression endpoints (completes the 2026-10-08 follow-up)
+
+**Decision.** The band level is **90%**, the maintainer having asked for a recommended default and for item 10 to be finished
+(chat, 2026-10-18). The contract carries the level, so changing it is a re-run (`--level`) and no code change. Served
+fields on `EndpointPrediction`, all additive and null when there is no band: `heldout_error_halfwidth`,
+`heldout_error_level`, `heldout_error_n`.
+
+**Why 90% rather than 80%.** The pooled-residual half-width under-covers on the test set at either level, and the shortfall is
+smaller at 90% (clearance 0.86 against a 0.90 target is 4 points short; 0.71 against 0.80 is 9 short). The cost is a wider band:
+at 90% clearance is +/-51.2 against a typical error of 25.8, so it says little there. The label states what was measured (the
+share of held-out errors within the half-width), so the width is honest rather than flattering. Choosing 80% would make the
+bands narrower and the test shortfall larger.
+
+**Built.** `ml/eval/error_band.py` (quantile, pooled residuals, `ErrorBand` JSON), `ml/train/build_error_bands.py` (writes
+`<artifacts>/<endpoint>/error_band.json`, reports test coverage, never uses the test set to pick the half-width),
+`ModelRegistry.load_error_band`, `RealPrediction.heldout_error_*`, contract and frontend mirror. Result
+(`documentation/status/heldout_error_bands.md`): half-widths solubility 1.677, logP 1.103, Caco-2 0.615, PPB 18.07, clearance
+51.21; test coverage 0.90, 0.90, 0.93, 0.87, 0.86; out-of-domain coverage 0.86, 0.80, 0.93, 0.43 (n = 7, too few to read), 0.80.
+These reproduce the 2026-10-08 figures, now from committed code under the pinned environment.
+
+**Caveats that stand.** One constant per endpoint, not per molecule. It under-covers out-of-domain molecules, so the
+applicability-domain flag stays beside it. It describes the error of the seed ensemble mean (the served value). Classification
+gets no band. `ml/artifacts/` is git-ignored: a machine must run the builder once, or its regression rows carry no band.
+
+---
+
+## 2026-10-18 — Serving keeps models in memory (ml/serve); queued Batch run with real models
+
+**Status:** implemented and measured 2026-10-18 on branch `perf/serving-model-cache`; merged by the PR that carries it. Changes no
+prediction value, no contract field, and not C0.
+
+**Decision.** `ModelRegistry` (`ml/serve/registry.py`) caches loaded models, AD indexes and calibrators per endpoint,
+keyed on the artifact files' (mtime_ns, size) and re-validated at most every 5 s (`revalidate_seconds`; 0 = every call).
+`predict_endpoints` featurizes a molecule once for all 70 models (`XGBoostModel.prepare` / `predict_prepared`), serving
+models are loaded with one prediction thread, and `query_ad` intersects only the query's set bits against a cached
+transposed reference instead of converting the reference matrix to float64 per call.
+
+**Why.** The 2026-10-18 real-stack run found 18 to 37 s per uncached molecule: all 70 `load_model` calls on every request
+(about 8 s locally, more in Docker). That made Batch unusable (about 12 to 25 s per molecule; a queued 1,200-row job
+never run).
+
+**Result (real Docker stack, private container, empty feature cache).** 21.9 s to 0.18 s median per new molecule (about 120x);
+first request after start 12.7 s (one-off load). A queued 1,200-row Batch finished in about 9.5 min, 1,200/1,200 ok, all
+real models. Outputs: `/predict` bodies and a 6 molecule x 14 endpoint golden comparison are identical before and after;
+`ml/tests/test_serve_model_cache.py` pins cached = uncached, replacing/adding an artifact invalidates, the AD fast path is
+bit-for-bit the matmul path, and 8 concurrent first loads deserialise each seed once. C0 (`MARS_APPLY_PLATT` off) unchanged.
+
+**Trade-off accepted.** A re-promoted artifact is served from the old copy for up to 5 s. The window exists because a stamp
+check is about 20 `stat` calls per endpoint, 5 ms each on a Docker Desktop Windows bind mount.
+
+**Follow-up done the same day.** Predictions now run off the event loop (`asyncio.to_thread` in `POST /predict` and both
+Batch tiers), with `FeatureCache` writes made atomic and its `_config.json` update locked, the registry built once under a
+lock, and the registry warmed in the background at start-up. On the real stack `/health` stayed under 40 ms through a
+300-row interactive batch and a queued 1,200-row job, and all 1,200 rows equal the pre-threading run.
+
+**Open follow-ups.** (1) No cap on concurrent predictions (default pool of 40 threads; size to the container's CPUs).
+(2) The interactive batch tier still holds one request open without progress.
+
+---
+
 ## 2026-10-14 — AI sessions may perform git write operations; no AI attribution is left behind
 
 **Status:** decided 2026-10-14 by the maintainer (chat). Process rule; changes no code or data.
@@ -341,6 +434,10 @@ applied to all five seeds.
 **Open follow-ups.** The pass bar for C1. Whether HIA (N=47), DILI (50 rows) and hERG can ever be validated; if not, they
 stay `score`. Whether any calibration-split change is wanted is still an M1 data decision and is not taken here.
 Effort is a rough estimate, not measured: C0 half a day to a day, C1 two to four working days, C2 weeks of calendar time.
+
+**C0 implemented 2026-10-17.** `ml/serve/predictor.py` no longer applies the Platt calibrator unless `MARS_APPLY_PLATT=1`
+(off by default; regression was never calibrated). Raw-vs-calibrated held-out numbers regenerated from the promoted
+artifacts: all 14 reports are identical to the 2026-09-21 ones. Table and caveats: `documentation/status/xgboost_c0_raw_vs_calibrated.md`.
 
 ---
 

@@ -4,10 +4,12 @@ from .api import (
     BatchRowResult,
     CompareRequest,
     CompareResponse,
+    GenerationsResponse,
 )
 from .auth import (
     LoginRequest,
     LoginResponse,
+    MeResponse,
     PasswordResetConfirmRequest,
     PasswordResetRequestModel,
     RegisterRequest,
@@ -36,8 +38,8 @@ __all__ = [
     "PredictionRequest", "PredictionResponse", "EndpointPrediction", "BatchJobStatus",
     "ConformerResponse", "Atom", "Bond",
     "BatchPredictOptions", "BatchRowResult", "BatchPredictResponse",
-    "CompareRequest", "CompareResponse",
-    "RegisterRequest", "RegisterResponse", "LoginRequest", "LoginResponse",
+    "CompareRequest", "CompareResponse", "GenerationsResponse",
+    "RegisterRequest", "RegisterResponse", "LoginRequest", "LoginResponse", "MeResponse",
     "PasswordResetRequestModel", "PasswordResetConfirmRequest",
     "SaveMoleculeRequest", "SavedMoleculeResponse", "SaveReportRequest", "SavedReportResponse",
     "DeleteAccountRequest",

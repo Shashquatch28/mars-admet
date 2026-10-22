@@ -38,7 +38,10 @@ neither reliably.
   distance in the inspector.
 - Stub-served: amber hatch **plus** a `STUB` text tag — and hatch is a texture,
   so it survives greyscale and colour-vision deficiency.
-- Not returned: muted edge **plus** the literal words `NOT RETURNED`.
+- Not returned: solid muted edge **plus** the literal words `NOT RETURNED`.
+- Not requested: dashed muted edge **plus** the literal words `NOT REQUESTED`.
+  The edges differ in pattern, not hue, so the two stay distinguishable in
+  greyscale and for colour-vision deficiency (ADR-028).
 - No red/green pairing carries meaning anywhere in MARS. The two states most
   often confused by colour-blind users are never asked to be distinguished by
   hue.
@@ -90,7 +93,8 @@ category grouping is navigable rather than purely visual.
 - Numbers are announced with their unit and state. An out-of-domain row
   announces the endpoint, the value, the unit, and "outside applicability
   domain" — the marker is real text, not decoration.
-- A not-returned row announces the endpoint and "not returned", so absence is
+- A not-returned row announces the endpoint and "not returned"; a
+  not-requested row announces "not requested", so absence, and its cause, are
   audible as well as visible.
 - Live regions: the batch progress count and the prediction-complete
   announcement are `aria-live="polite"`. Nothing else is live — a dense grid
@@ -116,8 +120,26 @@ Text zoom to 200% must not break the shell. This is the constraint that keeps
 the layout on flexible regions rather than fixed pixel columns, even though the
 canvas is drawn at a fixed 1440×900.
 
-## What is not yet verified
+## Implementation status (verified against `frontend/src` 2026-10-14)
 
-Nothing in this document has been tested against a real screen reader, because
-nothing is implemented. Verification with NVDA and VoiceOver is an explicit
-gate on the implementation phase, not an afterthought.
+Present in the code: `role="grid"` / `row` / `gridcell` / `columnheader` with a
+single Tab stop on both the endpoint list and the batch grid; `aria-rowcount`
+and `aria-rowindex` (plus `aria-colcount` / `aria-colindex` on the batch grid);
+`aria-selected`; real `<label>`s on forms and the SMILES `<textarea>`;
+`aria-label` on icon-only controls; `NavLink`'s `aria-current="page"`; a visible
+focus outline in `tokens.css`; `prefers-reduced-motion` zeroing every transition
+and animation; the NOT RETURNED / NOT REQUESTED wording in the row itself.
+
+**Not built, although specified above:** `aria-live` regions (none exist, so no
+prediction-complete or batch-progress announcement); `aria-describedby` linking
+inline errors to their field; endpoint group headers as real headings; "Closing
+the inspector returns focus to the row" and "Every overlay closes with Escape"
+hold for the palette and the subset popover only. The icon-only `aria-label`
+requirement is a convention here, not enforced in a component type, because no
+shared `Button` primitive exists. The `CSS guard` test and ESLint do not check
+accessibility.
+
+**Not verified:** nothing has been tested against NVDA or VoiceOver, and no
+automated axe/contrast run exists. The contrast ratios above are computed from
+the token values, not measured on rendered pages. Verification with a real
+screen reader remains an explicit gate before Batch and Compare ship.

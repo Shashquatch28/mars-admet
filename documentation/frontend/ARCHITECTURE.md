@@ -1,6 +1,24 @@
 # MARS frontend architecture
 
-Status: **proposed, not implemented.** `frontend/` is still the M4 scaffold.
+Status: **partly implemented (re-audited 2026-10-14).** This document is the
+original architecture *proposal* and is kept for its reasoning. Where the build
+diverged, the divergence is recorded below and in `DECISIONS.md`; read
+`HANDOFF.md` for current state, and `frontend/README.md` for the layout as built.
+
+> **Superseded in part — styling.** The sections below propose Tailwind v4.
+> That was **not adopted**: ADR-016 chose CSS Modules over the token layer in
+> `src/styles/tokens.css`, and Tailwind is not installed. Read every "Tailwind"
+> reference below as "CSS Modules + tokens". The no-raw-values rule is unchanged
+> and still the point. `@tanstack/react-table` and `radix-ui` are also not
+> installed yet; `@tanstack/react-query` and `@tanstack/react-virtual` are.
+> The "What already exists" section, including its "one live defect" note
+> (`model_id` was missing from `contracts.ts`; closed by ADR-009/Q10 and guarded
+> by `contracts/tests/test_frontend_drift.py`), describes the *pre-build*
+> scaffold and is historical. The "Proposed layout" below differs from what was
+> built in three ways: there is no `pages/`; `auth/` and `compare/` /
+> `library/` were added (`StubWorkspace` is gone), and `components/` holds `dataviz/`, `ConfirmDialog`
+> and `SaveControl`. The build and test stack is Vite 7,
+> vitest 4 and ESLint; there is no Storybook.
 
 ## What already exists
 
@@ -25,7 +43,8 @@ components over Radix primitives. Do not adopt Next.js.**
 
 ### Why Vite, not Next.js
 
-MARS is an authenticated desktop workstation talking to a FastAPI service. It
+MARS is a desktop workstation talking to a FastAPI service (Predict and Compare are
+anonymous; Batch and Library need a session, ADR-022). It
 has no public surface to index, no marketing pages, no content to render on a
 server. Sessions are opaque server-side tokens in an HttpOnly cookie
 (`contracts/API_ROUTES.md`, Module 13) — there is no JWT for a Node layer to
@@ -70,7 +89,7 @@ one it approximates.
 | Package | For | Why not hand-rolled |
 |---|---|---|
 | `@tanstack/react-table` | Batch grid: sorting, column sizing, grouping | correct headless table semantics are a genuine time sink |
-| `@tanstack/react-virtual` | Batch: up to 1,000 interactive rows | virtualization must be correct or nothing else matters |
+| `@tanstack/react-virtual` | Batch: up to 100 interactive rows | virtualization must be correct or nothing else matters |
 | `@tanstack/react-query` | `/predict`, `/batch`, `/compare` caching + SSE-adjacent polling | the API already has a 48h cache and a `cache_hit` flag; client cache must not contradict it |
 | `radix-ui` primitives | dialog, popover, dropdown, tooltip, tabs | focus trapping and ARIA wiring |
 | `3dmol` (already pinned) | Module 7 viewer, both modes | the blueprint already settled this |
@@ -129,7 +148,7 @@ against the same fixtures the API tests use.
 - `model_version` and per-endpoint `model_id` are surfaced, never averaged away.
 - `cache_hit` is displayed in the status bar; a cached result is still a result
   and is not visually distinguished beyond that readout.
-- Batch: `POST /batch/predict` returns either inline results (≤1,000) or a
+- Batch: `POST /batch/predict` returns either inline results (≤100) or a
   `job_id`. The UI treats these as one state machine with a progress phase, and
   consumes `/batch/progress/{job_id}` as SSE.
 

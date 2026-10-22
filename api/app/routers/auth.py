@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from mars_contracts import (
     LoginRequest,
     LoginResponse,
+    MeResponse,
     PasswordResetConfirmRequest,
     PasswordResetRequestModel,
     RegisterRequest,
@@ -18,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.db.models import User
 from app.db.session import get_db
-from app.deps import _session_token_from_request
+from app.deps import _session_token_from_request, get_current_user
 from app.services.redis_client import get_redis
 from app.services.security import (
     hash_password,
@@ -78,6 +79,13 @@ async def login(
     token = await create_session(r, str(user.id))
     _set_session_cookie(response, token)
     return LoginResponse(user_id=str(user.id))
+
+
+@router.get("/me", response_model=MeResponse)
+async def me(user: User = Depends(get_current_user)) -> MeResponse:
+    """Whoami for the SPA (ADR-022): the session cookie is HttpOnly, so this is the only way the
+    client can learn whether it has a session. 401 (from `get_current_user`) means it does not."""
+    return MeResponse(user_id=str(user.id), email=user.email)
 
 
 @router.post("/logout", status_code=204)

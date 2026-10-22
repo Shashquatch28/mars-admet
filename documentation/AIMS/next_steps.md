@@ -8,6 +8,8 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
 
 ## Immediately
 
+- **STATE 2026-10-14 (Pass 2, session 5 — Tier 0 complete).** On `735ef89`: `toxicity__cls` seeds 2, 3 and 4 done (launched 12:00, 13:35 and 15:45 IST; 95.1, 95.9 and 94.7 min), so **30 of 30 Tier-0 seeds are trained and 30 KERMT models are in W&B**. All three `VERDICT: PASS` + `PROTOCOL: MATCH`, W&B upload and verify PASS; saved epochs 20, 21 and 7. The 5-seed aggregate is `status/kermt_tier0_results/toxicity__cls/aggregate_5seeds.json` (test AUROC: hERG 0.892 ± 0.004, AMES 0.855 ± 0.005; raw and calibrated side by side there). **One crashed run:** the first seed-4 launch (`…seed4_20261014T094244Z`, 15:12 IST) was lost to an unexplained workstation reboot at 15:42 IST (no shutdown record); it was left in place, `status: running`, excluded from the aggregate, and seed 4 was re-launched once. Session note: `status/kermt_gpu_session_2026-10-14.md`.
+  **Remaining Tier-0 work:** none. Tier-1/2 work lives on branch `milestone/m2-kermt-tier1` (its own runbook there); nothing further is run from this branch.
 - **2026-10-14 — TIER 1 REVIVED, TIER 2 CONDITIONAL, NOTHING TUNED YET.** Maintainer decisions (`decisions.md` 2026-10-14): Tier 1 is live work
   after Tier 0; **Tier 2 is not deferred — it is trained only if GPU-time budget remains at the end of Tier 1**; the Kendall / GradNorm axis is back;
   **no Tier-1/2 hyperparameter is fixed in advance** (epochs, learning rates, the batch floor, GradNorm α and lr are decided by a pre-registered
@@ -15,7 +17,7 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   Tier-0 training stays on `milestone/m2-kermt`; the Tier-1/2 code (new files only: `ml/train/kermt_mixed/`, `ml/models/kermt_mixed_model.py`,
   `ml/train/train_kermt_mixed.py`, `ml/train/train_kermt_ordinal.py`, `ml/tests/test_kermt_mixed_*.py`, `ml/tests/test_train_kermt_ordinal.py`) is on
   `milestone/m2-kermt-tier1`. **Verified only on CPU** (CPU torch in a throwaway env): loss and forward against verbatim KERMT source, the in-container
-  glue against a fake `kermt`. **Next, in order:** (1) finish Tier 0 (`toxicity__cls` 2–4); (2) the maintainer fixes the open items in the decisions
+  glue against a fake `kermt`. **Next, in order:** (1) Tier 0 is finished (30/30 seeds, 2026-10-14); (2) the maintainer fixes the open items in the decisions
   entry — `n_trials`, tuning seeds, axes, objective, evidence threshold, whether Tier 0 is tuned too; (3) register the protocol(s); (4) workstation
   gates **G4 → G1 → G2 → G3** at stock values (`lab_session_tier1.md`; G3's stock side for `toxicity__cls` exists, the single-task AMES half needs 5 stock +
   5 mixed runs); (5) re-run `train/preflight_clusters.py`; (6) tuning trials (`calibrate=False`, validation only); (7) the arm runs at the selected and
@@ -33,7 +35,7 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   (Option A pool, D5: about 29% of each CYP's training labels removed). All runs `VERDICT: PASS` + `PROTOCOL: MATCH`; **23 KERMT models in W&B**; driver, host Python,
   `kermt:latest` image and checkpoint unchanged. Session note: `status/kermt_gpu_session_2026-10-07.md`. **Tier-0 progress: 23 of 30 seeds.**
   **Remaining Tier-0 work:** `absorption_distribution__reg` 1–4 (≈ 3.8 h; regression, no `tier0_artifacts` package by design) and `toxicity__cls` 2–4 (≈ 4.75 h) — about
-  8.5 h, which is the whole of the remaining GPU training. Also owed: the single-task CYP KERMT baselines on full original splits, and regression reporting for the regression arms.
+  8.5 h, which is the whole of the remaining GPU training. Also owed: the single-task CYP KERMT baselines on full original splits. (Regression reporting for the regression arms: done 2026-10-18, MAE only, `ml/eval/tier0_regression.py`, `documentation/status/kermt_vs_xgboost_regression.md`.)
 - **STATE 2026-10-06 (Pass 2, session 1).** On `c1f0f04`: `metabolism__reg` seeds 1–4 and `absorption_distribution__cls` seeds 1–4 done — **both arms now have 5 seeds**
   and aggregates (`status/kermt_tier0_results/<arm>/aggregate_5seeds.json`): `clearance_microsomal` raw test MAE 24.510 ± 0.650; `absorption_distribution__cls` test AUROC
   BBB 0.941 ± 0.003, P-gp 0.932 ± 0.004, HIA 0.926 ± 0.017 (HIA calibrated not reportable, D4). All runs `VERDICT: PASS` + `PROTOCOL: MATCH`; **19 KERMT models in W&B**.
@@ -41,7 +43,7 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   Session note: `status/kermt_gpu_session_2026-10-06.md`. Driver 595.91.07 (Pass 1: 580.173.02), host Python 3.11.17 (3.11.15), image id unchanged.
   **Remaining:** `metabolism__cls` 1–4 (≈ 3.8 h), `absorption_distribution__reg` 1–4 (≈ 3.8 h), `toxicity__cls` 2–4 (≈ 4.75 h).
   **Resolved 2026-10-06 (decisions.md):** `ml/eval/tier0_artifacts.py` is classification-only; `RunBundle` now refuses regression arms up front (`require_classification`)
-  instead of crashing on the missing `temperature_scaler.json`. `metabolism__reg` and `absorption_distribution__reg` get no artifact package until regression reporting (separate P1) exists.
+  instead of crashing on the missing `temperature_scaler.json`. `metabolism__reg` and `absorption_distribution__reg` get no artifact package (plots need per-seed prediction files, not in git); their MAE table and the KERMT-vs-XGBoost difference come from `ml/eval/tier0_regression.py`.
 - **STATE 2026-09-30.** Pass 1 done: seed 0 of `metabolism__reg`, `absorption_distribution__cls`, `absorption_distribution__reg`,
   `metabolism__cls` (all `VERDICT: PASS`, ≈ 2.3 h GPU) on top of DILI seeds 0–4 and `toxicity__cls` seeds 0–1 = **11 KERMT models**, all
   in W&B (`shashquatch/mars-admet`, model + run-record artifacts). Records: `status/kermt_tier0_results/`; session note:
@@ -57,7 +59,7 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   - **Reporting gaps (P1, do not block Pass 2):** single-seed `std` — *fixed 2026-10-01* (`aggregate_seed_metrics` returns `None` for `_std` below two valid values);
     `tier0_present.py` — *now refuses* partial, multi-endpoint and regression input, and its DILI-only text is conditional on the DILI arm (still single-endpoint classification only);
     saved-epoch reporting in `tier0_artifacts.py` — *fixed 2026-10-01* (`ml/eval/kermt_log.py`; packages generated earlier must be regenerated); still open: `s_agg.py` refuses
-    < 5 seeds (workstation helper, not in repo) and regression arms report MAE only (M6).
+    < 5 seeds (workstation helper, not in repo) and regression arms report MAE only, because no other regression metric is stored in git (`ml/eval/tier0_regression.py`).
   - **Laptop baseline 2026-09-30 (read-only audit):** clean tree at `ad6eaf1`; ml tests 633 passed / 5 failed (the known
     `test_acquisition_lockfile.py` failures) / 15 skipped; root `contracts`+`api` tests 21 passed / 23 skipped (Redis/Postgres down);
     `ruff`: 12 findings, all in `ml/eval/tier0_artifacts.py` (8) and `tier0_present.py` (4) — none new.
@@ -129,7 +131,8 @@ training commit is `ae5d28d`; `ml/` code is identical between `ae5d28d` and `ad6
   worst hia .045→.209). They are what the API applies. Cause: calibration-split prior ≠ test prior.
   Also only ONE calibrator exists per endpoint (fit on seed 4). **Policy:** the UI says `score` now;
   C0 = stop applying the calibrators and serve raw; C1 = recalibrate on label-representative data and
-  validate per endpoint; C2 (KERMT) stays GPU-gated. **Not yet implemented.**
+  validate per endpoint; C2 (KERMT) stays GPU-gated. **C0 implemented 2026-10-17** (`MARS_APPLY_PLATT`, off by default;
+  `documentation/status/xgboost_c0_raw_vs_calibrated.md`); C1 and C2 not started.
 - **OPEN — shared cluster fold leaves tiny per-task validation sets.** `toxicity__cls` val =
   18–24 hERG labels vs ~1,810 AMES; `ppb` 42–50; `hia` 46. Epoch selection for those tasks is
   effectively unmeasured. Design decision; not changed.
@@ -303,7 +306,7 @@ graph-schema adapter (M2 pre-flight), full-scale 3D conformer population
 2. ✅ **Standardize (Run 2)** — `ml/featurize/standardize.py`; batched; deterministic; defined stereo preserved; 18 tests. Version `mars-standardizer-v1`.
 3. ✅ **EDA pass (Run 2)** — `ml/data/eda.py`; per-endpoint validity/dup/conflict/stereo/scaffold report at `ml/data/eda/…/`.
 4. ✅ **Dedup / conflict resolution (Run 2)** — `ml/data/dedup.py`; EDA-gated tiered policy; small-dataset override (DILI); 12 tests.
-5. ✅ **Scaffold split (Run 2)** — `ml/data/split.py`; TDC benchmark adopted for 13 endpoints; deterministic Murcko split for hERG_Karim; SMILES-level leakage is a hard failure; adopted-benchmark scaffold overlap surfaced honestly; 5-seed CV utility ready.
+5. ✅ **Scaffold split (Run 2)** — `ml/data/split.py`; TDC benchmark adopted for 13 endpoints at the time (12 since PPB moved to the human-only Option C, which self-generates its split); deterministic Murcko split for hERG_Karim; SMILES-level leakage is a hard failure; adopted-benchmark scaffold overlap surfaced honestly; 5-seed CV utility ready.
 6. ✅ **Calibration split (Run 2)** — 10% floor 50, scaffold-aware, seed=42, isolated from test — asserted at prepare-time + in tests.
 7. ✅ **DILIst augmentation (Run 2)** — DILIPredictor MIT gold standard; 57 test-set overlaps dropped; 6 tests including a bit-identity test on the test set.
 8. ✅ **Self-audit hooks (Run 2)** — `assert_no_leakage` + integration tests in `test_prepare_outputs.py` cover every processed dataset dir.

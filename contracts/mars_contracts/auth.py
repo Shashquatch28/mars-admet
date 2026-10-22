@@ -32,6 +32,14 @@ class LoginResponse(BaseModel):
     # session token itself is set via HttpOnly Set-Cookie, never in the body
 
 
+class MeResponse(BaseModel):
+    """Who the session cookie belongs to (ADR-022). The cookie is HttpOnly, so without this the
+    client cannot know whether a session exists. 401 means no valid session."""
+
+    user_id: str
+    email: EmailStr
+
+
 class PasswordResetRequestModel(BaseModel):
     email: EmailStr
 
@@ -46,6 +54,7 @@ __all__ = [
     "RegisterResponse",
     "LoginRequest",
     "LoginResponse",
+    "MeResponse",
     "PasswordResetRequestModel",
     "PasswordResetConfirmRequest",
 ]

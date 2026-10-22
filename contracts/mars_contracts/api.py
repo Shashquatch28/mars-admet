@@ -27,7 +27,7 @@ class BatchPredictOptions(BaseModel):
         description="Column name holding SMILES in a CSV upload. None = auto-detect / SDF.",
     )
     endpoints: list[Endpoint] | None = Field(
-        default=None, description="Subset to predict. None = all 14."
+        default=None, description="Subset to predict. None = all 14 ML endpoints, plus the rule-based SA score when the server can compute it."
     )
     retrain_opt_in: bool = Field(
         default=False,
@@ -48,8 +48,8 @@ class BatchRowResult(BaseModel):
 
 class BatchPredictResponse(BaseModel):
     """
-    Interactive tier (<=1000 molecules): job_id is None, results is populated.
-    Async tier (>1000): job_id is set, results is None; poll /batch/progress and
+    Interactive tier (<= the service's interactive threshold, 100 by default): job_id is None, results is populated.
+    Async tier (above that threshold): job_id is set, results is None; poll /batch/progress and
     fetch /batch/results.
     """
 
@@ -74,3 +74,13 @@ class CompareResponse(BaseModel):
         "Direction-of-good is endpoint-specific (e.g. lower clearance vs higher HIA); "
         "the resolution table is finalised in M3/M4. None = not computed.",
     )
+
+
+# --- GET /generations (no account; ADR-026 parts 1-2) ---------------------------
+class GenerationsResponse(BaseModel):
+    """Which model generation this deployment serves. Minimal on purpose: `available` holds
+    only `active` until a second generation exists, so a client that renders a picker from
+    it shows no choice that is not real. `/predict` takes no generation parameter yet."""
+
+    active: str = Field(..., description="the deployed generation: the same string stamped on predictions as `model_version`")
+    available: list[str] = Field(..., description="every generation this deployment can serve; today exactly [active]")

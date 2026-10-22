@@ -27,6 +27,21 @@ the work they describe rather than retroactively.
 
 Then state the task.
 
+## Branch scope (added 2026-10-14)
+
+AIMS, the blueprint, `FUTURE_SCOPE.md` and `status/kermt_integration_status.md`
+are mirrored on `milestone/m2-kermt` and `milestone/m4-frontend`; edit both
+copies in the same commit. Some files named above exist only on
+`milestone/m2-kermt`: `mistakes.md`, `status/mars-status_M0.md`,
+`status/mars-status_M1.md`, `status/ppbr_az_investigation.md`,
+`status/kermt_gpu_session_*.md`, `status/kermt_tier0_results/`,
+`MARS_M1_TECHNICAL_REFERENCE.md`. The KERMT code these files cite
+(`ml/models/kermt_model.py`, `ml/train/train_kermt_cluster.py`, `ml/eval/tier0_*.py`,
+`ml/featurize/kermt_adapter.py`, …) is also only on that branch. A path that does not resolve on
+`milestone/m4-frontend` is not necessarily wrong: check the other branch before
+"fixing" it. Frontend work (Modules 9/7) is recorded in
+`documentation/frontend/`, not here.
+
 ## How to maintain AIMS
 
 Update at the end of any session that changes project state:

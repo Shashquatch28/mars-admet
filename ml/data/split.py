@@ -3,14 +3,16 @@ Module 1 §4 — fixed Murcko scaffold split + leakage checks + 5-seed CV.
 
 Two paths:
 
-  * **adopt_benchmark_split** — for the 13 endpoints whose primary dataset is in
-    the TDC ADMET Benchmark Group, adopt TDC's official 80/20 split *exactly*
+  * **adopt_benchmark_split** — for the 12 endpoints whose primary dataset is in
+    the TDC ADMET Benchmark Group (``in_admet_benchmark_group`` in the dataset
+    registry), adopt TDC's official 80/20 split *exactly*
     (leaderboard comparability). We standardize the benchmark-delivered rows
     through Module 3 Stage 1 and re-derive the compound-level train_val / test
     membership sets; this is the fixed test set.
 
   * **scaffold_split** — deterministic Murcko-scaffold split for endpoints
-    without an official benchmark split (currently ``hERG_Karim`` only), or as
+    without an official benchmark split (currently ``hERG_Karim`` and the
+    human-only ``PPBR_AZ`` of PPB Option C), or as
     a leakage-audit utility for anything post-augmentation. Implements a
     "large-scaffolds first" fill matching TDC's own implementation choice
     (Bemis-Murcko groups sorted descending by size; place each group in test
