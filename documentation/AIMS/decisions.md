@@ -103,6 +103,8 @@ hERG gap in 3 is to be attributed to the trainer vs selection.
 
 ---
 
+**Addendum 2026-10-22 (still NOT ADOPTED).** Phase B diagnostic re-runs finished (5 seeds; seeds 0-2 added post-hoc after seed 3 was seen, criteria unchanged). Mean hERG holdout gap vs stock: -0.019 under the mixed trainer's own selection, -0.006 under stock's selection rule; residual unattributed in seeds 0 and 4. See Phase B results in `kermt_tier1_gates_session_2026-10-15.md`. This is evidence for the maintainer's choice, not a decision.
+
 ## 2026-10-14 — AI sessions may perform git write operations; no AI attribution is left behind
 
 **Status:** decided 2026-10-14 by the maintainer (chat). Process rule; changes no code or data.

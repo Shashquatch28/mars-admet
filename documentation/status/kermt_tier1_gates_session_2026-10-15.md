@@ -325,3 +325,33 @@ verified on the GPU only by comparing each diag run with its original run). The 
 **GPU estimate.** One mixed seed took 101.4-101.7 min in G3 (mixed epochs about 190 s). The hook adds a forward pass over 1,626 molecules (stock's 1,827-molecule validation pass took about 6 s; featurisation is
 cached features plus graph building) and the checkpoint writes add a few seconds, so about 6-10 s per epoch, i.e. +3-5 min per seed, plus about 3 min for per-epoch checkpoint writes: about 1.8 h per seed, about 3.6 h for the
 two (sequential, seed 3 then 4), RTX A4000 (no A100 on this workstation), no paid compute. Disk about 6.5 GB per seed of 307 GB free.
+
+## Phase B results (diagnostic mixed re-runs of toxicity__cls, 5 seeds; analysed 2026-10-19, written up 2026-10-22)
+
+Not a gate run and not Tier-0. Data: `kermt_tier1_gates/diagnostics/diag_analysis_all.json`, `diag_overnight.log`; code in `ml/train/diag/`, `ml/eval/diag_analysis.py`. Criteria are exactly those pre-registered above.
+
+**Disclosure (post-hoc extension).** Seeds 3 and 4 were run first. Seeds 0-2 were added overnight, after seed 3's result was seen, at the maintainer's request to use idle GPU time. Criteria were not changed, but seeds 0-2 are not blind to seed 3. The calibration holdouts (hERG 1,050; AMES 576) have now been used for development diagnostics (AUROC only; no calibrator was refit).
+
+**Reproduction (verified).** For all 5 seeds the diag run reproduces the original G3 mixed run bitwise (max abs difference in train loss and validation selection loss = 0.0), so the hook did not perturb training. Gate-staged trainer files were byte-identical to the original runs.
+
+**Per-seed results** (holdout hERG AUROC; 90% CI = molecule-level paired bootstrap, 4,000 resamples):
+
+| seed | E_loss | E_stock | E_stock - E_loss [90% CI] | E_stock - original stock [90% CI] | H_sel primary | H_sel weak | H_impl |
+|---|---|---|---|---|---|---|---|
+| 0 | 6 | 3 | -0.0173 [-0.026, -0.008] | -0.0242 [-0.037, -0.012] | no | no | yes |
+| 1 | 3 | 14 | +0.0127 [+0.001, +0.024] | +0.0017 [-0.003, +0.006] | no | yes | no |
+| 2 | 5 | 24 | +0.0075 [-0.004, +0.019] | +0.0020 [-0.003, +0.007] | no | no | no |
+| 3 | 2 | 18 | +0.0466 [+0.031, +0.063] | +0.0031 [-0.002, +0.008] | yes | yes | no |
+| 4 | 2 | 11 | +0.0201 [+0.007, +0.033] | -0.0102 [-0.018, -0.003] | no | yes | no |
+
+H_sel primary 1/5, weak 3/5; H_impl 1/5. No seed was "uninformative" (|E_stock - E_loss| > 1 in all).
+
+**Matched-selection deltas (replay of stock's rule inside the mixed trainer minus original stock checkpoint; mean over 5 seeds).**
+- hERG holdout: original mixed-selected checkpoint (E_loss) minus stock = -0.0194 (per seed -0.044, -0.030, -0.007, -0.011, -0.006), which reproduces the G3 gap. With stock's selection rule (E_stock): -0.0055 (+0.003, -0.010, -0.024, +0.002, +0.002). With final epoch: -0.0024.
+- AMES holdout: E_loss +0.0010; E_stock -0.0046 (+0.000, -0.010, -0.022, +0.003, +0.006); E_final -0.0059.
+
+**Read.**
+- Verified: the mixed trainer reproduces itself exactly; the mean hERG gap shrinks from -0.019 to -0.006 when stock's selection rule is applied to the mixed run. Three of five seeds (1, 2, 3) are then within CI of stock on hERG.
+- Inferred: epoch selection accounts for much of the hERG gap, but not uniformly. Seed 0 (E_stock = epoch 3, stock-selected checkpoint 0.024 below stock) and seed 4 (-0.010) remain below stock under matched selection, and AMES is below stock for seeds 0 and 4 too.
+- Unattributed: the residual in seeds 0 and 4; whether it is the different data order (by construction, see Phase A 4b), checkpoint-selection noise with 2-6 hERG validation positives, or a real trainer difference. Five seeds cannot separate these. Stock's own selection on hERG validation is itself high-variance (hERG carries 97-100% of epoch-to-epoch variance of mean AUROC), so "stock selection" is not a stable target.
+- This does not change the G3 verdict of record (FAIL under the frozen rule); no replacement rule has been adopted.
