@@ -22,6 +22,9 @@ import { DISPLAY_UNIT, STUB_MODEL_ID } from "../../domain/endpoints";
 import { fmtValue } from "../../domain/format";
 import type { Row } from "../../domain/reconcile";
 import { ReliabilityTag } from "../../components/dataviz/ReliabilityTag";
+import { ModelSource } from "../../components/ModelSource";
+import { useGenerations } from "../../data/useGenerations";
+import { FALLBACK_NOTE, fallbackCountInRows } from "../../domain/modelFamily";
 
 const clip = (s: string, n = 28) => (s.length > n ? `${s.slice(0, n)}…` : s);
 
@@ -48,8 +51,11 @@ function Cell({ row }: { row: Row }) {
   } else value = <span className={styles.val} />;
   return (
     <td className={`${styles.cell} ${edge}`}>
-      {value}
-      <ReliabilityTag reliability={reliability} />
+      <span className={styles.cellMain}>
+        {value}
+        <ReliabilityTag reliability={reliability} />
+      </span>
+      <ModelSource prediction={prediction} className={styles.src} />
     </td>
   );
 }
@@ -67,6 +73,10 @@ export function CompareWorkspace() {
 
   const s = useCompareSession();
   const comparison = useMemo(() => (s.result ? buildComparison(s.result) : null), [s.result]);
+  const kermtEndpoints = useGenerations()?.kermt_endpoints ?? [];
+  const fellBack = comparison
+    ? fallbackCountInRows(comparison.groups.flatMap((g) => g.rows.flatMap((r) => r.cells)), kermtEndpoints)
+    : 0;
   const repeats = repeatedSlots(s.slots);
   const failure = s.error
     ? compareFailure(s.error instanceof ApiError ? s.error.status : 0, s.error.message)
@@ -134,7 +144,7 @@ export function CompareWorkspace() {
         ) : repeats.length > 0 ? (
           `Molecule ${repeats.map((i) => i + 1).join(" and ")} repeats an earlier entry.`
         ) : comparison ? (
-          `${comparison.columns.length} molecules compared.${comparison.modelVersions.length > 1 ? ` Served by different model versions: ${comparison.modelVersions.join(", ")}.` : ""}`
+          `${comparison.columns.length} molecules compared.${comparison.modelVersions.length > 1 ? ` Served by different model versions: ${comparison.modelVersions.join(", ")}.` : ""}${fellBack > 0 ? ` † ${fellBack === 1 ? "1 value was" : `${fellBack} values were`} ${FALLBACK_NOTE}.` : ""}`
         ) : (
           ""
         )}

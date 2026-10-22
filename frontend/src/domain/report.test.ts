@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { ALL_ENDPOINTS } from "./endpoints";
 import type { ExportMolecule } from "./exportCsv";
-import { REPORT_STATEMENTS, buildReport, reportCounts, reportTitle } from "./report";
+import { FALLBACK_STATEMENT, REPORT_STATEMENTS, buildReport, reportCounts, reportTitle } from "./report";
 import { reconcile, requestedMlEndpoints } from "./reconcile";
 import type { PredictionResponse } from "../types/contracts";
 
 import miss from "./real-responses/celecoxib-miss.json";
 import subset from "./real-responses/celecoxib-subset.json";
 import stubOnly from "./real-responses/celecoxib-stub-only.json";
+import mixedJson from "./real-responses/celecoxib-mixed-real-and-stub.json";
 
 const MISS = miss as PredictionResponse;
 const SUBSET = subset as PredictionResponse;
@@ -150,5 +151,48 @@ describe("reportTitle", () => {
     const r = buildReport(molecule(MISS), NOW);
     expect(reportTitle(r)).toMatch(/^MARS prediction report [A-Za-z0-9_-]{1,16}$/);
     expect(reportTitle({ ...r, moleculeId: "../x y" })).toBe("MARS prediction report xy");
+  });
+});
+
+describe("buildReport: which model answered (ADR-034 item 7)", () => {
+  const ROUTED = ["bbb_permeability", "clearance_microsomal"];
+  const mixed = mixedJson as PredictionResponse;
+
+  it("prints the model family, never the raw model_id", () => {
+    const rows = rowsOf(buildReport(molecule(MISS), NOW));
+    const byEndpoint = Object.fromEntries(rows.map((r) => [r.endpoint, r.model]));
+    expect(byEndpoint.solubility_logs).toBe("XGBoost");
+    expect(byEndpoint.synthetic_accessibility).toBe("RDKit");
+    expect(rows.some((r) => (r.model ?? "").includes("mars-"))).toBe(false);
+  });
+
+  it("marks a row routed to KERMT but answered by XGBoost, and only that row", () => {
+    const r = buildReport(molecule(MISS), NOW, ROUTED);
+    expect(rowsOf(r).filter((x) => x.fellBack).map((x) => x.endpoint).sort()).toEqual(ROUTED);
+    expect(r.fallbackCount).toBe(2);
+    expect(r.statements).toContain(FALLBACK_STATEMENT);
+    expect(r.statements.slice(0, -1)).toEqual([...REPORT_STATEMENTS]);
+  });
+
+  it("says nothing about fallback when KERMT is off or nothing fell back", () => {
+    const off = buildReport(molecule(MISS), NOW);
+    expect(off.fallbackCount).toBe(0);
+    expect(rowsOf(off).some((x) => x.fellBack)).toBe(false);
+    expect(off.statements).toEqual([...REPORT_STATEMENTS]);
+  });
+
+  it("does not call a stub value a fallback", () => {
+    const rows = rowsOf(buildReport(molecule(mixed), NOW, ROUTED));
+    for (const row of rows.filter((x) => x.hatch)) {
+      expect(row.model).toBe("stub");
+      expect(row.fellBack).toBe(false);
+    }
+  });
+
+  it("words the fallback without ranking or favourability", () => {
+    const text = FALLBACK_STATEMENT.toLowerCase();
+    for (const word of ["favourable", "favorable", "safe", "better", "worse", "best", "winner"]) {
+      expect(text).not.toContain(word);
+    }
   });
 });

@@ -5,11 +5,14 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { PrintReport } from "./PrintReport";
 import type { ExportMolecule } from "../../domain/exportCsv";
 import { buildReport, type ReportModel } from "../../domain/report";
+import { useGenerations } from "../../data/useGenerations";
 
 export function usePrintReport(): { print: (m: ExportMolecule) => void; element: ReactNode } {
   const [model, setModel] = useState<ReportModel | null>(null);
 
-  const print = useCallback((m: ExportMolecule) => setModel(buildReport(m)), []);
+  // The dagger needs to know which endpoints the deployment routes to KERMT (GET /generations).
+  const kermtEndpoints = useGenerations()?.kermt_endpoints;
+  const print = useCallback((m: ExportMolecule) => setModel(buildReport(m, new Date(), kermtEndpoints ?? [])), [kermtEndpoints]);
 
   useEffect(() => {
     if (!model) return;

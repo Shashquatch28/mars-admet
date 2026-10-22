@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { familyLabel, fallbackCount, modelFamily, servedByFallback } from "./modelFamily";
+import { familyLabel, fallbackCount, fallbackCountInRows, modelFamily, servedByFallback } from "./modelFamily";
 
 const x = (endpoint: string, model_id: string) => ({ endpoint: endpoint as never, model_id });
 
@@ -40,5 +40,18 @@ describe("servedByFallback", () => {
       x("solubility_logs", "mars-xgboost-ecfp-desc-v1"),
     ];
     expect(fallbackCount(preds, routed)).toBe(1);
+  });
+});
+
+describe("fallbackCountInRows", () => {
+  const routed = ["bbb_permeability"];
+  it("counts reconciled rows that fell back and ignores rows with no prediction", () => {
+    const rows = [
+      { prediction: x("bbb_permeability", "mars-xgboost-ecfp-desc-v1") },
+      { prediction: x("bbb_permeability", "mars-kermt-single-v1") },
+      { prediction: undefined },
+    ];
+    expect(fallbackCountInRows(rows, routed)).toBe(1);
+    expect(fallbackCountInRows(rows, [])).toBe(0);
   });
 });

@@ -39,6 +39,20 @@ export function servedByFallback(
   return !!prediction && kermtEndpoints.includes(prediction.endpoint) && modelFamily(prediction.model_id) === "xgboost";
 }
 
+/** `fallbackCount` over reconciled rows (Predict, Batch inspector, Compare cells): rows without a prediction count for nothing. */
+export function fallbackCountInRows(
+  rows: readonly { prediction?: Pick<EndpointPrediction, "endpoint" | "model_id"> }[],
+  kermtEndpoints: readonly string[],
+): number {
+  return fallbackCount(
+    rows.flatMap((r) => (r.prediction ? [r.prediction] : [])),
+    kermtEndpoints,
+  );
+}
+
+export const FALLBACK_NOTE =
+  "routed to KERMT, but answered by XGBoost for this request because the KERMT service did not answer";
+
 export function fallbackCount(
   predictions: readonly Pick<EndpointPrediction, "endpoint" | "model_id">[],
   kermtEndpoints: readonly string[],

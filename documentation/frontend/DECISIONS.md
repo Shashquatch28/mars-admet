@@ -1112,3 +1112,8 @@ to 7,000, the interactive threshold to 20 and retention to 12 hours, the sign-in
 blob was about 43,200 seconds (it had been 86,400 whatever the setting said). Until the service answers, copy built from `/limits` leaves the numbers out. The retention
 sentence for item 6 is the Batch note. `turnstile_site_key` is added to `LimitsResponse` by the Turnstile work, not before.
 
+**Implementation note (2026-10-22), item 7.** Done and checked live. Compare cells carry the family label and a dagger on a second line; the header sentence counts the daggers and says why;
+the Batch inspector has a Source column and a note; the printed report's Model column prints the family (not the raw `model_id`), with a dagger and a footnote printed only when a row fell back.
+Healthy KERMT rows show `KERMT` and no dagger in all three places. Observation, not changed: KERMT's `clearance_microsomal` returned negative values for two small molecules (-6.26 and
+-29.34 mL/min/kg), which are shown as the model produced them; a value below zero is not a possible clearance, and the held-out error band (+/-42.6) is wider than any positive value near it.
+

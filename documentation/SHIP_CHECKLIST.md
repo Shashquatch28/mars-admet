@@ -60,7 +60,8 @@ approval, `[lab]` needs the GPU workstation.
 
 - [x] D9 `[here]` `GET /limits` (batch cap, interactive threshold, result retention hours, anon rate) and `blob_store` reading `batch_upload_retention_hours`; UI copy reads it (about 3 h).
   Done 2026-10-22. Checked on a private stack with cap 7,000, threshold 20 and retention 12 h: the sign-in gate and the Batch note showed those numbers, and a queued job's result blob in Redis had a TTL of about 43,200 s (it was 86,400 whatever the setting said). A guard test fails if "50,000", "24 hours" or "100 molecules" is written into runtime copy.
-- [ ] D10 `[here]` Model family and † in Batch inspector, Compare and the printed report (about 4 h).
+- [x] D10 `[here]` Model family and † in Batch inspector, Compare and the printed report (about 4 h).
+  Done 2026-10-22. Checked on a private stack with a real KERMT service: while it was still loading, the six routed endpoints showed `XGBoost †` in the Batch inspector, in every Compare cell (with a sentence under the header counting them) and in the printed report's Model column with a footnote; once it was ready the same six showed `KERMT` with no dagger and no note anywhere. The real print dialog was not driven (the report was read from its DOM).
 - [ ] D11 `[here]` Status-bar echo of the latest announcement, no timer (about 1 h).
 - [ ] D12 `[here]` Batch coverage table, text only, no outlier flag (about 6 h; needs D10).
 - [ ] D13 `[here]` Computed molecule properties and structural alerts: `properties` on `PredictionResponse`, Predict panel, report; share the alert matcher with the explainability validation; bump `MODEL_VERSION` (about 12 h).

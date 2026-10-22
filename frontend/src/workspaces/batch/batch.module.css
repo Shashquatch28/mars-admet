@@ -707,6 +707,22 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.miniSrc {
+  flex: none;
+  width: 58px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.miniNote {
+  margin: 0;
+  padding: 8px 14px 8px 12px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
 .miniVal {
   flex: none;
   font-family: var(--mono);

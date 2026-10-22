@@ -7,6 +7,7 @@
 // magnitude or calls a value good, safe or favourable: the value is printed the same way in every state and
 // reliability is its own column (ADR-006).
 import { DISPLAY_UNIT, STUB_MODEL_ID, type DisplayGroup } from "./endpoints";
+import { FALLBACK_NOTE, familyLabel, fallbackCountInRows, servedByFallback } from "./modelFamily";
 import type { ExportMolecule } from "./exportCsv";
 import { errorBandOf } from "./errorBand";
 import { decimalPlaces, fmtDateTime, fmtInterval, fmtNum, fmtValue } from "./format";
@@ -29,7 +30,10 @@ export interface ReportRow {
   /** The reliability channel in words; null for a plain in-domain model value. */
   status: string | null;
   stateKind: EndpointRowState["kind"];
+  /** The family that answered (XGBoost, KERMT, RDKit), read from the service's model_id; "stub" for a stub value. */
   model: string | null;
+  /** The deployment routes this endpoint to KERMT but XGBoost answered it for this request (printed as a dagger). */
+  fellBack: boolean;
   /** True only for a stub value: the report draws the diagonal hatch on its value cell (ADR-007). */
   hatch: boolean;
 }
@@ -60,6 +64,8 @@ export interface ReportModel {
   /** Set when a Batch row failed before inference: there is nothing to tabulate, only the reason. */
   failure: string | null;
   counts: ReportCounts;
+  /** Rows routed to KERMT that XGBoost answered for this request. */
+  fallbackCount: number;
   groups: ReportGroup[];
   statements: string[];
 }
@@ -75,8 +81,12 @@ export const REPORT_STATEMENTS: readonly string[] = [
     "trained on: treat it as unreliable rather than as a result. A stub value is not a real prediction.",
   "Every endpoint in the roster is listed. One the service did not return reads NOT RETURNED; one left out of the " +
     "request reads NOT REQUESTED.",
+  "The Model column names the family of model that answered each row, read from the service's own model identifier.",
   "Not included: a 2D structure drawing, and drug-likeness flags, which the service does not compute.",
 ];
+
+/** Printed only when a row was routed to KERMT and answered by XGBoost, so it is never printed as noise. */
+export const FALLBACK_STATEMENT = `† ${FALLBACK_NOTE[0].toUpperCase()}${FALLBACK_NOTE.slice(1)}. The Model column says which model answered the row.`;
 
 const STATUS_WORDS: Record<EndpointRowState["kind"], string | null> = {
   ok: null,
@@ -97,7 +107,7 @@ function domainText(row: Row): string {
   return `${p.in_domain ? "in domain" : "out of domain"}, 5-NN distance ${dist}${threshold}`;
 }
 
-function toReportRow(row: Row): ReportRow {
+function toReportRow(row: Row, kermtEndpoints: readonly string[]): ReportRow {
   const p = row.prediction;
   const kind = row.state.kind;
   const hasValue = !!p && kind !== "not_returned" && kind !== "not_requested";
@@ -117,7 +127,8 @@ function toReportRow(row: Row): ReportRow {
     domain: domainText(row),
     status: STATUS_WORDS[kind],
     stateKind: kind,
-    model: hasValue ? p!.model_id : null,
+    model: hasValue ? familyLabel(p!.model_id) || "stub" : null,
+    fellBack: hasValue && servedByFallback(p, kermtEndpoints),
     hatch: hasValue && p!.model_id === STUB_MODEL_ID,
   };
 }
@@ -136,7 +147,7 @@ export function reportCounts(cells: Row[]): ReportCounts {
   };
 }
 
-export function buildReport(m: ExportMolecule, now: Date = new Date()): ReportModel {
+export function buildReport(m: ExportMolecule, now: Date = new Date(), kermtEndpoints: readonly string[] = []): ReportModel {
   const r = m.response;
   const failed = !!m.error || !r;
   const groups: ReportGroup[] = failed
@@ -144,8 +155,9 @@ export function buildReport(m: ExportMolecule, now: Date = new Date()): ReportMo
     : DISPLAY_GROUP_ORDER.map((group) => ({
         group,
         label: DISPLAY_GROUP_LABEL[group],
-        rows: m.cells.filter((c) => displayGroupOf(c.endpoint) === group).map(toReportRow),
+        rows: m.cells.filter((c) => displayGroupOf(c.endpoint) === group).map((c) => toReportRow(c, kermtEndpoints)),
       })).filter((g) => g.rows.length > 0);
+  const fallbackCount = failed ? 0 : fallbackCountInRows(m.cells, kermtEndpoints);
   return {
     generatedAt: now.toISOString(),
     smilesInput: m.smilesInput,
@@ -156,8 +168,9 @@ export function buildReport(m: ExportMolecule, now: Date = new Date()): ReportMo
     batchRow: m.row ?? null,
     failure: failed ? (m.error ?? "no result for this molecule") : null,
     counts: failed ? reportCounts([]) : reportCounts(m.cells),
+    fallbackCount,
     groups,
-    statements: [...REPORT_STATEMENTS],
+    statements: fallbackCount > 0 ? [...REPORT_STATEMENTS, FALLBACK_STATEMENT] : [...REPORT_STATEMENTS],
   };
 }
 

@@ -23,7 +23,10 @@ function RowView({ row }: { row: ReportRow }) {
       <td className={styles.num}>{row.heldOutError ?? ""}</td>
       <td>{row.domain}</td>
       <td className={styles.status}>{row.status ?? ""}</td>
-      <td className={styles.model}>{row.model ?? ""}</td>
+      <td className={styles.model}>
+        {row.model ?? ""}
+        {row.fellBack ? " †" : ""}
+      </td>
     </tr>
   );
 }

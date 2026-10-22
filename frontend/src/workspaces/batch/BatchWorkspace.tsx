@@ -34,6 +34,9 @@ import {
 import { SHORT_LABEL } from "../../domain/endpoints";
 import { fmtValue } from "../../domain/format";
 import { BatchGrid } from "./BatchGrid";
+import { ModelSource } from "../../components/ModelSource";
+import { useGenerations } from "../../data/useGenerations";
+import { FALLBACK_NOTE, fallbackCountInRows } from "../../domain/modelFamily";
 import { BatchUpload } from "./BatchUpload";
 
 export function BatchWorkspace() {
@@ -41,6 +44,7 @@ export function BatchWorkspace() {
   const rowH = density === "compact" ? 30 : 36;
 
   const session = useBatchSession();
+  const kermtEndpoints = useGenerations()?.kermt_endpoints ?? [];
   const navigate = useNavigate();
   const predict = usePredictSession();
 
@@ -247,6 +251,7 @@ export function BatchWorkspace() {
               <>
                 <div className={styles.minihd}>
                   <span style={{ flex: 1 }}>Endpoint</span>
+                  <span className={styles.miniSrc}>Source</span>
                   <span>Value</span>
                 </div>
                 <div className={styles.minilist}>
@@ -263,6 +268,9 @@ export function BatchWorkspace() {
                     return (
                       <div key={cell.endpoint} className={`${styles.minirow} ${edge}`}>
                         <span className={styles.miniName}>{cell.endpoint}</span>
+                        <span className={styles.miniSrc}>
+                          <ModelSource prediction={cell.prediction} />
+                        </span>
                         {k === "not_returned" || k === "not_requested" ? (
                           <span className={styles.miniValMissing}>
                             {k === "not_requested" ? "not requested" : "not returned"}
@@ -274,6 +282,11 @@ export function BatchWorkspace() {
                     );
                   })}
                 </div>
+                {fallbackCountInRows(selectedRow.cells, kermtEndpoints) > 0 && (
+                  <p className={styles.miniNote}>
+                    † {FALLBACK_NOTE}. The Source column says which model answered each endpoint.
+                  </p>
+                )}
               </>
             )}
           </div>
