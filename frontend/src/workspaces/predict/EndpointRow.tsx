@@ -5,7 +5,9 @@
 // restyled by hover/focus/selection or by reliability.
 import styles from "./predict.module.css";
 import type { Row } from "../../domain/reconcile";
-import { DISPLAY_UNIT, PROB_DOMAIN, STUB_MODEL_ID } from "../../domain/endpoints";
+import { DISPLAY_UNIT, PROB_DOMAIN } from "../../domain/endpoints";
+import { familyLabel, servedByFallback } from "../../domain/modelFamily";
+import { useGenerations } from "../../data/useGenerations";
 import { decimalPlaces, fmtValue } from "../../domain/format";
 import { IntervalTrack } from "../../components/dataviz/IntervalTrack";
 import { NumericInterval } from "../../components/dataviz/NumericInterval";
@@ -25,6 +27,7 @@ export const rowId = (endpoint: string) => `erow-${endpoint}`;
 
 export function EndpointRow({ row, selected, focused, loading, onSelect, rowRef }: EndpointRowProps) {
   const { endpoint, meta, prediction, state, reliability } = row;
+  const kermtEndpoints = useGenerations()?.kermt_endpoints ?? [];
 
   // Loading: the roster is known before the result (ADR-008), so rows keep their
   // final height and show a quiet placeholder instead of reflowing when values
@@ -115,18 +118,26 @@ export function EndpointRow({ row, selected, focused, loading, onSelect, rowRef 
   }
 
   // source cell
-  const isReal =
-    !!prediction && prediction.model_id !== STUB_MODEL_ID && meta.taskType !== "rule_based";
+  // Which model answered, read from the row's own model_id (never a constant). A † marks a row the
+  // deployment routes to KERMT that XGBoost answered for this request; the list's note says so in words.
+  const sourceText = prediction ? familyLabel(prediction.model_id) : "";
+  const fellBack = servedByFallback(prediction, kermtEndpoints);
   const sourceCell =
     state.kind === "not_returned" || state.kind === "not_requested" ? (
       <span className={`${styles.esource} ${styles.esourceDash}`} role="gridcell">
         <span aria-hidden="true">—</span>
         <span className="sr-only">no source</span>
       </span>
-    ) : isReal ? (
-      <span className={styles.esource} role="gridcell">v1</span>
     ) : (
-      <span className={styles.esource} role="gridcell" />
+      <span className={styles.esource} role="gridcell">
+        {sourceText}
+        {fellBack && (
+          <>
+            <span aria-hidden="true"> †</span>
+            <span className="sr-only"> (routed to KERMT, answered by XGBoost)</span>
+          </>
+        )}
+      </span>
     );
 
   return (

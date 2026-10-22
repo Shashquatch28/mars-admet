@@ -356,7 +356,7 @@
 
 .colhead {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 62px 66px 158px 50px 40px;
+  grid-template-columns: minmax(0, 1fr) 40px 62px 66px 158px 50px 76px;
   gap: 12px;
   align-items: center;
   height: 26px;
@@ -423,7 +423,7 @@
 .erow {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 62px 66px 158px 50px 40px;
+  grid-template-columns: minmax(0, 1fr) 40px 62px 66px 158px 50px 76px;
   gap: 12px;
   align-items: center;
   height: var(--row-h);

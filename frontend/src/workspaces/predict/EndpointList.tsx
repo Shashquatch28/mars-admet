@@ -7,6 +7,8 @@ import styles from "./predict.module.css";
 import { useUiState } from "../../app/uiState";
 import type { Reconciliation, Row } from "../../domain/reconcile";
 import { EndpointRow, rowId } from "./EndpointRow";
+import { fallbackCount } from "../../domain/modelFamily";
+import { useGenerations } from "../../data/useGenerations";
 
 export function EndpointList({
   recon,
@@ -75,6 +77,14 @@ export function EndpointList({
   };
 
   const c = recon.counts;
+  // Rows the deployment routes to KERMT that XGBoost answered for this request (the KERMT service did not).
+  const kermtEndpoints = useGenerations()?.kermt_endpoints ?? [];
+  const fellBack = loading || idle
+    ? 0
+    : fallbackCount(
+        rows.flatMap((r) => (r.prediction ? [r.prediction] : [])),
+        kermtEndpoints,
+      );
 
   return (
     <section
@@ -190,6 +200,14 @@ export function EndpointList({
           endpoint the model did not return, or that you left out of the run, is shown as a marked row (NOT RETURNED,
           NOT REQUESTED), never omitted. MARS applies no risk
           threshold and defines no direction of good — no value on this screen is styled as good or bad.
+          {fellBack > 0 && (
+            <>
+              {" "}
+              <b>†</b> {fellBack === 1 ? "1 endpoint is" : `${fellBack} endpoints are`} routed to KERMT but{" "}
+              {fellBack === 1 ? "was" : "were"} answered by XGBoost for this request, because the KERMT service did not
+              answer. The SOURCE column says which model answered each row.
+            </>
+          )}
         </p>
       </div>
     </section>

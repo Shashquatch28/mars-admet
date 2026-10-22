@@ -84,3 +84,9 @@ class GenerationsResponse(BaseModel):
 
     active: str = Field(..., description="the deployed generation: the same string stamped on predictions as `model_version`")
     available: list[str] = Field(..., description="every generation this deployment can serve; today exactly [active]")
+    kermt_endpoints: list[str] = Field(
+        default_factory=list,
+        description="endpoint names this deployment routes to KERMT (empty when KERMT serving is off). Provenance, "
+        "not a ranking: a row's own `model_id` says what actually answered it, and differs from this when the "
+        "KERMT service did not answer and XGBoost served the endpoint for that request.",
+    )

@@ -142,6 +142,12 @@ def serving_version() -> str:
     return f"{base}+kermt.{digest}"
 
 
+def kermt_endpoints() -> list[str]:
+    """Endpoint names the deployed routing sends to KERMT, sorted; empty when KERMT serving is off."""
+    router = _get_kermt_router()
+    return sorted(router.served_by_kermt()) if router is not None else []
+
+
 def is_degraded(response: PredictionResponse) -> bool:
     """True when an endpoint the routing sends to KERMT was answered by something else (the
     service was unreachable). Such a response is correct but must not be cached for 48 h under

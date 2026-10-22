@@ -11,6 +11,7 @@ import { useUiState } from "../app/uiState";
 import { useAnnounce } from "../app/announce";
 import { usePredictSession } from "../app/predictSession";
 import { USING_API } from "../data/client";
+import { copyText } from "../data/clipboard";
 import { downloadText } from "../data/download";
 import { ALL_ENDPOINTS } from "../domain/endpoints";
 import { buildCsv, predictFileName } from "../domain/exportCsv";
@@ -110,10 +111,7 @@ export function CommandPalette() {
       run();
     } else if (id === "copy_id" && result) {
       const moleculeId = result.response.molecule_id;
-      navigator.clipboard.writeText(moleculeId).then(
-        () => announce("Copied molecule_id"),
-        () => announce("Could not copy molecule_id"),
-      );
+      void copyText(moleculeId).then((ok) => announce(ok ? "Copied molecule_id" : "Could not copy molecule_id"));
     } else if (id === "export" && result && recon) {
       downloadText(
         predictFileName(result.response.molecule_id),

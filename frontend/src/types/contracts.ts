@@ -192,4 +192,6 @@ export interface DeleteAccountRequest {
 export interface GenerationsResponse {
   active: string;
   available: string[];
+  /** Endpoints this deployment routes to KERMT; empty when KERMT serving is off. Provenance, not a ranking. */
+  kermt_endpoints: string[];
 }

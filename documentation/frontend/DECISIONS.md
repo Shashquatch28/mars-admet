@@ -978,3 +978,39 @@ only when available* - a missing command is undiscoverable; a listed one with it
 `src/domain/real-responses/` in a test). Policy numbers still written in copy (Batch "50,000 molecules" in the sign-in panel,
 "24 hours" in the expired-results message) mirror backend settings and are not read from the service; a `GET /limits` route would
 remove that duplication.
+
+## ADR-032 — KERMT serving is visible: the model that answered each row, one version string, and a stated fallback
+
+**Date:** 2026-10-20 · **Status:** accepted · implemented 2026-10-20, verified 2026-10-22 against a live KERMT service (see Consequences)
+
+**Decision.**
+1. Predict's SOURCE column shows the model family read from the row's own `model_id` (`XGBoost`, `KERMT`, `RDKit`; a stub row stays
+   blank because its hatch and STUB tag already say it). It replaces a constant "v1" that was printed on every real row. The
+   inspector's Provenance gains a `model` line above the raw `model_id`.
+2. `GET /generations` now reports the version `/predict` stamps (`<model_version>+kermt.<routing digest>` when KERMT serving is on),
+   so the top bar and a result name the same string, and a new `kermt_endpoints` list (empty when KERMT is off).
+3. A row the deployment routes to KERMT but that XGBoost answered (the KERMT service was down, slow or malformed) carries a `†`
+   in SOURCE, a `routing` line in the inspector and a sentence under the table saying how many such rows there are and why. The
+   fallback is derived in the component from the contract, not passed in as a prop (ADR-006).
+
+**Rationale.** A response that mixes two model families must say which answered which row, and a version shown in one place must not
+differ from the one shown in another. The fallback is correct output, but a reader who saw "KERMT serves bbb_permeability" and then
+got an XGBoost value would otherwise have to read raw ids to notice.
+
+**Rejected.** *Colour or order rows by family* - provenance only; nothing here says one family is better (AGENTS.md rules 1 and 3). The
+routing reasons (AUROC gaps, noise margins) are **not** sent to the client for the same reason. *Infer the fallback in the client from the
+`+kermt.` suffix alone* - it says KERMT is on, not which endpoints it serves. *Show family only in the inspector* - a column that is
+blank or constant is the defect being fixed.
+
+**Consequences.** Batch cells, Compare and the printed report still show no model family (Batch and Compare carry only the
+version, the report prints the raw `model_id`); the CSV already has `model_id`. The `†` footnote appears only on Predict.
+
+**Verified live, 2026-10-22** (private API and KERMT containers, 2 seeds per arm, real XGBoost and KERMT checkpoints, own Vite): while the
+KERMT service was still loading, the six routed rows were answered by XGBoost and showed the `†`, the footnote and the `routing`
+line, with the top bar and the inspector naming the same `v0.2.0-dev+kermt.<digest>`; once it was ready, those six rows showed `KERMT`
+(inspector: `mars-kermt-multitask-v1`, a KERMT-specific held-out error on the regression row), no `†`, and a repeat of the molecule was
+a cache hit, so the healthy response is cached and the degraded one was not. The palette (ADR-031) was checked in the same run: the one
+molecule it offers is the one Predict returned, Copy molecule_id and Run prediction work, commands without a result say why. Export from
+the palette was not clicked (it shares the Predict export builder). A fix found here: Copy molecule_id threw where the async Clipboard
+API is missing (plain http off localhost) and was refused in the embedded browser; it now falls back to a selection copy.
+
