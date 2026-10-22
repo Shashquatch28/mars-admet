@@ -12,6 +12,7 @@
 !ml/featurize
 !ml/models
 !ml/eval
+!ml/explain
 
 **/__pycache__
 **/*.pyc
