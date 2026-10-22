@@ -138,6 +138,13 @@ describe("markup guards", () => {
     expect(live.sort()).toEqual(["app/announce.tsx", "components/SaveControl.tsx"]);
   });
 
+  it("the status bar echoes the latest announcement as hidden text, not as a second live region", () => {
+    const bar = readFileSync(join(SRC, "shell", "StatusBar.tsx"), "utf8");
+    expect(bar).toMatch(/useLastAnnouncement/);
+    expect(bar).toMatch(/className=\{styles\.echo\}\s+aria-hidden="true"/);
+    expect(bar).not.toMatch(/aria-live=|role="status"/);
+  });
+
   it("every control is at least 24 px tall (WCAG 2.5.8): the base button rule says so", () => {
     expect(tokensCss).toMatch(/button\s*\{[^}]*min-height:\s*24px/);
   });

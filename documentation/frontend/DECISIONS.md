@@ -1117,3 +1117,6 @@ the Batch inspector has a Source column and a note; the printed report's Model c
 Healthy KERMT rows show `KERMT` and no dagger in all three places. Observation, not changed: KERMT's `clearance_microsomal` returned negative values for two small molecules (-6.26 and
 -29.34 mL/min/kg), which are shown as the model produced them; a value below zero is not a possible clearance, and the held-out error band (+/-42.6) is wider than any positive value near it.
 
+**Implementation note (2026-10-22), item 4.** The status bar shows the latest announcement as text (`useLastAnnouncement`), fed by the same `announce()` call as the live region, hidden from assistive technology so nothing
+is read twice, with no timer and no animation. `tests/a11yGuard.test.ts` fails if the echo becomes a second live region. Checked live, including the palette's Copy molecule_id.
+

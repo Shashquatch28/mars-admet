@@ -310,6 +310,14 @@
   border-radius: 2px;
   color: var(--text-secondary);
 }
+.echo {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
 .hints {
   display: flex;
   gap: 14px;
