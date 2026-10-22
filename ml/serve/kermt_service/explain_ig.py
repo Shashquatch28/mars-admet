@@ -107,8 +107,6 @@ def attribute_checkpoint(
         captured: list = []
 
         def grab(_module, inputs):
-            if grad:
-                inputs[0].retain_grad()
             captured.append(inputs[0])
 
         hooks = [
@@ -121,17 +119,21 @@ def attribute_checkpoint(
                     out = model((f_atoms, f_bonds, *comps[2:]), feats)
                     y = out[:, target_index]
                     if grad:
-                        # copies are independent, so d(weighted sum)/d(input) is each copy's own gradient times its weight
-                        (y * torch.as_tensor(weights, dtype=y.dtype)).sum().backward()
+                        # Copies are independent, so d(weighted sum)/d(input) is each copy's own gradient times its
+                        # weight. autograd.grad asks for the inputs only: .backward() would also compute, and keep in
+                        # every parameter's .grad, the gradient of all ~70M weights, which IG never uses (measured
+                        # 2026-10-22: it made one explanation take minutes and about 2.8 GB of working memory).
+                        wsum = (y * torch.as_tensor(weights, dtype=y.dtype)).sum()
+                        grads = torch.autograd.grad(wsum, [f_atoms, f_bonds, *captured])
         finally:
             for h in hooks:
                 h.remove()
         values = y.detach().cpu().numpy().astype(np.float64)
         if not grad:
             return values, None
-        g_atoms = f_atoms.grad[1:].reshape(k, n_atoms, -1).sum(0).cpu().numpy()
-        g_bonds = f_bonds.grad[1:].reshape(k, n_bonds, -1).sum(0).cpu().numpy()
-        g_desc = sum(c.grad[:, -d:] for c in captured).sum(0).cpu().numpy()
+        g_atoms = grads[0][1:].reshape(k, n_atoms, -1).sum(0).cpu().numpy()
+        g_bonds = grads[1][1:].reshape(k, n_bonds, -1).sum(0).cpu().numpy()
+        g_desc = sum(g[:, -d:] for g in grads[2:]).sum(0).cpu().numpy()
         return values, (g_atoms, g_bonds, g_desc)
 
     f_x = float(evaluate([1.0], grad=False)[0][0])
