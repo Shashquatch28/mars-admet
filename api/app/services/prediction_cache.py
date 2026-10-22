@@ -23,6 +23,12 @@ from mars_contracts import Endpoint, PredictionResponse
 from app.core.config import get_settings
 from app.services import prediction_service
 
+# The shape of a cached `PredictionResponse`. Bump it whenever a field is added or changes meaning, so an entry written
+# by older code is unreachable instead of being served without the new field for 48 hours. It is separate from
+# `MODEL_VERSION` on purpose: that string names a model generation and is pinned by each environment's `.env`, so it
+# is the wrong thing to bump for a change that is not a model change. r2: `properties` added (frontend ADR-034).
+RESPONSE_SHAPE = "r2"
+
 
 def _cache_key_smiles(smiles: str) -> str:
     if prediction_service._ml_available:
@@ -41,7 +47,7 @@ def build_cache_key(smiles: str, endpoints: list[Endpoint] | None) -> str:
     served under a new version (they simply become unreachable, not
     invalidated in place — no explicit flush step needed)."""
     ep_part = ",".join(sorted(e.value for e in endpoints)) if endpoints else "ALL"
-    return f"predict_cache:{_cache_key_smiles(smiles)}:{ep_part}:{prediction_service.serving_version()}"
+    return f"predict_cache:{_cache_key_smiles(smiles)}:{ep_part}:{prediction_service.serving_version()}:{RESPONSE_SHAPE}"
 
 
 async def get_cached_prediction(r: redis.Redis, key: str) -> PredictionResponse | None:

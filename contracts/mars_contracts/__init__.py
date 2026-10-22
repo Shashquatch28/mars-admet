@@ -32,11 +32,19 @@ from .persistence import (
     SaveMoleculeRequest,
     SaveReportRequest,
 )
-from .prediction import BatchJobStatus, EndpointPrediction, PredictionRequest, PredictionResponse
+from .prediction import (
+    BatchJobStatus,
+    EndpointPrediction,
+    MoleculeProperties,
+    PredictionRequest,
+    PredictionResponse,
+    StructuralAlert,
+)
 
 __all__ = [
     "Endpoint", "ENDPOINT_METADATA", "ALL_ENDPOINTS", "ML_ENDPOINTS", "TaskType", "EndpointCategory",
     "PredictionRequest", "PredictionResponse", "EndpointPrediction", "BatchJobStatus",
+    "MoleculeProperties", "StructuralAlert",
     "ConformerResponse", "Atom", "Bond",
     "BatchPredictOptions", "BatchRowResult", "BatchPredictResponse",
     "CompareRequest", "CompareResponse", "GenerationsResponse", "LimitsResponse",

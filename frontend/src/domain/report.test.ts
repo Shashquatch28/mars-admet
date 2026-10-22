@@ -196,3 +196,42 @@ describe("buildReport: which model answered (ADR-034 item 7)", () => {
     }
   });
 });
+
+describe("buildReport: computed properties (ADR-034 item 3)", () => {
+  const withProps = (): PredictionResponse => ({
+    ...MISS,
+    properties: {
+      mol_weight: 381.37,
+      crippen_logp: 3.51,
+      h_bond_donors: 1,
+      h_bond_acceptors: 3,
+      tpsa: 77.98,
+      rotatable_bonds: 3,
+      qed: 0.75,
+      lipinski_criteria_exceeded: 0,
+      alerts: [{ catalog: "Brenk", name: "nitro group" }],
+    },
+  });
+
+  it("carries the properties block, outside the roster and the counts", () => {
+    const r = buildReport(molecule(withProps()), NOW);
+    expect(r.properties?.source).toBe("RDKit");
+    expect(r.properties?.lines.map((l) => l.key)).toContain("qed");
+    expect(r.properties?.alerts).toEqual([
+      { catalog: "PAINS", names: [] },
+      { catalog: "Brenk", names: ["nitro group"] },
+    ]);
+    expect(rowsOf(r).map((x) => x.endpoint).sort()).toEqual([...ALL_ENDPOINTS].sort()); // the roster is unchanged
+    expect(r.counts).toEqual(buildReport(molecule(MISS), NOW).counts);
+  });
+
+  it("is null when the response has none, and for a failed row", () => {
+    expect(buildReport(molecule(MISS), NOW).properties).toBeNull();
+    const failed = buildReport({ row: 2, smilesInput: "bad", response: withProps(), cells: [], error: "invalid SMILES" }, NOW);
+    expect(failed.properties).toBeNull();
+  });
+
+  it("no longer says the service computes no drug-likeness flags", () => {
+    expect(buildReport(molecule(MISS), NOW).statements.join(" ")).not.toMatch(/drug-likeness/i);
+  });
+});

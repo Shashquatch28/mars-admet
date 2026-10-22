@@ -23,6 +23,7 @@ import { buildCsv, predictFileName } from "../../domain/exportCsv";
 import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
 import { StructureViewer } from "./StructureViewer";
+import { PropertiesPanel } from "./PropertiesPanel";
 
 // Truncate for the identity grid; only mark it as truncated when it was.
 const clip = (s: string, n = 34) => (s.length > n ? `${s.slice(0, n)}…` : s);
@@ -147,6 +148,7 @@ export function PredictWorkspace() {
             Conformer is generated on demand and expires with the prediction cache. A 404 here is a normal
             state, not an error.
           </p>
+          {response?.properties && !failure && <PropertiesPanel properties={response.properties} />}
         </div>
       </section>
 

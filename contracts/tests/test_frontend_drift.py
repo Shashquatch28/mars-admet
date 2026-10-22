@@ -27,6 +27,7 @@ from mars_contracts import (
     LoginRequest,
     LoginResponse,
     MeResponse,
+    MoleculeProperties,
     PredictionRequest,
     PredictionResponse,
     RegisterRequest,
@@ -35,6 +36,7 @@ from mars_contracts import (
     SavedReportResponse,
     SaveMoleculeRequest,
     SaveReportRequest,
+    StructuralAlert,
     TaskType,
 )
 
@@ -72,6 +74,8 @@ def test_enum_members_match(ts_name, enum):
         ("PredictionRequest", PredictionRequest),
         ("EndpointPrediction", EndpointPrediction),
         ("PredictionResponse", PredictionResponse),
+        ("MoleculeProperties", MoleculeProperties),
+        ("StructuralAlert", StructuralAlert),
         ("BatchRowResult", BatchRowResult),
         ("BatchPredictResponse", BatchPredictResponse),
         ("CompareRequest", CompareRequest),

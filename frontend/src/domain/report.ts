@@ -14,6 +14,7 @@ import { decimalPlaces, fmtDateTime, fmtInterval, fmtNum, fmtValue } from "./for
 import type { Row } from "./reconcile";
 import { DISPLAY_GROUP_LABEL, DISPLAY_GROUP_ORDER, displayGroupOf } from "./endpoints";
 import type { EndpointRowState } from "./rowState";
+import { PROPERTY_NOTES, PROPERTY_SOURCE, alertGroups, propertyLines, type AlertGroup, type PropertyLine } from "./properties";
 
 export interface ReportRow {
   endpoint: string;
@@ -53,6 +54,14 @@ export interface ReportCounts {
   notRequested: number;
 }
 
+/** The RDKit-computed properties block (ADR-034 item 3): outside the 14-endpoint count and the roster. */
+export interface ReportProperties {
+  source: string;
+  lines: PropertyLine[];
+  alerts: AlertGroup[];
+  notes: string[];
+}
+
 export interface ReportModel {
   generatedAt: string;
   smilesInput: string;
@@ -64,6 +73,8 @@ export interface ReportModel {
   /** Set when a Batch row failed before inference: there is nothing to tabulate, only the reason. */
   failure: string | null;
   counts: ReportCounts;
+  /** Null when the response carries none (an older cached or saved response, or no RDKit in the service). */
+  properties: ReportProperties | null;
   /** Rows routed to KERMT that XGBoost answered for this request. */
   fallbackCount: number;
   groups: ReportGroup[];
@@ -82,7 +93,7 @@ export const REPORT_STATEMENTS: readonly string[] = [
   "Every endpoint in the roster is listed. One the service did not return reads NOT RETURNED; one left out of the " +
     "request reads NOT REQUESTED.",
   "The Model column names the family of model that answered each row, read from the service's own model identifier.",
-  "Not included: a 2D structure drawing, and drug-likeness flags, which the service does not compute.",
+  "Not included: a 2D structure drawing.",
 ];
 
 /** Printed only when a row was routed to KERMT and answered by XGBoost, so it is never printed as noise. */
@@ -147,6 +158,10 @@ export function reportCounts(cells: Row[]): ReportCounts {
   };
 }
 
+function reportProperties(p: NonNullable<ExportMolecule["response"]>["properties"] & object): ReportProperties {
+  return { source: PROPERTY_SOURCE, lines: propertyLines(p), alerts: alertGroups(p), notes: [...PROPERTY_NOTES] };
+}
+
 export function buildReport(m: ExportMolecule, now: Date = new Date(), kermtEndpoints: readonly string[] = []): ReportModel {
   const r = m.response;
   const failed = !!m.error || !r;
@@ -168,6 +183,7 @@ export function buildReport(m: ExportMolecule, now: Date = new Date(), kermtEndp
     batchRow: m.row ?? null,
     failure: failed ? (m.error ?? "no result for this molecule") : null,
     counts: failed ? reportCounts([]) : reportCounts(m.cells),
+    properties: !failed && r?.properties ? reportProperties(r.properties) : null,
     fallbackCount,
     groups,
     statements: fallbackCount > 0 ? [...REPORT_STATEMENTS, FALLBACK_STATEMENT] : [...REPORT_STATEMENTS],

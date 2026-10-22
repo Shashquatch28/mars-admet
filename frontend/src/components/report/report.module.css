@@ -176,6 +176,22 @@
     border-left: 3px dashed var(--report-ink-muted);
   }
 
+  /* the computed-properties table has its own three columns, not the roster's eight */
+  .propTable {
+    width: 70%;
+    table-layout: auto;
+  }
+  .propTable thead th:nth-child(n) {
+    width: auto;
+  }
+  .propNotes {
+    margin: 4pt 0 0;
+    padding-left: 12pt;
+    font-size: 7.5pt;
+  }
+  .propNotes li {
+    margin: 0 0 2pt;
+  }
   .notes {
     margin-top: 10pt;
     padding-top: 6pt;

@@ -43,7 +43,14 @@ import threading
 import warnings
 from pathlib import Path
 
-from mars_contracts import ALL_ENDPOINTS, Endpoint, EndpointPrediction, PredictionResponse
+from mars_contracts import (
+    ALL_ENDPOINTS,
+    Endpoint,
+    EndpointPrediction,
+    MoleculeProperties,
+    PredictionResponse,
+    StructuralAlert,
+)
 
 from app.core.config import get_settings
 from app.services.stub_predictor import predict_stub
@@ -62,6 +69,7 @@ try:
     from serve.kermt_client import KermtClient  # noqa: E402
     from serve.kermt_router import KermtRouter  # noqa: E402
     from serve.predictor import predict_endpoints, standardize_or_raise  # noqa: E402
+    from serve.properties import compute_properties  # noqa: E402
     from serve.registry import ModelRegistry  # noqa: E402
     from serve.routing import RoutingTable  # noqa: E402
     from serve.rule_based import SA_MODEL_ID, SA_UNIT, compute_sa_score  # noqa: E402
@@ -200,7 +208,7 @@ def predict(smiles: str, endpoints: list[Endpoint] | None = None) -> PredictionR
         smiles_for_stub = standardize_or_raise(smiles)  # raises ValueError on invalid input
 
     response = _route_to_models(predict_stub(smiles_for_stub, targets), targets)
-    return _add_rule_based(response, targets)
+    return _add_properties(_add_rule_based(response, targets))
 
 
 def _route_to_models(response: PredictionResponse, targets: list[Endpoint]) -> PredictionResponse:
@@ -276,4 +284,33 @@ def _add_rule_based(response: PredictionResponse, targets: list[Endpoint]) -> Pr
     )
     order = {ep: i for i, ep in enumerate(targets)}
     response.predictions.sort(key=lambda p: order.get(p.endpoint, len(order)))
+    return response
+
+
+def _add_properties(response: PredictionResponse) -> PredictionResponse:
+    """Attach the RDKit-computed properties and structural alerts (frontend ADR-034 item 3).
+
+    They describe the molecule, not a model, so they are added whatever endpoints were asked for and whichever
+    model answered them, and a KERMT outage does not touch them. Without the ml stack, or for a molecule RDKit
+    cannot parse, `properties` stays null: the client says nothing rather than showing a made-up number."""
+    if not _ml_available:
+        return response
+    try:
+        props = compute_properties(response.smiles_standardized)
+    except Exception:  # never let a descriptor failure turn a prediction into a 500
+        logger.exception("computed properties failed for %s", response.molecule_id)
+        return response
+    if props is None:
+        return response
+    response.properties = MoleculeProperties(
+        mol_weight=props.mol_weight,
+        crippen_logp=props.crippen_logp,
+        h_bond_donors=props.h_bond_donors,
+        h_bond_acceptors=props.h_bond_acceptors,
+        tpsa=props.tpsa,
+        rotatable_bonds=props.rotatable_bonds,
+        qed=props.qed,
+        lipinski_criteria_exceeded=props.lipinski_criteria_exceeded,
+        alerts=[StructuralAlert(catalog=c, name=n) for c, n in props.alerts],  # type: ignore[arg-type]
+    )
     return response

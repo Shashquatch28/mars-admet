@@ -62,6 +62,29 @@ export interface EndpointPrediction {
   heldout_error_n?: number | null;
 }
 
+/** One PAINS or Brenk substructure match. A match is not a prediction; PAINS concerns assay interference, not toxicity. */
+export interface StructuralAlert {
+  catalog: "PAINS" | "Brenk";
+  name: string;
+}
+
+/**
+ * RDKit-computed properties of the standardized molecule (ADR-034 item 3). Not model predictions:
+ * deterministic, no applicability domain, independent of which model answered. Plain numbers; no pass or
+ * fail meaning is attached to any of them.
+ */
+export interface MoleculeProperties {
+  mol_weight: number; // g/mol
+  crippen_logp: number; // Wildman-Crippen, not Lipinski's CLogP
+  h_bond_donors: number;
+  h_bond_acceptors: number;
+  tpsa: number; // A^2
+  rotatable_bonds: number;
+  qed?: number | null; // a published desirability function of eight properties, not a MARS prediction
+  lipinski_criteria_exceeded: number; // 0 to 4 of the four rule-of-five limits
+  alerts: StructuralAlert[];
+}
+
 export interface PredictionResponse {
   smiles_input: string;
   smiles_standardized: string;
@@ -70,6 +93,8 @@ export interface PredictionResponse {
   model_version: string;
   served_at: string; // ISO datetime
   cache_hit: boolean;
+  /** Absent or null on a response that predates it (cached or saved earlier) and when the service has no RDKit. */
+  properties?: MoleculeProperties | null;
 }
 
 // --- conformer (conformer.py) ---

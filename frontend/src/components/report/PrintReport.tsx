@@ -127,6 +127,41 @@ export function PrintReport({ model }: { model: ReportModel }) {
         </>
       )}
 
+      {model.properties && !model.failure && (
+        <section className={styles.group}>
+          <table className={styles.propTable}>
+            <caption>Computed properties ({model.properties.source}; not predictions)</caption>
+            <thead>
+              <tr>
+                <th scope="col">Property</th>
+                <th scope="col">Value</th>
+                <th scope="col">Unit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {model.properties.lines.map((l) => (
+                <tr key={l.key}>
+                  <th scope="row">{l.label}</th>
+                  <td className={styles.value}>{l.value}</td>
+                  <td>{l.unit}</td>
+                </tr>
+              ))}
+              {model.properties.alerts.map((g) => (
+                <tr key={g.catalog}>
+                  <th scope="row">Structural alerts: {g.catalog}</th>
+                  <td colSpan={2}>{g.names.length === 0 ? "no match" : g.names.join(", ")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <ul className={styles.propNotes}>
+            {model.properties.notes.map((n) => (
+              <li key={n}>{n}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className={styles.notes}>
         <h2>How to read this report</h2>
         <ul>
