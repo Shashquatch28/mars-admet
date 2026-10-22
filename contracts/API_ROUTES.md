@@ -68,8 +68,8 @@ container); 501 in an environment without it.
 - Rate limits: anonymous 60 `/predict`/min per IP; per-account 5 concurrent
   batch jobs, 50,000-molecule cap, interactive threshold 100 (`BATCH_INTERACTIVE_THRESHOLD`).
 - Batch uploads (R2) auto-deleted 24h after job completion.
-- Retention: `retrain_opt_in` defaults `false`; opted-in data stored separately
-  from the serving cache/upload bucket.
+- Retention: submitted molecules are not retained beyond serving, and are never used for training; there is no
+  retraining opt-in (frontend ADR-034 item 10).
 
 ## Module 13 — Auth & Persistence (M3)
 

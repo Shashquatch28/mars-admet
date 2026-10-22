@@ -13,6 +13,12 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-22 — The per-upload retraining opt-in is removed; MARS never trains on submitted molecules
+
+**Decision (maintainer, 2026-10-22).** `BatchPredictOptions.retrain_opt_in` is deleted from the contract and the blueprint's opt-in paragraph (Module 8) now says there is none. Nothing in the API read the field, no UI offered it, and no separate storage path for opted-in data exists, so it described a promise the system could not keep. The stated posture becomes: molecules are not retained beyond serving, except what the user saves to their Library, and are never used to train or improve models. A future opt-in would need its own consent flow, storage and retention terms. Recorded with the other frontend scope decisions in `documentation/frontend/DECISIONS.md` ADR-034.
+
+---
+
 ## 2026-10-19 — KERMT Tier 0 is wired into serving: per-endpoint routing, separate CPU service, XGBoost as the fallback
 
 **Decision (maintainer delegated the configuration: "as per the blueprint, or whatever is most optimal and production practice").**

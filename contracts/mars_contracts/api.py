@@ -29,11 +29,6 @@ class BatchPredictOptions(BaseModel):
     endpoints: list[Endpoint] | None = Field(
         default=None, description="Subset to predict. None = all 14 ML endpoints, plus the rule-based SA score when the server can compute it."
     )
-    retrain_opt_in: bool = Field(
-        default=False,
-        description="Module 8 per-upload opt-in: allow this data to improve future models. "
-        "Default False = no retention beyond serving results.",
-    )
 
 
 class BatchRowResult(BaseModel):
