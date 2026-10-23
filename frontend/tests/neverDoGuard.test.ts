@@ -61,7 +61,8 @@ describe("#7: nothing counts, enters, draws itself or shimmers", () => {
     const offenders: string[] = [];
     for (const f of cssModules.filter((m) => !rel(m).startsWith("components/dataviz/"))) {
       for (const m of noComments(read(f)).matchAll(/(^|[;{\s])animation(-name)?\s*:\s*([^;]+);/g)) {
-        if (!/^\s*none\s*$/.test(m[3])) offenders.push(`${rel(f)}: animation: ${m[3].trim()}`);
+        // "none !important" is how structureEditor.module.css switches Ketcher's own motion off (ADR-035)
+        if (!/^\s*none(\s*!important)?\s*$/.test(m[3])) offenders.push(`${rel(f)}: animation: ${m[3].trim()}`);
       }
     }
     expect(offenders).toEqual([]);
@@ -100,7 +101,7 @@ describe("#9: the visual identity", () => {
     const offenders: string[] = [];
     for (const f of cssModules) {
       for (const m of noComments(read(f)).matchAll(/box-shadow\s*:\s*([^;]+);/g)) {
-        const v = m[1].trim();
+        const v = m[1].replace(/\s*!important\s*$/, "").trim(); // "none !important" removes Ketcher's shadows (ADR-035)
         if (v === "none" || /^var\(--shadow-overlay\)$/.test(v)) continue;
         // every layer must be inset or a token highlight
         const layers = v.split(/,(?![^()]*\))/).map((l) => l.trim());

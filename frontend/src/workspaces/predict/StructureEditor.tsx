@@ -7,10 +7,11 @@
 // bundle does not pay for it, and if WebAssembly or the chunk is unavailable the panel says that and the field
 // still works.
 //
-// Focus: opening moves focus to the panel (named "Structure editor"); closing, by the Close button or Esc,
-// returns it to the trigger. Esc inside the Ketcher canvas belongs to Ketcher (cancel the tool or its dialog),
-// so there the Close button is the way out. The panel is a sibling of the three columns, not a modal, so the
-// SMILES field and Run stay usable beside it.
+// Focus: opening moves focus to the panel (named "Structure editor"); Ketcher then takes it into its own canvas as
+// soon as it has loaded. Closing, by the trigger, the Close button or Esc, returns focus to the trigger. Esc inside
+// the Ketcher canvas belongs to Ketcher (cancel the tool, close its dialog), so there the way out is Tab to the Close
+// button, which follows the canvas in Tab order, or the trigger. The panel is not a modal: the SMILES field and Run
+// stay usable beside it.
 import {
   Component,
   Suspense,
@@ -219,13 +220,16 @@ export function StructureEditor() {
         <h2 id={titleId} className={styles.title}>
           Structure editor
         </h2>
-        <button type="button" className={styles.close} onClick={() => setOpen(false)}>
-          Close
-        </button>
       </div>
       <p className={statusIsProblem(status) ? styles.problem : styles.note}>{statusText(status)}</p>
       <div ref={host} className={styles.canvas}>
         {body}
+      </div>
+      {/* After the canvas in reading and Tab order: Ketcher takes focus once it loads, and Tab from its last control lands here. */}
+      <div className={styles.foot}>
+        <button type="button" className={styles.close} onClick={() => setOpen(false)}>
+          Close
+        </button>
       </div>
     </div>
   );

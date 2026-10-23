@@ -53,14 +53,18 @@ describe("Ketcher stays out of the main bundle", () => {
 describe("MARS's chrome around the editor follows the design rules", () => {
   const css = stripComments(read(join(SRC, "workspaces/predict/structureEditor.module.css")));
 
-  it("does not animate or transition", () => {
-    expect(css).not.toMatch(/\b(transition|animation)\b/);
+  it("does not animate or transition: the only such declarations switch Ketcher's own off", () => {
+    for (const m of css.matchAll(/(transition|animation)[a-z-]*\s*:\s*([^;]+);/g)) expect(m[2].trim(), m[0]).toMatch(/^none/);
   });
   it("keeps every radius within the token scale (<= 3px)", () => {
-    for (const m of css.matchAll(/border-radius:\s*([^;]+);/g)) expect(m[1].trim()).toMatch(/^var\(--radius(-sm)?\)$/);
+    for (const m of css.matchAll(/border-radius:\s*([^;]+);/g)) expect(m[1].replace("!important", "").trim()).toMatch(/^var\(--radius(-sm)?\)$/);
   });
-  it("uses no shadow (it is not an overlay: it sits inside <main>)", () => {
-    expect(css).not.toMatch(/box-shadow/);
+  it("adds no shadow: the only box-shadow declaration removes Ketcher's", () => {
+    for (const m of css.matchAll(/box-shadow:\s*([^;]+);/g)) expect(m[1].trim()).toMatch(/^none/);
+  });
+  it("contains Ketcher: its typeface, radius, shadow and motion are overridden inside the box", () => {
+    expect(css).toMatch(/\.canvas \*:not\(svg\)[^{]*\{[^}]*font-family:\s*var\(--sans\) !important/);
+    expect(css).toMatch(/\.canvas \*[^{]*\{[^}]*animation:\s*none !important/);
   });
 });
 
