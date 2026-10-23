@@ -20,6 +20,7 @@ from typing import Protocol
 import redis.asyncio as redis
 
 from app.core.config import Settings, get_settings
+from app.services.s3_client import make_s3_client
 
 
 def retention_seconds() -> int:
@@ -63,17 +64,7 @@ class S3BlobStore:
 
     @staticmethod
     def _make_client(settings: Settings):
-        import boto3
-        from botocore.config import Config
-
-        return boto3.client(
-            "s3",
-            endpoint_url=settings.s3_endpoint_url or None,
-            aws_access_key_id=settings.s3_access_key_id,
-            aws_secret_access_key=settings.s3_secret_access_key,
-            region_name=settings.s3_region,
-            config=Config(retries={"max_attempts": 3}, signature_version="s3v4"),
-        )
+        return make_s3_client(settings)
 
     def _ensure_bucket(self) -> None:
         """Create the bucket if it is missing (MinIO in development). A refusal is ignored: R2 tokens

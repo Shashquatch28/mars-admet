@@ -23,7 +23,7 @@ from app.routers import (
     reports,
     worker,
 )
-from app.services import prediction_service
+from app.services import model_artifacts, prediction_service
 from app.spa import mount_spa
 
 logger = logging.getLogger("mars.startup")
@@ -70,6 +70,13 @@ def _warn_on_insecure_config() -> None:
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     _warn_on_insecure_config()
+    # Models first. With MODEL_ARTIFACT_BUCKET set this downloads and verifies the release; any failure stops
+    # the process here (before the port opens), so a bad deploy never serves stub values.
+    try:
+        await asyncio.to_thread(model_artifacts.ensure_model_artifacts)
+    except Exception:
+        logger.critical("Model artifacts are missing or invalid; refusing to start.", exc_info=True)
+        raise
     # Warm the model registry in the background: the server accepts requests at once, and a
     # request that arrives first simply waits on the registry lock for the same load.
     warm_task = asyncio.create_task(asyncio.to_thread(prediction_service.warm_up))

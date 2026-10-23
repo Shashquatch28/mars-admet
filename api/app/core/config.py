@@ -5,9 +5,24 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def normalize_database_url(url: str) -> str:
+    """Make a Postgres URL pasted from a provider's console usable by SQLAlchemy's asyncpg driver.
+
+    Neon hands out `postgresql://user:pw@host/db?sslmode=require&channel_binding=require`. asyncpg takes
+    neither the bare scheme (SQLAlchemy would pick psycopg2, which is not installed), nor `sslmode`
+    (it is `ssl`), nor `channel_binding` (an unexpected keyword). Anything else is left as written."""
+    url = url.strip()
+    parts = urlsplit(url)
+    if parts.scheme in {"postgres", "postgresql"}:
+        parts = parts._replace(scheme="postgresql+asyncpg")
+    query = [("ssl" if k == "sslmode" else k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True) if k != "channel_binding"]
+    return urlunsplit(parts._replace(query=urlencode(query)))
 
 
 class Settings(BaseSettings):
@@ -17,6 +32,12 @@ class Settings(BaseSettings):
     # ^ asyncpg driver, NOT the sync psycopg2 default — SQLAlchemy's async
     # engine needs the +asyncpg suffix explicitly or it tries to import
     # psycopg2 (not installed, and wrong API for `AsyncSession` regardless).
+    # `normalize_database_url` fixes up a URL copied from Neon's console.
+
+    @field_validator("database_url")
+    @classmethod
+    def _asyncpg_url(cls, value: str) -> str:
+        return normalize_database_url(value)
     redis_url: str = Field(default="redis://localhost:6379/0")
     secret_key: str = Field(
         default="mars-dev-secret-change-me",
@@ -74,6 +95,25 @@ class Settings(BaseSettings):
 
     model_version: str = Field(default="v0.2.0-dev")  # bump when the response shape or routing changes: it is part of the 48 h cache key
     model_artifact_dir: str = Field(default="./ml/artifacts")
+    model_artifact_bucket: str = Field(
+        default="",
+        description="S3-compatible bucket holding published model releases (ml/serve/artifact_store.py). Empty "
+        "(default) means MODEL_ARTIFACT_DIR is used as it is, e.g. the docker-compose bind mount. When set, the "
+        "release named by MODEL_ARTIFACT_RELEASE is downloaded and verified into MODEL_ARTIFACT_DIR at start-up.",
+    )
+    model_artifact_prefix: str = Field(default="models", description="Key prefix of releases inside the bucket.")
+    model_artifact_release: str = Field(
+        default="", description="Release id (the SHA-256 of its manifest) to serve; required when MODEL_ARTIFACT_BUCKET is set."
+    )
+    model_artifact_access_key_id: str = Field(
+        default="", description="Read-only key for the model bucket. Empty uses S3_ACCESS_KEY_ID. Lets the write key stay off the server."
+    )
+    model_artifact_secret_access_key: str = Field(default="", description="Secret for MODEL_ARTIFACT_ACCESS_KEY_ID.")
+    require_real_models: bool = Field(
+        default=False,
+        description="Refuse to start unless all 14 ML endpoints have a trained model in MODEL_ARTIFACT_DIR, instead "
+        "of serving the stub for the missing ones. Set true in production (implied by MODEL_ARTIFACT_BUCKET).",
+    )
     ml_data_cache_dir: str = Field(default="./ml/data/cache")
     prediction_cache_ttl_seconds: int = Field(default=172_800)
 
