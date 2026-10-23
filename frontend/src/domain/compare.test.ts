@@ -7,7 +7,8 @@ import {
   repeatedSlots,
 } from "./compare";
 import { ALL_ENDPOINTS } from "./endpoints";
-import type { CompareResponse, EndpointPrediction, PredictionResponse } from "../types/contracts";
+import { propertyLines } from "./properties";
+import type { CompareResponse, EndpointPrediction, MoleculeProperties, PredictionResponse } from "../types/contracts";
 import hit from "./real-responses/celecoxib-hit.json";
 import stubOnly from "./real-responses/celecoxib-stub-only.json";
 
@@ -77,7 +78,85 @@ describe("buildComparison", () => {
     expect(mixed.modelVersions).toEqual(["v1", "v2"]);
   });
   it("is empty rather than throwing for an empty response", () => {
-    expect(buildComparison({ molecules: [] })).toEqual({ columns: [], groups: [], modelVersions: [] });
+    const empty = buildComparison({ molecules: [] });
+    expect(empty.columns).toEqual([]);
+    expect(empty.groups).toEqual([]);
+    expect(empty.modelVersions).toEqual([]);
+    expect(empty.properties.lines.every((l) => l.cells.length === 0)).toBe(true);
+  });
+});
+
+describe("computed properties across molecules (ADR-036)", () => {
+  const A: MoleculeProperties = {
+    mol_weight: 381.3714,
+    crippen_logp: -0.5,
+    h_bond_donors: 1,
+    h_bond_acceptors: 3,
+    tpsa: 77.98,
+    rotatable_bonds: 3,
+    qed: 0.7541,
+    lipinski_criteria_exceeded: 0,
+    alerts: [{ catalog: "PAINS", name: "ene_rhod_A(235)" }, { catalog: "Brenk", name: "nitro group" }],
+  };
+  const B: MoleculeProperties = {
+    mol_weight: 46.07,
+    crippen_logp: -0.0014,
+    h_bond_donors: 1,
+    h_bond_acceptors: 1,
+    tpsa: 20.23,
+    rotatable_bonds: 0,
+    qed: null,
+    lipinski_criteria_exceeded: 0,
+    alerts: [],
+  };
+  const withProps = (p: PredictionResponse, props: MoleculeProperties | null): PredictionResponse => ({ ...p, properties: props });
+  const two = buildComparison({ molecules: [withProps(asPred(hit), A), withProps(asPred(stubOnly), B)] });
+
+  it("has one cell per molecule in every row, in Predict's row order and number format", () => {
+    expect(two.properties.lines.map((l) => l.key)).toEqual(propertyLines(A).map((l) => l.key));
+    for (const row of two.properties.lines) expect(row.cells).toHaveLength(2);
+    for (const [i, p] of [A, B].entries()) {
+      expect(two.properties.lines.map((l) => l.cells[i])).toEqual(propertyLines(p).map((l) => l.value));
+    }
+    expect(two.properties.lines.map((l) => l.unit)).toEqual(propertyLines(A).map((l) => l.unit));
+  });
+  it("keeps the alerts per molecule: a list of names, or an empty list that reads as no match", () => {
+    expect(two.properties.alerts).toEqual([
+      { catalog: "PAINS", cells: [["ene_rhod_A(235)"], []] },
+      { catalog: "Brenk", cells: [["nitro group"], []] },
+    ]);
+  });
+  it("marks a molecule the service sent no properties for with null in every row, and no other molecule", () => {
+    const partial = buildComparison({ molecules: [withProps(asPred(hit), A), withProps(asPred(stubOnly), null)] });
+    for (const row of partial.properties.lines) {
+      expect(row.cells[0]).not.toBeNull();
+      expect(row.cells[1]).toBeNull();
+    }
+    for (const row of partial.properties.alerts) {
+      expect(row.cells[0]).not.toBeNull();
+      expect(row.cells[1]).toBeNull();
+    }
+    // a response from before `properties` existed has none at all
+    const old = buildComparison({ molecules: [asPred(hit), asPred(stubOnly)] });
+    expect(old.properties.lines.every((l) => l.cells.every((c) => c === null))).toBe(true);
+  });
+  it("is a table of written values only: no number to subtract, no difference, no marker of a higher or lower value", () => {
+    for (const row of two.properties.lines) {
+      expect(Object.keys(row).sort()).toEqual(["cells", "key", "label", "unit"]);
+      for (const c of row.cells) expect(typeof c === "string" || c === null).toBe(true);
+    }
+    expect(Object.keys(two.properties).sort()).toEqual(["alerts", "lines", "notes", "source"]);
+    const words = JSON.stringify(two.properties).toLowerCase();
+    for (const w of ["diff", "delta", "winner", "rank", "better", "worse", "higher", "lower", "best"]) expect(words).not.toContain(w);
+  });
+  it("does not change the roster, its flags or its counts", () => {
+    const bare = buildComparison({ molecules: [asPred(hit), asPred(stubOnly)] });
+    expect(two.columns).toEqual(bare.columns);
+    expect(two.groups).toEqual(bare.groups);
+  });
+  it("labels the values as RDKit calculations, not predictions", () => {
+    expect(two.properties.source).toBe("RDKit");
+    expect(two.properties.notes.join(" ")).toContain("not MARS predictions");
   });
 });
 
