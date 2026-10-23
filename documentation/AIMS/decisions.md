@@ -13,6 +13,21 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-23 — Integrated Gradients on the real KERMT checkpoints: measured, and served as background jobs (frontend ADR-035)
+
+**Measured (24 fixed molecules: 6 held-out test molecules + 18 edge cases; hERG, BBB, logP; 3 seeds; 4 CPUs; baseline 0.0 and 0.5).** Converged within
+max(5% of the change, 0.001) by 256 steps for 68-73% (hERG), 77-86% (BBB), 95% (logP); misses are mostly molecules whose output barely moves (absolute residual
+<= 0.03). Per-seed residuals are much worse than the seed average. Warm latency median 93-193 s, p95 385-1094 s; about 150 ms per step per checkpoint; more CPUs
+were slower. Peak memory 2.3-2.8 GiB (chunk 4). Atom attributions are baseline-stable (cosine 0.96-0.99), descriptor-part attributions are not (0.15-0.21).
+Atoms carry 75-88% of the IG attribution mass (TreeSHAP: descriptors 81-91%). Five engine/build bugs found and fixed (ml/explain missing from the Docker
+allowlist, backward() computing 70M weight gradients, methane, descriptor names, selenium NaN).
+
+**Decision (maintainer, 2026-10-23).** Serve it as a polled background job inside the KERMT service, cached 48 h; anonymous with tight limits; redefine
+`completeness_error` and add `converged` and `seed_agreement`; chunk 4; job state in memory for v1. Recorded as frontend ADR-035. Descriptor baseline,
+tolerance and schedule remain provisional (recommended baseline 0.5, low confidence).
+
+---
+
 ## 2026-10-22 — The per-upload retraining opt-in is removed; MARS never trains on submitted molecules
 
 **Decision (maintainer, 2026-10-22).** `BatchPredictOptions.retrain_opt_in` is deleted from the contract and the blueprint's opt-in paragraph (Module 8) now says there is none. Nothing in the API read the field, no UI offered it, and no separate storage path for opted-in data exists, so it described a promise the system could not keep. The stated posture becomes: molecules are not retained beyond serving, except what the user saves to their Library, and are never used to train or improve models. A future opt-in would need its own consent flow, storage and retention terms. Recorded with the other frontend scope decisions in `documentation/frontend/DECISIONS.md` ADR-034.

@@ -31,7 +31,7 @@ Interactive docs are at `/api/docs`.
 | `/batch/results/{job_id}` | GET | account | — | `BatchPredictResponse` (results populated) | M3 ✅ |
 | `/compare` | POST | none | `CompareRequest` | `CompareResponse` | M3 ✅ |
 | `/molecule/{id}/3d` | GET | none | — | `ConformerResponse` | M3 ✅ — `{id}` must have been seen by `/predict` in the current cache window (see below) |
-| `/molecule/{id}/explain?endpoint=<Endpoint>` | GET | none (IP rate-limited with `/predict`) | query param `endpoint` | `ExplainResponse` (see below) | M4 ✅ — `{id}` must have been seen by `/predict` in the current cache window, like `/3d` |
+| `/molecule/{id}/explain?endpoint=<Endpoint>` | POST / GET / DELETE | none (POST rate-limited with `/predict`) | query param `endpoint` | `ExplainResponse` or `ExplainJobStatus` (see below) | M4 ✅ — `{id}` must have been seen by `/predict` in the current cache window, like `/3d` |
 | `/molecule/{id}/report` | GET | none | — | `application/pdf` (binary; no JSON model) | **Not built, superseded**: the report is made in the client (print, Save as PDF), frontend ADR-029 |
 
 `GET /molecule/{id}/3d` needs the id -> SMILES mapping `/predict` registers
@@ -94,7 +94,7 @@ Session cookie: `SESSION_COOKIE_NAME` (default `mars_session`), HttpOnly,
 sliding 7-day TTL refreshed on activity. `session:{token} -> user_id` in
 Redis; logout/account-deletion deletes the key for instant revocation.
 
-## `GET /molecule/{id}/explain` (Module 6, ADR-031)
+## `/molecule/{id}/explain` (Module 6, ADR-031; background jobs, ADR-035)
 
 The model that serves the value explains it. `ml/serve/routing.json` decides, exactly as for `/predict`:
 an XGBoost-served endpoint is explained by exact TreeSHAP over the promoted seeds (`method: "tree_shap"`),
@@ -102,17 +102,23 @@ a KERMT-served endpoint by Integrated Gradients on the KERMT service (`method: "
 There is no fallback between the two: if KERMT serves an endpoint and cannot answer, the answer is 503, never an
 explanation of a different model. `model_id` equals the `model_id` of the prediction explained (the client checks).
 
-Computed on request, cached 48 h under `explain_cache:<serving version>:<molecule_id>:<endpoint>`; a failure is
-never cached. It runs on its own two-worker pool so it cannot starve `/predict`.
+A KERMT-served explanation takes minutes (median 93-193 s warm on 4 CPUs, up to about 18 min for large molecules), so it is a
+**background job inside the KERMT service** (ADR-035): `POST` starts or joins it (idempotent), `GET` reads it, `DELETE` cancels it.
+An XGBoost-served explanation is instant: `POST` answers 200 with the result. The browser polls `GET` about every 3 s while a job
+is queued or running; polling is not rate limited, starting a job is (the `/predict` per-IP bucket, one concurrent job per IP,
+a bounded queue of 8). Results are cached 48 h under `explain_cache:<serving version>:<IG parameters digest>:<molecule_id>:<endpoint>`;
+a failure is never cached. Job state lives in memory in the service: a restart loses it, reported as a failed job to start again.
 
 | Status | Meaning |
 |---|---|
-| 200 | `ExplainResponse` |
+| 200 | `ExplainResponse`; or, from `DELETE`, an `ExplainJobStatus` with state `cancelled` |
+| 202 | `ExplainJobStatus`: queued or running, with `Retry-After` |
+| 204 | `GET` only: nothing started and nothing cached for this molecule and endpoint |
 | 404 | unknown or expired `molecule_id` (call `/predict` first) |
 | 409 | nothing to explain: the endpoint is stub-served, or is the rule-based `synthetic_accessibility` |
 | 422 | unknown `endpoint`, or the molecule cannot be explained |
 | 501 | no ml stack in this environment (no RDKit / XGBoost) |
-| 503 | the serving model cannot explain right now |
+| 503 | the serving model cannot explain right now; the queue is full; or the job was lost to a service restart (start it again) |
 
 `ExplainResponse` is in `mars_contracts/explain.py` (frontend mirror in `contracts.ts`, covered by the drift test).
 Every number is signed: positive pushed the model's output UP from its reference, negative DOWN. The contract never
@@ -124,6 +130,9 @@ base_value + structure_total + whole_molecule_total + unmapped_total == output_v
 structure_total        = sum(atom_attributions)     # one value per atom of smiles_standardized, RDKit order
 whole_molecule_*       = RDKit 2D descriptors the model also reads; they cannot be placed on atoms
 unmapped_total         = TreeSHAP: fingerprint bits absent from the molecule; IG: the completeness residual
+completeness_error     = the method's own identity: IG the integration residual |unmapped_total|, TreeSHAP the additivity error
+converged              = IG only: completeness_error met the tolerance after the final step count (false is returned, flagged)
+seed_agreement         = median pairwise cosine of the per-seed atom attributions (null for one seed)
 fragment_attributions  = sums over named functional groups / ring systems; they overlap and do NOT add up
 output_space           = "log_odds" (XGBoost classification), "score" (KERMT classification), "native_unit" (regression)
 ```
