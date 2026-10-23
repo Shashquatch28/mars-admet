@@ -1136,7 +1136,7 @@ and its fixed line "drug-likeness flags are not included" is gone. Checked live:
 
 ## ADR-037 — Excel export of a Batch result: the same long format as the CSV, written with `write-excel-file`, loaded on click
 
-**Date:** 2026-10-23 · **Status:** proposed. The dependency choice below is not installed; the maintainer confirms the pick first. Nothing in this ADR is implemented.
+**Date:** 2026-10-23 · **Status:** accepted. The maintainer confirmed the `write-excel-file` pick on 2026-10-23; implemented the same day on `feat/batch-export-xlsx` (see the implementation note at the end).
 
 **Context.** Batch exports a CSV (`domain/exportCsv.ts`): one line per molecule x endpoint in roster order, a `state` column that says what the screen says, reliability apart from the
 value, every roster endpoint present whether or not it was returned (ADR-008), full-precision numbers, no rank or winner column. An Excel file is wanted next to it. Writing an
@@ -1171,8 +1171,7 @@ bundle of a browser entry that writes one sheet to a `Blob`.
 
 **Decision (what is built once the pick is confirmed).**
 
-1. An "Excel" action beside "CSV" in Batch (and the palette's export command, which already shares the CSV builder), offered under the same condition as the CSV: a real result, never a sample, never after
-   a failure.
+1. An "Export Excel" action beside "Export results" (the CSV) in Batch, offered under the same condition as the CSV: a real result, never a sample, never after a failure. (The palette's export command exports one Predict molecule, not a batch, so it stays CSV-only.)
 2. One sheet, `Results`, with exactly the CSV's columns in the CSV's order, one line per molecule x endpoint in roster order, built from the same `ExportMolecule` list by one shared function so the two
    files cannot drift (a `buildExportTable()` returns typed cells; the CSV and the workbook are two writers over it). The sheet carries no rank, winner, score, flag or colour column, no conditional formatting
    and no cell fill. `state` is its own column and the `value` cell is the same cell in every state.
@@ -1194,3 +1193,14 @@ product communicates, not only about its screens. *Dropping the `Read me` sheet*
 **Never-do audit (planned).** (1) numeric cells carry no format that depends on the value and no fill; (2) no prop added to `EndpointRow`; (3) no sort, rank or winner column, and the row order is the roster's; (4) no chart
 and no data bar in the sheet; (5) every roster endpoint has a line, a not-returned or not-requested one with its state and an empty value; (6) a stub value is exported with `state = stub_served` and `model_id = stub-v0`,
 as in the CSV; (7) nothing animates and the dependency is loaded without a counting spinner; (8) the states are explained in the `Read me` sheet in words; (9) no UI shadow, radius or font change.
+
+**Implementation note (2026-10-23).** Built as decided, with these particulars.
+- **Dependency.** `write-excel-file` 4.1.1 added to `frontend/package.json` as an exact version (no caret); its only dependency is `fflate`. `npm audit` for the two packages is 0 (the three advisories the audit still lists, in `vite` and `vitest`, are on main already, are unrelated to this package and are cleared by the `vite` and `vitest` bump on `feat/structure-editor`; they are not touched here).
+- **Lazy.** The library is imported only inside `writeWorkbook` in `domain/exportXlsx.ts` (`await import("write-excel-file/browser")`); a guard test fails if any other file imports it statically. The production build has it as its own chunk of 72 kB (about 20 kB gzipped) next to the 353 kB main chunk, which grew by 5 kB for our own code; the first press fetches the chunk.
+- **One table, two writers.** `buildExportRows` (in `exportCsv.ts`) returns typed cells (text, number or null) and `buildCsv` and the workbook are two writers over it; the CSV's output is unchanged (its eleven existing tests pass untouched). The Results sheet has the CSV's 20 columns in order, a bold frozen header row and column widths, and nothing else: no fill, number format or conditional format (a guard test searches the module for them).
+- **No formula cell.** Every text cell is an explicit `String` cell. The test writes a real workbook, unzips it, and asserts that no worksheet contains `<f>`, that every cell is a shared or inline string or a number, that a number is a bare `<v>` and that text beginning `=`, `+`, `-` or `@` (a SMILES and an error message in the test) is present as data.
+- **Read me sheet.** Defines each of the 20 columns and the seven `state` values, states that the file ranks nothing, and reuses the first four of the report's fixed statements word for word ("this report" read "this file"); a test pins both, and that every CSV column has a definition.
+- **Ceiling.** `XLSX_MAX_MOLECULES = 5000` (75,000 lines). Above it the button is replaced by one sentence giving the run's size and saying the CSV has no such limit; `buildXlsxBlob` also refuses above it. The 5,000 is the figure proposed above, **not re-measured on a real batch of that size** (see below). A failure while building shows its message in the header (`role="alert"`) and the CSV button is unaffected.
+- **Download.** `downloadBlob` beside `downloadText`; the file is `mars-batch-<n>-molecules-<date>.xlsx`.
+
+**Verified live (2026-10-23, private stack with real models).** A three-row batch (two molecules and a row beginning `=`) ran; "Export Excel" appeared beside "Export results", produced `mars-batch-3-molecules-2026-10-23.xlsx` (9,736 bytes, the OOXML content type, a ZIP signature); the dev server served the library as its own module file, and the production build was checked to hold it as a separate chunk (not that the chunk loads only after the press, which was not timed). **Not run:** opening the file in Excel or LibreOffice (neither is on this machine; only the XML was inspected), the 5,000-molecule ceiling on a real batch (time and memory not measured), a queued batch, a screen reader on the new button.
