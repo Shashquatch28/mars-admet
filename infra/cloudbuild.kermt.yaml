@@ -1,0 +1,12 @@
+# Build the KERMT inference image (CPU) in Google Cloud Build and push it to Artifact Registry. Run from the
+# repository root; see documentation/DEPLOY.md, step "KERMT service". The checkpoints are NOT in the image: the
+# service reads them from a Cloud Storage volume mounted at /models.
+#
+#   gcloud builds submit --config infra/cloudbuild.kermt.yaml `
+#     --substitutions "_IMAGE=us-central1-docker.pkg.dev/<project>/mars/mars-kermt,_TAG=<git short sha>" .
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "ml/serve/kermt_service/Dockerfile", "-t", "${_IMAGE}:${_TAG}", "."]
+images:
+  - "${_IMAGE}:${_TAG}"
+timeout: 3000s

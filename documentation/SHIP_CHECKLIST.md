@@ -41,6 +41,7 @@ approval, `[lab]` needs the GPU workstation.
 - [x] C8 `[here]` Cloud Tasks batch worker (needs a deployed worker)
   Code done: jobs run as resumable slices through a blob store (Redis or S3/R2) and a queue (local or Cloud Tasks) with a secret-guarded worker endpoint; unit-tested against fakes and, for S3, against local MinIO. Not run against a real Cloud Tasks project; the post-deploy checks are in `api/README.md`..
 - [x] C9 `[here]` Sentry and UptimeRobot monitoring. (Sentry is code-complete and tested; both need a real account and the deployed URL, so the setup is the runbook in `documentation/MONITORING.md`.)
+- [x] C10 `[here]` Deliver the trained models to a deployed service (`ml/artifacts` is gitignored and not in the image). Done 2026-10-23, branch `deploy/cloud-run`: `infra/scripts/publish_model_artifacts.py` publishes an immutable, SHA-256-manifested release to the model bucket; the API downloads and verifies it at start-up (`app/services/model_artifacts.py`, `ml/serve/artifact_store.py`) and refuses to start if any of the 14 endpoints lacks a model, a band or a calibrator. Checked: unit tests (corruption, tampering, missing endpoint, unsafe paths, no overwrite), and the real script and fetcher against a private local MinIO with the real 184-file, 209 MB tree (identical on fetch). Not run against R2 or Cloud Run. Runbook: `documentation/DEPLOY.md`.
 
 ## D. Launch quality (M5 minimum)
 

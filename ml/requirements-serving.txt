@@ -18,6 +18,6 @@
 
 numpy>=2.1,<3
 rdkit>=2026.3.1
-xgboost>=2.0
+xgboost-cpu>=2.1   # same `xgboost` module and version as xgboost, without the nvidia-nccl-cu12 wheel (~350 MB) it pulls in on Linux and this CPU-only service never uses
 scikit-learn>=1.5,<2
 httpx>=0.27   # serve/kermt_client.py (also pinned by api/requirements.txt)

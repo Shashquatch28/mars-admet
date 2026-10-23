@@ -78,6 +78,13 @@ Without Postgres and Redis the integration tier skips rather than fails (see
 containers. Real inference is only exercised where rdkit is installed (the
 built image), so root-`.venv` runs are stub-only for `/predict` by design.
 
+## Deploying
+
+The full step-by-step runbook (accounts, every environment variable, model delivery, post-deploy checks) is
+[`../documentation/DEPLOY.md`](../documentation/DEPLOY.md). Trained models are not in the image: with
+`MODEL_ARTIFACT_BUCKET` set the service downloads and verifies a published release at start-up and refuses to
+start if any endpoint has no model (`app/services/model_artifacts.py`).
+
 ## Batch worker deploy (not yet run against GCP)
 
 One Cloud Run service serves the site, the API and the worker endpoint. Set on that service:

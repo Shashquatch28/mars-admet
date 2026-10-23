@@ -1,0 +1,11 @@
+# Build the API image (frontend bundle + API + ml serving subset) in Google Cloud Build and push it to
+# Artifact Registry. Run from the repository root; see documentation/DEPLOY.md, step "Build the image".
+#
+#   gcloud builds submit --config infra/cloudbuild.api.yaml `
+#     --substitutions "_IMAGE=us-central1-docker.pkg.dev/<project>/mars/mars-api,_TAG=<git short sha>" .
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "api/Dockerfile", "-t", "${_IMAGE}:${_TAG}", "."]
+images:
+  - "${_IMAGE}:${_TAG}"
+timeout: 3000s
