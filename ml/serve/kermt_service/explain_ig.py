@@ -83,6 +83,10 @@ def attribute_checkpoint(
     model.eval()
     args.bond_drop_rate = 0
     x_desc = np.asarray(descriptors, dtype=np.float64)
+    if not np.isfinite(x_desc).all():
+        # e.g. selenium: the descriptor generator returns NaN. Every output would be NaN, and the service would
+        # crash building a JSON reply (500). Say so instead; the API maps ValueError to 422.
+        raise ValueError("KERMT cannot explain this molecule: its descriptor vector has non-finite values")
     b_desc = np.full_like(x_desc, descriptor_baseline)
     d = x_desc.shape[0]
     atom_fdim = get_atom_fdim()
@@ -160,6 +164,8 @@ def attribute_checkpoint(
         total = float(attr_atoms.sum() + attr_bonds.sum() + attr_desc.sum())
         return IGOutcome(steps, total, f_x - f_b, (attr_atoms, attr_bonds, attr_desc))
 
+    if not (np.isfinite(f_x) and np.isfinite(f_b)):
+        raise ValueError("KERMT cannot explain this molecule: the model output is not finite")
     outcome = adaptive_ig(run, schedule, rel_tol=rel_tol, abs_tol=abs_tol)
     attr_atoms, attr_bonds, attr_desc = outcome.payload
     atom_scores = fold_to_atoms(_pad(attr_atoms), _pad(attr_bonds), b2a, b2revb, atom_fdim)
