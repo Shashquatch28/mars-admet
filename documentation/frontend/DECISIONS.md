@@ -1053,7 +1053,7 @@ invented scale, no direction of good, nothing ranked) and published work. Nothin
    the value-cell grammar, no colour, no pass or fail wording; QED is labelled as a published desirability function of eight properties that is not a MARS
    prediction; each alert is shown as a substructure match with the sentence that PAINS concerns assay interference, not toxicity
    ([Capuzzi 2017](https://pmc.ncbi.nlm.nih.gov/articles/PMC5778390) found most PAINS-flagged compounds show no interference), and no alert is drawn on the
-   structure. Shown on Predict and in the printed report (which closes ADR-029's "no drug-likeness flags"); Batch, Compare and the CSV do not carry them.
+   structure. Shown on Predict and in the printed report (which closes ADR-029's "no drug-likeness flags"); Batch and the CSV do not carry them (Compare does since ADR-036).
    Shipping it adds a response field, so `MODEL_VERSION` is bumped when it lands (HANDOFF 2a item 8) and the drift test is updated in the same change.
    Alert matching lives in one module under `ml/serve` that the explainability validation (`feat/explainability`, `ml/eval/explain_validation.py`) imports
    instead of keeping its own copy.
@@ -1133,3 +1133,58 @@ null without RDKit, for an unparseable molecule, or on a response written before
 existed are unreachable under the new key. Rule-of-five: a count of limits exceeded out of four, with the four limits stated beside it and no pass or fail wording. QED is shown as a number with its source and "not a MARS prediction". Alerts are listed by catalog and name, "no match" when empty, with the PAINS caveat and its citation in text beside them. The printed report gets the same table and notes,
 and its fixed line "drug-likeness flags are not included" is gone. Checked live: a rhodanine returned PAINS `ene_rhod_A(235)` and the Brenk alerts `Michael_acceptor_1` and `Thiocarbonyl_group`; the cached repeat kept them; the panel (one ink, nothing coloured) and the report showed them; the roster and its counts were unchanged.
 
+
+## ADR-036 — Compare shows the computed properties side by side, as values, with no difference column
+
+**Date:** 2026-10-23 · **Status:** accepted · implemented 2026-10-23 on `feat/compare-properties`
+
+**Decision.**
+
+1. Compare gets a "Computed properties" block after the endpoint roster, in the same table: one column per molecule (two or three), one row per
+   property in Predict's order and number format (`domain/properties.ts`: molecular weight, Wildman-Crippen logP, H-bond donors and acceptors, TPSA,
+   rotatable bonds, QED, rule-of-five limits exceeded), then one row each for the PAINS and Brenk alerts, listing the names matched in that molecule
+   ("no match" when none). The values come from `PredictionResponse.properties` of each molecule in `CompareResponse.molecules`; no API or contract
+   change.
+2. Every value is mono, tabular, `--text-primary`, in every cell. The block has no reliability edge, no hatch, no model-family line and no tag: these are
+   RDKit calculations on the structure (ADR-034 item 3), not predictions, so none of the roster's marks apply and none is borrowed. Its header says
+   `RDKit · not predictions`, and the same three notes Predict prints (what these values are, what QED and the rule-of-five count are, what a structural
+   alert is and is not) are printed under the table as text.
+3. A molecule the service sent no `properties` for (RDKit missing, an unparseable molecule, a response cached before the field existed) shows
+   `not returned` in every row of its column, in the muted word style the roster uses. The block never drops a column or a row (ADR-008 by analogy).
+4. **"Diff" is the reader's, not the app's.** The blueprint's Module 9 row reads "diff structure + properties". It is delivered as columns of plain values
+   that can be read across, and the app computes no difference: no difference column, no Δ, no arrow, no marking of the higher or lower value in a row,
+   no bolding of the column that differs. The values are not sorted or ranked either. Properties are not model output, so an equal or unequal pair carries
+   no reliability message to add.
+5. The roster, its flags (out of domain, stub-served, not returned), its counts and `per_endpoint_winner` handling (ADR-007) are unchanged. The block is outside
+   the 14-endpoint reconciliation, as it is on Predict.
+6. This amends ADR-034 item 3, which said Batch, Compare and the CSV do not carry the properties. Compare now does. Batch and the CSV still do not.
+
+**Rationale.** Properties are the one thing in Compare that is a fact about the structure with a documented meaning, so showing them next to each other
+is information the roster cannot give, and they cost no new service capability. The risk is that numbers in adjacent columns are read as a contest. Printing a
+difference would make that reading the app's own claim: a delta of +1.2 in logP or of -23 in TPSA is a sign, and a sign is read as better or worse. MARS has no
+validated direction of good for the model outputs (AGENTS.md rule 1), and although the rule-of-five limits give the properties a published reference, that
+reference is already shown as a count of limits exceeded with no verdict, which is as far as ADR-034 item 3 went. The reader who wants the difference can subtract two
+numbers that sit one cell apart.
+
+**Where I would differ from the blueprint, said plainly.** The blueprint's word for the structure half is "diff structure". A literal structural diff (a
+maximum-common-substructure alignment with the differing atoms marked) is a different thing from a property difference: it has no direction and could be shown
+without ranking. It is not built here because it needs a structure drawing first (`feat/structure-depiction`), and the brief for that feature forbids highlighting
+atoms. If a structure diff is wanted later it is its own decision, and it would have to be a plain depiction of each molecule with the shared core stated in
+text, not drawn in a colour.
+
+**Rejected.** *A difference column or per-row delta* - see Rationale. *Highlighting the cell that differs from the others* - draws the eye to one molecule and
+reads as a verdict. *Folding the properties into the roster as a sixth group* - they are not predictions, the roster's marks would not apply, and the group
+counts and reconciliation (14 ML endpoints) would have to carve them out. *Showing the properties only for a pinned reference molecule* - a reference is a
+winner by another name.
+
+**Never-do audit.** (1) every cell is one ink and mono; no value is coloured, bolded, dimmed or struck; (2) no prop is added to `EndpointRow`, which Compare
+does not use; (3) nothing is ranked, sorted by value or marked as a winner, and a source guard (`tests/neverDoGuard.test.ts`) fails if the property block or its domain code
+contains a difference, rank or favourable-side word; (4) no bar of any kind; (5) a molecule without properties has a labelled cell in every row, never a gap;
+(6) nothing here is a stub or sample value; (7) nothing animates; (8) the source and the not-a-prediction statement are text under and in the header of the
+block, not a tooltip; (9) no new radius, shadow or font.
+
+**Consequences.** `domain/properties.ts` gains `propertyRowsAcross` and `alertRowsAcross` over the same spec Predict and the report use, so a number cannot be
+written differently in two places. `domain/compare.ts` returns `Comparison.properties`. Tests cover row order and number format against `propertyLines`, the
+null cell, the roster being untouched, and the absence of any comparative word. Checked live on a private stack with real model responses and three molecules
+(aspirin, benzylidene thiazolidinedione, a rhodanine): the block showed the RDKit values, `ene_rhod_A(235)` under PAINS for the rhodanine only, and the Brenk names
+per molecule; every value computed to `rgb(233, 237, 238)` (`--text-primary`) in IBM Plex Mono with no background.
