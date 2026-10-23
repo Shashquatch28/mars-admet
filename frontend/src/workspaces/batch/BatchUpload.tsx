@@ -13,6 +13,7 @@ import { batchUploadNote } from "../../domain/limitsCopy";
 import { useLimits } from "../../data/useLimits";
 import { useAnnounce } from "../../app/announce";
 import { batchAnnouncement } from "../../domain/announce";
+import { EndpointSelector } from "../predict/EndpointSelector";
 
 export function BatchUpload() {
   const s = useBatchSession();
@@ -79,6 +80,8 @@ export function BatchUpload() {
             aria-label="SMILES column name (CSV only; blank detects it)"
           />
         </label>
+
+        <EndpointSelector selected={s.selected} onChange={s.setSelected} disabled={s.busy} />
 
         <span style={{ flex: 1 }} />
         <button type="button" className={`${styles.upBtn} ${styles.upPrimary}`} disabled={!s.canRun} onClick={s.run}>

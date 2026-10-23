@@ -23,11 +23,13 @@ import {
 } from "../../domain/compare";
 import { DISPLAY_UNIT, STUB_MODEL_ID } from "../../domain/endpoints";
 import { fmtValue } from "../../domain/format";
-import type { Row } from "../../domain/reconcile";
+import { requestedMlEndpoints, type Row } from "../../domain/reconcile";
 import { ReliabilityTag } from "../../components/dataviz/ReliabilityTag";
 import { ModelSource } from "../../components/ModelSource";
 import { useGenerations } from "../../data/useGenerations";
 import { FALLBACK_NOTE, fallbackCountInRows } from "../../domain/modelFamily";
+import { EndpointSelector } from "../predict/EndpointSelector";
+import { ML_ENDPOINTS } from "../../domain/endpoints";
 
 const clip = (s: string, n = 28) => (s.length > n ? `${s.slice(0, n)}…` : s);
 
@@ -131,7 +133,12 @@ function FlagLine({ c }: { c: CompareColumn }) {
 export function CompareWorkspace() {
 
   const s = useCompareSession();
-  const comparison = useMemo(() => (s.result ? buildComparison(s.result) : null), [s.result]);
+  // Cells follow what the last run asked for, not the selector's current ticks (ADR-028), so editing the selector never relabels a result.
+  const comparison = useMemo(
+    () => (s.result ? buildComparison(s.result, requestedMlEndpoints(s.sent)) : null),
+    [s.result, s.sent],
+  );
+  const requestedCount = requestedMlEndpoints(s.sent).length;
   const kermtEndpoints = useGenerations()?.kermt_endpoints ?? [];
   const fellBack = comparison
     ? fallbackCountInRows(comparison.groups.flatMap((g) => g.rows.flatMap((r) => r.cells)), kermtEndpoints)
@@ -182,6 +189,7 @@ export function CompareWorkspace() {
               Remove the third
             </button>
           )}
+          <EndpointSelector selected={s.selected} onChange={s.setSelected} disabled={!USING_API || s.running} />
           <button type="button" className={styles.go} onClick={s.run} disabled={!s.canRun}>
             {s.running ? "Running…" : "Run comparison"}
           </button>
@@ -198,12 +206,14 @@ export function CompareWorkspace() {
           </>
         ) : s.running ? (
           "The service predicts each molecule in turn. A molecule it has not seen before takes longer than one it has cached."
+        ) : s.note && !s.result ? (
+          `${s.note}${s.problem ? ` ${s.problem}` : ""}`
         ) : s.problem && !s.result ? (
           s.problem
         ) : repeats.length > 0 ? (
           `Molecule ${repeats.map((i) => i + 1).join(" and ")} repeats an earlier entry.`
         ) : comparison ? (
-          `${comparison.columns.length} molecules compared.${comparison.modelVersions.length > 1 ? ` Served by different model versions: ${comparison.modelVersions.join(", ")}.` : ""}${fellBack > 0 ? ` † ${fellBack === 1 ? "1 value was" : `${fellBack} values were`} ${FALLBACK_NOTE}.` : ""}`
+          `${comparison.columns.length} molecules compared.${requestedCount < ML_ENDPOINTS.length ? ` ${requestedCount} of ${ML_ENDPOINTS.length} endpoints requested; the rest read NOT REQUESTED.` : ""}${comparison.modelVersions.length > 1 ? ` Served by different model versions: ${comparison.modelVersions.join(", ")}.` : ""}${fellBack > 0 ? ` † ${fellBack === 1 ? "1 value was" : `${fellBack} values were`} ${FALLBACK_NOTE}.` : ""}`
         ) : (
           ""
         )}

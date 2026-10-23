@@ -77,7 +77,8 @@ approval, `[lab]` needs the GPU workstation.
 - [x] E6 `[here]` Excel export of a Batch result next to the CSV: same long format, typed cells, no formula cell, nothing coloured or ranked, a Read me sheet, lazy-loaded `write-excel-file` 4.1.1 (ADR-037).
   Done 2026-10-23 on `feat/batch-export-xlsx`. Checked live (file produced, ZIP and content type) and by unit tests that unzip a written workbook. Not run: opening it in Excel or LibreOffice, the 5,000-molecule ceiling on a real batch.
 - [ ] E1 Structure sketcher (Ketcher, ADR-027). Audit never-do #7/#8 and measure the chunk on first integration.
-- [ ] E2 Hand-offs: Library or Batch to Compare, Batch "Open in Predict", endpoint subset for Batch and Compare.
+- [x] E2 Hand-offs: Library or Batch to Compare, Batch "Open in Predict", endpoint subset for Batch and Compare.
+  Done 2026-10-23 on `feat/handoffs` (ADR-038). Also fixed on the way: `POST /batch/predict` ignored `?endpoints=` and ran all 14 (now `Query()`, tested). Checked live on a private stack with real models. Not done: a saved molecule from a subset run still reads NOT RETURNED in Library (the snapshot does not record the request; needs a contract field). Not run: the queued tier with a subset, a screen reader.
 - [ ] E3 JSON export of the saved snapshot; the command palette's placeholder commands become real; Batch multi-select and reopening an earlier job after reload.
 - [ ] E4 Decide whether the seed spread stays on classification rows (ADR-024 item 4); decide the 410 on saving expired results.
 

@@ -49,6 +49,41 @@ export function repeatedSlots(slots: string[]): number[] {
   return out;
 }
 
+export interface SlotAddition {
+  slots: string[];
+  /** The slot (0-based) the molecule is now in. */
+  slot: number;
+  /** `already`: it was in a slot, nothing changed. `replaced`: every slot was full, so the last one was overwritten. */
+  kind: "added" | "already" | "replaced";
+}
+
+/**
+ * Put a molecule handed over from another workspace into Compare: the molecule's own slot if it is already there, else the first
+ * empty slot, else a third slot if only two exist, else it replaces the last slot (Compare holds at most COMPARE_MAX, and a
+ * hand-off must never silently change the first molecules the user chose; the caller says what was replaced).
+ */
+export function addToSlots(slots: string[], smiles: string): SlotAddition {
+  const s = smiles.trim();
+  const existing = slots.findIndex((x) => x.trim() === s);
+  if (existing >= 0) return { slots, slot: existing, kind: "already" };
+  const empty = slots.findIndex((x) => x.trim() === "");
+  if (empty >= 0) return { slots: slots.map((x, i) => (i === empty ? s : x)), slot: empty, kind: "added" };
+  if (slots.length < COMPARE_MAX) return { slots: [...slots, s], slot: slots.length, kind: "added" };
+  const last = slots.length - 1;
+  return { slots: slots.map((x, i) => (i === last ? s : x)), slot: last, kind: "replaced" };
+}
+
+/** What a hand-off did, in words, for the status line of Compare. */
+export function handoffNote(a: Pick<SlotAddition, "slot" | "kind">, source: string): string {
+  const n = a.slot + 1;
+  // A saved molecule is a frozen copy; Compare sends only the SMILES, so what it shows is a new prediction.
+  const again = source === "Library" ? " It is predicted again with the current model; the saved values are not reused." : "";
+  if (a.kind === "already") return `The molecule you sent from ${source} is already in Compare as Molecule ${n}; nothing was added.`;
+  if (a.kind === "replaced")
+    return `Compare holds ${COMPARE_MAX} molecules and all were filled, so Molecule ${n} was replaced by the molecule you sent from ${source}. Nothing has been run.${again}`;
+  return `Molecule ${n} came from ${source}. Nothing has been run: press Run comparison.${again}`;
+}
+
 export interface CompareColumn {
   index: number;
   smilesInput: string;
