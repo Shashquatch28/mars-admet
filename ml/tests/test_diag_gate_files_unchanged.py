@@ -3,6 +3,7 @@ still hashes to the recorded value. Skipped when the runs are not on this machin
 import glob
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -16,4 +17,9 @@ def test_gate_staged_files_byte_identical_to_g3_runs():
         pytest.skip("G3 runs not present")
     for r in runs:
         for name, digest in json.loads(Path(r).read_text())["files"].items():
-            assert hashlib.sha256((SRC / name).read_bytes()).hexdigest() == digest, (r, name)
+            data = (SRC / name).read_bytes()
+            if name == "train_mixed.py":
+                # The only permitted change since the G3 runs is the marked logging block; with exactly that block
+                # removed the file must still hash to the G3 value.
+                data = re.sub(rb"[ ]*# BEGIN effective-args logging.*?# END effective-args logging\n", b"", data, flags=re.S)
+            assert hashlib.sha256(data).hexdigest() == digest, (r, name)

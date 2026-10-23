@@ -311,6 +311,16 @@ def run_fit(run_json: Path, spec: dict[str, Any]) -> dict[str, Any]:
                 "epochs": args.epochs,
                 "batch_size": args.batch_size,
                 "dist_coff": float(args.dist_coff),
+                # BEGIN effective-args logging (2026-10-22; logging only, strip-verified against the G3 bytes)
+                # Values after load_checkpoint(current_args=args) overwrote them from the pretrain checkpoint
+                # (decisions.md 2026-10-19 correction). Runs whose start event lacks this key predate it.
+                "effective_checkpoint_args": {
+                    "dist_coff": float(args.dist_coff),
+                    "dropout": float(args.dropout),
+                    "bond_drop_rate": float(args.bond_drop_rate),
+                    "weight_decay": float(args.weight_decay),
+                },
+                # END effective-args logging
                 "n_train": len(train_data),
                 "n_val": len(val_data),
                 "labeled_per_task": label_mask.sum(axis=0).tolist(),
