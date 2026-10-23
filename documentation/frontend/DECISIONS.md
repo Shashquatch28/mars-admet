@@ -1261,3 +1261,75 @@ that Ketcher still renders but hides.
 **Consequences.** `StructureEditor` is mounted once in `PredictWorkspace`. `shell.module.css` gives `.workspace` `position: relative` so the panel can anchor to
 `<main>`. `AppShell` treats focus inside `[data-owns-keys]` like typing in a field. ADR-027's status line points here. Another session's 2D depiction component
 in `PredictWorkspace.tsx` and this panel's mount are independent lines in the same file.
+
+
+## ADR-037 — Excel export of a Batch result: the same long format as the CSV, written with `write-excel-file`, loaded on click
+
+**Date:** 2026-10-23 · **Status:** accepted. The maintainer confirmed the `write-excel-file` pick on 2026-10-23; implemented the same day on `feat/batch-export-xlsx` (see the implementation note at the end).
+
+**Context.** Batch exports a CSV (`domain/exportCsv.ts`): one line per molecule x endpoint in roster order, a `state` column that says what the screen says, reliability apart from the
+value, every roster endpoint present whether or not it was returned (ADR-008), full-precision numbers, no rank or winner column. An Excel file is wanted next to it. Writing an
+`.xlsx` means writing a ZIP of XML parts, which the browser cannot do unaided, so this is a new dependency. The bar set for it: the lightest that works, loaded only when the button
+is pressed, `npm audit` at 0, and a stated reason.
+
+**Candidates**, measured on 2026-10-23 in a scratch project outside the repository (nothing was added to `frontend/package.json`). Bundle sizes are minified and gzipped, from an esbuild
+bundle of a browser entry that writes one sheet to a `Blob`.
+
+| | `write-excel-file` 4.1.1 | `exceljs` 4.4.0 | `xlsx` (SheetJS) 0.18.5 from npm | `fflate` + our own OOXML writer |
+|---|---|---|---|---|
+| Added to the bundle | 72 kB min, 20 kB gzip (includes its one dependency, `fflate`) | 947 kB min, 269 kB gzip | not built: see audit | `fflate` zip only, about 8 kB gzip, plus about 150 lines of ours |
+| Packages installed | 3 (itself, `fflate`) | 194 | 10 | 2 |
+| `npm audit` | 0 vulnerabilities | 2 moderate (`uuid`, bounds check in v3/v5/v6 with a caller-supplied buffer) | 1 high: prototype pollution and ReDoS, **no fixed version on npm** (the maintainers publish fixes only from their own CDN tarball) | 0 |
+| Install scripts | none (only `prepublishOnly`) | none, but pulls `archiver`, `unzipper` and `tmp`, which are written for Node | none | none |
+| Writes only, or reads too | writes only | reads and writes | reads and writes | writes only |
+| Licence | MIT | MIT | Apache-2.0 | MIT |
+| Maintenance | one maintainer; 4.1.1 released 2026-06-08, 107 releases, source on GitLab | last release 2024-12-20 | npm copy frozen at 0.18.5 | `fflate` is widely used, one maintainer; the writer is ours |
+
+**Pick: `write-excel-file`, pinned to an exact version, imported as `write-excel-file/browser` through a dynamic `import()` in the click handler.**
+
+- It is the only candidate that is small, audit-clean, and does exactly one job (write). Its whole closure is itself plus `fflate`, about 20 kB gzipped, and it is its own chunk that is fetched
+  only when someone presses "Excel".
+- `exceljs` is 13 times larger, brings 194 packages written for Node, and fails `npm audit` today. It also reads files, which MARS never does with a spreadsheet.
+- SheetJS from npm is the best-known name and the wrong choice: the registry copy is the one with the open high-severity advisories and no patched release there, and the patched build is
+  installed from a URL outside the registry, which sidesteps `npm audit` rather than satisfying it.
+- Writing the OOXML ourselves with `fflate` is the lightest by a few kilobytes, but it makes MARS the owner of a file format that Excel is strict about (a wrong content type or style index
+  produces a "repair this file" dialog), and there is no copy of Excel here to test it against. Twenty kB buys a library that real Excel and LibreOffice open.
+- Risk accepted: a single maintainer and frequent releases. Mitigation: the version is pinned exactly (no caret), a bump is a reviewed change, and `npm audit` is part of the branch's checks.
+  If the package ever becomes unavailable, the fallback is the `fflate`-only writer above; the export code is written so the spreadsheet writer sits behind one small function and the swap touches one file.
+- If none of these were acceptable the answer would be to stay with CSV and say so. That is not the case here.
+
+**Decision (what is built once the pick is confirmed).**
+
+1. An "Export Excel" action beside "Export results" (the CSV) in Batch, offered under the same condition as the CSV: a real result, never a sample, never after a failure. (The palette's export command exports one Predict molecule, not a batch, so it stays CSV-only.)
+2. One sheet, `Results`, with exactly the CSV's columns in the CSV's order, one line per molecule x endpoint in roster order, built from the same `ExportMolecule` list by one shared function so the two
+   files cannot drift (a `buildExportTable()` returns typed cells; the CSV and the workbook are two writers over it). The sheet carries no rank, winner, score, flag or colour column, no conditional formatting
+   and no cell fill. `state` is its own column and the `value` cell is the same cell in every state.
+3. Cells keep their types: numbers are numeric cells at full precision (the screen's rounding is not applied), text is text. A text cell is written as a string cell, which a spreadsheet does not evaluate, so the
+   CSV's leading-apostrophe guard against formula injection is not needed and is not applied (it would alter the data). A test opens the written file's XML and asserts that a SMILES or an error message beginning
+   with `=`, `+`, `-` or `@` is a string cell and that no cell in the sheet is a formula cell. Missing values are empty cells, as the CSV leaves them.
+4. A second sheet, `Read me`, in plain rows: what each column is, the list of `state` values and what each means, that the seed spread is not an interval, that `value` for a classification endpoint is a score
+   and not a probability, and that nothing in the file ranks or scores a molecule. It is the report's "How to read" block reduced to the sheet's columns, taken from the same constants so the wording is not written twice.
+5. Size: a sheet holds 1,048,576 rows, a batch is up to `batch_size_cap` molecules x 15 lines, and a browser holds the whole workbook in memory while it writes. The Excel action therefore has its own ceiling
+   (5,000 molecules, 75,000 lines, to be re-measured on a real batch before it is fixed), and above it the button is replaced by one sentence saying the CSV has no such ceiling. The ceiling is a named constant, not a
+   hidden failure.
+6. File name `mars-batch-<n>-molecules-<date>.xlsx`, the CSV's pattern with the extension changed.
+
+**Rejected.** *Writing the file in the API (openpyxl on the server)* - Batch results that are not saved live in the browser, so the rows would have to be posted back to be written, and the server would carry a second
+copy of the reconcile logic (ADR-029 rejected the same shape for the PDF). *One wide sheet with a column per endpoint* - mixes state into value columns and invites sorting a column, which is a ranking by another
+name; the long format is what ADR-008 and the CSV already chose. *Colouring out-of-domain rows in the sheet* - reliability colour in a file is still colour by a model property, and never-do #1 and #6 are about what the
+product communicates, not only about its screens. *Dropping the `Read me` sheet* - a file leaves the app and loses the on-screen explanation; the notes are the part that should travel with it.
+
+**Never-do audit (planned).** (1) numeric cells carry no format that depends on the value and no fill; (2) no prop added to `EndpointRow`; (3) no sort, rank or winner column, and the row order is the roster's; (4) no chart
+and no data bar in the sheet; (5) every roster endpoint has a line, a not-returned or not-requested one with its state and an empty value; (6) a stub value is exported with `state = stub_served` and `model_id = stub-v0`,
+as in the CSV; (7) nothing animates and the dependency is loaded without a counting spinner; (8) the states are explained in the `Read me` sheet in words; (9) no UI shadow, radius or font change.
+
+**Implementation note (2026-10-23).** Built as decided, with these particulars.
+- **Dependency.** `write-excel-file` 4.1.1 added to `frontend/package.json` as an exact version (no caret); its only dependency is `fflate`. `npm audit` for the whole project reports 0 vulnerabilities with it installed (checked after merging the `vite` and `vitest` bump that came in with the structure editor; before that merge the audit listed three advisories in those two packages, unrelated to this one).
+- **Lazy.** The library is imported only inside `writeWorkbook` in `domain/exportXlsx.ts` (`await import("write-excel-file/browser")`); a guard test fails if any other file imports it statically. The production build has it as its own chunk of 72 kB (about 20 kB gzipped) next to the 353 kB main chunk, which grew by 5 kB for our own code; the first press fetches the chunk.
+- **One table, two writers.** `buildExportRows` (in `exportCsv.ts`) returns typed cells (text, number or null) and `buildCsv` and the workbook are two writers over it; the CSV's output is unchanged (its eleven existing tests pass untouched). The Results sheet has the CSV's 20 columns in order, a bold frozen header row and column widths, and nothing else: no fill, number format or conditional format (a guard test searches the module for them).
+- **No formula cell.** Every text cell is an explicit `String` cell. The test writes a real workbook, unzips it, and asserts that no worksheet contains `<f>`, that every cell is a shared or inline string or a number, that a number is a bare `<v>` and that text beginning `=`, `+`, `-` or `@` (a SMILES and an error message in the test) is present as data.
+- **Read me sheet.** Defines each of the 20 columns and the seven `state` values, states that the file ranks nothing, and reuses the first four of the report's fixed statements word for word ("this report" read "this file"); a test pins both, and that every CSV column has a definition.
+- **Ceiling.** `XLSX_MAX_MOLECULES = 5000` (75,000 lines). Above it the button is replaced by one sentence giving the run's size and saying the CSV has no such limit; `buildXlsxBlob` also refuses above it. The 5,000 is the figure proposed above, **not re-measured on a real batch of that size** (see below). A failure while building shows its message in the header (`role="alert"`) and the CSV button is unaffected.
+- **Download.** `downloadBlob` beside `downloadText`; the file is `mars-batch-<n>-molecules-<date>.xlsx`.
+
+**Verified live (2026-10-23, private stack with real models).** A three-row batch (two molecules and a row beginning `=`) ran; "Export Excel" appeared beside "Export results", produced `mars-batch-3-molecules-2026-10-23.xlsx` (9,736 bytes, the OOXML content type, a ZIP signature); the dev server served the library as its own module file, and the production build was checked to hold it as a separate chunk (not that the chunk loads only after the press, which was not timed). **Not run:** opening the file in Excel or LibreOffice (neither is on this machine; only the XML was inspected), the 5,000-molecule ceiling on a real batch (time and memory not measured), a queued batch, a screen reader on the new button.
