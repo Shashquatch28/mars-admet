@@ -158,6 +158,19 @@ that until you change it and recreate the container.
    Open the file: `state` says ok / out_of_domain / stub_served / not_returned / not_requested / rule_based, and there is
    no rank or winner column. The buttons are greyed out when nothing real is on screen.
 
+10. **Structure editor** (Predict). Under the SMILES field click **Draw a structure** (or Tab to it and press Enter). A panel named "Structure editor"
+   opens over the results; the first open downloads about 3.8 MB (gzip) of editor and WebAssembly, so allow a few seconds, and in `npm run dev` longer.
+   - *Type, then see it drawn:* type `CC(=O)Oc1ccccc1C(=O)O`. After a moment the canvas shows the molecule and the status line says it shows the SMILES in
+     the field. The text you typed is not rewritten.
+   - *Draw, then see it typed:* pick the benzene ring (bottom toolbar), the single-bond tool and the atom letters (right toolbar) and build a molecule.
+     The SMILES field follows each pause and the status line says it matches. Indigo writes its own spelling (a drawn aspirin reads
+     `C1C=CC=C(C(O)=O)C=1OC(C)=O`); **Run prediction** standardizes it, and the Identity block shows the same standardized SMILES and `molecule_id` as typing
+     it.
+   - *Refusals:* clear the canvas (first toolbar icon): the status says the canvas is empty and the field keeps its text. Type `CCO(((`: the status says the
+     SMILES cannot be drawn and the canvas keeps the last drawing. Reaction tools are hidden, so a reaction cannot be drawn.
+   - *Keyboard:* Tab to **Close**, which follows the canvas; Enter closes the panel and focus returns to **Draw a structure**. Esc closes it while focus is on the panel itself or on Close. Drawing itself needs a mouse (ADR-035); use the SMILES field for keyboard-only work.
+   - If you also run the API in Docker, nothing changes: the editor only reads and writes the SMILES field.
+
 ## The printed report
 
 On Predict with a real result, click **Report** (next to Export). The browser's print dialog opens on a light,
@@ -177,7 +190,7 @@ sample data and after a failure.
 ## Tests
 
 ```powershell
-cd frontend; npm test; npx tsc --noEmit; npm run lint     # 262 tests; lint has 0 errors (8 accepted fast-refresh warnings)
+cd frontend; npm test; npx tsc --noEmit; npm run lint     # 356 tests; lint has 0 errors (9 accepted fast-refresh warnings)
 cd ..; .venv\Scripts\ruff check contracts api ml
 .venv\Scripts\pytest contracts/tests api/tests -q          # DB/Redis tests skip unless the stack is up
 ```
