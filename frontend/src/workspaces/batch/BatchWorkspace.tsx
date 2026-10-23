@@ -14,7 +14,8 @@ import { useNavigate } from "react-router-dom";
 import { useBatchSession } from "../../app/batchSession";
 import { usePredictSession } from "../../app/predictSession";
 import { USING_API, saveMolecule } from "../../data/client";
-import { downloadText } from "../../data/download";
+import { downloadBlob, downloadText } from "../../data/download";
+import { batchXlsxFileName, buildXlsxBlob, xlsxCeilingNote, xlsxTooLarge } from "../../domain/exportXlsx";
 import { usePrintReport } from "../../components/report/usePrintReport";
 import { batchFileName, batchRowFileName, buildCsv, type ExportMolecule } from "../../domain/exportCsv";
 import { SaveControl } from "../../components/SaveControl";
@@ -87,6 +88,18 @@ export function BatchWorkspace() {
     error: r.ok ? null : (r.error ?? "row failed"),
   });
   const canExport = USING_API && summary.rows.length > 0;
+  // Excel is built whole in the browser, so it has a ceiling the CSV does not; above it the button is replaced by a sentence.
+  const xlsxTooBig = xlsxTooLarge(summary.rows.length);
+  const [xlsxState, setXlsxState] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null });
+  const exportXlsx = () => {
+    setXlsxState({ busy: true, error: null });
+    buildXlsxBlob(summary.rows.map(toExport))
+      .then((blob) => {
+        downloadBlob(batchXlsxFileName(summary.rows.length), blob);
+        setXlsxState({ busy: false, error: null });
+      })
+      .catch((e: unknown) => setXlsxState({ busy: false, error: e instanceof Error ? e.message : "The Excel file could not be built. The CSV holds the same table." }));
+  };
   const printReport = usePrintReport();
   const toggle = (k: keyof FilterSpec) => setFilter((f) => ({ ...f, [k]: !f[k] }));
 
@@ -132,6 +145,23 @@ export function BatchWorkspace() {
           >
             Export results
           </button>
+          {xlsxTooBig ? (
+            <span className={styles.sortnote}>{xlsxCeilingNote(summary.rows.length)}</span>
+          ) : (
+            <button
+              className={styles.exportBtn}
+              disabled={!canExport || xlsxState.busy}
+              title={`Download all ${summary.rows.length} rows of this run as an Excel workbook: the CSV's table, plus a Read me sheet`}
+              onClick={exportXlsx}
+            >
+              {xlsxState.busy ? "Building Excel…" : "Export Excel"}
+            </button>
+          )}
+          {xlsxState.error && (
+            <span className={styles.sortnote} role="alert">
+              {xlsxState.error}
+            </span>
+          )}
           {isFiltered(filter) && (
             <span className={styles.sortnote}>
               showing <b>{visible.length}</b> of <b>{summary.rows.length}</b>

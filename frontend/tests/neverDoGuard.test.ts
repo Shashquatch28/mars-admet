@@ -160,3 +160,25 @@ describe("#9: the visual identity", () => {
     }
   });
 });
+
+describe("#1/#3: the Excel export marks, colours and ranks nothing (ADR-037)", () => {
+  const src = read(join(SRC, "domain", "exportXlsx.ts")).replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  it("sets no fill, colour, number format or conditional format on any cell", () => {
+    expect(src).not.toMatch(/backgroundColor|textColor|\bcolor\b|conditional|format\s*:|fill|borderColor/i);
+  });
+  it("only the header is styled, and only bold", () => {
+    expect([...src.matchAll(/fontWeight\??:\s*"?(\w+)"?/g)].map((m) => m[1]).every((v) => v === "bold")).toBe(true);
+  });
+  it("adds no column or sheet that sorts, ranks or compares", () => {
+    // the one sentence that says the file has no such column names them, so it is left out of the search
+    expect(src.replace(/export const NO_RANKING_LINE =[^\n]*/, "").replace(/NO_RANKING_LINE/g, "")).not.toMatch(/\.sort\(|rank|winner|diff|delta/i);
+  });
+  it("the spreadsheet library is imported only dynamically, so it stays out of the main bundle", () => {
+    const all = walk(SRC, ".ts").concat(walk(SRC, ".tsx")).filter((f) => !f.endsWith(".test.ts"));
+    for (const f of all) {
+      const text = read(f);
+      expect(text, rel(f)).not.toMatch(/^import[^;\n]*from\s+["']write-excel-file/m);
+    }
+    expect(read(join(SRC, "domain", "exportXlsx.ts"))).toMatch(/await import\("write-excel-file\/browser"\)/);
+  });
+});
