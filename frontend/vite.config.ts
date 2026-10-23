@@ -32,6 +32,11 @@ export default defineConfig(({ command, mode }) => {
     // Some of Ketcher's dependencies read Node's `global` (ADR-035). Same object as `window` in a browser.
     define: { global: "globalThis" },
     optimizeDeps: { esbuildOptions: { define: { global: "globalThis" } } },
+    build: {
+      // ketcher-core mixes ES imports with require("raphael") in the same module. Left alone, Rollup keeps the
+      // require() and the editor fails to load in the built app with "require is not defined" (ADR-035).
+      commonjsOptions: { transformMixedEsModules: true },
+    },
     server: {
       port: 5173,
       proxy: {
