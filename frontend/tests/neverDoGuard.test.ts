@@ -42,6 +42,25 @@ describe("#3: Compare names no winner", () => {
   });
 });
 
+describe("#3: Compare's property columns are values side by side, not a comparison the app has made", () => {
+  const code = (f: string) => read(join(SRC, f)).replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  const ws = code("workspaces/compare/CompareWorkspace.tsx");
+  const block = ws.slice(ws.indexOf("function PropertiesBlock"), ws.indexOf("function FlagLine"));
+  it("the property block and the domain that feeds it compute or name no difference, rank or favourable side", () => {
+    // the workspace's own prose says "nothing is ranked or called better", so only the block is searched there
+    expect(block.length).toBeGreaterThan(200);
+    const domain = code("domain/compare.ts");
+    const properties = code("domain/properties.ts");
+    for (const [name, text] of [["PropertiesBlock", block], ["domain/compare.ts", domain], ["domain/properties.ts", properties]]) {
+      expect(text, name).not.toMatch(/\b(diff|delta|winner|rank|better|worse|best|worst|higher|lower|favou?rable)\w*/i);
+    }
+  });
+  it("the property cells are written in the one value ink, with nothing in the block that depends on the value or a state", () => {
+    expect(block).not.toMatch(/\bstate\b|reliability|edge|hatch|tone|variant|ReliabilityTag|ModelSource/);
+    expect(block).toContain("styles.val");
+  });
+});
+
 describe("#4: no interval bar on an invented axis", () => {
   it.each(["IntervalTrack", "ADGauge"])("%s requires an explicit domain with no default", (name) => {
     const src = read(join(SRC, "components", "dataviz", `${name}.tsx`));
