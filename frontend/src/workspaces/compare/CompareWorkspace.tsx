@@ -5,6 +5,8 @@
 //   - a value cell is mono, tabular, --text-primary in every state; reliability (out of domain,
 //     stub, not returned) is a separate mark beside it and never recolours the value
 //   - every molecule has a cell on every endpoint; one the service did not return says so
+//   - the computed properties follow the roster, one column per molecule, as plain values; not predictions, so they
+//     sit outside the roster's counts and marks (ADR-036)
 //   - /compare is anonymous, so unlike Batch and Library this screen is never gated
 import { useMemo, type KeyboardEvent } from "react";
 import styles from "./compare.module.css";
@@ -17,6 +19,7 @@ import {
   compareFailure,
   repeatedSlots,
   type CompareColumn,
+  type CompareProperties,
 } from "../../domain/compare";
 import { DISPLAY_UNIT, STUB_MODEL_ID } from "../../domain/endpoints";
 import { fmtValue } from "../../domain/format";
@@ -57,6 +60,62 @@ function Cell({ row }: { row: Row }) {
       </span>
       <ModelSource prediction={prediction} className={styles.src} />
     </td>
+  );
+}
+
+const NO_PROPERTIES = <span className={styles.na}>not returned</span>;
+
+/**
+ * Computed properties, one column per molecule (ADR-036). They sit after the roster and outside its counts: they are RDKit
+ * calculations on the structure, not predictions, so they carry no reliability edge, no hatch and no model source. Values are
+ * in one ink; there is no difference column and nothing marks a higher or lower value.
+ */
+function PropertiesBlock({ properties }: { properties: CompareProperties }) {
+  const span = (properties.lines[0]?.cells.length ?? 0) + 2;
+  return (
+    <tbody aria-label="Computed properties">
+      <tr>
+        <th colSpan={span} scope="colgroup" className={styles.grp}>
+          Computed properties <span className={styles.grpNote}>{properties.source} · not predictions</span>
+        </th>
+      </tr>
+      {properties.lines.map((l) => (
+        <tr key={l.key}>
+          <th scope="row" className={styles.ep}>
+            {l.label}
+          </th>
+          {l.cells.map((v, i) => (
+            <td key={i} className={`${styles.cell} ${styles.propCell}`}>
+              {v === null ? NO_PROPERTIES : <span className={styles.val}>{v}</span>}
+            </td>
+          ))}
+          <td className={styles.unit}>{l.unit}</td>
+        </tr>
+      ))}
+      {properties.alerts.map((a) => (
+        <tr key={a.catalog}>
+          <th scope="row" className={styles.ep}>
+            {a.catalog} alerts
+          </th>
+          {a.cells.map((names, i) => (
+            <td key={i} className={`${styles.cell} ${styles.propCell}`}>
+              {names === null ? (
+                NO_PROPERTIES
+              ) : names.length === 0 ? (
+                <span className={styles.val}>no match</span>
+              ) : (
+                names.map((n) => (
+                  <span key={n} className={`${styles.val} ${styles.alertName}`}>
+                    {n}
+                  </span>
+                ))
+              )}
+            </td>
+          ))}
+          <td className={styles.unit} />
+        </tr>
+      ))}
+    </tbody>
   );
 }
 
@@ -203,7 +262,15 @@ export function CompareWorkspace() {
                 ))}
               </tbody>
             ))}
+            <PropertiesBlock properties={comparison.properties} />
           </table>
+        )}
+        {comparison && (
+          <div className={styles.propNotes}>
+            {comparison.properties.notes.map((n) => (
+              <p key={n}>{n}</p>
+            ))}
+          </div>
         )}
       </div>
     </section>

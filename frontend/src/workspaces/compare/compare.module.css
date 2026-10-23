@@ -296,3 +296,35 @@
   white-space: nowrap;
   border-bottom: 1px solid var(--line-hairline);
 }
+
+/* Computed properties (ADR-036): plain values, the cell grammar of the roster without its marks. */
+.grpNote {
+  margin-left: 8px;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-quiet);
+}
+.propCell {
+  height: 28px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  white-space: normal;
+}
+.alertName {
+  display: block;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.propNotes {
+  max-width: 96ch;
+  padding: 10px 14px 18px;
+}
+.propNotes p {
+  margin: 0 0 6px;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--text-quiet);
+}
