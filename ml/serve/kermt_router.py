@@ -71,6 +71,33 @@ class KermtRouter:
         if mol is None:
             raise ValueError(f"Invalid SMILES: {smiles_standardized!r}")
         raw = self.client.explain(smiles_standardized, route.kermt_arm, endpoint, timeout_seconds=timeout_seconds)
+        return self.assemble_raw(smiles_standardized, endpoint, raw)
+
+    # ---- background jobs (ADR-035) ----
+
+    def _arm_of(self, endpoint: str) -> str:
+        route = self.routing.route(endpoint)
+        if route is None or route.model != "kermt":
+            raise ValueError(f"{endpoint} is not routed to KERMT")
+        return route.kermt_arm
+
+    def submit_explain_job(self, smiles_standardized: str, endpoint: str):
+        return self.client.submit_explain_job(smiles_standardized, self._arm_of(endpoint), endpoint)
+
+    def explain_job(self, job_id: str):
+        return self.client.explain_job(job_id)
+
+    def cancel_explain_job(self, job_id: str):
+        return self.client.cancel_explain_job(job_id)
+
+    def explain_params_digest(self) -> str:
+        return str(self.client.explain_config()["digest"])
+
+    def assemble_raw(self, smiles_standardized: str, endpoint: str, raw) -> ExplanationResult:
+        """A service result -> the shared `ExplanationResult` (fragments and totals derived here, once)."""
+        mol = Chem.MolFromSmiles(smiles_standardized)
+        if mol is None:
+            raise ValueError(f"Invalid SMILES: {smiles_standardized!r}")
         if len(raw.atom_scores) != mol.GetNumAtoms():
             raise KermtUnavailable(f"explain reply has {len(raw.atom_scores)} atom scores for {mol.GetNumAtoms()} atoms")
         return assemble(
@@ -88,7 +115,10 @@ class KermtRouter:
             descriptor_values=np.array([np.nan if v is None else v for v in raw.descriptor_values], dtype=float),
             descriptor_scores=np.asarray(raw.descriptor_scores, dtype=float),
             unmapped_total=raw.unmapped_total,
+            completeness_error=raw.completeness_error,
             n_steps=raw.n_steps,
+            converged=raw.converged,
+            seed_agreement=raw.seed_agreement,
         )
 
     def _one(self, endpoint: str, arm: ArmValues | None, smiles_standardized: str) -> RealPrediction | None:

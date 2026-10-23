@@ -246,6 +246,13 @@ class XGBoostModel(MARSModel):
             out[orig_i] = valid_preds[new_i]
         return out
 
+    def margin_prepared(self, feat: np.ndarray) -> np.ndarray:
+        """The model's raw margin (prediction for a regressor, log-odds for a classifier) for an already-featurized
+        batch, computed by the booster itself, not from contributions. Used to measure TreeSHAP's additivity."""
+        if self._model is None:
+            raise RuntimeError("Model has not been fitted. Call fit() first.")
+        return self._model.get_booster().predict(xgb.DMatrix(feat), output_margin=True)
+
     def contributions_prepared(self, feat: np.ndarray) -> np.ndarray:
         """Exact TreeSHAP of an already-featurized batch (see `prepare`).
 

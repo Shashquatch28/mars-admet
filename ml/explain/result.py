@@ -1,8 +1,7 @@
 """One explanation, independent of the method that produced it (ADR-031).
 
 `assemble` is the single place where the totals are computed, so TreeSHAP and Integrated Gradients
-cannot disagree about what "structure", "whole-molecule" and "unmapped" mean, and where the
-completeness error is measured rather than asserted.
+cannot disagree about what "structure", "whole-molecule" and "unmapped" mean.
 """
 
 from __future__ import annotations
@@ -43,6 +42,8 @@ class ExplanationResult:
     unmapped_total: float
     completeness_error: float
     n_steps: int | None = None
+    converged: bool | None = None  # IG only
+    seed_agreement: float | None = None
 
 
 def _finite(x: float) -> float | None:
@@ -65,10 +66,15 @@ def assemble(
     descriptor_values: np.ndarray,
     descriptor_scores: np.ndarray,
     unmapped_total: float,
+    completeness_error: float,
     n_steps: int | None = None,
+    converged: bool | None = None,
+    seed_agreement: float | None = None,
     top_descriptors: int = TOP_DESCRIPTORS,
 ) -> ExplanationResult:
-    """Build the result and measure how far base + parts is from the output (the completeness error)."""
+    """Build the result. `completeness_error` is the METHOD's own identity (IG: the integration residual, TreeSHAP:
+    the additivity error against the model's margin), measured by the caller. It is not recomputed from the parts:
+    for IG the residual is carried in `unmapped_total`, so the parts sum to the output by construction (ADR-035)."""
     if len(atom_scores) != mol.GetNumAtoms():
         raise ValueError(f"{len(atom_scores)} atom scores for a molecule with {mol.GetNumAtoms()} atoms")
     structure_total = float(np.sum(atom_scores))
@@ -78,7 +84,6 @@ def assemble(
         DescriptorScore(descriptor_names[i], _finite(descriptor_values[i]), float(descriptor_scores[i])) for i in order
     ]
     rest = whole_total - sum(d.score for d in listed)
-    error = abs(base_value + structure_total + whole_total + unmapped_total - output_value)
     return ExplanationResult(
         endpoint=endpoint,
         method=method,
@@ -95,6 +100,8 @@ def assemble(
         structure_total=structure_total,
         whole_molecule_total=whole_total,
         unmapped_total=float(unmapped_total),
-        completeness_error=float(error),
+        completeness_error=float(completeness_error),
         n_steps=n_steps,
+        converged=converged,
+        seed_agreement=seed_agreement,
     )

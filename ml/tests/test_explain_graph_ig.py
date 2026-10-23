@@ -8,6 +8,7 @@ from explain.graph_ig import (
     IGOutcome,
     adaptive_ig,
     fold_to_atoms,
+    median_pairwise_cosine,
     midpoint_alphas,
     power_quadrature,
     within_tolerance,
@@ -108,3 +109,17 @@ def test_adaptive_ig_returns_the_finest_run_unchanged_when_nothing_satisfies_it(
     assert out.steps == 8 and out.error == pytest.approx(4.0)  # reported as it is, never hidden
     with pytest.raises(ValueError):
         adaptive_ig(lambda s: out, (), rel_tol=0.1, abs_tol=0.0)
+
+
+def test_median_pairwise_cosine_is_one_for_agreeing_seeds_and_low_for_unrelated_ones():
+    a = np.array([1.0, 2.0, -1.0])
+    assert median_pairwise_cosine([a, 2 * a, 0.5 * a]) == pytest.approx(1.0)
+    assert median_pairwise_cosine([np.array([1.0, 0.0]), np.array([0.0, 1.0])]) == pytest.approx(0.0)
+    assert median_pairwise_cosine([a, -a]) == pytest.approx(-1.0)
+
+
+def test_median_pairwise_cosine_says_none_when_there_is_nothing_to_compare():
+    assert median_pairwise_cosine([np.array([1.0, 2.0])]) is None  # one seed
+    assert median_pairwise_cosine([np.zeros(3), np.zeros(3)]) is None  # direction undefined
+    # a zero vector pair is skipped, the rest still count
+    assert median_pairwise_cosine([np.zeros(2), np.array([1.0, 0.0]), np.array([1.0, 0.0])]) == pytest.approx(1.0)

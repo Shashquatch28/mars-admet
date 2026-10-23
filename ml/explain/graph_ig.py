@@ -40,6 +40,24 @@ def power_quadrature(steps: int, power: int = 2) -> tuple[np.ndarray, np.ndarray
     return u**power, power * u ** (power - 1) / steps
 
 
+class IGCancelled(Exception):
+    """Raised between chunks when the job that asked for this run was cancelled."""
+
+
+def median_pairwise_cosine(vectors: list[np.ndarray]) -> float | None:
+    """Median cosine similarity over every pair of `vectors` (the per-seed atom attributions): 1 when the seeds
+    agree, near 0 when they are unrelated. None for fewer than two vectors; a pair with a zero vector is skipped
+    (its direction is undefined) and None is returned if no pair is left."""
+    sims = []
+    for i in range(len(vectors)):
+        for j in range(i + 1, len(vectors)):
+            a, b = np.asarray(vectors[i], dtype=float), np.asarray(vectors[j], dtype=float)
+            n = np.linalg.norm(a) * np.linalg.norm(b)
+            if n > 0:
+                sims.append(float(a @ b / n))
+    return float(np.median(sims)) if sims else None
+
+
 def fold_to_atoms(
     attr_atoms: np.ndarray,
     attr_bonds: np.ndarray,

@@ -73,7 +73,10 @@ def test_classifier_explanation_is_complete_and_in_log_odds(clf_models):
     assert res.n_seeds == 3
     expected = float(np.mean([_margin(m, _QUERY) for m in clf_models]))
     assert res.output_value == pytest.approx(expected, abs=1e-4)
-    assert res.completeness_error < 1e-4
+    assert res.completeness_error < 1e-4  # measured against the booster's own margin, not assumed
+    assert res.converged is None  # TreeSHAP has no iteration to converge
+    # None when no seed put anything on the structure (a tiny toy model may not), else a cosine
+    assert res.seed_agreement is None or -1.0 <= res.seed_agreement <= 1.0
     assert res.base_value + res.structure_total + res.whole_molecule_total + res.unmapped_total == pytest.approx(
         res.output_value, abs=1e-4
     )

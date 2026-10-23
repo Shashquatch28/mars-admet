@@ -16,6 +16,7 @@ from featurize.fingerprints import MorganConfig
 from mars_contracts.endpoints import ENDPOINT_METADATA, Endpoint, TaskType
 from rdkit import Chem
 
+from explain.graph_ig import median_pairwise_cosine
 from explain.result import ExplanationResult, assemble
 from explain.structure import bits_to_atoms
 
@@ -54,6 +55,10 @@ def explain_xgboost(registry, endpoint_key: str, smiles_standardized: str) -> Ex
     descriptor_scores = contribs[:DESCRIPTOR_COUNT]
     bit_scores = contribs[DESCRIPTOR_COUNT:n_features]
     atom_scores, unplaced = bits_to_atoms(mol, bit_scores, morgan_cfg)
+    # How much the seeds disagree about where the structure part sits, and how far the contributions are from the
+    # model's own margin (TreeSHAP is additive by theorem; this measures it).
+    per_seed_atoms = [bits_to_atoms(mol, s[DESCRIPTOR_COUNT:n_features], morgan_cfg)[0] for s in per_seed]
+    margin = float(np.mean([m.margin_prepared(feat)[0] for m in models]))
 
     task_type = ENDPOINT_METADATA[Endpoint(endpoint_key)]["task_type"]
     return assemble(
@@ -71,4 +76,6 @@ def explain_xgboost(registry, endpoint_key: str, smiles_standardized: str) -> Ex
         descriptor_values=feat[0, :DESCRIPTOR_COUNT],
         descriptor_scores=descriptor_scores,
         unmapped_total=unplaced,
+        completeness_error=abs(float(contribs.sum()) - margin),
+        seed_agreement=median_pairwise_cosine(per_seed_atoms),
     )

@@ -31,6 +31,9 @@ def _reply(**over):
         "descriptor_values": [1.2, None],
         "descriptor_scores": [0.05, -0.02],
         "unmapped_total": 0.0,
+        "completeness_error": 0.012,
+        "converged": True,
+        "seed_agreement": 0.8,
     }
     body.update(over)
     return body
@@ -66,7 +69,9 @@ def test_kermt_routed_endpoint_is_explained_by_the_service():
     assert res.whole_molecule_total == pytest.approx(0.03)
     assert [d.name for d in res.descriptors] == ["MolLogP", "TPSA"]
     assert res.descriptors[1].value is None  # a non-finite descriptor is null, not 0
-    assert res.completeness_error == pytest.approx(abs(0.4 + res.structure_total + 0.03 - 0.7))
+    # the method's own residual is passed through, not recomputed from the parts (ADR-035)
+    assert res.completeness_error == pytest.approx(0.012)
+    assert res.converged is True and res.seed_agreement == pytest.approx(0.8)
     assert any(f.name == "ring system" for f in res.fragments)
 
 
