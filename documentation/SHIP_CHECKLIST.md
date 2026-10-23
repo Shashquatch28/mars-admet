@@ -72,6 +72,8 @@ approval, `[lab]` needs the GPU workstation.
 
 ## E. Polish if time allows (not MVP-blocking)
 
+- [x] E5 `[here]` 2D structure depiction: `POST /depict` (RDKit SVG, black line art, nothing marked), Predict, Compare, Library and the printed report (ADR-039).
+  Done 2026-10-23 on `feat/structure-depiction`. Checked live on a private stack with real models. `api/Dockerfile` gains the three shared libraries RDKit's drawing module needs (verified in a throwaway container, image not rebuilt). Not run: the real print dialog, 501/429 in the browser, a screen reader.
 - [ ] E1 Structure sketcher (Ketcher, ADR-027). Audit never-do #7/#8 and measure the chunk on first integration.
 - [ ] E2 Hand-offs: Library or Batch to Compare, Batch "Open in Predict", endpoint subset for Batch and Compare.
 - [ ] E3 JSON export of the saved snapshot; the command palette's placeholder commands become real; Batch multi-select and reopening an earlier job after reload.
