@@ -38,6 +38,7 @@ import {
   type ReportItem,
 } from "../../domain/library";
 import { reconcile } from "../../domain/reconcile";
+import { StructureDepiction } from "../../components/StructureDepiction";
 
 type Tab = "molecules" | "reports";
 const KEYS = { molecules: ["library", "molecules"], reports: ["library", "reports"] } as const;
@@ -239,6 +240,7 @@ function MoleculeDetail({
     <div className={styles.detail}>
       <div className={styles.sec}>
         <p className={styles.smiles}>{item.smiles}</p>
+        <StructureDepiction smiles={item.smiles} />
         <p className={styles.prov}>{provenanceLine(item)}</p>
         {item.notes && <p className={styles.notes}>{item.notes}</p>}
         {item.tags.length > 0 && <p className={styles.itemMeta}>tags: {item.tags.join(", ")}</p>}

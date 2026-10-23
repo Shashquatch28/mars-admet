@@ -202,3 +202,27 @@ describe("#1/#3: the Excel export marks, colours and ranks nothing (ADR-037)", (
     expect(read(join(SRC, "domain", "exportXlsx.ts"))).toMatch(/await import\("write-excel-file\/browser"\)/);
   });
 });
+
+describe("#1: the structure drawing is not coloured, marked or sized by anything about a molecule (ADR-039)", () => {
+  const code = (f: string) => read(join(SRC, f)).replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  it("StructureDepiction takes a SMILES and a token name, and no prop that could carry a value, a highlight or a judgement", () => {
+    const src = code("components/StructureDepiction.tsx");
+    const props = src.slice(src.indexOf("export function StructureDepiction"), src.indexOf("const q = useDepiction"));
+    for (const banned of ["highlight", "atoms", "bonds", "value", "prediction", "endpoint", "state", "tone", "variant", "severity", "status", "score"]) {
+      expect(props, banned).not.toMatch(new RegExp(`\b${banned}\??:`));
+    }
+    expect(props).toMatch(/smiles:/);
+  });
+  it("the client never writes a colour into the drawing except through the one token-ink replacement", () => {
+    const src = code("domain/depiction.ts");
+    expect(src.match(/\.replace\(\/#/g)?.length ?? 0).toBe(1); // the one ink, nothing else is rewritten
+    expect(src).not.toMatch(/highlight|atomColou?r|bondColou?r/i);
+  });
+  it("the service-side drawing options mark nothing", () => {
+    const py = readFileSync(join(process.cwd(), "..", "ml", "serve", "depiction.py"), "utf8");
+    expect(py).toMatch(/useBWAtomPalette\(\)/);
+    expect(py).toMatch(/clearBackground = False/);
+    expect(py).not.toMatch(/highlightAtoms|highlightBonds|highlightAtomColors|setHighlight|addAtomIndices = True/);
+    expect(py).toMatch(/DrawMolecule\(mol\)/); // no highlight arguments
+  });
+});

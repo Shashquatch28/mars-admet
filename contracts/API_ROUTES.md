@@ -29,6 +29,7 @@ Interactive docs are at `/api/docs`.
 | `/batch/predict` | POST | account | multipart file (CSV or SDF) + `smiles_column`/`endpoints` query params | `BatchPredictResponse` | M3 ✅ |
 | `/batch/progress/{job_id}` | GET (SSE) | account | — | `text/event-stream` of `BatchJobStatus`-shaped JSON | M3 ✅ |
 | `/batch/results/{job_id}` | GET | account | — | `BatchPredictResponse` (results populated) | M3 ✅ |
+| `/depict` | POST | none (IP rate-limited, its own limit) | `DepictRequest` | `image/svg+xml`: a plain black-line 2D drawing of the molecule (one ink, no element colours, nothing highlighted or labelled; RDKit, so 501 where rdkit is absent, 422 for a SMILES it cannot parse or draw). POST so the SMILES stays out of URLs and logs; cached by canonical SMILES and drawing version; frontend ADR-039 | ✅ (not in original Module 8 table) |
 | `/compare` | POST | none | `CompareRequest` | `CompareResponse` | M3 ✅ |
 | `/molecule/{id}/3d` | GET | none | — | `ConformerResponse` | M3 ✅ — `{id}` must have been seen by `/predict` in the current cache window (see below) |
 | `/molecule/{id}/explain?endpoint=<Endpoint>` | GET | none | query param `endpoint` | `ExplainResponse` (see below — not yet modelled) | M4 / Post-MVP |

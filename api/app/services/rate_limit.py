@@ -32,6 +32,28 @@ def client_ip(request: Request) -> str:
     return forwarded[-hops]
 
 
+async def enforce_depict_rate_limit(
+    request: Request,
+    r: redis.Redis = Depends(get_redis),
+) -> None:
+    """Structure drawings (`POST /depict`): the same fixed window and fail-open rule as the prediction limiter, with its own
+    counter and its own number, so drawing a page of molecules never spends the prediction budget."""
+    try:
+        window = int(time.time() // 60)
+        key = f"ratelimit:depict:{client_ip(request)}:{window}"
+
+        count = await r.incr(key)
+        if count == 1:
+            await r.expire(key, 60)
+    except redis.RedisError as exc:
+        warnings.warn(f"Rate limiter unavailable, failing open: {exc}", stacklevel=2)
+        return
+
+    limit = get_settings().rate_limit_depict_per_minute
+    if count > limit:
+        raise HTTPException(status_code=429, detail=f"Rate limit exceeded: {limit} drawings/minute per IP")
+
+
 async def enforce_predict_rate_limit(
     request: Request,
     r: redis.Redis = Depends(get_redis),

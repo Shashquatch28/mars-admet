@@ -46,6 +46,16 @@ class Settings(BaseSettings):
     resend_api_key: str = Field(default="")
 
     rate_limit_anon_per_minute: int = Field(default=60)
+    rate_limit_depict_per_minute: int = Field(
+        default=240,
+        description="Structure drawings per minute per IP. Separate from the prediction limit: a Library or a Compare page draws "
+        "several molecules at once, a drawing is cheap, and the cache answers repeats.",
+    )
+    depiction_cache_ttl_seconds: int = Field(
+        default=7 * 24 * 3600,
+        description="How long a drawing is kept. A drawing is a pure function of the molecule and DEPICTION_VERSION, so this is "
+        "only about memory, not freshness.",
+    )
     trusted_proxy_hops: int = Field(
         default=0,
         description="How many proxies in front of the API append to X-Forwarded-For. 0 (default) means the "

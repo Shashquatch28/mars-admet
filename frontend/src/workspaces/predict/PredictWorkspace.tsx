@@ -25,6 +25,7 @@ import { EndpointDetail } from "./EndpointDetail";
 import { StructureViewer } from "./StructureViewer";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { StructureEditor } from "./StructureEditor";
+import { StructureDepiction } from "../../components/StructureDepiction";
 
 // Truncate for the identity grid; only mark it as truncated when it was.
 const clip = (s: string, n = 34) => (s.length > n ? `${s.slice(0, n)}…` : s);
@@ -145,6 +146,7 @@ export function PredictWorkspace() {
               <dd className={styles.idId}>{response?.molecule_id || "—"}</dd>
             </dl>
           </div>
+          {response && !failure && <StructureDepiction smiles={response.smiles_standardized} />}
           <StructureViewer live={usingApi} moleculeId={response?.molecule_id} />
           <p className={styles.vnote}>
             Conformer is generated on demand and expires with the prediction cache. A 404 here is a normal

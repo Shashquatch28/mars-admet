@@ -110,6 +110,11 @@ export interface ConformerBond {
   atom_index_2: number;
   order: number; // 1, 1.5 (aromatic), 2, 3
 }
+// --- depict (api.py; the response is image/svg+xml, not JSON) ---
+export interface DepictRequest {
+  smiles: string; // drawn from its RDKit canonical form
+}
+
 export interface ConformerResponse {
   molecule_id: string;
   atoms: ConformerAtom[];

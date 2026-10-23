@@ -26,6 +26,7 @@ import { fmtValue } from "../../domain/format";
 import { requestedMlEndpoints, type Row } from "../../domain/reconcile";
 import { ReliabilityTag } from "../../components/dataviz/ReliabilityTag";
 import { ModelSource } from "../../components/ModelSource";
+import { StructureDepiction } from "../../components/StructureDepiction";
 import { useGenerations } from "../../data/useGenerations";
 import { FALLBACK_NOTE, fallbackCountInRows } from "../../domain/modelFamily";
 import { EndpointSelector } from "../predict/EndpointSelector";
@@ -252,6 +253,28 @@ export function CompareWorkspace() {
                 </th>
               </tr>
             </thead>
+            <tbody aria-label="Structures">
+              <tr>
+                <th colSpan={comparison.columns.length + 2} scope="colgroup" className={styles.grp}>
+                  Structure <span className={styles.grpNote}>RDKit drawing · not a prediction</span>
+                </th>
+              </tr>
+              <tr>
+                <th scope="row" className={styles.ep}>
+                  2D drawing
+                </th>
+                {comparison.columns.map((c) => (
+                  <td key={c.index} className={styles.structCell}>
+                    <StructureDepiction
+                      smiles={c.smilesStandardized || c.smilesInput}
+                      label={`Molecule ${c.index + 1}`}
+                      note={false}
+                    />
+                  </td>
+                ))}
+                <td className={styles.unit} />
+              </tr>
+            </tbody>
             {comparison.groups.map((g) => (
               <tbody key={g.group}>
                 <tr>
