@@ -18,13 +18,13 @@ import { EndpointList } from "./EndpointList";
 import { downloadText } from "../../data/download";
 import { usePrintReport } from "../../components/report/usePrintReport";
 import { useAnnounce } from "../../app/announce";
-import { predictionAnnouncement } from "../../domain/announce";
+import { explainAnnouncement, predictionAnnouncement } from "../../domain/announce";
 import { buildCsv, predictFileName } from "../../domain/exportCsv";
 import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
 import { StructureViewer } from "./StructureViewer";
 import { PropertiesPanel } from "./PropertiesPanel";
-import { atomHighlights, explainView, focusHighlights, fragmentKey } from "../../domain/explain";
+import { atomHighlights, explainView, focusHighlights, fragmentKey, isAskable } from "../../domain/explain";
 import { useExplanation } from "../../data/useExplanation";
 
 // Truncate for the identity grid; only mark it as truncated when it was.
@@ -62,22 +62,22 @@ export function PredictWorkspace() {
 
   const selectedRow = recon.rows.find((r) => r.endpoint === selectedEndpoint) ?? recon.rows[0];
 
-  // Explanation (ADR-031). Asked for per molecule + endpoint, never automatically; the answer is
+  // Explanation (ADR-031, ADR-035). The server is read (no side effect) for a row with a model, which resumes a
+  // running job and shows a cached result; computing starts only when the user presses Explain. The answer is
   // shared by the inspector and the structure viewer, which read the same query.
-  const [asked, setAsked] = useState<ReadonlySet<string>>(new Set());
   const [showOnStructure, setShowOnStructure] = useState(true);
   const [focusKey, setFocusKey] = useState<string | null>(null);
   const moleculeId = usingApi && result ? result.response.molecule_id : null;
   const explainKey = moleculeId && selectedRow ? `${moleculeId}:${selectedRow.endpoint}` : "";
-  const explainAsked = asked.has(explainKey);
-  const exp = useExplanation(moleculeId, selectedRow?.endpoint ?? "solubility_logs", explainAsked);
+  const rowState = selectedRow?.state ?? { kind: "not_returned" as const };
+  const exp = useExplanation(moleculeId, selectedRow?.endpoint ?? "solubility_logs", isAskable(rowState, selectedRow?.prediction));
   const explanation = explainView({
-    rowState: selectedRow?.state ?? { kind: "not_returned" },
+    rowState,
     prediction: selectedRow?.prediction,
-    asked: explainAsked,
-    isPending: exp.isFetching,
-    data: exp.data,
-    error: exp.error as { status?: number; message: string } | null,
+    answer: exp.answer,
+    pending: exp.pending,
+    stopping: exp.stopping,
+    error: exp.error,
   });
   const highlights = useMemo(() => {
     if (explanation.kind !== "ready" || !showOnStructure) return null;
@@ -112,6 +112,14 @@ export function PredictWorkspace() {
     announcedFor.current = result;
     announce(predictionAnnouncement(recon.counts));
   }, [usingApi, result, failure, recon.counts, announce]);
+  // An explanation that runs for minutes is announced when it starts and when it ends (not on every poll).
+  const prevExplain = useRef<{ key: string; kind: string } | null>(null);
+  useEffect(() => {
+    const prev = prevExplain.current;
+    prevExplain.current = { key: explainKey, kind: explanation.kind };
+    const message = explainAnnouncement(prev && prev.key === explainKey ? prev.kind : null, explanation);
+    if (message) announce(message);
+  }, [explainKey, explanation, announce]);
   const openReport =
     usingApi && result && !failure
       ? () => printReport.print({ smilesInput: result.submitted, response: result.response, cells: recon.rows })
@@ -229,11 +237,8 @@ export function PredictWorkspace() {
             explanation={{
               view: explanation,
               canAsk: usingApi && !!moleculeId && !!explainKey,
-              onAsk: () => {
-                if (!explainKey) return;
-                if (explainAsked) void exp.refetch(); // "Try again" after a failure
-                else setAsked((prev) => new Set(prev).add(explainKey));
-              },
+              onAsk: exp.start,
+              onCancel: exp.cancel,
               showOnStructure,
               onShowOnStructure: setShowOnStructure,
               focusKey,

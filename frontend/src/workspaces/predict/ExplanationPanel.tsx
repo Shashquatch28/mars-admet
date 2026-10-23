@@ -6,10 +6,13 @@ import styles from "./predict.module.css";
 import type { Endpoint } from "../../types/contracts";
 import {
   GLYPH,
+  convergenceNote,
+  describeJob,
   fmtSigned,
   fragmentKey,
   methodLabel,
   outputSpaceLabel,
+  seedAgreementNote,
   topFragments,
   totalRows,
   type ExplainView,
@@ -31,8 +34,9 @@ function Mark({ sign }: { sign: Sign }) {
 export interface ExplanationPanelProps {
   endpoint: Endpoint;
   view: ExplainView;
-  canAsk: boolean; // false in fixture mode: there is no API to ask
-  onAsk: () => void;
+  canAsk: boolean; // false when there is no API to ask
+  onAsk: () => void; // start, or start again
+  onCancel: () => void; // stop a queued or running job
   showOnStructure: boolean;
   onShowOnStructure: (on: boolean) => void;
   focusKey: string | null; // a group chosen from the list: only its atoms are drawn on the structure
@@ -44,6 +48,7 @@ export function ExplanationPanel({
   view,
   canAsk,
   onAsk,
+  onCancel,
   showOnStructure,
   onShowOnStructure,
   focusKey,
@@ -60,6 +65,9 @@ export function ExplanationPanel({
     case "not_askable":
       body = <p className={styles.nostate}>{view.why}</p>;
       break;
+    case "checking":
+      body = <p className={styles.nostate}>Checking whether this has already been explained.</p>;
+      break;
     case "idle":
       body = (
         <>
@@ -67,14 +75,43 @@ export function ExplanationPanel({
             Computed on request, from the model that served this value. It describes what moved that model&rsquo;s
             output, not why the molecule behaves as it does.
           </p>
+          {view.background && (
+            <p className={styles.nostate}>
+              This is a graph model, so its explanation runs in the background and can take several minutes. It keeps
+              running if you leave this page, and the result is kept for 48 hours.
+            </p>
+          )}
+          {view.cancelled && <p className={styles.nostate}>Cancelled. Nothing was kept.</p>}
           {ask("Explain this prediction")}
-          {!canAsk && <p className={styles.nostate}>Explanations need the API. These values are sample data.</p>}
+          {!canAsk && <p className={styles.nostate}>Explanations need the API.</p>}
         </>
       );
       break;
-    case "loading":
-      body = <p className={styles.nostate}>Explaining. A graph model can take several seconds; a tree model, a fraction of one.</p>;
+    case "starting":
+      body = <p className={styles.nostate}>Starting the explanation.</p>;
       break;
+    case "job": {
+      const d = describeJob(view.job);
+      body = (
+        <>
+          <p className={styles.nostate}>{d.status}</p>
+          {d.detail && <p className={styles.nostate}>{d.detail}</p>}
+          <p className={styles.nostate}>{d.elapsed}</p>
+          <p className={styles.xnote}>
+            The number of integration steps grows (64, then 128, then 256) until the result is accurate enough, so
+            there is no percentage and no time left to show. This page checks every few seconds. It is safe to leave:
+            the job keeps running, and opening this endpoint again picks it up.
+          </p>
+          <button className={styles.xbtn} onClick={onCancel} disabled={view.stopping}>
+            {view.stopping ? "Stopping" : "Cancel"}
+          </button>
+          {view.stopping && (
+            <p className={styles.xnote}>A running job stops between steps, which takes a few seconds.</p>
+          )}
+        </>
+      );
+      break;
+    }
     case "mismatch":
       body = (
         <p className={styles.nostate}>
@@ -97,12 +134,26 @@ export function ExplanationPanel({
     case "unsupported":
       body = <p className={styles.nostate}>This API environment has no model stack, so it cannot explain predictions.</p>;
       break;
+    case "unexplainable":
+      body = (
+        <p className={styles.nostate}>
+          This molecule cannot be explained: {view.message} Starting it again would give the same answer.
+        </p>
+      );
+      break;
+    case "limited":
+      body = (
+        <>
+          <p className={styles.nostate}>{view.message}</p>
+          {ask("Try again")}
+        </>
+      );
+      break;
     case "busy":
       body = (
         <>
           <p className={styles.nostate}>
-            The model that serves this endpoint cannot explain right now ({view.message}). It is not replaced by a
-            different model&rsquo;s explanation.
+            {view.message} The explanation is not replaced by a different model&rsquo;s.
           </p>
           {ask("Try again")}
         </>
@@ -139,7 +190,21 @@ export function ExplanationPanel({
             )}
             <dt>Completeness error</dt>
             <dd>{fmtNum(d.completeness_error, 4)}</dd>
+            {d.converged != null && (
+              <>
+                <dt>Met tolerance</dt>
+                <dd>{d.converged ? "yes" : "no"}</dd>
+              </>
+            )}
+            {d.seed_agreement != null && (
+              <>
+                <dt>Seed agreement</dt>
+                <dd>{fmtNum(d.seed_agreement, 2)}</dd>
+              </>
+            )}
           </dl>
+          {convergenceNote(d) && <p className={styles.xnote}>{convergenceNote(d)}</p>}
+          {seedAgreementNote(d) && <p className={styles.xnote}>{seedAgreementNote(d)}</p>}
 
           <div className={styles.xsub}>Parts that add up to the output</div>
           <table className={styles.xtable}>

@@ -16,8 +16,8 @@ function Rule() {
   return <div className={styles.irule} />;
 }
 
-// `explanation` is absent while there is nothing to wire it to (fixture mode shows the section
-// disabled, with its reason, rather than leaving it out).
+// `explanation` is absent while there is nothing to wire it to (the section is left out
+// until a prediction exists).
 export type ExplanationControls = Omit<ExplanationPanelProps, "endpoint">;
 
 export function EndpointDetail({

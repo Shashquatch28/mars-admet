@@ -114,9 +114,11 @@ a failure is never cached. Job state lives in memory in the service: a restart l
 | 200 | `ExplainResponse`; or, from `DELETE`, an `ExplainJobStatus` with state `cancelled` |
 | 202 | `ExplainJobStatus`: queued or running, with `Retry-After` |
 | 204 | `GET` only: nothing started and nothing cached for this molecule and endpoint |
+| 403 | `DELETE` only: another visitor started this job; only the address that started it can cancel it (others may be waiting on it) |
 | 404 | unknown or expired `molecule_id` (call `/predict` first) |
 | 409 | nothing to explain: the endpoint is stub-served, or is the rule-based `synthetic_accessibility` |
 | 422 | unknown `endpoint`, or the molecule cannot be explained |
+| 429 | `POST` only: the `/predict` per-IP rate limit, or you already have an explanation running (one per address) |
 | 501 | no ml stack in this environment (no RDKit / XGBoost) |
 | 503 | the serving model cannot explain right now; the queue is full; or the job was lost to a service restart (start it again) |
 

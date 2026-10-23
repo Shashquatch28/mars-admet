@@ -1,29 +1,48 @@
 // What the Explanation section of the inspector should show, decided in one pure place (like
 // conformerView and deriveRowState) so every state, including the ones that are not errors, is
 // testable. ADR-031: the serving model explains; attribution is signed and never good or bad.
-import type { Endpoint, EndpointPrediction, ExplainMethod, ExplainOutputSpace, ExplainResponse } from "../types/contracts";
+import type {
+  Endpoint,
+  EndpointPrediction,
+  ExplainJobStatus,
+  ExplainMethod,
+  ExplainOutputSpace,
+  ExplainResponse,
+} from "../types/contracts";
 import { DISPLAY_UNIT } from "./endpoints";
 import { fmtNum } from "./format";
+import { modelFamily } from "./modelFamily";
 import type { EndpointRowState } from "./rowState";
+
+// What the API said about an explanation (ADR-035): the result, a job that is queued or running, or nothing
+// started. Reading never starts anything; only an explicit Start does.
+export type ExplainAnswer =
+  | { kind: "result"; data: ExplainResponse }
+  | { kind: "job"; job: ExplainJobStatus }
+  | { kind: "none" };
 
 export type ExplainView =
   | { kind: "not_askable"; why: string } // the row has no model behind it: nothing to explain
-  | { kind: "idle" } // can be asked for, has not been
-  | { kind: "loading" }
+  | { kind: "checking" } // asking the server whether this was already explained or is running
+  | { kind: "idle"; cancelled: boolean; background: boolean } // can be started; `background` = takes minutes, not an instant
+  | { kind: "starting" }
+  | { kind: "job"; job: ExplainJobStatus; stopping: boolean } // queued or running
   | { kind: "ready"; data: ExplainResponse }
   | { kind: "mismatch"; explained: string; served: string } // an explanation of a different model than the value on screen
   | { kind: "no_model"; message: string } // 409: the service says there is no model to explain
   | { kind: "expired" } // 404: the molecule's cache entry is gone
   | { kind: "unsupported" } // 501: this API environment has no ml stack
-  | { kind: "busy"; message: string } // 503: the serving model cannot explain right now
+  | { kind: "unexplainable"; message: string } // 422: this molecule cannot be explained; trying again will not help
+  | { kind: "limited"; message: string } // 429: rate limit, or an explanation of yours is already running
+  | { kind: "busy"; message: string } // 503: the serving model cannot explain right now, the queue is full, or the job was lost
   | { kind: "error"; message: string };
 
 export interface ExplainInputs {
   rowState: EndpointRowState;
   prediction: EndpointPrediction | undefined;
-  asked: boolean; // the user pressed Explain for this molecule + endpoint
-  isPending: boolean;
-  data?: ExplainResponse;
+  answer?: ExplainAnswer; // the latest thing the server said
+  pending: "check" | "start" | null; // a request in flight: the first read, or a Start
+  stopping?: boolean; // a Cancel was sent and the job has not reported cancelled yet
   error: { status?: number; message: string } | null;
 }
 
@@ -36,16 +55,31 @@ const NOT_ASKABLE: Partial<Record<EndpointRowState["kind"], string>> = {
   rule_based: "A rule-based score is computed, not predicted: there is no model to explain.",
 };
 
+// A queued or running job is read again every few seconds; anything else is not (ADR-035 item 3). Reading is
+// cheap and has no side effect, and it is not rate limited. The browser pauses it while the tab is hidden.
+export const EXPLAIN_POLL_MS = 3000;
+export function shouldPoll(a: ExplainAnswer | undefined): boolean {
+  return a?.kind === "job" && (a.job.state === "queued" || a.job.state === "running");
+}
+
+// Whether there is a model behind this row to ask. The server is only read for these rows.
+export function isAskable(rowState: EndpointRowState, prediction: EndpointPrediction | undefined): boolean {
+  return !!prediction && !NOT_ASKABLE[rowState.kind];
+}
+
 export function explainView(i: ExplainInputs): ExplainView {
   const why = NOT_ASKABLE[i.rowState.kind];
   if (why || !i.prediction) return { kind: "not_askable", why: why ?? "There is no prediction to explain." };
-  if (!i.asked) return { kind: "idle" };
   if (i.error) {
     switch (i.error.status) {
       case 404:
         return { kind: "expired" };
       case 409:
         return { kind: "no_model", message: i.error.message };
+      case 422:
+        return { kind: "unexplainable", message: i.error.message };
+      case 429:
+        return { kind: "limited", message: i.error.message };
       case 501:
         return { kind: "unsupported" };
       case 503:
@@ -54,14 +88,64 @@ export function explainView(i: ExplainInputs): ExplainView {
         return { kind: "error", message: i.error.message };
     }
   }
-  if (i.data) {
+  const a = i.answer;
+  if (a?.kind === "result") {
     // The explanation must describe the artifact that produced the value on screen. If the value was
     // answered by a fallback (a KERMT outage answered by XGBoost), say so instead of mixing the two.
-    if (i.data.model_id !== i.prediction.model_id)
-      return { kind: "mismatch", explained: i.data.model_id, served: i.prediction.model_id };
-    return { kind: "ready", data: i.data };
+    if (a.data.model_id !== i.prediction.model_id)
+      return { kind: "mismatch", explained: a.data.model_id, served: i.prediction.model_id };
+    return { kind: "ready", data: a.data };
   }
-  return i.isPending ? { kind: "loading" } : { kind: "idle" };
+  if (a?.kind === "job" && (a.job.state === "queued" || a.job.state === "running"))
+    return { kind: "job", job: a.job, stopping: !!i.stopping };
+  if (i.pending === "start") return { kind: "starting" };
+  if (i.pending === "check" && !a) return { kind: "checking" };
+  return {
+    kind: "idle",
+    cancelled: a?.kind === "job" && a.job.state === "cancelled",
+    background: modelFamily(i.prediction.model_id) === "kermt",
+  };
+}
+
+// Progress in words: where the job is, never a percentage or a time left (ADR-035 item 5: the step count
+// escalates 64, 128, 256 until the residual is small enough, so the end is not known in advance).
+export function describeJob(job: ExplainJobStatus): { status: string; detail: string | null; elapsed: string } {
+  const status =
+    job.state === "queued"
+      ? job.queue_position != null
+        ? `Waiting in the queue, position ${job.queue_position}.`
+        : "Waiting in the queue."
+      : job.stage
+        ? `Running: ${job.stage}.`
+        : "Running.";
+  const detail =
+    job.state === "running" && job.seeds_total > 0
+      ? `${job.seeds_done} of ${job.seeds_total} ${job.seeds_total === 1 ? "seed" : "seeds"} attributed so far.`
+      : null;
+  return { status, detail, elapsed: `Elapsed ${fmtDuration(job.elapsed_seconds)}.` };
+}
+
+export function fmtDuration(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  const m = Math.floor(s / 60);
+  return m === 0 ? `${s} s` : `${m} min ${String(s % 60).padStart(2, "0")} s`;
+}
+
+// Integrated Gradients is iterative. When it stopped at its largest step count without meeting its tolerance,
+// the result is still returned and the parts still add up to the output; this says how much was left unplaced.
+export function convergenceNote(d: ExplainResponse): string | null {
+  if (d.converged !== false) return null;
+  const steps = d.n_steps != null ? `${d.n_steps} steps` : "its largest number of steps";
+  return `The integration did not meet its tolerance after ${steps}, so ${fmtNum(
+    Math.abs(d.unmapped_total),
+    3,
+  )} of the output change is shown as Unplaced. The parts above still add up to the output.`;
+}
+
+// Median pairwise cosine of the per-seed atom attributions, in words. A number and what it measures; no verdict.
+export function seedAgreementNote(d: ExplainResponse): string | null {
+  if (d.seed_agreement == null) return null;
+  return `Seed agreement ${fmtNum(d.seed_agreement, 2)}: how alike the ${d.n_seeds} seeds' atom attributions are (1 means the same pattern, 0 unrelated, below 0 opposite).`;
 }
 
 export type Sign = "up" | "down" | "none";

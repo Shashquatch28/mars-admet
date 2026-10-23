@@ -8,6 +8,7 @@
 // Cookies are SameSite=Lax, so the SPA and API must be same-site; one origin is.
 // A split deployment would need the API's explicit CORS origin list (CORS_ALLOW_ORIGINS).
 import { parseProgressEvents, type JobProgress } from "../domain/batchJob";
+import type { ExplainAnswer } from "../domain/explain";
 import type {
   BatchPredictResponse,
   CompareRequest,
@@ -15,6 +16,7 @@ import type {
   ConformerResponse,
   DeleteAccountRequest,
   Endpoint,
+  ExplainJobStatus,
   ExplainResponse,
   LoginResponse,
   MeResponse,
@@ -124,14 +126,22 @@ export async function fetchConformer(moleculeId: string): Promise<ConformerRespo
   return (await res.json()) as ConformerResponse;
 }
 
-// Explanation of the model that served `endpoint` (ADR-031). Computed on request, so it can take
-// seconds for KERMT. 404 expired molecule, 409 nothing to explain, 501 no ml stack, 503 the serving
-// model cannot explain now: each is an answer with its own state, not a crash.
-export async function fetchExplanation(moleculeId: string, endpoint: Endpoint): Promise<ExplainResponse> {
+// Explanation of the model that served `endpoint` (ADR-031, ADR-035). A tree model answers at once; a KERMT
+// explanation is a background job that takes minutes, so the URL has three verbs: GET reads (no side effect),
+// POST starts or joins, DELETE cancels. 200 is a result (or, from DELETE, the cancelled job), 202 a job that is
+// queued or running, 204 nothing started. 404 expired molecule, 409 nothing to explain, 422 cannot be explained,
+// 429 limit, 501 no ml stack, 503 cannot explain now: each is an answer with its own state, not a crash.
+async function explainCall(method: "GET" | "POST" | "DELETE", moleculeId: string, endpoint: Endpoint): Promise<ExplainAnswer> {
   const q = new URLSearchParams({ endpoint });
-  const res = await request(`/molecule/${encodeURIComponent(moleculeId)}/explain?${q}`);
-  return (await res.json()) as ExplainResponse;
+  const res = await request(`/molecule/${encodeURIComponent(moleculeId)}/explain?${q}`, { method });
+  if (res.status === 204) return { kind: "none" };
+  const body = (await res.json()) as ExplainResponse | ExplainJobStatus;
+  return "job_id" in body ? { kind: "job", job: body } : { kind: "result", data: body };
 }
+
+export const readExplanation = (moleculeId: string, endpoint: Endpoint) => explainCall("GET", moleculeId, endpoint);
+export const startExplanation = (moleculeId: string, endpoint: Endpoint) => explainCall("POST", moleculeId, endpoint);
+export const cancelExplanation = (moleculeId: string, endpoint: Endpoint) => explainCall("DELETE", moleculeId, endpoint);
 
 const jsonBody = (body: unknown): RequestInit => ({
   headers: { "Content-Type": "application/json" },
