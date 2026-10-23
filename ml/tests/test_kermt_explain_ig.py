@@ -150,6 +150,14 @@ def test_a_molecule_with_no_bonds_is_explained(lm, descriptors):
     assert np.isfinite(sa.descriptor_scores).all()
 
 
+def test_a_non_finite_descriptor_vector_is_refused_not_crashed_on(lm, descriptors):
+    """Selenium makes the descriptor generator return NaN; that used to surface as a 500 from a JSON encode error."""
+    bad = descriptors.copy()
+    bad[3] = np.nan
+    with pytest.raises(ValueError, match="non-finite"):
+        ig.attribute_checkpoint(lm, SMILES, bad, 0, shared_dict={}, lock=threading.Lock(), schedule=(32,))
+
+
 def test_attributions_are_finite_for_another_descriptor_vector(lm):
     base = np.random.default_rng(1).uniform(0, 1, size=D)
     a = _attribute(lm, base, 0, schedule=(64,))
