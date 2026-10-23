@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBatchSession } from "../../app/batchSession";
 import { usePredictSession } from "../../app/predictSession";
+import { useCompareSession } from "../../app/compareSession";
 import { USING_API, saveMolecule } from "../../data/client";
 import { downloadText } from "../../data/download";
 import { usePrintReport } from "../../components/report/usePrintReport";
@@ -31,7 +32,7 @@ import {
   type FilterSpec,
   type SortSpec,
 } from "../../domain/batch";
-import { SHORT_LABEL } from "../../domain/endpoints";
+import { ML_ENDPOINTS, SHORT_LABEL } from "../../domain/endpoints";
 import { fmtValue } from "../../domain/format";
 import { BatchGrid } from "./BatchGrid";
 import { BatchCoverage } from "./BatchCoverage";
@@ -48,10 +49,11 @@ export function BatchWorkspace() {
   const kermtEndpoints = useGenerations()?.kermt_endpoints ?? [];
   const navigate = useNavigate();
   const predict = usePredictSession();
+  const compare = useCompareSession();
 
   const summary = useMemo(
-    () => buildBatch(session.result ?? { status: "done", total: 0, completed: 0, results: [] }),
-    [session.result],
+    () => buildBatch(session.result ?? { status: "done", total: 0, completed: 0, results: [] }, session.requested),
+    [session.result, session.requested],
   );
   const [sort, setSort] = useState<SortSpec>({ kind: "input" });
   const [filter, setFilter] = useState<FilterSpec>(NO_FILTER);
@@ -87,6 +89,8 @@ export function BatchWorkspace() {
     error: r.ok ? null : (r.error ?? "row failed"),
   });
   const canExport = USING_API && summary.rows.length > 0;
+  // A run that asked for a subset leaves dashes in the grid that are not failures (ADR-028); the footer says so in words.
+  const subsetAsked = summary.rows.length > 0 && session.requested.length < ML_ENDPOINTS.length;
   const printReport = usePrintReport();
   const toggle = (k: keyof FilterSpec) => setFilter((f) => ({ ...f, [k]: !f[k] }));
 
@@ -233,6 +237,14 @@ export function BatchWorkspace() {
               Row flags: <b>▲N</b> means N of that molecule's endpoints are out of domain; <b>—N</b> means N
               endpoints were not returned by the service.
             </span>
+            {subsetAsked && (
+              <span className={styles.flagLegend}>
+                {" "}
+                This run asked for <b>{session.requested.length}</b> of {ML_ENDPOINTS.length} endpoints. For the other{" "}
+                {ML_ENDPOINTS.length - session.requested.length}, a — in a cell means NOT REQUESTED: you left them out, and
+                nothing failed. The —N flag counts only endpoints that were requested and not returned.
+              </span>
+            )}
           </p>
         </div>
       </section>
@@ -329,6 +341,17 @@ export function BatchWorkspace() {
             }}
           >
             Open in Predict
+          </button>
+          <button
+            disabled={!selectedRow?.ok}
+            title="Put this molecule in the first free Compare slot (nothing is run until you press Run comparison)"
+            onClick={() => {
+              if (!selectedRow) return;
+              compare.addMolecule(selectedRow.smilesInput, "Batch");
+              navigate("/compare");
+            }}
+          >
+            Add to Compare
           </button>
           <button
             disabled={!USING_API || !selectedRow}
