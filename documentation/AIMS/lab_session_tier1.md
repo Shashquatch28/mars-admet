@@ -263,3 +263,14 @@ reported as results.
 > **CORRECTION 2026-10-19 (appended; nothing above is rewritten).** The KERMT defaults quoted here for `dropout` (0.0), `bond_drop_rate` (0.1) and `dist_coff` (0.15) are CLI
 > values. `load_checkpoint` overwrites them with the NV-KERMT-70M-v2 checkpoint's 0.1 / 0 / 0.1 (and `weight_decay` 1e-7) before training; those are the values in force in
 > every run. They cannot be tuned through the CLI. See `decisions.md` 2026-10-19 (correction).
+
+> **UPDATE 2026-10-22 — tuning runner and the state of Tier 1.** (1) G3 is decided: the adopted rule (`decisions.md` 2026-10-22; `ml/eval/g3_adopted.py`) gives
+> AMES PASS, hERG WATCH; the single-task AMES half is waived. (2) `ml/train/run_tuning.py` implements §5 steps 2-3 as a procedure with no values in it:
+> `plan` (runs and GPU-hours for a registered protocol), `run` (every outstanding trial x tuning seed in registered order, `calibrate=False`,
+> `source_tag` recorded, a `.started` marker without a result is a crashed run and is never re-run over), `finalize` (`tuning.select`, refuses partial results,
+> writes `selection.json`). It refuses to start unless the registration file's hash and trial list match. Only `objective = "val_selection_loss"` is implemented
+> (read from `fit_summary.json`); an objective computed from `val_views.npz` must be added before a protocol can register it. Tested on CPU with a fake runner
+> (`ml/tests/test_run_tuning.py`); the GPU path (`real_runner`) has never been executed. (3) `train_mixed.py` now logs `effective_checkpoint_args`
+> (dropout, bond_drop_rate, weight_decay, dist_coff as actually used) in the start event; a run whose start event lacks the key predates it.
+> (4) `train/preflight_clusters.py` re-run 2026-10-22: unchanged (Metabolism worst sacrifice 29.2% — Option A already decided; others OK).
+> **Blocked on the maintainer:** the protocol numbers listed under "Open — maintainer" (a)-(f) in `decisions.md` 2026-10-14. Nothing is registered and no trial has run.
