@@ -206,3 +206,22 @@
     margin: 0 0 3pt;
   }
 }
+
+@media print {
+  /* The 2D drawing (ADR-039): line art in --report-ink, no frame colour, kept with its caption. */
+  .structure {
+    margin: 0 0 8pt;
+    break-inside: avoid;
+  }
+  .structure img {
+    display: block;
+    width: 62mm;
+    height: auto;
+  }
+  .structure figcaption,
+  .structure p {
+    margin: 2pt 0 0;
+    font-size: 8pt;
+    color: var(--report-ink-muted);
+  }
+}

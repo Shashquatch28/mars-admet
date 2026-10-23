@@ -6,6 +6,7 @@
 // (ADR-008), and absence is a row that says so, never a gap. Nothing here ranks, scores, colours by
 // magnitude or calls a value good, safe or favourable: the value is printed the same way in every state and
 // reliability is its own column (ADR-006).
+import { STRUCTURE_STATEMENT, structureMissingStatement, type ReportStructure } from "./depiction";
 import { DISPLAY_UNIT, STUB_MODEL_ID, type DisplayGroup } from "./endpoints";
 import { FALLBACK_NOTE, familyLabel, fallbackCountInRows, servedByFallback } from "./modelFamily";
 import type { ExportMolecule } from "./exportCsv";
@@ -75,6 +76,8 @@ export interface ReportModel {
   counts: ReportCounts;
   /** Null when the response carries none (an older cached or saved response, or no RDKit in the service). */
   properties: ReportProperties | null;
+  /** The 2D drawing, or why there is none. Null when none was attempted (a Batch row that failed before inference). */
+  structure: ReportStructure | null;
   /** Rows routed to KERMT that XGBoost answered for this request. */
   fallbackCount: number;
   groups: ReportGroup[];
@@ -93,7 +96,6 @@ export const REPORT_STATEMENTS: readonly string[] = [
   "Every endpoint in the roster is listed. One the service did not return reads NOT RETURNED; one left out of the " +
     "request reads NOT REQUESTED.",
   "The Model column names the family of model that answered each row, read from the service's own model identifier.",
-  "Not included: a 2D structure drawing.",
 ];
 
 /** Printed only when a row was routed to KERMT and answered by XGBoost, so it is never printed as noise. */
@@ -162,7 +164,12 @@ function reportProperties(p: NonNullable<ExportMolecule["response"]>["properties
   return { source: PROPERTY_SOURCE, lines: propertyLines(p), alerts: alertGroups(p), notes: [...PROPERTY_NOTES] };
 }
 
-export function buildReport(m: ExportMolecule, now: Date = new Date(), kermtEndpoints: readonly string[] = []): ReportModel {
+export function buildReport(
+  m: ExportMolecule,
+  now: Date = new Date(),
+  kermtEndpoints: readonly string[] = [],
+  structure: ReportStructure | null = null,
+): ReportModel {
   const r = m.response;
   const failed = !!m.error || !r;
   const groups: ReportGroup[] = failed
@@ -184,9 +191,14 @@ export function buildReport(m: ExportMolecule, now: Date = new Date(), kermtEndp
     failure: failed ? (m.error ?? "no result for this molecule") : null,
     counts: failed ? reportCounts([]) : reportCounts(m.cells),
     properties: !failed && r?.properties ? reportProperties(r.properties) : null,
+    structure: failed ? null : structure,
     fallbackCount,
     groups,
-    statements: fallbackCount > 0 ? [...REPORT_STATEMENTS, FALLBACK_STATEMENT] : [...REPORT_STATEMENTS],
+    statements: [
+      ...REPORT_STATEMENTS,
+      ...(!failed && structure ? [structure.kind === "drawn" ? STRUCTURE_STATEMENT : structureMissingStatement(structure.reason)] : []),
+      ...(fallbackCount > 0 ? [FALLBACK_STATEMENT] : []),
+    ],
   };
 }
 

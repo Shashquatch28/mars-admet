@@ -14,6 +14,7 @@ import type {
   CompareResponse,
   ConformerResponse,
   DeleteAccountRequest,
+  DepictRequest,
   Endpoint,
   LoginResponse,
   MeResponse,
@@ -121,6 +122,14 @@ export async function fetchComparison(smiles: string[]): Promise<CompareResponse
 export async function fetchConformer(moleculeId: string): Promise<ConformerResponse> {
   const res = await request(`/molecule/${encodeURIComponent(moleculeId)}/3d`);
   return (await res.json()) as ConformerResponse;
+}
+
+// A plain black-line 2D drawing as SVG text (ADR-039). POST, so the SMILES is never written into a URL. 501: the API has no RDKit;
+// 422: a SMILES it cannot parse or draw. The service caches by canonical SMILES; the browser keeps the text for the session.
+export async function fetchDepiction(smiles: string): Promise<string> {
+  const body: DepictRequest = { smiles };
+  const res = await request("/depict", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return res.text();
 }
 
 const jsonBody = (body: unknown): RequestInit => ({
