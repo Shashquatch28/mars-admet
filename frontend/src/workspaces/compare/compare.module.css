@@ -296,3 +296,22 @@
   white-space: nowrap;
   border-bottom: 1px solid var(--line-hairline);
 }
+
+/* Structure row (ADR-039): the drawings sit under the molecule headers, scrolling with the table. */
+.grpNote {
+  margin-left: 8px;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-quiet);
+}
+.structCell {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line-hairline);
+  vertical-align: top;
+}
+.structCell img {
+  max-height: 140px;
+}
