@@ -1133,3 +1133,45 @@ null without RDKit, for an unparseable molecule, or on a response written before
 existed are unreachable under the new key. Rule-of-five: a count of limits exceeded out of four, with the four limits stated beside it and no pass or fail wording. QED is shown as a number with its source and "not a MARS prediction". Alerts are listed by catalog and name, "no match" when empty, with the PAINS caveat and its citation in text beside them. The printed report gets the same table and notes,
 and its fixed line "drug-likeness flags are not included" is gone. Checked live: a rhodanine returned PAINS `ene_rhod_A(235)` and the Brenk alerts `Michael_acceptor_1` and `Thiocarbonyl_group`; the cached repeat kept them; the panel (one ink, nothing coloured) and the report showed them; the roster and its counts were unchanged.
 
+
+## ADR-038 — Hand-offs into Compare from Library and Batch, and the endpoint subset for Batch and Compare
+
+**Date:** 2026-10-23 · **Status:** accepted · implemented 2026-10-23 on `feat/handoffs` (ship checklist E2)
+
+**Decision.**
+
+1. **Library to Compare and Batch to Compare.** The Library's saved-molecule detail and the Batch molecule inspector each get an "Add to Compare" button beside the existing actions (Batch already had "Open in Predict";
+   Predict already had "Compare molecule", which is unchanged). It sends the molecule's SMILES, not a result: Compare asks the service for it like any other slot. The button switches to Compare and **runs nothing**; a run stays a
+   deliberate act, as it is for "Open in Predict". In Batch it is off for a row that failed (there is no molecule to compare, and the inspector already says why in words).
+2. **Which slot.** `addToSlots` (pure, tested): the slot that already holds the same string, if any (nothing is added twice); else the first empty slot; else a third slot when only two exist; else the last slot is replaced.
+   Replacing is the only case that loses something the user typed, so it is never silent: Compare's status line says which molecule was replaced and why. The hand-off also discards a stale result (its columns would no longer match the slots)
+   and writes one sentence to the same status line naming the slot and the source. Two hand-offs in a row fill two slots.
+3. **A saved molecule is not reused.** Compare predicts the SMILES again with the current model; the saved values are a frozen copy made by an earlier model version (ADR-022) and mixing them into a table of fresh values would put two generations
+   in one row with nothing but a version string to tell them apart. The status line says "predicted again with the current model; the saved values are not reused" in words, in addition to the button's tooltip (never-do #8).
+4. **Endpoint subset in Batch and Compare.** The Predict selector (`EndpointSelector`, a popover with All / None and ticks by group) is used as it is, beside "Run batch" and "Run comparison". The choice is session state above the router, in
+   roster order, like Predict's. A run sends `endpointsForRequest(selected)` (the selection plus the always-requested rule-based score, or nothing when all 14 are ticked) and the session keeps what was sent with the result, so every cell is read
+   against **what that run asked for** (ADR-028): an endpoint left out is NOT REQUESTED in every Compare column and every Batch row, including the rows that failed, and none is NOT RETURNED. Changing the selector after a run relabels nothing.
+   `buildComparison` and `buildBatch` already took a `requested` list; no domain logic changed.
+5. **Words next to the dashes.** The dense Batch grid shows a dash for both NOT REQUESTED and NOT RETURNED (the state is in each cell's accessible name and in the inspector's words). A run that asked for a subset therefore adds one sentence to the
+   grid's footer: how many endpoints were asked for, that a dash for the others means NOT REQUESTED and nothing failed, and that the `—N` row flag counts only endpoints that were requested and not returned. Compare's status line gives the same count.
+   Coverage by endpoint already reads "requested" per endpoint and needed no change.
+6. **A server defect found on the way, fixed here.** `POST /batch/predict` declared `endpoints` as a bare list parameter, which FastAPI reads from the multipart body, so the `?endpoints=` the client sends (and `API_ROUTES.md` documents) was ignored and every endpoint
+   ran whatever was asked for: the response carried all 15 predictions for a request of 2. It is now `Query(default=None)`. Tests pin a subset being honoured (checked to fail without the fix), no subset running everything, and an unknown name being a 422.
+   The queued tier stores the same list with the job input, so it benefits identically. Confirmed on a private stack: a 3-row batch asking for two endpoints returned two ML values per row.
+
+**Rationale.** E2 in the ship checklist is the last piece of the blueprint's "pin 2-3 molecules" flow that makes Compare usable from where molecules already are, and the subset is the one place ADR-028's state was specified for Batch and Compare but could not
+occur there. Each decision above keeps a choice with the user: nothing runs by itself, nothing is replaced without being said, and a result is read against its own request.
+
+**Rejected.** *Run the comparison as soon as the second molecule arrives* - Predict and Batch's "Open in Predict" do not run on hand-off, and a run is a request the user should start. *Silently overwrite slot 1, as Predict's hand-off does* - Predict has one molecule to hand over and
+the user is looking at it; Library and Batch add to a set the user may have built. *Compare the saved values with a fresh run* - see item 3. *Move `EndpointSelector` to `components/`* - another session is editing `PredictWorkspace.tsx`, which imports it from its present path; a move adds a conflict
+for no behaviour change. *Multi-select in Batch to send several rows at once* - Batch has no multi-select yet (checklist E3); the one-row action composes with the slot rules until it does.
+
+**Not done, said plainly.** A molecule saved from a run that asked for a subset is still listed in Library against the full roster, so its left-out endpoints read NOT RETURNED there. This is not new (Predict has always been able to save a subset result) and it is wrong in the same way: the
+saved snapshot does not record what was requested, and the service cannot tell the Library. It needs a contract field on the save request (for example `requested_endpoints`) and the drift test with it; it is left for its own change rather than guessed at from which predictions happen to be present.
+
+**Never-do audit.** (1) nothing here touches a value cell; (2) no prop added to `EndpointRow`; (3) a hand-off orders nothing and Compare still has no winner; slot order is the order of arrival, which the status line states; (4) no bar of any kind; (5) every endpoint the run did not ask for is a NOT REQUESTED cell in each
+Compare column and Batch row, and every roster row still renders; (6) nothing in a stub path changes; (7) nothing animates (the popover is the existing overlay); (8) the Library hand-off's "predicted again" and the dash legend are in text, with a tooltip only as a repeat; (9) no new radius, shadow or font.
+
+**Verified live (2026-10-23, private stack, real models).** Batch with 2 of 14 endpoints on a three-row file (two molecules and one invalid): the grid had values only in the logS and hERG columns, the coverage table read "requested 2" for those and 0 elsewhere, the inspector showed NOT REQUESTED rows in words, the footer sentence
+appeared, the invalid row stayed a row. "Add to Compare" from the inspector put the SMILES in Molecule 1 and navigated with the status sentence; from the Library it did the same and added the "predicted again" sentence. A Compare run with 2 of 14 endpoints read NOT REQUESTED in both columns for the other 12 and showed the count in the status line.
+Not run: a screen reader on the new buttons, a three-molecule replace in the browser (covered by unit tests), and the queued Batch tier with a subset (the queued path stores the same list; no job above the interactive threshold was run).

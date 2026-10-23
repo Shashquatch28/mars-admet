@@ -73,7 +73,8 @@ approval, `[lab]` needs the GPU workstation.
 ## E. Polish if time allows (not MVP-blocking)
 
 - [ ] E1 Structure sketcher (Ketcher, ADR-027). Audit never-do #7/#8 and measure the chunk on first integration.
-- [ ] E2 Hand-offs: Library or Batch to Compare, Batch "Open in Predict", endpoint subset for Batch and Compare.
+- [x] E2 Hand-offs: Library or Batch to Compare, Batch "Open in Predict", endpoint subset for Batch and Compare.
+  Done 2026-10-23 on `feat/handoffs` (ADR-038). Also fixed on the way: `POST /batch/predict` ignored `?endpoints=` and ran all 14 (now `Query()`, tested). Checked live on a private stack with real models. Not done: a saved molecule from a subset run still reads NOT RETURNED in Library (the snapshot does not record the request; needs a contract field). Not run: the queued tier with a subset, a screen reader.
 - [ ] E3 JSON export of the saved snapshot; the command palette's placeholder commands become real; Batch multi-select and reopening an earlier job after reload.
 - [ ] E4 Decide whether the seed spread stays on classification rows (ADR-024 item 4); decide the 410 on saving expired results.
 
