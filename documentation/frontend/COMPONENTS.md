@@ -57,6 +57,7 @@ variant does not exist.
 | `MoleculeInput` | SMILES textarea, run control, endpoint subset selector | `idle` / `invalid` / `ready` / `running` |
 | `MoleculeIdentity` | input SMILES, standardized SMILES, `molecule_id` | flags whether the standardizer rewrote the input; long SMILES truncate with an expand affordance, never wrap into the layout |
 | `StructureViewer` | 3Dmol.js host, hero and analysis modes | `loading` / `ready` / `unavailable (404)` / `unsupported (501)` — a 404 is a normal state, not an error |
+| `StructureEditor` | the "Draw a structure" trigger under the SMILES field and the Ketcher panel it toggles (ADR-035). Mounted once in `PredictWorkspace`, no props: it reads and writes `usePredictSession().smiles` and nothing else | closed / open; status is `idle`, `written`, `drawn`, `empty`, `unusable`, `undrawable` or `reported` (`domain/structureEditor.ts`). **Never overwrites typed text with an empty or unconvertible drawing**; says so in words |
 | `EndpointGroup` | one `EndpointCategory` heading and its rows | shows cluster provenance in the header |
 | `EndpointRow` | one endpoint, all seven states | see below |
 | `BoundedTrack` | the shared track geometry: height, radius, 0–1 mapping | not used directly; `IntervalTrack` and `ADGauge` are its only consumers |
@@ -65,6 +66,22 @@ variant does not exist.
 | `NumericInterval` | low … high in mono | the regression default |
 | `ReliabilityTag` | OOD / STUB / RULE tags. NOT RETURNED and NOT REQUESTED carry no tag: the value cell says it in words and the edge is solid or dashed (ADR-028) | no other variants exist; the switch is exhaustive |
 | `EndpointDetail` | inspector body: value, seed spread, AD distance, provenance | |
+
+### `StructureEditor` — a third-party interior inside a MARS frame
+
+- **Files.** `StructureEditor.tsx` (trigger, panel frame, sync, focus; MARS's own), `KetcherCanvas.tsx` (the only importer of `ketcher-*`, loaded with
+  `lazy(() => import(...))`, so the main bundle does not carry it), `structureEditor.module.css` (frame tokens, then the containment overrides),
+  `domain/structureEditor.ts` (pure rules, unit-tested), `vendor/nodeAssert.ts` (a build stand-in). `tests/structureEditorGuard.test.ts` pins the lazy
+  boundary, the frame's CSS and that the editor never imports the API layer.
+- **Sync.** Canvas to field and field to canvas, each after 300 ms of quiet; the user still presses Run. A canvas that is empty, holds a reaction, or fails to
+  convert leaves the field alone. Typed text with an unbalanced bracket or an unclosed ring bond is not drawn. The editor's rewording of the user's own typed
+  SMILES is not written back over it.
+- **Not allowed here.** A `variant`/`tone`/`status` prop, a second live region (problems go through `useAnnounce`), animation or a radius over 3px in MARS's
+  own CSS, or any import of `ketcher-*` outside `KetcherCanvas.tsx`.
+- **Ketcher's interior is Ketcher's.** It is light, its toolbar is icon-only with tooltip names, and drawing needs a pointer. What the frame overrides (typeface,
+  radius, shadow, motion) and what it cannot is listed in ADR-035. The SMILES field is the keyboard route to the same result.
+- **Focus.** The trigger toggles it; opening focuses the panel, then Ketcher takes focus into its own canvas; Close is after the canvas in Tab order; Esc closes
+  from the panel chrome (not from inside the canvas, where it is Ketcher's); focus returns to the trigger. `data-owns-keys` stops keys 1-4 switching workspace.
 
 ### `EndpointRow` — the load-bearing component
 

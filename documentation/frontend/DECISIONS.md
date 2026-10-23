@@ -789,7 +789,7 @@ mirror, drift test, `API_ROUTES.md`, one API test). It is not on `/health`, and 
 
 ## ADR-027 — Predict gets a structure sketcher: Ketcher, standalone mode (resolves Q9)
 
-**Date:** 2026-10-08 · **Status:** accepted (design; implementation pending)
+**Date:** 2026-10-08 · **Status:** accepted; built 2026-10-23, see ADR-035 (which makes the sync live instead of accept-to-write)
 
 **Decision.**
 
@@ -1133,3 +1133,131 @@ null without RDKit, for an unparseable molecule, or on a response written before
 existed are unreachable under the new key. Rule-of-five: a count of limits exceeded out of four, with the four limits stated beside it and no pass or fail wording. QED is shown as a number with its source and "not a MARS prediction". Alerts are listed by catalog and name, "no match" when empty, with the PAINS caveat and its citation in text beside them. The printed report gets the same table and notes,
 and its fixed line "drug-likeness flags are not included" is gone. Checked live: a rhodanine returned PAINS `ene_rhod_A(235)` and the Brenk alerts `Michael_acceptor_1` and `Thiocarbonyl_group`; the cached repeat kept them; the panel (one ink, nothing coloured) and the report showed them; the roster and its counts were unchanged.
 
+---
+
+## ADR-035 — The structure editor: Ketcher in a non-modal panel, two-way with the SMILES field, contained rather than re-skinned
+
+**Date:** 2026-10-23 · **Status:** accepted and built (implements ADR-027; amends its item 1)
+
+**Decision.**
+
+1. **Predict has a "Draw a structure" button under the SMILES field.** It toggles a panel that lies over the results and inspector
+   columns and leaves the molecule column (the SMILES field, Run, the endpoint selector) visible and usable. It is `role="dialog"`,
+   `aria-modal="false"`, named "Structure editor". It is non-modal on purpose: a modal would hide the field it is kept in step with.
+2. **Two-way sync, not "accept".** ADR-027 item 1 had the drawing written into the field when accepted. It is now live: an edit on the
+   canvas, after 300 ms of quiet, writes Indigo's SMILES into the field; text typed into the field, after 300 ms of quiet, is drawn.
+   The user still presses Run, and `/predict`, the contract and the session are untouched (`StructureEditor` reads and writes only
+   `usePredictSession().smiles`; a guard test pins that it imports nothing from the API layer). The blueprint's "debounced re-prediction
+   on edit" is **not** adopted: it would send a request per pause while drawing against the anonymous rate limit and replace the results
+   on screen under the user's hands.
+3. **A refusal never overwrites typed text, and says so in words.** (`domain/structureEditor.ts`, unit-tested.)
+   - Empty canvas: "The canvas is empty… The SMILES field was left as it was."
+   - Not convertible (a reaction arrow, or Indigo throws): "This drawing cannot be turned into a SMILES: … The SMILES field was left as it was."
+   - Typed text that cannot be drawn: "The SMILES in the field cannot be drawn: … The canvas was left as it was."
+   - Indigo is lenient: `C(((` is drawn as methane without an error. So typed text with an unbalanced parenthesis or bracket, or a ring
+     bond opened and never closed, is refused before it is drawn (`obviousSmilesFault`), and a drawn field is described as "The canvas
+     shows the SMILES in the field. Run prediction checks that SMILES again on the server", never as a match. Anything subtler that Indigo
+     tolerates is left to the server's standardiser, which rejects with its own 422.
+   - The text that Indigo produces for the user's own typed SMILES is not written back over it (the editor remembers its rendering of
+     the last typed value and ignores a change that only echoes it).
+   - Problems are announced through the one announcer; the panel's status line is plain text, not a second live region.
+4. **Loaded on demand.** `KetcherCanvas.tsx` is the only importer of `ketcher-*` (a guard test checks this, that the panel uses
+   `lazy(() => import(...))`, and that the stylesheet is imported only there). If WebAssembly is missing, or the chunk fails to load,
+   the panel says so (`role="alert"`) and the field still works.
+5. **Contained, not re-skinned** (blueprint Module 9, item 8). See "What was overridden" below.
+6. **Hidden tools.** Reactions (arrows, plus, mapping), R-groups, shapes, text, S-groups, monomers, the 3D viewer, image recognition,
+   Ketcher's own property calculator, settings, help, about and full screen are hidden, not disabled: MARS takes one molecule's
+   SMILES, and a property box from a second toolkit would sit beside the RDKit-computed properties MARS already shows (ADR-034 item 3)
+   and could disagree with them. The macromolecule mode is switched off.
+
+**Evidence (2026-10-23, Ketcher 3.18.0, Chromium in the app's browser pane, a real API on a private port).**
+
+*Sizes* (`npm run build`, with `VITE_API_BASE=/api` so the real code paths are in; same command on `origin/main` for "before"):
+
+| | before | after | change |
+|---|---|---|---|
+| main JS | 376.07 kB (gzip 119.59) | 383.07 kB (gzip 122.12) | +7.00 kB (+2.53 gzip) |
+| main CSS | 62.35 kB (gzip 10.84) | 64.56 kB (gzip 11.18) | +2.21 kB (+0.34 gzip) |
+| lazy, on first open | – | JS 7,795.61 + 1,238.77 + 440.86 + 69.87 kB, WASM 7,527.76 kB, CSS 183.34 kB | about 17.3 MB, about 3.8 MB gzip |
+
+Without `VITE_API_BASE` the main JS went 347.25 kB to 353.46 kB (+6.21, +1.8%). The entry chunk only contains `import("./KetcherCanvas-….js")`;
+`index.html` preloads nothing of Ketcher. The 3Dmol chunk (587 kB) is unchanged. First-open weight is large and uncached: it is the price of
+running Indigo in the browser (ADR-027). Two `ketcher-standalone` builds were measured: the default entry inlines the WebAssembly as base64
+(one 28.9 MB script, 8.5 MB gzip); `dist/binaryWasmNoRender` keeps Indigo's WASM as a separate 7.5 MB file (2.0 MB gzip) and drops the image
+renderer the editor does not use. The second is built. Install and build time on this machine: adding the three packages took about 2.5 min
+(`node_modules` and the lockfile grow by about 5,400 lines); `vite build` went from about 21 s to 75-105 s. Not measured: the Docker image build.
+
+*Audit.* `npm audit` on `origin/main` already reported 3 vulnerabilities (vite 7.3.6 high; vitest and `@vitest/mocker` moderate). They were
+cleared first, in their own commit, by vite 7.3.7 and vitest 5.0.5 (vitest 4.1.12, the patched 4.x, crashes npm 10.9.3 with
+"Cannot read properties of null (reading 'edgesOut')"). With Ketcher added: 0 vulnerabilities. New direct dependencies, all pinned exactly:
+`ketcher-core`, `ketcher-react`, `ketcher-standalone` 3.18.0 (Apache-2.0; they bring `indigo-ketcher` 1.46.0, `@mui/material` and
+`@emotion/*`) and `events` 3.3.0.
+
+**What was overridden, and what could not be.**
+
+Ketcher's stylesheet (`ketcher-react/dist/index.css`, 183 kB) has no `html`, `body`, `*` or `:root` rule, no `@font-face`, and hashed class
+names, so it does not restyle the rest of the app (it is loaded only when the panel first opens). MUI/Emotion add class-hashed `<style>` tags.
+Inside the panel, `structureEditor.module.css` overrides, scoped to the box and with `!important` (Ketcher's rules are generated classes):
+
+| Rule | Ketcher's own | Override | Checked from computed styles |
+|---|---|---|---|
+| #7 no animation | 26 elements with transitions; keyframes for loading dots and a caret blink; a ripple | `animation: none; transition: none` | 0 of 318 elements |
+| #9 typeface | Inter, Roboto, FreeSans, Arimo, Helvetica (none loaded, so they fall back) | `--sans` on all HTML | 318 of 318 |
+| #9 radius ≤ 3px | 4px on 112 elements, 20px, 50% | `--radius-sm` | 317 of 318 |
+| #9 shadow outside an overlay | 32 elements | `none` | 31 of 32 |
+| focus ring | none of its own | the app's accent outline, inset | – |
+
+The leftover element, in both the radius and the shadow row, is one empty `div` inside the canvas SVG (`svg *` is excluded from the rule so
+chemistry drawing is not touched). The two guards in `neverDoGuard.test.ts` that look for `animation` and `box-shadow` now accept the value
+`none !important`; nothing else about them changed.
+
+What could **not** be overridden, and is therefore an accepted exception scoped to the panel interior:
+- **Dark theme only (#9).** The interior is Ketcher's light palette (white canvas, grey-blue toolbars). It has no theme switch; inverting it with a
+  filter would change atom colours. `color-scheme: light` is set inside the box so its inputs and scrollbars agree with it.
+- **Chemistry colours.** Atom symbols are coloured by element (red O, blue N) and the periodic-table dialog uses a multi-hue element palette. This is
+  element identity, as in the 3D viewer's palette (`--viewer-*`), and carries no value or risk meaning.
+- **No state explained only by a tooltip (#8).** Ketcher's toolbar buttons are icon-only, named by `title`, and the active tool is shown by a highlight
+  alone. That cannot be changed from outside. What MARS needs to be unambiguous, what happened to the SMILES field, is in the text status line.
+- **Atom-label typeface** in the SVG (Arial) and **icon set**: left alone.
+- **Contrast** of Ketcher's own greys (disabled icons, tool-group frames) was not measured against the AA guard, which covers MARS tokens only.
+- **JS-driven motion.** Only CSS motion was inspected. No scripted animation was seen while drawing, undoing and opening the periodic-table dialog; it was not read for exhaustively.
+
+**Accessibility (what holds, what does not).**
+- MARS's part: the panel is named; the trigger carries `aria-expanded`, `aria-controls` and `aria-haspopup="dialog"` and opens and closes with Enter or Space;
+  Esc closes the panel from its own chrome and focus returns to the trigger (also after Close). Keys 1-4 do not switch workspace while focus is in the panel
+  (`data-owns-keys`, read by `AppShell`). Close comes **after** the canvas in Tab order, because Ketcher moves focus into its own hidden, unlabelled
+  `textarea` once it has loaded; Tab from there reaches Close (verified).
+- **Esc inside the canvas is Ketcher's** (it cancels its tool or closes its dialogs), so it does not close the panel; use Tab to Close, or the trigger.
+- **Not keyboard-accessible inside Ketcher:** placing a ring or drawing a bond at a chosen point needs a pointer. Ketcher has hotkeys for tools and atoms
+  (its tooltips list them) but none that I found for choosing where something goes; I did not verify the hotkeys. The toolbars are reachable by Tab (counted in
+  the DOM, hidden macromolecule controls included: 85 buttons, 77 tab stops; 71 buttons named by `title`, 1 by `aria-label`, 3 with no name), but a
+  screen-reader user cannot draw. **The SMILES field is the keyboard-accessible route to
+  the same result**, and the editor draws what is typed there.
+- Not tested with a screen reader. Ketcher's own dialogs were not audited for focus trapping.
+
+**Build integration** (all in `vite.config.ts`, because `ketcher-core` targets a bundler that supplies Node's globals):
+- `events` and `assert` are Node built-ins that Vite externalises, which fails the build. `events` is aliased to the npm package of the same name; `assert`
+  to `src/vendor/nodeAssert.ts` (the npm package reads `process` when it loads; ketcher-core only calls `assert(cond, message)`, 51 times).
+- `global` is defined as `globalThis`.
+- `ketcher-core` has `require("raphael")` inside an ES module. Left alone the built app fails to open the editor ("require is not defined") while the dev server
+  works; `build.commonjsOptions.transformMixedEsModules` fixes it. This was found only by running the production build, not the dev server.
+- Dev server only: the optimiser moves Indigo's worker and strands its `.wasm`, so the worker never answers. In dev, `binaryWasmNoRender` is aliased to the default
+  self-contained entry. The first open in dev is slow while Vite transforms Ketcher.
+- `KetcherCanvas` renders `<Editor>` into a React root of its own. `React.StrictMode`'s dev-only mount, unmount, mount makes Ketcher's cleanup tear down the
+  instance its second mount just built ("couldn't find ketcher instance"). In production there is one mount either way.
+
+**Rejected.**
+- *Debounced re-prediction on edit* (blueprint): see decision 2.
+- *Accept-to-write, as in ADR-027 item 1*: needs a second control, and a user who types while the panel is open would see a stale drawing.
+- *A modal panel*: hides the field.
+- *Inverting Ketcher with a CSS filter to look dark*: changes the atom palette and the greys unpredictably.
+- *Another sketcher (JSME)*: no blocker was found, so ADR-027 stands.
+- *Keeping the panel mounted while closed*: its document-level hotkeys would stay live on the page.
+
+**Not verified.** The Docker image build and the cold `npm ci` time in CI. Firefox and Safari. A screen reader. Stereochemistry, charges, isotopes and large
+drawings through both directions (aspirin, ethanol, a salt string and error cases were). Panel layout below the 1080 px design width. The macromolecule DOM
+that Ketcher still renders but hides.
+
+**Consequences.** `StructureEditor` is mounted once in `PredictWorkspace`. `shell.module.css` gives `.workspace` `position: relative` so the panel can anchor to
+`<main>`. `AppShell` treats focus inside `[data-owns-keys]` like typing in a field. ADR-027's status line points here. Another session's 2D depiction component
+in `PredictWorkspace.tsx` and this panel's mount are independent lines in the same file.

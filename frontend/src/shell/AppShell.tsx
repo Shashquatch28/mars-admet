@@ -41,7 +41,9 @@ export function AppShell() {
       }
       if (paletteOpen) return;
       const el = document.activeElement;
-      const typing = el instanceof HTMLElement && /^(INPUT|TEXTAREA)$/.test(el.tagName);
+      // Typing in a field, or drawing in the structure editor, which has its own key bindings (ADR-035).
+      const typing =
+        el instanceof HTMLElement && (/^(INPUT|TEXTAREA)$/.test(el.tagName) || el.closest("[data-owns-keys]") !== null);
       if (shortcutsEnabled && !typing && WS_KEYS[e.key]) navigate(WS_KEYS[e.key]);
     }
     window.addEventListener("keydown", onKey);

@@ -8,3 +8,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+// Ketcher's standalone package ships four builds under subpath exports without type declarations; each re-exports the
+// same API as the root entry. This one keeps Indigo's WebAssembly as a separate file (not base64 inside the chunk)
+// and leaves out Indigo's image renderer, which the editor does not use (ADR-035).
+declare module "ketcher-standalone/dist/binaryWasmNoRender" {
+  export * from "ketcher-standalone";
+}

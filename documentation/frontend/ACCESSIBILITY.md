@@ -161,7 +161,8 @@ has focus. Ctrl or Command + K (command palette) is a modifier shortcut and is n
 - Not tested with a screen reader (NVDA, VoiceOver) or by keyboard in a real session: the announcements and the grid
   structure were verified from the DOM and the accessibility roles, not by listening.
 - "Closing the inspector returns focus to the row" and "every overlay closes with Escape" hold for the command palette,
-  the subset popover and the confirm dialog; the Ketcher sketcher panel was not audited.
+  the subset popover and the confirm dialog. The Ketcher sketcher panel (ADR-035) closes with its own button, Esc from its own chrome and the trigger, and
+  returns focus to the trigger; Esc inside Ketcher's canvas is Ketcher's, and drawing there needs a pointer. Ketcher's own dialogs and contrast were not audited.
 - The Batch grid's keyboard model (arrow keys between cells) was not re-tested in this pass.
 - No automated engine (axe) ran: it is not a dependency. The audit script and the guards are the substitute.
 - The icon-only `aria-label` rule is a test, not a component type, because no shared `Button` exists.
