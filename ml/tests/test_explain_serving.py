@@ -136,3 +136,75 @@ def test_open_prediction_breaker_gates_explanations():
 def test_explaining_an_endpoint_not_routed_to_kermt_is_a_programming_error():
     with pytest.raises(ValueError):
         _router(lambda r: httpx.Response(200, json=_reply())).explain(SMILES, "ames_mutagenicity")
+
+
+# ---- background jobs through the router (ADR-035) ----
+
+
+def _job_body(state="running", **over):
+    body = {
+        "job_id": "abc", "state": state, "queue_position": None, "seeds_done": 1, "seeds_total": 3,
+        "stage": "seed 2 of 3, 128 steps", "elapsed_seconds": 12.0, "error": None, "error_kind": None, "result": None,
+    }
+    body.update(over)
+    return body
+
+
+def test_a_job_is_submitted_polled_and_assembled_like_a_synchronous_explanation():
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((request.method, request.url.path))
+        if request.url.path == "/explain/config":
+            return httpx.Response(200, json={"digest": "d1g3st"})
+        if request.method == "POST":
+            return httpx.Response(200, json=_job_body("queued", queue_position=2, seeds_done=0))
+        return httpx.Response(200, json=_job_body("done", result=_reply()))
+
+    router = _router(handler)
+    assert router.explain_params_digest() == "d1g3st"
+    snap = router.submit_explain_job(SMILES, "herg_cardiotoxicity")
+    assert snap.state == "queued" and snap.queue_position == 2 and snap.result is None
+    done = router.explain_job("abc")
+    res = router.assemble_raw(SMILES, "herg_cardiotoxicity", done.result)
+    assert res.method == "integrated_gradients" and res.converged is True and res.completeness_error == pytest.approx(0.012)
+    assert ("POST", "/explain/jobs") in seen and ("GET", "/explain/jobs/abc") in seen
+
+
+def test_a_job_for_an_endpoint_kermt_does_not_serve_is_refused_before_any_call():
+    def handler(request):  # pragma: no cover - must not be called
+        raise AssertionError("no request expected")
+
+    with pytest.raises(ValueError, match="not routed to KERMT"):
+        _router(handler).submit_explain_job(SMILES, "ames_mutagenicity")
+
+
+def test_queue_full_unknown_job_and_unexplainable_molecule_are_distinct_errors():
+    from serve.kermt_client import KermtBusy, KermtJobNotFound
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST":
+            return httpx.Response(429, json={"detail": "the explanation queue is full (8 waiting)"})
+        return httpx.Response(404, json={"detail": "unknown"})
+
+    router = _router(handler)
+    with pytest.raises(KermtBusy, match="queue is full"):
+        router.submit_explain_job(SMILES, "herg_cardiotoxicity")
+    with pytest.raises(KermtJobNotFound):
+        router.explain_job("gone")
+    with pytest.raises(KermtJobNotFound):
+        router.cancel_explain_job("gone")
+    unexplainable = _router(lambda r: httpx.Response(422, json={"detail": "non-finite descriptors"}))
+    with pytest.raises(ValueError, match="non-finite"):
+        unexplainable.submit_explain_job(SMILES, "herg_cardiotoxicity")
+
+
+def test_a_malformed_job_reply_is_unavailable_not_a_crash():
+    from serve.kermt_client import KermtUnavailable
+
+    router = _router(lambda r: httpx.Response(200, json={"state": "done"}))
+    with pytest.raises(KermtUnavailable, match="malformed"):
+        router.explain_job("abc")
+    bad_config = _router(lambda r: httpx.Response(200, json={"nope": 1}))
+    with pytest.raises(KermtUnavailable, match="malformed"):
+        bad_config.explain_params_digest()
