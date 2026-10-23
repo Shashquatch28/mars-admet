@@ -111,8 +111,8 @@ export async function fetchPrediction(
 // Two or three molecules, anonymous. A single invalid SMILES fails the whole comparison (422)
 // rather than comparing against a fabricated result. `per_endpoint_winner` comes back null and
 // is never read (ADR-007).
-export async function fetchComparison(smiles: string[]): Promise<CompareResponse> {
-  const body: CompareRequest = { smiles, endpoints: null };
+export async function fetchComparison(smiles: string[], endpoints?: Endpoint[] | null): Promise<CompareResponse> {
+  const body: CompareRequest = { smiles, endpoints: endpoints ?? null };
   const res = await request("/compare", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return (await res.json()) as CompareResponse;
 }
