@@ -43,6 +43,44 @@ def test_batch_predict_interactive_tier(registered_user):
 
 
 @requires_infra
+def test_batch_predict_honours_an_endpoint_subset_from_the_query_string(registered_user):
+    """`?endpoints=` is read from the query string (it was once read from the multipart body, so it was ignored and every
+    endpoint ran). The frontend sends a subset plus the rule-based score, and each row must carry exactly those."""
+    client = registered_user["client"]
+    r = client.post(
+        "/batch/predict?endpoints=solubility_logs&endpoints=herg_cardiotoxicity&endpoints=synthetic_accessibility",
+        files={"file": ("molecules.csv", io.BytesIO(b"smiles\nCCO\nCCC\n"), "text/csv")},
+    )
+    assert r.status_code == 200, r.text
+    rows = r.json()["results"]
+    assert len(rows) == 2
+    for row in rows:
+        asked = {p["endpoint"] for p in row["prediction"]["predictions"]}
+        # the rule-based score is added only where the server can compute it (the ml stack), so it is allowed but not required
+        assert {"solubility_logs", "herg_cardiotoxicity"} <= asked <= {"solubility_logs", "herg_cardiotoxicity", "synthetic_accessibility"}
+
+
+@requires_infra
+def test_batch_predict_without_a_subset_runs_every_endpoint(registered_user):
+    client = registered_user["client"]
+    r = client.post("/batch/predict", files={"file": ("molecules.csv", io.BytesIO(b"smiles\nCCO\n"), "text/csv")})
+    assert r.status_code == 200, r.text
+    asked = {p["endpoint"] for p in r.json()["results"][0]["prediction"]["predictions"]}
+    assert {"solubility_logs", "herg_cardiotoxicity", "dili_liver_injury"} <= asked
+    assert len(asked) >= 14
+
+
+@requires_infra
+def test_batch_predict_rejects_an_unknown_endpoint_name(registered_user):
+    client = registered_user["client"]
+    r = client.post(
+        "/batch/predict?endpoints=not_an_endpoint",
+        files={"file": ("molecules.csv", io.BytesIO(b"smiles\nCCO\n"), "text/csv")},
+    )
+    assert r.status_code == 422
+
+
+@requires_infra
 def test_batch_predict_requires_account(client):
     r = client.post("/batch/predict", files={"file": ("molecules.csv", io.BytesIO(_CSV), "text/csv")})
     assert r.status_code == 401
