@@ -23,6 +23,8 @@ from mars_contracts import (
     Endpoint,
     EndpointCategory,
     EndpointPrediction,
+    ExplainJobState,
+    ExplainJobStatus,
     ExplainMethod,
     ExplainOutputSpace,
     ExplainResponse,
@@ -76,6 +78,7 @@ def _ts_interface_fields(name: str) -> set[str]:
         ("EndpointCategory", EndpointCategory),
         ("ExplainMethod", ExplainMethod),
         ("ExplainOutputSpace", ExplainOutputSpace),
+        ("ExplainJobState", ExplainJobState),
     ],
 )
 def test_enum_members_match(ts_name, enum):
@@ -107,6 +110,7 @@ def test_enum_members_match(ts_name, enum):
         ("SavedReportResponse", SavedReportResponse),
         ("DeleteAccountRequest", DeleteAccountRequest),
         ("ExplainResponse", ExplainResponse),
+        ("ExplainJobStatus", ExplainJobStatus),
         ("FragmentAttribution", FragmentAttribution),
         ("DescriptorAttribution", DescriptorAttribution),
     ],
@@ -119,7 +123,7 @@ def test_explain_contract_never_speaks_of_risk_or_favourability():
     # ADR-031 / AGENTS.md rule 1: attribution is "pushed up / pushed down", never a judgement.
     banned = re.compile(r"\b(risk|risky|safe|safety|toxic|toxicity|favourable|favorable|unfavourable|good|bad|better|worse)\b", re.I)
     texts: list[str] = []
-    for model in (ExplainResponse, FragmentAttribution, DescriptorAttribution):
+    for model in (ExplainResponse, ExplainJobStatus, FragmentAttribution, DescriptorAttribution):
         texts.extend(f.description or "" for f in model.model_fields.values())
     joined = " ".join(texts)
     assert not banned.findall(joined), banned.findall(joined)

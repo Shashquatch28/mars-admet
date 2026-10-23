@@ -1,15 +1,20 @@
 """
-Explanation of one served prediction, `GET /molecule/{id}/explain?endpoint=X` (Module 6, ADR-031).
+Explanation of one served prediction, `/molecule/{id}/explain?endpoint=X` (Module 6, ADR-031, ADR-035).
+
+A KERMT-served explanation is a background job (minutes, not milliseconds): `POST` starts or joins it,
+`GET` reads it, `DELETE` cancels it. While it runs the body is an `ExplainJobStatus`; when it is done it
+is an `ExplainResponse`. An XGBoost-served explanation is instant and answers `POST` with the result.
 
 The model that served the value explains it: `method` and `model_id` say which. An attribution
 is signed: positive pushed the model's output UP from its reference, negative pushed it DOWN. It
 is never a risk or a favourable/unfavourable judgement, and no field here may be read as one.
 
 Everything below sums: `base_value + structure_total + whole_molecule_total + unmapped_total`
-equals `output_value` (to `completeness_error`). Atom attributions are the additive layer;
+equals `output_value`. `completeness_error` says how far the METHOD's own identity was from holding (see the field). Atom attributions are the additive layer;
 fragment attributions are sums over (possibly overlapping) atom sets and do not add up.
 """
 
+from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -66,7 +71,45 @@ class ExplainResponse(BaseModel):
         "molecule or not placeable on atoms (TreeSHAP), or the completeness residual (IG).",
     )
     completeness_error: float = Field(
-        ..., description="|base_value + structure_total + whole_molecule_total + unmapped_total - output_value|; ~0 by construction for TreeSHAP"
+        ...,
+        description="How far the method's own identity was from holding, in `output_space`. Integrated Gradients: the integration residual |sum of attributions - (output_value - base_value)|, which `unmapped_total` carries (so the parts above still sum exactly). TreeSHAP: the additivity error |sum of contributions - the model's own margin|, about 1e-6.",
+    )
+    converged: bool | None = Field(
+        default=None,
+        description="Integrated Gradients only: whether `completeness_error` met the service's tolerance after the final step count. A result that did not converge is still returned, flagged, never hidden. Null for TreeSHAP, which has no iteration to converge.",
+    )
+    seed_agreement: float | None = Field(
+        default=None,
+        description="Median pairwise cosine similarity of the per-seed atom attributions the average was taken over (1 = every seed agrees, near 0 = unrelated). Null when only one seed was averaged. A summary of how much the seeds disagree, not a guarantee.",
     )
     n_steps: int | None = Field(default=None, description="Integrated Gradients interpolation steps; null for TreeSHAP")
     model_version: str = Field(..., description="Serving version the explanation was computed under (also part of its cache key)")
+
+
+class ExplainJobState(str, Enum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    DONE = "done"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class ExplainJobStatus(BaseModel):
+    """Where a background explanation is. Returned with HTTP 202 while it is queued or running, and from `DELETE`
+    (state `cancelled`). A finished job is read as an `ExplainResponse`; a failed one is an error response."""
+
+    job_id: str = Field(..., description="Stable for one (molecule, endpoint, serving version): the same request joins the same job")
+    molecule_id: str
+    endpoint: Endpoint
+    state: ExplainJobState
+    queue_position: int | None = Field(default=None, description="1 = next to run; null once it is running or finished")
+    seeds_done: int = Field(..., description="Seeds (checkpoints) fully attributed so far")
+    seeds_total: int
+    stage: str | None = Field(
+        default=None,
+        description="What it is doing now, in words, e.g. 'seed 2 of 3, 128 steps'. There is deliberately no percentage or "
+        "estimate: the step count escalates adaptively, so the total is not known in advance.",
+    )
+    elapsed_seconds: float = Field(..., description="Since it was submitted")
+    submitted_at: datetime
+    error: str | None = Field(default=None, description="Why it failed, when it did")

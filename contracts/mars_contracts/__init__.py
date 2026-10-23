@@ -27,6 +27,8 @@ from .endpoints import (
 )
 from .explain import (
     DescriptorAttribution,
+    ExplainJobState,
+    ExplainJobStatus,
     ExplainMethod,
     ExplainOutputSpace,
     ExplainResponse,
@@ -54,6 +56,7 @@ __all__ = [
     "MoleculeProperties", "StructuralAlert",
     "ConformerResponse", "Atom", "Bond",
     "ExplainResponse", "ExplainMethod", "ExplainOutputSpace", "FragmentAttribution", "DescriptorAttribution",
+    "ExplainJobState", "ExplainJobStatus",
     "BatchPredictOptions", "BatchRowResult", "BatchPredictResponse",
     "CompareRequest", "CompareResponse", "GenerationsResponse", "LimitsResponse",
     "RegisterRequest", "RegisterResponse", "LoginRequest", "LoginResponse", "MeResponse",
