@@ -24,6 +24,7 @@ import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
 import { StructureViewer } from "./StructureViewer";
 import { PropertiesPanel } from "./PropertiesPanel";
+import { StructureEditor } from "./StructureEditor";
 
 // Truncate for the identity grid; only mark it as truncated when it was.
 const clip = (s: string, n = 34) => (s.length > n ? `${s.slice(0, n)}…` : s);
@@ -117,6 +118,7 @@ export function PredictWorkspace() {
               aria-label="SMILES"
             />
           </div>
+          <StructureEditor />
           <div className={styles.runrow}>
             <button className={styles.btnPrimary} onClick={run} disabled={!canRun}>
               {running ? "Running…" : "Run prediction"}
