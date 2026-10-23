@@ -267,6 +267,8 @@ class KermtEngine:
         rel_tol: float | None = None,
         abs_tol: float | None = None,
         descriptor_baseline: float | None = None,
+        progress=None,
+        cancelled=None,
     ) -> dict:
         """Integrated Gradients for one endpoint of one arm, averaged over the loaded seeds (ADR-031).
 
@@ -276,12 +278,11 @@ class KermtEngine:
         classification stays in the 0-1 score the model outputs.
         """
         import explain_ig as ig
+        from explain.graph_ig import median_pairwise_cosine
 
-        models = sorted(self._models.get(arm, []), key=lambda m: m.seed)
-        if not models:
-            raise KeyError(f"arm not loaded: {arm}")
-        if endpoint not in models[0].target_names:
-            raise KeyError(f"{endpoint} is not a target of {arm}")
+        models = self.explainable_models(arm, endpoint)
+        n_seeds = len(models)
+        progress = progress or (lambda done, total, stage: None)
         target = models[0].target_names.index(endpoint)
         with self._lock:
             feats, ok = self._features([smiles])
@@ -296,10 +297,13 @@ class KermtEngine:
         }
         shared_dict: dict = {}
         atoms, descs, f_x, f_b, steps = [], [], [], [], []
-        for lm in models:
+        for i, lm in enumerate(models):
+            progress(i, n_seeds, f"seed {i + 1} of {n_seeds}")
             lm.args.features_size = len(feats[0])
             sa = ig.attribute_checkpoint(
-                lm, smiles, feats[0], target, shared_dict=shared_dict, lock=self._lock, **kwargs
+                lm, smiles, feats[0], target, shared_dict=shared_dict, lock=self._lock,
+                on_stage=lambda steps, i=i: progress(i, n_seeds, f"seed {i + 1} of {n_seeds}, {steps} steps"),
+                should_cancel=cancelled, **kwargs,
             )
             params = ig._scaler_params(lm, target) if lm.task_type == "regression" else None
             mean, std = params if params else (0.0, 1.0)
@@ -308,10 +312,14 @@ class KermtEngine:
             f_x.append(sa.f_x * std + mean)
             f_b.append(sa.f_baseline * std + mean)
             steps.append(sa.steps)
+            progress(i + 1, n_seeds, None)
         atom_scores = np.mean(atoms, axis=0)
         desc_scores = np.mean(descs, axis=0)
         base_value, output_value = float(np.mean(f_b)), float(np.mean(f_x))
         unmapped = (output_value - base_value) - float(atom_scores.sum() + desc_scores.sum())
+        # The residual of the attribution that is actually shown (the seed average), and whether it met the tolerance.
+        change = abs(output_value - base_value)
+        tol = max(kwargs["rel_tol"] * change, kwargs["abs_tol"])
         names = ig.descriptor_names(len(desc_scores))
         raw = ig.raw_descriptor_values(smiles, names)
         return {
@@ -331,7 +339,38 @@ class KermtEngine:
             "descriptor_values": raw,
             "descriptor_scores": [float(v) for v in desc_scores],
             "unmapped_total": float(unmapped),
+            "completeness_error": abs(float(unmapped)),
+            "converged": bool(abs(unmapped) <= tol),
+            "seed_agreement": median_pairwise_cosine(atoms),
         }
+
+    def explainable_models(self, arm: str, endpoint: str) -> list:
+        """The loaded checkpoints of `arm`, in seed order; KeyError (a 422 upstream) when they cannot explain `endpoint`."""
+        models = sorted(self._models.get(arm, []), key=lambda m: m.seed)
+        if not models:
+            raise KeyError(f"arm not loaded: {arm}")
+        if endpoint not in models[0].target_names:
+            raise KeyError(f"{endpoint} is not a target of {arm}")
+        return models
+
+    def explain_config(self) -> dict:
+        """Everything that changes what an explanation says, with a digest of it: the API folds the digest into its cache
+        key, so a different baseline, schedule, tolerance, seed count or checkpoint never serves a stale explanation."""
+        import hashlib
+
+        import explain_ig as ig
+
+        params = {
+            "engine": "ig-v1",
+            "descriptor_baseline": ig.DEFAULT_DESCRIPTOR_BASELINE,
+            "schedule": list(ig.DEFAULT_SCHEDULE),
+            "rel_tol": ig.DEFAULT_REL_TOL,
+            "abs_tol": ig.DEFAULT_ABS_TOL,
+            "power": ig.DEFAULT_POWER,
+            "checkpoints": {arm: {str(m.seed): m.model_sha256 for m in sorted(ms, key=lambda m: m.seed)} for arm, ms in sorted(self._models.items())},
+        }
+        digest = hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()[:16]
+        return {"digest": digest, **{k: v for k, v in params.items() if k != "checkpoints"}, "seeds": {arm: sorted(int(s) for s in v) for arm, v in params["checkpoints"].items()}}
 
     def _forward(self, lm: LoadedModel, smiles: list[str], feats: list, good: list[int], shared_dict: dict) -> np.ndarray:
         """One checkpoint's predictions for the featurizable molecules; NaN rows for the rest."""

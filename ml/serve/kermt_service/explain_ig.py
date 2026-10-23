@@ -26,15 +26,18 @@ Completeness: sum(attributions) = f(x) - f(baseline). The residual is measured, 
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
-from explain.graph_ig import IGOutcome, adaptive_ig, fold_to_atoms, power_quadrature
+from explain.graph_ig import IGCancelled, IGOutcome, adaptive_ig, fold_to_atoms, power_quadrature
 
 logger = logging.getLogger("mars.kermt_ig")
 
 DEFAULT_SCHEDULE = (64, 128, 256)
-DEFAULT_CHUNK = 16
+# Copies of the molecule per forward/backward pass. A memory knob, not an accuracy one: on one real checkpoint the working
+# memory was 790 MiB at 4 and 1353 MiB at 16, for about 9% more time (measured 2026-10-22, ADR-035 item 8).
+DEFAULT_CHUNK = 4
 DEFAULT_REL_TOL = 0.05
 DEFAULT_ABS_TOL = 1e-3
 DEFAULT_DESCRIPTOR_BASELINE = 0.0
@@ -74,8 +77,13 @@ def attribute_checkpoint(
     abs_tol: float = DEFAULT_ABS_TOL,
     descriptor_baseline: float = DEFAULT_DESCRIPTOR_BASELINE,
     power: int = DEFAULT_POWER,
+    on_stage: Callable[[int], None] | None = None,
+    should_cancel: Callable[[], bool] | None = None,
 ) -> SeedAttribution:
-    """Integrated Gradients of one checkpoint's output for `target_index` on one molecule."""
+    """Integrated Gradients of one checkpoint's output for `target_index` on one molecule.
+
+    `on_stage(steps)` is called when a run at that step count starts; `should_cancel()` is checked before every chunk
+    and raises `IGCancelled` (the engine lock is never held across it)."""
     import torch
     from kermt.data.molgraph import get_atom_fdim, mol2graph
 
@@ -152,7 +160,11 @@ def attribute_checkpoint(
         g_b = np.zeros_like(x_bonds)
         g_d = np.zeros(d)
         alphas, weights = power_quadrature(steps, power)
+        if on_stage is not None:
+            on_stage(steps)
         for start in range(0, steps, chunk):
+            if should_cancel is not None and should_cancel():
+                raise IGCancelled()
             sl = slice(start, start + chunk)
             _, (ga, gb, gd) = evaluate(alphas[sl].tolist(), grad=True, weights=weights[sl])
             g_a += ga

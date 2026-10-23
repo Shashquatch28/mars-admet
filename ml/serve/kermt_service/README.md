@@ -24,7 +24,8 @@ It never falls back to the stub and never fabricates a value.
 |---|---|
 | `Dockerfile` | CPU image: torch 2.9.1, **rdkit 2025.09.1 (load-bearing)**, KERMT at the commit every run recorded |
 | `engine.py` | loads checkpoints once; SMILES -> `rdkit_2d_normalized` features -> KERMT `predict` -> inverse target scaler |
-| `app.py` | FastAPI: `POST /predict`, `POST /explain`, `GET /health`, `GET /models` |
+| `app.py` | FastAPI: `POST /predict`, `POST /explain` (synchronous, kept for tools), `POST/GET/DELETE /explain/jobs[/{id}]` and `GET /explain/config` (background Integrated Gradients, ADR-035), `GET /health`, `GET /models` |
+| `jobs.py` | The in-memory job manager behind `/explain/jobs`: one worker thread, a bounded queue (`KERMT_EXPLAIN_QUEUE`, default 8), a deterministic job id so a repeat submit joins the running job, cancel between chunks, finished jobs kept for an hour. No torch; tested in `ml/tests/test_kermt_jobs.py`. A restart loses jobs, and the API reports that as a lost job |
 | `explain_ig.py` | Integrated Gradients for one endpoint of one arm (ADR-031): leaf graph tensors, descriptor gradients read from the readout FFN inputs, cubic-substitution midpoint rule, completeness measured. `POST /explain {smiles, arm, endpoint}`; the engine lock is taken per chunk of interpolation points, so predictions interleave. Tested on a random-weight model only (`ml/tests/test_kermt_explain_ig.py`); not yet run on the real checkpoints |
 | `fetch_artifacts.py` | downloads the 30 models from W&B into `ml/artifacts_kermt/`, SHA-256 checked against each artifact's metadata |
 | `parity_check.py` | holds the engine to the stock-CLI GPU predictions recorded in a W&B run-record artifact |

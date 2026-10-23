@@ -184,3 +184,22 @@ def test_descriptor_names_match_the_vector_the_model_reads(monkeypatch):
     assert ig.descriptor_names(200) == names
     _with_columns(monkeypatch, [(n, float) for n in names[:150]])  # cannot be matched: say so with generic names
     assert ig.descriptor_names(200)[0] == "rdkit2d_feature_0"
+
+
+def test_stage_is_reported_per_run_and_a_cancel_stops_between_chunks(lm, descriptors):
+    from explain.graph_ig import IGCancelled
+
+    stages: list[int] = []
+    _attribute(lm, descriptors, 0, schedule=(64, 128), chunk=16, on_stage=stages.append)
+    assert stages == [64, 128]  # rel_tol=0 never converges, so both steps are run, in order
+
+    calls = []
+
+    def cancel_after_two_chunks():
+        calls.append(1)
+        return len(calls) > 2
+
+    lock = threading.Lock()
+    with pytest.raises(IGCancelled):
+        _attribute(lm, descriptors, 0, lock=lock, schedule=(64,), chunk=16, should_cancel=cancel_after_two_chunks)
+    assert len(calls) == 3 and not lock.locked()  # stopped at the third check, lock not left held

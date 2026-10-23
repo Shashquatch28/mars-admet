@@ -42,7 +42,7 @@ ENV PATH=/opt/conda/envs/kermt/bin:$PATH \
     KERMT_MODELS_DIR=/models
 
 # Build context is the repository root.
-COPY ml/serve/kermt_service/engine.py ml/serve/kermt_service/app.py ml/serve/kermt_service/parity_check.py ml/serve/kermt_service/explain_ig.py /app/service/
+COPY ml/serve/kermt_service/engine.py ml/serve/kermt_service/app.py ml/serve/kermt_service/parity_check.py ml/serve/kermt_service/explain_ig.py ml/serve/kermt_service/jobs.py /app/service/
 # The torch-free half of Integrated Gradients (numpy only); the rest of ml/explain needs the API image's stack.
 COPY ml/explain/__init__.py ml/explain/graph_ig.py /app/service/explain/
 
