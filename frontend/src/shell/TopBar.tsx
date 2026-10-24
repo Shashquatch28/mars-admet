@@ -12,6 +12,7 @@ const WORKSPACE_SUB: Record<string, string> = {
   "/batch": "Many molecules",
   "/compare": "Side by side",
   "/library": "Saved",
+  "/molecule": "Structure",
   "/settings": "",
 };
 

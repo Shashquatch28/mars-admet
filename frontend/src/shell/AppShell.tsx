@@ -11,7 +11,7 @@ import { StatusBar } from "./StatusBar";
 import { CommandPalette } from "./CommandPalette";
 import { useUiState } from "../app/uiState";
 
-const WS_KEYS: Record<string, string> = { "1": "/predict", "2": "/batch", "3": "/compare", "4": "/library" };
+const WS_KEYS: Record<string, string> = { "1": "/predict", "2": "/batch", "3": "/compare", "4": "/library", "5": "/molecule" };
 
 // WCAG 2.4.2: the page title names the workspace. (The printed report sets its own while it prints.)
 const WS_TITLE: Record<string, string> = {
@@ -19,6 +19,7 @@ const WS_TITLE: Record<string, string> = {
   "/batch": "Batch",
   "/compare": "Compare",
   "/library": "Library",
+  "/molecule": "Molecule",
   "/settings": "Settings",
 };
 

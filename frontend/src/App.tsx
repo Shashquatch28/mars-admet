@@ -14,6 +14,7 @@ import { PredictWorkspace } from "./workspaces/predict/PredictWorkspace";
 import { BatchWorkspace } from "./workspaces/batch/BatchWorkspace";
 import { LibraryWorkspace } from "./workspaces/library/LibraryWorkspace";
 import { CompareWorkspace } from "./workspaces/compare/CompareWorkspace";
+import { MoleculeWorkspace } from "./workspaces/molecule/MoleculeWorkspace";
 import { CompareSessionProvider } from "./app/compareSession";
 
 export function App() {
@@ -34,6 +35,7 @@ export function App() {
                   <Route path="/batch" element={<Gated name="Batch"><BatchWorkspace /></Gated>} />
                   <Route path="/compare" element={<CompareWorkspace />} />
                   <Route path="/library" element={<Gated name="Library"><LibraryWorkspace /></Gated>} />
+                  <Route path="/molecule" element={<MoleculeWorkspace />} />
                   <Route path="/settings" element={<SettingsWorkspace />} />
                   <Route path="*" element={<Navigate to="/predict" replace />} />
                 </Route>

@@ -209,7 +209,7 @@
   font-family: var(--cond);
   font-size: 9px;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em; /* a one-column group ("Excretion", "Rule-based") is ~57px wide */
   text-transform: uppercase;
   color: var(--text-quiet);
   border-left: 1px solid var(--line-subtle);

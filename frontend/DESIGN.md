@@ -127,7 +127,7 @@ Q14) — no text smaller, anywhere.
 --ease       cubic-bezier(0.23, 1, 0.32, 1)   every enter/settle; NEVER ease-in
 ```
 Asymmetric by design: 200ms in, ≤140ms out. **Zero animation** for workspace
-switching (keys 1–4, rail) and cache-hit results — the highest-frequency paths.
+switching (keys 1–5, rail) and cache-hit results — the highest-frequency paths.
 Never animate: counting numbers, rows entering, charts drawing themselves,
 skeleton shimmer, decoration. One bounded exception: AD-gauge marker (ADR-013) —
 track/zone/threshold instant, one marker eases once on first render, placed (not

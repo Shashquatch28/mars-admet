@@ -172,7 +172,7 @@ and settle. **Never ease-in** — a state change that starts slowly reads as lag
 **Asymmetric by design:** overlays enter at 200ms and leave at 140ms or less. A
 slow exit makes the UI feel reluctant to get out of the way.
 
-**Zero animation** for workspace switching (keys 1–4, rail clicks) and for a
+**Zero animation** for workspace switching (keys 1–5, rail clicks) and for a
 `cache_hit` result, which skips the skeleton entirely. These are the
 highest-frequency paths in the product.
 

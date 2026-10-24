@@ -50,7 +50,7 @@ export function SettingsWorkspace() {
               checked={shortcutsEnabled}
               onChange={(e) => setShortcutsEnabled(e.target.checked)}
             />
-            <span>Single-key shortcuts: keys 1 to 4 switch workspace</span>
+            <span>Single-key shortcuts: keys 1 to 5 switch workspace</span>
           </label>
           <p className={styles.body}>
             Turn this off if a stray key press moves you between workspaces. Ctrl or ⌘ + K for the command palette is

@@ -1523,3 +1523,20 @@ a screen reader on the drawings, and the run in a deployed environment.
 - The panel gains `queued`, `running`, `failed` and `lost` states, a Cancel button and resumption: the server is asked, so reloading or returning to an endpoint continues the job or shows the cached result. No spinner and no animation (never-do #7); updates are text, announced through the existing live region.
 - The KERMT service gains `POST /explain/jobs`, `GET /explain/jobs/{id}`, `DELETE /explain/jobs/{id}` and `GET /explain/config`; the synchronous `/explain` stays for diagnostics.
 - Open parameters, still the maintainer's: the 5% / 0.001 tolerance and the 64, 128, 256 schedule (provisional since ADR-031), the descriptor baseline (0.0 today; 0.5 recommended with low confidence, 2026-10-23), the queue size and per-IP limit above.
+
+---
+
+## ADR-041 — A Molecule page: the structure drawing and the computed properties leave the Predict column
+
+**Date:** 2026-10-24 · **Status:** accepted and built (amends ADR-034 item 3 and ADR-039 on where the pieces are shown)
+
+**Decision.**
+1. **A fifth workspace, Molecule (`/molecule`, key 5, last in the rail).** It shows, for the molecule Predict last ran: identity (input, standardized, `molecule_id`), the 2D drawing (ADR-039) and the computed properties and structural alerts (ADR-034 item 3), with their existing notes. It reads the response Predict already holds above the router; it calls nothing new, carries no endpoint, value or roster, and says "No molecule yet" with a link to Predict when there is none.
+2. **Predict keeps what belongs to a prediction**: the SMILES field, Draw a structure (ADR-035), Run, identity and the 3D conformer, because the explanation highlights (ADR-031) are drawn on the conformer and must stay beside the inspector that asks for them. A link under the conformer, "2D drawing, computed properties and structural alerts", leads to the Molecule page.
+3. **Compare, Library and the printed report keep their own 2D drawings and property rows** (ADR-036, ADR-039); only Predict's column changed.
+
+**Rationale.** After ADR-034 item 3, ADR-039 and ADR-031 each added a block to the Predict molecule column, it held seven sections and scrolled 1.7 screens at 1280×800 (1154 px of content in a 694 px column), so the SMILES field and Run sat above a long read-only stack. Moving the two blocks that are not predictions leaves the column at one screen (668 px of content, no scroll) and gives the drawing and the property table room to be read at size.
+
+**Rejected.** *Tabs inside the column* - a hidden state for the thing that has to be seen next to the result. *Moving the 3D conformer too* - it would separate the attribution highlights from the Explain control. *A modal or drawer* - the page is a place to stay and read, not an interruption.
+
+**Consequences.** Keys are 1-5 (Settings text, shortcuts docs and AGENTS.md updated). `data-owns-keys` and the typing guard are unchanged. The rail order is Predict, Batch, Compare, Library, Molecule so that keys 1-4 do not move. Two Predict-only layout additions came with the audit: the results header wraps its tally and its Export, Report and density controls as one group, and below the 1080 px floor the Predict endpoint grid keeps a 118 px endpoint column and scrolls sideways.

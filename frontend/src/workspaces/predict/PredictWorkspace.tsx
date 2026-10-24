@@ -4,7 +4,7 @@
 // (ADR-032). The roster, state derivation and reconciliation always come from
 // ENDPOINT_METADATA, never the response (ADR-008).
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCompareSession } from "../../app/compareSession";
 import styles from "./predict.module.css";
 import { useUiState } from "../../app/uiState";
@@ -23,9 +23,7 @@ import { buildCsv, predictFileName } from "../../domain/exportCsv";
 import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
 import { StructureViewer } from "./StructureViewer";
-import { PropertiesPanel } from "./PropertiesPanel";
 import { StructureEditor } from "./StructureEditor";
-import { StructureDepiction } from "../../components/StructureDepiction";
 import { atomHighlights, explainView, focusHighlights, fragmentKey, isAskable } from "../../domain/explain";
 import { useExplanation } from "../../data/useExplanation";
 
@@ -180,13 +178,16 @@ export function PredictWorkspace() {
               <dd className={styles.idId}>{response?.molecule_id || "—"}</dd>
             </dl>
           </div>
-          {response && !failure && <StructureDepiction smiles={response.smiles_standardized} />}
           <StructureViewer live={usingApi} moleculeId={response?.molecule_id} highlights={highlights} />
           <p className={styles.vnote}>
             Conformer is generated on demand and expires with the prediction cache. A 404 here is a normal
             state, not an error.
           </p>
-          {response?.properties && !failure && <PropertiesPanel properties={response.properties} />}
+          {response && !failure && (
+            <Link to="/molecule" className={styles.molLink}>
+              2D drawing, computed properties and structural alerts
+            </Link>
+          )}
         </div>
       </section>
 

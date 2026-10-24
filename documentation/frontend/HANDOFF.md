@@ -34,7 +34,7 @@ path (see §2a). Batch runs against the API too (upload, progress, results; §2b
 
 | Area | Files | Notes |
 |---|---|---|
-| Shell | `src/shell/` | AppShell, NavRail, TopBar, StatusBar, CommandPalette. Keys 1–4 switch workspace, ⌘K opens the palette. |
+| Shell | `src/shell/` | AppShell, NavRail, TopBar, StatusBar, CommandPalette. Keys 1–5 switch workspace, ⌘K opens the palette. |
 | Predict | `src/workspaces/predict/` | Roster of 15 rows (14 ML + rule-based SA), seven derived row states (incl. NOT REQUESTED, ADR-028), endpoint-subset selector, inspector, AD gauge, keyboard roving, live 3D viewer (placeholder SVG in fixture mode). |
 | Batch | `src/workspaces/batch/`, `src/domain/batch.ts`, `src/domain/batchJob.ts`, `src/app/batchSession.tsx` | Live: choose or drop a CSV/SDF, optional SMILES column, Run, progress for queued jobs, rows into the grid. Without an API: 240-molecule deterministic fixture. Virtualized `role="grid"`, raw numeric sort, filters, molecule inspector. |
 | Data-viz | `src/components/dataviz/` | `ADGauge`, `IntervalTrack` (both require an explicit `domain`, no default), `NumericInterval`, `ReliabilityTag`. |

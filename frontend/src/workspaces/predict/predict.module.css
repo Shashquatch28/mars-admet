@@ -309,6 +309,13 @@
 .reshd > * {
   flex-shrink: 0;
 }
+/* Export, Report and the density switch travel together: they wrap as one group, pinned to the right edge. */
+.resActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 .resTitle {
   font-family: var(--cond);
   letter-spacing: 0.12em;
@@ -893,4 +900,14 @@
 }
 .sNone {
   color: var(--text-quiet);
+}
+
+/* Pointer from the molecule column to the Molecule page, where the drawing, properties and alerts live. */
+.molLink {
+  align-self: flex-start;
+  font-size: 10.5px;
+  color: var(--accent);
+}
+.molLink:hover {
+  text-decoration: underline;
 }
