@@ -100,6 +100,9 @@ services:
       dockerfile: ml/serve/kermt_service/Dockerfile
     container_name: mars_kermt
     restart: unless-stopped
+    # The engine sizes torch's threads from this cgroup limit (effective_cpus). Without it the container
+    # sees every host CPU (18 in the WSL VM) and oversubscribes: a prediction ran past 30 s instead of ~4.5 s.
+    cpus: ${KERMT_CPUS:-4}
     environment:
       KERMT_ARMS: ${KERMT_ARMS:-toxicity__cls,metabolism__cls,metabolism__reg,absorption_distribution__cls,absorption_distribution__reg}
       KERMT_SEEDS: ${KERMT_SEEDS:-0,1,2}
