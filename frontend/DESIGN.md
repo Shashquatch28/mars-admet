@@ -114,6 +114,12 @@ title) · 12px mono (table value) · 11.5px sans (row text, controls) · 10.5px 
 head) · 9px condensed 600 +0.09em (tags, nav labels). **9px is the floor** (ADR,
 Q14) — no text smaller, anywhere.
 
+**Front-door scale (ADR-046) — the landing page at `/` and `/welcome` only, never a
+predicted value:** wordmark up to 164px · ADMET letters 132px · workspace key
+numerals 64px · tagline 40px · section titles 30px · scope statements 26px, all IBM
+Plex. Inside the landing's example the value is still 26px mono. The 26px ceiling
+above stands everywhere else.
+
 ---
 
 ## Motion

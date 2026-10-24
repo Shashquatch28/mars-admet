@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import styles from "./shell.module.css";
 import { useUiState } from "../app/uiState";
 import { useAuthSession } from "../app/authSession";
@@ -37,7 +37,7 @@ export function TopBar() {
 
   return (
     <header className={styles.topbar}>
-      <div className={styles.brand}>
+      <Link className={styles.brand} to="/welcome" title="Overview">
         <span className={styles.logo} aria-hidden="true">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.5">
             <circle cx="11" cy="4.5" r="2.2" />
@@ -48,7 +48,7 @@ export function TopBar() {
         </span>
         <span className={styles.brandName}>MARS</span>
         <span className={styles.brandSub}>ADMET Rapid Screening</span>
-      </div>
+      </Link>
       <div className={styles.crumb}>
         <h1 className={styles.crumbW}>{label}</h1>
         {sub && <span className={styles.crumbSep} aria-hidden="true">/</span>}
