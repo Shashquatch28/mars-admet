@@ -35,6 +35,10 @@
   color: var(--text-disabled);
   cursor: default;
 }
+.molbody[hidden],
+.inspwrap[hidden] {
+  display: none;
+}
 .molbody {
   padding: 14px 16px;
   overflow-y: auto;
@@ -604,6 +608,61 @@
   color: var(--text-quiet);
   line-height: 1.55;
   max-width: 72ch;
+}
+
+/* Folding a side panel (ADR-045): no animation, the same instant switch as everywhere else. A folded panel is a
+   36px rail that is one button, named in text, and clicking it opens the panel. */
+.molcol.molcolFolded,
+.inspector.inspectorFolded {
+  width: 36px; /* two classes: .inspector's own width is declared further down */
+}
+.panelTools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.foldBtn {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-quiet);
+}
+.foldBtn:hover {
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+}
+.rail {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  color: var(--text-quiet);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.rail:hover {
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+}
+.railLabel {
+  writing-mode: vertical-rl;
+  font-family: var(--cond);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.inspwrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* inspector */

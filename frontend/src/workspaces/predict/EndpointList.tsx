@@ -191,26 +191,16 @@ export function EndpointList({
         ))}
       </div>
 
-      <div className={styles.resfoot}>
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <circle cx="8" cy="8" r="6.5" />
-          <path d="M8 7.3v4M8 5h.01" />
-        </svg>
-        <p>
-          Every endpoint MARS can serve is listed on every result, whether or not the service returned it. An
-          endpoint the model did not return, or that you left out of the run, is shown as a marked row (NOT RETURNED,
-          NOT REQUESTED), never omitted. MARS applies no risk
-          threshold and defines no direction of good — no value on this screen is styled as good or bad.
-          {fellBack > 0 && (
-            <>
-              {" "}
-              <b>†</b> {fellBack === 1 ? "1 endpoint is" : `${fellBack} endpoints are`} routed to KERMT but{" "}
-              {fellBack === 1 ? "was" : "were"} answered by XGBoost for this request, because the KERMT service did not
-              answer. The SOURCE column says which model answered each row.
-            </>
-          )}
-        </p>
-      </div>
+      {/* Only what a † in the table needs: the mark must be explained where it appears (never-do #8). */}
+      {fellBack > 0 && (
+        <div className={styles.resfoot}>
+          <p>
+            <b>†</b> {fellBack === 1 ? "1 endpoint is" : `${fellBack} endpoints are`} routed to KERMT but{" "}
+            {fellBack === 1 ? "was" : "were"} answered by XGBoost for this request, because the KERMT service did not
+            answer. The SOURCE column says which model answered each row.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

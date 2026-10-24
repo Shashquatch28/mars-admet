@@ -25,6 +25,8 @@ import { EndpointSelector } from "./EndpointSelector";
 import { EndpointDetail } from "./EndpointDetail";
 import { StructureViewer } from "./StructureViewer";
 import { StructureEditor } from "./StructureEditor";
+import { FoldRail, FoldToggle } from "./PanelFold";
+import { usePersistedFlag } from "../../app/persistedFlag";
 import { atomHighlights, explainView, focusHighlights, fragmentKey, isAskable } from "../../domain/explain";
 import { useExplanation } from "../../data/useExplanation";
 
@@ -41,6 +43,19 @@ function requestFailure(error: Error): { title: string; detail: string } {
 }
 
 export function PredictWorkspace() {
+  // Either side panel can be folded to a thin rail (ADR-045); the choice is remembered in this browser.
+  const [leftFolded, setLeftFolded] = usePersistedFlag("mars.predict.moleculeInputFolded");
+  const [rightFolded, setRightFolded] = usePersistedFlag("mars.predict.endpointDetailFolded");
+  // The structure editor's overlay starts where the molecule column ends, so it follows the column's width.
+  useEffect(() => {
+    const main = document.getElementById("main");
+    if (!main) return;
+    if (leftFolded) main.style.setProperty("--molcol-w", "36px");
+    else main.style.removeProperty("--molcol-w");
+    return () => {
+      main.style.removeProperty("--molcol-w");
+    };
+  }, [leftFolded]);
   const { selectedEndpoint } = useUiState();
   const { smiles, setSmiles, selected, setSelected, result, running, error, canRun, run, clear } = usePredictSession();
   const usingApi = USING_API;
@@ -132,14 +147,21 @@ export function PredictWorkspace() {
   return (
     <>
       {/* molecule column */}
-      <section className={styles.molcol} aria-label="Molecule input">
-        <div className={styles.panelhd}>
-          <span className={styles.panelTitle}>Molecule input</span>
-          <button className={styles.clr} onClick={clear} disabled={!smiles && !result && !error}>
-            Clear
-          </button>
-        </div>
-        <div className={styles.molbody}>
+      <section className={`${styles.molcol} ${leftFolded ? styles.molcolFolded : ""}`} aria-label="Molecule input">
+        {leftFolded ? (
+          <FoldRail label="Molecule input" side="left" controls="molcol-body" onUnfold={() => setLeftFolded(false)} />
+        ) : (
+          <div className={styles.panelhd}>
+            <span className={styles.panelTitle}>Molecule input</span>
+            <span className={styles.panelTools}>
+              <button className={styles.clr} onClick={clear} disabled={!smiles && !result && !error}>
+                Clear
+              </button>
+              <FoldToggle label="molecule input" side="left" controls="molcol-body" onFold={() => setLeftFolded(true)} />
+            </span>
+          </div>
+        )}
+        <div className={styles.molbody} id="molcol-body" hidden={leftFolded}>
           <div>
             <div className={styles.flabel}>SMILES</div>
             <textarea
@@ -245,10 +267,16 @@ export function PredictWorkspace() {
       {printReport.element}
 
       {/* inspector */}
-      <aside className={styles.inspector} aria-label="Endpoint detail">
-        <div className={styles.insphd}>
-          <span className={styles.panelTitle}>Endpoint detail</span>
-        </div>
+      <aside className={`${styles.inspector} ${rightFolded ? styles.inspectorFolded : ""}`} aria-label="Endpoint detail">
+        {rightFolded ? (
+          <FoldRail label="Endpoint detail" side="right" controls="insp-body" onUnfold={() => setRightFolded(false)} />
+        ) : (
+          <div className={styles.insphd}>
+            <span className={styles.panelTitle}>Endpoint detail</span>
+            <FoldToggle label="endpoint detail" side="right" controls="insp-body" onFold={() => setRightFolded(true)} />
+          </div>
+        )}
+        <div className={styles.inspwrap} id="insp-body" hidden={rightFolded}>
         {selectedRow && response && !failure ? (
           <EndpointDetail
             row={selectedRow}
@@ -307,6 +335,7 @@ export function PredictWorkspace() {
             note={saveNote("molecule", result?.response.model_version ?? null)}
             save={(input) => saveMolecule(buildMoleculeRequest(result!.response, input))}
           />
+        </div>
         </div>
       </aside>
     </>

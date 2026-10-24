@@ -30,7 +30,7 @@
   top: 0;
   right: 0;
   bottom: 0;
-  left: clamp(300px, 24vw, 356px);
+  left: var(--molcol-w, clamp(300px, 24vw, 356px)); /* PredictWorkspace sets --molcol-w while the column is folded */
   display: flex;
   flex-direction: column;
   min-width: 0;

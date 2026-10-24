@@ -1619,3 +1619,17 @@ which is fine at this scale and would need a per-user index at a larger one. Ema
 - The breaker and the request-rate ceiling are per API instance. With several instances the total rate to PubChem is the ceiling times the instance count: set it lower, or cap instances, if that approaches 5 a second. Moving both to Redis is the next step if it does.
 - A name is a function of PubChem's data at the time it was cached (7 days found, 1 day not found).
 - Open for the maintainer: the 5 synonyms, the 7-day and 1-day lifetimes, the 120 a minute limit, and the lowest-CID rule.
+
+---
+
+## ADR-045 — Either side panel in Predict folds to a rail; the permanent footer under the table is removed
+
+**Date:** 2026-10-24 · **Status:** accepted and built (amends ADR-008's wording on where the roster rule is stated)
+
+**Decision.**
+1. **The Molecule input column and the Endpoint detail inspector each fold to a 36 px rail** and open again from it, like a Notion sidebar. An open panel has a chevron at the right end of its header; the rail is a single button whose visible text names the panel, so nothing is explained only by a tooltip. The state is remembered in this browser (`localStorage`, guarded; the page works the same when storage is blocked). With both folded the roster has the whole width, which also removes the sideways scroll at the 1080 px floor.
+2. **Folding hides, it does not unmount.** The panel content stays mounted and `hidden`, so the SMILES, the result, the selected endpoint, a running explanation and the open structure editor are exactly as they were when the panel opens again. The editor's overlay starts at the molecule column's edge, so it follows the column (`--molcol-w`, set on `<main>` while the column is folded).
+3. **No animation.** Folding is as instant as switching workspace (never-do #7; the animation guard test still allows only the AD-gauge marker and the structure peek). If a slide is wanted it needs its own entry in that guard and in this ADR.
+4. **The paragraph under the roster is gone** ("Every endpoint MARS can serve is listed on every result ... no value on this screen is styled as good or bad"). The rules it stated still hold and are enforced where they live: the rows themselves say NOT RETURNED and NOT REQUESTED (ADR-008, ADR-028), nothing is coloured by value (ADR-007), and the guard tests fail the build if that changes. What stays is the one sentence a mark in the table needs: when a † appears, a line under the table says which rows were routed to KERMT but answered by XGBoost, because a mark must be explained where it appears (never-do #8).
+
+**Rejected.** *Fold buttons only on hover* - invisible to a keyboard or touch user. *Unmounting a folded panel* - loses the open editor and any explanation in flight. *Auto-opening the inspector when a row is selected* - a folded panel is a choice; the rail still names it. *Keyboard shortcuts for folding* - single-character shortcuts need the WCAG 2.1.4 switch and a place in the shortcut docs; the buttons are reachable by Tab.
