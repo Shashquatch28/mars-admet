@@ -10,6 +10,32 @@ Newest first. Absolute dates only.
 
 ---
 
+## 2026-10-25 — Module 11 section 6: the GPU-bound ablations
+
+**Status:** deferred by maintainer decision 2026-10-25. Module 11 section 6 was already `Post-MVP-parallel` (it does not
+block launch); this records which parts were run and which were not.
+
+**Run (CPU, on `feat/evaluation`):** DILI trained on the DILIst-augmented pool against TDC-only
+(`documentation/status/dili_augmentation_ablation.md`), and Platt scaling against temperature scaling against
+isotonic regression on the nine XGBoost classifiers (`documentation/status/calibration_ablation.md`).
+
+**Not run (needs the GPU workstation):**
+
+- Multi-task cluster against single-task, per endpoint. The single-task CYP baselines do not exist (checklist B3); until
+  they do, no KERMT-versus-XGBoost claim holds for the CYPs.
+- Pretrained backbone against non-pretrained.
+- Loss balancing for the mixed-type clusters (`fixed_task` against Kendall against GradNorm). Needs Tier 1, whose
+  gate G3 did not pass under the frozen rule (`milestone/m2-kermt-tier1`).
+- Calibration method on KERMT (temperature scaling is already fitted per arm; no comparison against Platt or
+  isotonic exists, and per-molecule KERMT test predictions are not stored in git).
+- Section 5.5 (Lo-Hi or DataSAIL hard splits) was never started.
+
+**If tackled:** report each result beside the Tier-0 numbers and the existing pool-matched table, with the paired
+bootstrap used in `dili_augmentation_ablation.py` rather than a seed-only test; five seeds on one fixed test set do not
+see test-sampling noise.
+
+---
+
 ## 2026-10-07 — Tier 1 (mixed-type trainer), Tier 2 (ordinal homogenization), Kendall / GradNorm loss weighting
 
 **Update 2026-10-14:** **Tier 1 and the Kendall / GradNorm axis were revived** by maintainer decision (`documentation/AIMS/decisions.md`
