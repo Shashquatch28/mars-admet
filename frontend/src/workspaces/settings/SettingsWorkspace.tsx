@@ -5,6 +5,7 @@ import { AccountForm } from "../../auth/AccountForm";
 import { useAuthSession } from "../../app/authSession";
 import { useUiState } from "../../app/uiState";
 import { USING_API } from "../../data/client";
+import { NAME_DISCLOSURE } from "../../domain/moleculeName";
 import { DeleteAccount } from "./DeleteAccount";
 
 export function SettingsWorkspace() {
@@ -43,6 +44,12 @@ export function SettingsWorkspace() {
         <div className={`${styles.formcol} ${styles.stack}`}>
           <span className={styles.kicker}>Account</span>
           {body}
+          <span className={styles.kicker}>Molecule names</span>
+          <p className={styles.body}>
+            When MARS shows a structure it also looks up that molecule's name, and says where the name came from. The name
+            comes from PubChem. {NAME_DISCLOSURE} A name says who a molecule is and nothing about any prediction. A molecule
+            PubChem has no record of shows "No name found", and a lookup that fails says why and changes nothing else.
+          </p>
           <span className={styles.kicker}>Keyboard</span>
           <label className={styles.check}>
             <input

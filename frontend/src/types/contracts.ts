@@ -97,6 +97,25 @@ export interface PredictionResponse {
   properties?: MoleculeProperties | null;
 }
 
+// --- name (api.py, ADR-043) ---
+// POST /name: what a name source says about one structure, with the source stated. `not_found` is an answer; `unavailable`
+// is a failure of the source and is told apart from it. A name is never guessed and says nothing about a prediction.
+export type NameStatus = "found" | "not_found" | "unavailable";
+export interface NameRequest {
+  smiles: string; // the service sends the source the molecule's InChIKey only, never this
+}
+export interface NameResponse {
+  status: NameStatus;
+  inchikey: string;
+  source: string; // in words, e.g. "PubChem"
+  source_record: string | null; // the source's own id, e.g. "CID 2244"
+  source_url: string | null;
+  preferred_name: string | null;
+  iupac_name: string | null;
+  synonyms: string[];
+  reason: string | null; // only when unavailable
+}
+
 // --- conformer (conformer.py) ---
 export interface ConformerAtom {
   element: string;

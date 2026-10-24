@@ -13,6 +13,7 @@ import { reconcile, requestedMlEndpoints } from "../../domain/reconcile";
 import { ML_ENDPOINTS } from "../../domain/endpoints";
 import { USING_API, ApiError, saveMolecule } from "../../data/client";
 import { SaveControl } from "../../components/SaveControl";
+import { LookedUpName } from "../../components/MoleculeName";
 import { buildMoleculeRequest, moleculeKey, saveNote } from "../../domain/save";
 import { EndpointList } from "./EndpointList";
 import { downloadText } from "../../data/download";
@@ -171,6 +172,14 @@ export function PredictWorkspace() {
               <dd>{inputShown ? clip(inputShown) : "—"}</dd>
               <dt>Standardized</dt>
               <dd>{response ? clip(response.smiles_standardized) : "—"}</dd>
+              {response && !failure && (
+                <>
+                  <dt>Name</dt>
+                  <dd className={styles.idWrap}>
+                    <LookedUpName smiles={response.smiles_standardized} disclose />
+                  </dd>
+                </>
+              )}
             </dl>
             {rewritten && <span className={styles.rewrite}>Rewritten by standardizer</span>}
             <dl className={styles.idgrid} style={{ marginTop: 8 }}>

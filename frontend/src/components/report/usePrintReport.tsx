@@ -7,11 +7,13 @@ import { PrintReport } from "./PrintReport";
 import type { ExportMolecule } from "../../domain/exportCsv";
 import { buildReport, type ReportModel } from "../../domain/report";
 import { useGenerations } from "../../data/useGenerations";
-import { ApiError, USING_API, fetchDepiction } from "../../data/client";
+import { ApiError, USING_API, fetchDepiction, fetchName } from "../../data/client";
 import { depictionKey } from "../../data/useDepiction";
+import { nameKey } from "../../data/useMoleculeName";
+import { nameView, type NameView } from "../../domain/moleculeName";
 import { depictionFailure, isDrawable, type ReportStructure } from "../../domain/depiction";
 
-// A report waits this long for its drawing, then prints without it and says so: a slow service never blocks the print dialog.
+// A report waits this long for its drawing and its name, then prints without them and says so: a slow service never blocks the print dialog.
 const DRAWING_WAIT_MS = 6000;
 
 export function usePrintReport(): { print: (m: ExportMolecule) => void; element: ReactNode } {
@@ -25,6 +27,24 @@ export function usePrintReport(): { print: (m: ExportMolecule) => void; element:
       void (async () => {
         const smiles = m.response?.smiles_standardized?.trim();
         let structure: ReportStructure | null = null;
+        let name: NameView | null = null;
+        if (smiles && !m.error && USING_API) {
+          // Held answers are free; otherwise ask once, and give up on the same clock as the drawing.
+          name = await Promise.race([
+            qc
+              .fetchQuery({ queryKey: nameKey(smiles), queryFn: () => fetchName(smiles), staleTime: Infinity })
+              .then((data) => nameView({ hasStructure: true, pending: false, data })),
+            new Promise<NameView>((resolve) =>
+              setTimeout(() => resolve({ kind: "unavailable", reason: "The name was not ready in time." }), DRAWING_WAIT_MS),
+            ),
+          ]).catch((e) =>
+            nameView({
+              hasStructure: true,
+              pending: false,
+              error: { status: e instanceof ApiError ? e.status : 0, message: e instanceof Error ? e.message : String(e) },
+            }),
+          );
+        }
         if (smiles && !m.error) {
           if (!USING_API) structure = { kind: "unavailable", reason: "No API is configured." };
           else {
@@ -44,7 +64,7 @@ export function usePrintReport(): { print: (m: ExportMolecule) => void; element:
             }
           }
         }
-        setModel(buildReport(m, new Date(), kermtEndpoints ?? [], structure));
+        setModel(buildReport(m, new Date(), kermtEndpoints ?? [], structure, name));
       })();
     },
     [kermtEndpoints, qc],

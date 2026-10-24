@@ -56,6 +56,43 @@ class Settings(BaseSettings):
         description="How long a drawing is kept. A drawing is a pure function of the molecule and DEPICTION_VERSION, so this is "
         "only about memory, not freshness.",
     )
+    rate_limit_name_per_minute: int = Field(
+        default=120,
+        description="Name lookups per minute per IP (`POST /name`, frontend ADR-043), counted whether or not the cache answers. "
+        "Its own counter, so naming a page of molecules never spends the prediction budget.",
+    )
+    name_lookup_enabled: bool = Field(
+        default=True,
+        description="Master switch for asking the name source anything. False answers every lookup as unavailable, in words, "
+        "without a network call: the way to switch the external lookup off on a deployment that must not send a key out.",
+    )
+    name_lookup_base_url: str = Field(
+        default="https://pubchem.ncbi.nlm.nih.gov/rest/pug",
+        description="PubChem PUG REST root. Only the InChIKey is ever appended to it.",
+    )
+    name_lookup_timeout_seconds: float = Field(
+        default=4.0,
+        description="Longest MARS waits for one request to the name source. A lookup makes at most two, in sequence, so a slow "
+        "source costs one lookup at most about twice this and never touches /predict.",
+    )
+    name_lookup_max_per_second: float = Field(
+        default=3.0,
+        description="Requests per second this process may send the name source (PubChem asks for no more than 5). Each lookup "
+        "makes up to two; a lookup that would have to wait longer than its time budget is answered as busy instead.",
+    )
+    name_breaker_failures: int = Field(
+        default=5, description="Consecutive failed requests to the name source after which MARS stops asking for a while"
+    )
+    name_breaker_open_seconds: float = Field(
+        default=60.0, description="How long MARS stops asking the name source after the breaker opens, then it tries once"
+    )
+    name_cache_ttl_seconds: int = Field(
+        default=7 * 24 * 3600, description="How long a found name is kept; the source can rename a record, so it is not forever"
+    )
+    name_not_found_ttl_seconds: int = Field(
+        default=24 * 3600, description="How long 'the source has no record' is kept; compounds are added to PubChem every day"
+    )
+    name_max_synonyms: int = Field(default=5, description="Synonyms returned with a name")
     trusted_proxy_hops: int = Field(
         default=0,
         description="How many proxies in front of the API append to X-Forwarded-For. 0 (default) means the "

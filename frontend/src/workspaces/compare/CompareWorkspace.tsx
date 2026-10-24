@@ -27,6 +27,9 @@ import { requestedMlEndpoints, type Row } from "../../domain/reconcile";
 import { ReliabilityTag } from "../../components/dataviz/ReliabilityTag";
 import { ModelSource } from "../../components/ModelSource";
 import { StructureDepiction } from "../../components/StructureDepiction";
+import { NameBlock } from "../../components/MoleculeName";
+import { useMoleculeName } from "../../data/useMoleculeName";
+import { NAME_DISCLOSURE, headlineName } from "../../domain/moleculeName";
 import { useGenerations } from "../../data/useGenerations";
 import { FALLBACK_NOTE, fallbackCountInRows } from "../../domain/modelFamily";
 import { EndpointSelector } from "../predict/EndpointSelector";
@@ -122,6 +125,39 @@ function PropertiesBlock({ properties }: { properties: CompareProperties }) {
   );
 }
 
+/**
+ * One result column's heading. The name is, in this order: what the user typed, else what the name source returned (shown with
+ * its source), else "Molecule N". The lookup is of the standardized structure shown in the column, the one the values are for.
+ */
+function ColumnHead({ column, typed }: { column: CompareColumn; typed: string }) {
+  const view = useMoleculeName(column.smilesStandardized || column.smilesInput);
+  const name = headlineName(typed, view);
+  return (
+    <>
+      {name ? (
+        <>
+          <span className={styles.molTitle} title={name.text}>
+            {name.text}
+          </span>
+          <span className={styles.molSource}>{name.source}</span>
+        </>
+      ) : (
+        <span className={styles.molName}>Molecule {column.index + 1}</span>
+      )}
+      <span className={styles.molSmiles} title={column.smilesStandardized || column.smilesInput}>
+        {clip(column.smilesStandardized || column.smilesInput)}
+      </span>
+      <FlagLine c={column} />
+    </>
+  );
+}
+
+/** Under the drawing: what the name source said, in full, with the source. */
+function StructureName({ column }: { column: CompareColumn }) {
+  const view = useMoleculeName(column.smilesStandardized || column.smilesInput);
+  return <NameBlock view={view} disclose={false} />;
+}
+
 function FlagLine({ c }: { c: CompareColumn }) {
   return (
     <span className={styles.flags}>
@@ -215,7 +251,7 @@ export function CompareWorkspace() {
       <div className={styles.status} role={failure ? "alert" : "status"}>
         {failure ? (
           <>
-            <b className={styles.failTitle}>{failure.title}</b> <span className={styles.failDetail}>{failure.detail}</span>
+              <b className={styles.failTitle}>{failure.title}</b> <span className={styles.failDetail}>{failure.detail}</span>
           </>
         ) : s.running ? (
           "The service predicts each molecule in turn. A molecule it has not seen before takes longer than one it has cached."
@@ -242,6 +278,7 @@ export function CompareWorkspace() {
             good, so a higher or lower value is not a better or worse molecule.
           </p>
         ) : (
+          <>
           <table className={styles.table}>
             <caption className={styles.sr}>
               Predicted values for {comparison.columns.length} molecules across the endpoint roster, in roster order
@@ -253,17 +290,7 @@ export function CompareWorkspace() {
                 </th>
                 {comparison.columns.map((c) => (
                   <th key={c.index} scope="col" className={styles.molhd}>
-                    {s.sentNames[c.index] ? (
-                      <span className={styles.molTitle} title={s.sentNames[c.index]}>
-                        {s.sentNames[c.index]}
-                      </span>
-                    ) : (
-                      <span className={styles.molName}>Molecule {c.index + 1}</span>
-                    )}
-                    <span className={styles.molSmiles} title={c.smilesStandardized || c.smilesInput}>
-                      {clip(c.smilesStandardized || c.smilesInput)}
-                    </span>
-                    <FlagLine c={c} />
+                    <ColumnHead column={c} typed={s.sentNames[c.index] ?? ""} />
                   </th>
                 ))}
                 <th scope="col" className={styles.unithd}>
@@ -288,6 +315,7 @@ export function CompareWorkspace() {
                       label={s.sentNames[c.index] || `Molecule ${c.index + 1}`}
                       note={false}
                     />
+                    <StructureName column={c} />
                   </td>
                 ))}
                 <td className={styles.unit} />
@@ -315,6 +343,10 @@ export function CompareWorkspace() {
             ))}
             <PropertiesBlock properties={comparison.properties} />
           </table>
+          <p className={styles.nameNote}>
+            Names are typed by you or, when you gave none, looked up. {NAME_DISCLOSURE} A name identifies a molecule and says nothing about its values.
+          </p>
+          </>
         )}
       </div>
     </section>

@@ -54,6 +54,28 @@ async def enforce_depict_rate_limit(
         raise HTTPException(status_code=429, detail=f"Rate limit exceeded: {limit} drawings/minute per IP")
 
 
+async def enforce_name_rate_limit(
+    request: Request,
+    r: redis.Redis = Depends(get_redis),
+) -> None:
+    """Name lookups (`POST /name`): same fixed window and fail-open rule, its own counter and number. Cached answers count too:
+    the limit is on how fast one address can ask, not on how often the source is reached."""
+    try:
+        window = int(time.time() // 60)
+        key = f"ratelimit:name:{client_ip(request)}:{window}"
+
+        count = await r.incr(key)
+        if count == 1:
+            await r.expire(key, 60)
+    except redis.RedisError as exc:
+        warnings.warn(f"Rate limiter unavailable, failing open: {exc}", stacklevel=2)
+        return
+
+    limit = get_settings().rate_limit_name_per_minute
+    if count > limit:
+        raise HTTPException(status_code=429, detail=f"Rate limit exceeded: {limit} name lookups/minute per IP")
+
+
 async def enforce_predict_rate_limit(
     request: Request,
     r: redis.Redis = Depends(get_redis),

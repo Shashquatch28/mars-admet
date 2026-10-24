@@ -13,6 +13,7 @@ import { PROPERTY_SOURCE, alertGroups, propertyLines } from "../../domain/proper
 import peekStyles from "./structurePeek.module.css";
 import type { ConformerResponse, MoleculeProperties } from "../../types/contracts";
 import { fmtNum } from "../../domain/format";
+import { LookedUpName } from "../../components/MoleculeName";
 import type { AtomHighlight } from "../../domain/explain";
 
 type Mode = "hero" | "analysis";
@@ -23,8 +24,6 @@ export interface PeekMolecule {
   smilesStandardized: string;
   moleculeId: string;
   properties?: MoleculeProperties | null;
-  /** A name for the molecule, shown with its source, when one exists (typed or looked up). Never inferred here. */
-  name?: { text: string; source: string } | null;
 }
 
 const cssVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -353,16 +352,12 @@ function StructurePeek({
             <section className={peekStyles.section}>
               <h3 className={peekStyles.infoHd}>This molecule</h3>
               <dl className={peekStyles.facts}>
-                {molecule?.name && (
+                {molecule && (
                   <>
                     <dt>Name</dt>
                     <dd>
-                      {molecule.name.text} <span className={peekStyles.src}>{molecule.name.source}</span>
+                      <LookedUpName smiles={molecule.smilesStandardized} variant="block" />
                     </dd>
-                  </>
-                )}
-                {molecule && (
-                  <>
                     <dt>SMILES</dt>
                     <dd className={peekStyles.mono}>{molecule.smilesStandardized}</dd>
                     {molecule.smilesInput && molecule.smilesInput !== molecule.smilesStandardized && (

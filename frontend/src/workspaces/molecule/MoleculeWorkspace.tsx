@@ -6,6 +6,7 @@
 import { Link } from "react-router-dom";
 import { usePredictSession } from "../../app/predictSession";
 import { StructureDepiction } from "../../components/StructureDepiction";
+import { LookedUpName } from "../../components/MoleculeName";
 import { PropertiesPanel } from "../predict/PropertiesPanel";
 import predict from "../predict/predict.module.css";
 import styles from "./molecule.module.css";
@@ -51,6 +52,10 @@ export function MoleculeWorkspace() {
                 <dt>molecule_id</dt>
                 <dd className={predict.idId}>{response.molecule_id || "—"}</dd>
               </dl>
+            </div>
+            <div>
+              <div className={predict.flabel}>Name</div>
+              <LookedUpName smiles={response.smiles_standardized} variant="block" />
             </div>
             <StructureDepiction smiles={response.smiles_standardized} />
             <Link to="/predict" className={styles.link}>

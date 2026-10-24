@@ -41,6 +41,7 @@ import { ModelSource } from "../../components/ModelSource";
 import { useGenerations } from "../../data/useGenerations";
 import { FALLBACK_NOTE, fallbackCountInRows } from "../../domain/modelFamily";
 import { BatchUpload } from "./BatchUpload";
+import { LookedUpName } from "../../components/MoleculeName";
 
 export function BatchWorkspace() {
   const { density } = useUiState();
@@ -299,6 +300,11 @@ export function BatchWorkspace() {
           <div className={styles.inspbody}>
             <div className={styles.inspsec}>
               <p className={styles.inspSmiles}>{selectedRow.smilesInput}</p>
+              {selectedRow.ok && selectedRow.response && (
+                <div className={styles.inspName}>
+                  <LookedUpName smiles={selectedRow.response.smiles_standardized} variant="block" />
+                </div>
+              )}
               <dl>
                 <dt>molecule_id</dt>
                 <dd>{selectedRow.moleculeId ?? "—"}</dd>

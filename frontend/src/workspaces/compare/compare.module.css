@@ -207,6 +207,21 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.molSource {
+  display: block;
+  font-family: var(--sans);
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-quiet);
+}
+.nameNote {
+  margin: 0;
+  padding: 10px 14px 14px;
+  max-width: 78ch;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-quiet);
+}
 .molName {
   display: block;
   font-family: var(--cond);
