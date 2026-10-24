@@ -8,6 +8,7 @@ import styles from "./predict.module.css";
 import { useConformer } from "../../data/useConformer";
 import { conformerView } from "../../domain/conformer";
 import type { ConformerResponse } from "../../types/contracts";
+import type { AtomHighlight } from "../../domain/explain";
 
 type Mode = "hero" | "analysis";
 
@@ -16,7 +17,7 @@ const cssVar = (name: string) => getComputedStyle(document.documentElement).getP
 // Hero: ball-and-stick, heavy atoms only. Analysis: every atom as sticks, hydrogens
 // included, and no labels (atom numbering would be a claim nothing cites yet; labels
 // can return with Q11, when something refers to them).
-async function drawConformer(host: HTMLElement, c: ConformerResponse, mode: Mode) {
+async function drawConformer(host: HTMLElement, c: ConformerResponse, mode: Mode, highlights: AtomHighlight[] | null) {
   const $3Dmol = await import("3dmol");
   const viewer = $3Dmol.createViewer(host, { backgroundAlpha: 0 });
   const carbon = cssVar("--viewer-atom");
@@ -31,6 +32,24 @@ async function drawConformer(host: HTMLElement, c: ConformerResponse, mode: Mode
   } else {
     viewer.setStyle({}, stick(0.1, carbon));
     viewer.setStyle({ not: { elem: ["C", "H"] as unknown as string } }, stick(0.1, hetero));
+  }
+  // Explanation (ADR-031). Heavy atoms come first in the SDF, in RDKit order, so an attribution index is
+  // the viewer's atom index. Colour is the SIGN of the attribution (--attr-up / --attr-down, nothing
+  // else), size and opacity are its strength; atoms with no direction keep the element palette.
+  if (highlights) {
+    const up = cssVar("--attr-up");
+    const down = cssVar("--attr-down");
+    for (const h of highlights) {
+      if (h.sign === "none" || h.strength === 0) continue;
+      const color = h.sign === "up" ? up : down;
+      viewer.setStyle(
+        { index: h.index },
+        {
+          stick: { radius: 0.1 + 0.06 * h.strength, color },
+          sphere: { scale: 0.16 + 0.44 * h.strength, color, opacity: 0.35 + 0.65 * h.strength },
+        },
+      );
+    }
   }
   viewer.zoomTo();
   viewer.render();
@@ -66,7 +85,7 @@ function Frame({ mode, setMode, children, caption }: { mode?: Mode; setMode?: (m
   );
 }
 
-function LiveViewer({ moleculeId }: { moleculeId: string | null | undefined }) {
+function LiveViewer({ moleculeId, highlights }: { moleculeId: string | null | undefined; highlights: AtomHighlight[] | null }) {
   const [mode, setMode] = useState<Mode>("hero");
   const q = useConformer(moleculeId);
   const view = conformerView({ moleculeId, isPending: q.isPending, data: q.data, error: q.error });
@@ -86,7 +105,7 @@ function LiveViewer({ moleculeId }: { moleculeId: string | null | undefined }) {
     let viewer: Awaited<ReturnType<typeof drawConformer>> | null = null;
     let disposed = false;
     setDrawError(null);
-    drawConformer(mount, data, mode).then(
+    drawConformer(mount, data, mode, highlights).then(
       (v) => {
         if (disposed) v.clear();
         else viewer = v;
@@ -101,11 +120,15 @@ function LiveViewer({ moleculeId }: { moleculeId: string | null | undefined }) {
       viewer?.clear();
       mount.remove();
     };
-  }, [data, mode]);
+  }, [data, mode, highlights]);
 
   if (view.kind === "ready") {
     return (
-      <Frame mode={mode} setMode={setMode} caption={drawError ? undefined : view.caption}>
+      <Frame
+        mode={mode}
+        setMode={setMode}
+        caption={drawError ? undefined : highlights ? `${view.caption} · colour = direction of attribution, size = strength` : view.caption}
+      >
         {drawError ? (
           <p className={styles.nostate}>Could not draw the structure: {drawError}</p>
         ) : (
@@ -130,6 +153,14 @@ function NoApiViewer() {
   );
 }
 
-export function StructureViewer({ live, moleculeId }: { live: boolean; moleculeId?: string | null }) {
-  return live ? <LiveViewer moleculeId={moleculeId} /> : <NoApiViewer />;
+export function StructureViewer({
+  live,
+  moleculeId,
+  highlights = null,
+}: {
+  live: boolean;
+  moleculeId?: string | null;
+  highlights?: AtomHighlight[] | null; // memoize: a new array redraws the structure
+}) {
+  return live ? <LiveViewer moleculeId={moleculeId} highlights={highlights} /> : <NoApiViewer />;
 }

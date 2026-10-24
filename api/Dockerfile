@@ -46,6 +46,7 @@ COPY ml/serve ./ml/serve
 COPY ml/featurize ./ml/featurize
 COPY ml/models ./ml/models
 COPY ml/eval ./ml/eval
+COPY ml/explain ./ml/explain
 ENV PYTHONPATH=/app/ml
 
 EXPOSE 8000

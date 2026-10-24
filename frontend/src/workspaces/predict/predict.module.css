@@ -755,3 +755,142 @@
 .propNote {
   margin-top: 8px;
 }
+
+/* ---- Explanation (ADR-031). Sign hues are --attr-up / --attr-down only; sign is also a glyph. ---- */
+.xbody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.xbtn {
+  align-self: flex-start;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 11px;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.xbtn:hover:not(:disabled) {
+  border-color: var(--text-tertiary);
+  color: var(--text-primary);
+}
+.xbtn:disabled {
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+.xbtn[aria-pressed="true"] {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+.xsub {
+  margin-top: 6px;
+  font-family: var(--cond);
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.xnote {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-quiet);
+}
+.xtable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.xtable th {
+  padding: 4px 0;
+  text-align: left;
+  font-weight: 400;
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+}
+.xtable td {
+  padding: 4px 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.xtable td:nth-child(2) {
+  width: 18px;
+  text-align: center;
+}
+.xnum {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-align: right;
+  color: var(--text-primary);
+}
+.xtable .xnum {
+  text-align: right;
+}
+.xlist {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.xlist li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 10.5px;
+  color: var(--text-secondary);
+}
+.xlist li.xli {
+  display: block;
+}
+.xrow {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: baseline;
+  width: 100%;
+  padding: 2px 4px;
+  margin: 0 -4px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-size: 10.5px;
+  color: var(--text-secondary);
+}
+.xrow:hover {
+  background: var(--surface-raised);
+}
+.xrow[aria-pressed="true"] {
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--text-primary);
+}
+.xname {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.xcount {
+  min-width: 52px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-quiet);
+}
+.smark {
+  font-size: 9px;
+  line-height: 1;
+}
+.sUp {
+  color: var(--attr-up);
+}
+.sDown {
+  color: var(--attr-down);
+}
+.sNone {
+  color: var(--text-quiet);
+}

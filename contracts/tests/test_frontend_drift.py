@@ -20,9 +20,16 @@ from mars_contracts import (
     CompareResponse,
     DeleteAccountRequest,
     DepictRequest,
+    DescriptorAttribution,
     Endpoint,
     EndpointCategory,
     EndpointPrediction,
+    ExplainJobState,
+    ExplainJobStatus,
+    ExplainMethod,
+    ExplainOutputSpace,
+    ExplainResponse,
+    FragmentAttribution,
     GenerationsResponse,
     LimitsResponse,
     LoginRequest,
@@ -64,7 +71,17 @@ def _ts_interface_fields(name: str) -> set[str]:
     return set(re.findall(r"^\s*([a-z_][a-z0-9_]*)\??\s*:", body, re.M))
 
 
-@pytest.mark.parametrize("ts_name,enum", [("Endpoint", Endpoint), ("TaskType", TaskType), ("EndpointCategory", EndpointCategory)])
+@pytest.mark.parametrize(
+    "ts_name,enum",
+    [
+        ("Endpoint", Endpoint),
+        ("TaskType", TaskType),
+        ("EndpointCategory", EndpointCategory),
+        ("ExplainMethod", ExplainMethod),
+        ("ExplainOutputSpace", ExplainOutputSpace),
+        ("ExplainJobState", ExplainJobState),
+    ],
+)
 def test_enum_members_match(ts_name, enum):
     assert _ts_union(ts_name) == {e.value for e in enum}
 
@@ -94,10 +111,27 @@ def test_enum_members_match(ts_name, enum):
         ("SavedMoleculeResponse", SavedMoleculeResponse),
         ("SavedReportResponse", SavedReportResponse),
         ("DeleteAccountRequest", DeleteAccountRequest),
+        ("ExplainResponse", ExplainResponse),
+        ("ExplainJobStatus", ExplainJobStatus),
+        ("FragmentAttribution", FragmentAttribution),
+        ("DescriptorAttribution", DescriptorAttribution),
     ],
 )
 def test_interface_fields_match(ts_name, model):
     assert _ts_interface_fields(ts_name) == set(model.model_fields)
+
+
+def test_explain_contract_never_speaks_of_risk_or_favourability():
+    # ADR-031 / AGENTS.md rule 1: attribution is "pushed up / pushed down", never a judgement.
+    banned = re.compile(r"\b(risk|risky|safe|safety|toxic|toxicity|favourable|favorable|unfavourable|good|bad|better|worse)\b", re.I)
+    texts: list[str] = []
+    for model in (ExplainResponse, ExplainJobStatus, FragmentAttribution, DescriptorAttribution):
+        texts.extend(f.description or "" for f in model.model_fields.values())
+    joined = " ".join(texts)
+    assert not banned.findall(joined), banned.findall(joined)
+    mirror = re.search(r"// --- explanation.*?// --- batch", _ts(), re.S).group(0)
+    mirror = mirror.replace('never good or bad', "")
+    assert not banned.findall(mirror), banned.findall(mirror)
 
 
 def test_classification_value_is_not_called_a_probability():

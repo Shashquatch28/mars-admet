@@ -10,12 +10,25 @@ import { ADGauge } from "../../components/dataviz/ADGauge";
 import { errorBandNote, errorBandOf } from "../../domain/errorBand";
 import { familyLabel, servedByFallback } from "../../domain/modelFamily";
 import { useGenerations } from "../../data/useGenerations";
+import { ExplanationPanel, type ExplanationPanelProps } from "./ExplanationPanel";
 
 function Rule() {
   return <div className={styles.irule} />;
 }
 
-export function EndpointDetail({ row, response }: { row: Row; response: PredictionResponse }) {
+// `explanation` is absent while there is nothing to wire it to (the section is left out
+// until a prediction exists).
+export type ExplanationControls = Omit<ExplanationPanelProps, "endpoint">;
+
+export function EndpointDetail({
+  row,
+  response,
+  explanation,
+}: {
+  row: Row;
+  response: PredictionResponse;
+  explanation?: ExplanationControls;
+}) {
   const { endpoint, meta, prediction, state } = row;
   const fellBack = servedByFallback(prediction, useGenerations()?.kermt_endpoints ?? []);
 
@@ -201,6 +214,13 @@ export function EndpointDetail({ row, response }: { row: Row; response: Predicti
               inDomain={true}
             />
           </div>
+        </>
+      )}
+
+      {explanation && (
+        <>
+          <Rule />
+          <ExplanationPanel endpoint={endpoint} {...explanation} />
         </>
       )}
 
