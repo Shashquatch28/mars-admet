@@ -1,0 +1,709 @@
+{
+  "endpoints": {
+    "ames_mutagenicity": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": true
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "n_fit_samples=580 <= calibration split size=580",
+        "name": "calibrator_fit_sample_count_within_calibration_split",
+        "passed": true
+      }
+    ],
+    "bbb_permeability": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "2 overlapping non-acyclic scaffolds",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": false
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "n_fit_samples=157 <= calibration split size=157",
+        "name": "calibrator_fit_sample_count_within_calibration_split",
+        "passed": true
+      }
+    ],
+    "caco2_permeability": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": true
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      }
+    ],
+    "clearance_microsomal": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": true
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      }
+    ],
+    "cyp2c9_inhibition": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "15 overlapping non-acyclic scaffolds",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": false
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "n_fit_samples=964 <= calibration split size=964",
+        "name": "calibrator_fit_sample_count_within_calibration_split",
+        "passed": true
+      }
+    ],
+    "cyp2d6_inhibition": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "10 overlapping non-acyclic scaffolds",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": false
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "n_fit_samples=1047 <= calibration split size=1047",
+        "name": "calibrator_fit_sample_count_within_calibration_split",
+        "passed": true
+      }
+    ],
+    "cyp3a4_inhibition": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "12 overlapping non-acyclic scaffolds",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": false
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "n_fit_samples=983 <= calibration split size=983",
+        "name": "calibrator_fit_sample_count_within_calibration_split",
+        "passed": true
+      }
+    ],
+    "dili_liver_injury": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "19 overlapping non-acyclic scaffolds",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": false
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "n_fit_samples=112 <= calibration split size=112",
+        "name": "calibrator_fit_sample_count_within_calibration_split",
+        "passed": true
+      }
+    ],
+    "herg_cardiotoxicity": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": true
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "n_fit_samples=1051 <= calibration split size=1051",
+        "name": "calibrator_fit_sample_count_within_calibration_split",
+        "passed": true
+      }
+    ],
+    "hia_absorption": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": true
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "n_fit_samples=50 <= calibration split size=50",
+        "name": "calibrator_fit_sample_count_within_calibration_split",
+        "passed": true
+      }
+    ],
+    "lipophilicity_logp": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": true
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      }
+    ],
+    "pgp_inhibition": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": true
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "n_fit_samples=97 <= calibration split size=97",
+        "name": "calibrator_fit_sample_count_within_calibration_split",
+        "passed": true
+      }
+    ],
+    "ppb_binding": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": true
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      }
+    ],
+    "solubility_logs": [
+      {
+        "detail": "no overlap",
+        "name": "test_disjoint_from_train_val_smiles",
+        "passed": true
+      },
+      {
+        "detail": "14 overlapping non-acyclic scaffolds",
+        "name": "test_disjoint_from_train_val_scaffolds",
+        "passed": false
+      },
+      {
+        "detail": "fully contained",
+        "name": "calibration_subset_of_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "calibration_disjoint_from_test",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no duplicates",
+        "name": "no_duplicate_smiles_within_test",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds clean",
+        "name": "seed_fold_scaffold_isolation",
+        "passed": true
+      },
+      {
+        "detail": "all 5 seeds fully cover train_val",
+        "name": "seed_folds_cover_train_val",
+        "passed": true
+      },
+      {
+        "detail": "no overlap",
+        "name": "ad_index_disjoint_from_test",
+        "passed": true
+      }
+    ]
+  },
+  "manifest_sha256": "14fcd199caedf486cea64bfcd80bb23820fdd7bf658d2277a2ce5c29678ea636",
+  "prep_id": "20260830T200000Z"
+}

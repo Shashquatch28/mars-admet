@@ -1,0 +1,344 @@
+{
+  "boot_seed": 20261024,
+  "endpoints": {
+    "ames_mutagenicity": {
+      "ci_high": 0.8810448898879655,
+      "ci_low": 0.8438119367508886,
+      "ensemble": 0.8621734973698809,
+      "metric": "AUROC",
+      "n_scored": 1453,
+      "n_shared_scaffold": 0,
+      "n_test": 1453,
+      "scaffold_free": null,
+      "secondary": {
+        "AUPRC": [
+          0.8963409440085115,
+          0.003666536206566038
+        ],
+        "Brier": [
+          0.14939583634342363,
+          0.0026519538826201903
+        ],
+        "ECE": [
+          0.03100685466360365,
+          0.004184463135710504
+        ]
+      },
+      "seed_mean": 0.8581921226261061,
+      "seed_std": 0.004770917520769129,
+      "task": "classification"
+    },
+    "bbb_permeability": {
+      "ci_high": 0.9414651215084577,
+      "ci_low": 0.868397028896857,
+      "ensemble": 0.9072063583104593,
+      "metric": "AUROC",
+      "n_scored": 394,
+      "n_shared_scaffold": 2,
+      "n_test": 394,
+      "scaffold_free": [
+        0.9070452155625659,
+        0.8687277591699111,
+        0.9406313674179252
+      ],
+      "secondary": {
+        "AUPRC": [
+          0.972096314245898,
+          0.0034013763948316502
+        ],
+        "Brier": [
+          0.10407391038264971,
+          0.005668836638269903
+        ],
+        "ECE": [
+          0.12013637167850728,
+          0.005924377210498349
+        ]
+      },
+      "seed_mean": 0.9012249580072925,
+      "seed_std": 0.008778617462546098,
+      "task": "classification"
+    },
+    "caco2_permeability": {
+      "ci_high": 0.31442767678749517,
+      "ci_low": 0.2542818797838771,
+      "ensemble": 0.28381720201202404,
+      "metric": "MAE",
+      "n_scored": 180,
+      "n_shared_scaffold": 0,
+      "n_test": 180,
+      "scaffold_free": null,
+      "secondary": {},
+      "seed_mean": 0.28804089294354257,
+      "seed_std": 0.011740279518123493,
+      "task": "regression"
+    },
+    "clearance_microsomal": {
+      "ci_high": 29.701338673104512,
+      "ci_low": 22.43255198952975,
+      "ensemble": 25.791770000965485,
+      "metric": "MAE",
+      "n_scored": 221,
+      "n_shared_scaffold": 0,
+      "n_test": 221,
+      "scaffold_free": null,
+      "secondary": {},
+      "seed_mean": 25.955553227643215,
+      "seed_std": 0.4965949296663097,
+      "task": "regression"
+    },
+    "cyp2c9_inhibition": {
+      "ci_high": 0.9131339369484889,
+      "ci_low": 0.8867087014777176,
+      "ensemble": 0.8997004826173794,
+      "metric": "AUROC",
+      "n_scored": 2411,
+      "n_shared_scaffold": 49,
+      "n_test": 2411,
+      "scaffold_free": [
+        0.8996394383259461,
+        0.8865850644991998,
+        0.9123897752791219
+      ],
+      "secondary": {
+        "AUPRC": [
+          0.7895145480538228,
+          0.002561897578902441
+        ],
+        "Brier": [
+          0.11738040749440304,
+          0.0004404222008618665
+        ],
+        "ECE": [
+          0.018123922100565303,
+          0.0028292047189322055
+        ]
+      },
+      "seed_mean": 0.8973874988318663,
+      "seed_std": 0.0007230114598338196,
+      "task": "classification"
+    },
+    "cyp2d6_inhibition": {
+      "ci_high": 0.8933750644045854,
+      "ci_low": 0.8551522851716707,
+      "ensemble": 0.8755310075100377,
+      "metric": "AUROC",
+      "n_scored": 2621,
+      "n_shared_scaffold": 569,
+      "n_test": 2621,
+      "scaffold_free": [
+        0.8823263810778673,
+        0.8606689114788716,
+        0.9018003600014958
+      ],
+      "secondary": {
+        "AUPRC": [
+          0.6764362755613592,
+          0.005689338646192321
+        ],
+        "Brier": [
+          0.08648434091573612,
+          0.0007729374120391811
+        ],
+        "ECE": [
+          0.01668448096560687,
+          0.002609230779817086
+        ]
+      },
+      "seed_mean": 0.8727198402296701,
+      "seed_std": 0.0018279078895910834,
+      "task": "classification"
+    },
+    "cyp3a4_inhibition": {
+      "ci_high": 0.9150558244736976,
+      "ci_low": 0.8919505364022787,
+      "ensemble": 0.9036438496273617,
+      "metric": "AUROC",
+      "n_scored": 2463,
+      "n_shared_scaffold": 29,
+      "n_test": 2463,
+      "scaffold_free": [
+        0.9019698150883527,
+        0.8904785372207668,
+        0.9136198133595038
+      ],
+      "secondary": {
+        "AUPRC": [
+          0.8798172865082737,
+          0.001486442046660325
+        ],
+        "Brier": [
+          0.12698817721628008,
+          0.0009723804878128361
+        ],
+        "ECE": [
+          0.019797688813828467,
+          0.003609572607458346
+        ]
+      },
+      "seed_mean": 0.9013106934539626,
+      "seed_std": 0.001425771800705376,
+      "task": "classification"
+    },
+    "dili_liver_injury": {
+      "ci_high": 0.9721113653699466,
+      "ci_low": 0.8604189221178883,
+      "ensemble": 0.9230434782608696,
+      "metric": "AUROC",
+      "n_scored": 96,
+      "n_shared_scaffold": 25,
+      "n_test": 96,
+      "scaffold_free": [
+        0.9479166666666667,
+        0.8878974562798093,
+        0.990746442255063
+      ],
+      "secondary": {
+        "AUPRC": [
+          0.8888381981917906,
+          0.024978291076701735
+        ],
+        "Brier": [
+          0.21174746317806545,
+          0.012736246700157475
+        ],
+        "ECE": [
+          0.23880981033047038,
+          0.025181441087480293
+        ]
+      },
+      "seed_mean": 0.8982608695652173,
+      "seed_std": 0.021923134322571695,
+      "task": "classification"
+    },
+    "herg_cardiotoxicity": {
+      "ci_high": 0.8918766476833121,
+      "ci_low": 0.8661694755230965,
+      "ensemble": 0.8795848871614406,
+      "metric": "AUROC",
+      "n_scored": 2627,
+      "n_shared_scaffold": 0,
+      "n_test": 2627,
+      "scaffold_free": null,
+      "secondary": {
+        "AUPRC": [
+          0.8877985826722001,
+          0.005431261053476622
+        ],
+        "Brier": [
+          0.1469959585265868,
+          0.0038075028214265127
+        ],
+        "ECE": [
+          0.057419677005462466,
+          0.010934848972464965
+        ]
+      },
+      "seed_mean": 0.8755865445780883,
+      "seed_std": 0.0047174648192636484,
+      "task": "classification"
+    },
+    "hia_absorption": {
+      "ci_high": 1.0,
+      "ci_low": 0.9282586014376439,
+      "ensemble": 0.9724279835390947,
+      "metric": "AUROC",
+      "n_scored": 117,
+      "n_shared_scaffold": 0,
+      "n_test": 117,
+      "scaffold_free": null,
+      "secondary": {
+        "AUPRC": [
+          0.9900338939283218,
+          0.0008844219707191206
+        ],
+        "Brier": [
+          0.04138246538781539,
+          0.0013572998371210827
+        ],
+        "ECE": [
+          0.04888046421429034,
+          0.004418826559516267
+        ]
+      },
+      "seed_mean": 0.9720987654320987,
+      "seed_std": 0.002126421511566087,
+      "task": "classification"
+    },
+    "lipophilicity_logp": {
+      "ci_high": 0.5702637566189581,
+      "ci_low": 0.5113752227464026,
+      "ensemble": 0.5386865223328183,
+      "metric": "MAE",
+      "n_scored": 840,
+      "n_shared_scaffold": 0,
+      "n_test": 840,
+      "scaffold_free": null,
+      "secondary": {},
+      "seed_mean": 0.5441549458558981,
+      "seed_std": 0.006450592698245817,
+      "task": "regression"
+    },
+    "pgp_inhibition": {
+      "ci_high": 0.9433002697405682,
+      "ci_low": 0.87564225010276,
+      "ensemble": 0.9122900559850706,
+      "metric": "AUROC",
+      "n_scored": 245,
+      "n_shared_scaffold": 0,
+      "n_test": 245,
+      "scaffold_free": null,
+      "secondary": {
+        "AUPRC": [
+          0.9156459345991148,
+          0.0029624808073887704
+        ],
+        "Brier": [
+          0.1321562976270882,
+          0.002821817548224079
+        ],
+        "ECE": [
+          0.0847532869875431,
+          0.017084152584406147
+        ]
+      },
+      "seed_mean": 0.9099840042655292,
+      "seed_std": 0.004943622998915625,
+      "task": "classification"
+    },
+    "ppb_binding": {
+      "ci_high": 8.248244159426848,
+      "ci_low": 6.3170636813633205,
+      "ensemble": 7.253951582775765,
+      "metric": "MAE",
+      "n_scored": 323,
+      "n_shared_scaffold": 0,
+      "n_test": 323,
+      "scaffold_free": null,
+      "secondary": {},
+      "seed_mean": 7.36335853005046,
+      "seed_std": 0.12207148340271744,
+      "task": "regression"
+    },
+    "solubility_logs": {
+      "ci_high": 0.835403378041896,
+      "ci_low": 0.768297393369849,
+      "ensemble": 0.8018213198023949,
+      "metric": "MAE",
+      "n_scored": 1960,
+      "n_shared_scaffold": 408,
+      "n_test": 1960,
+      "scaffold_free": [
+        0.8296849649513749,
+        0.7919640694943092,
+        0.8687033207571945
+      ],
+      "secondary": {},
+      "seed_mean": 0.809821984944023,
+      "seed_std": 0.014478163930732405,
+      "task": "regression"
+    }
+  },
+  "n_boot": 2000,
+  "prep_id": "20260830T200000Z"
+}

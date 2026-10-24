@@ -1,0 +1,73 @@
+{
+  "accessed": "2026-10-24",
+  "how_obtained": "Read from the public TDC leaderboard pages (https://tdcommons.ai/benchmark/admet_group/<slug>/) with a page-to-text tool; Solubility_AqSolDB was re-read from the raw page text in a browser and matched exactly, and the top Caco2_Wang entry matched a second site. The other ten tables were not re-read independently. The pages show no date or version. Values are mean +- std over TDC's five seeds, as the leaderboard prints them.",
+  "audit_status": "The blueprint (Module 11 section 4) says a 2026 audit found only CaliciBoost, MapLight and MapLight + GNN reproducible and leak-free. That audit was not located (one web search, 2026-10-24), so these entries are named as the blueprint names them and are not independently verified here. Every other entry, including each page's top entry, is unaudited.",
+  "page_notes": "The CYP2D6_Veith and CYP3A4_Veith pages print 'The lower the better' under an AUPRC metric while sorting highest first; the ordering used here is highest first. The Caco2_Wang page lists admet_ai_v2 at MAE 6.328, a value in a different unit, so it is not a usable entry.",
+  "endpoints": {
+    "caco2_permeability": {
+      "tdc_dataset": "Caco2_Wang", "slug": "01caco2", "metric": "MAE", "higher_is_better": false, "tdc_size": 906, "n_entries": 24,
+      "top": ["CaliciBoost", 0.256, 0.006],
+      "named": {"CaliciBoost": [0.256, 0.006], "MapLight": [0.276, 0.005], "MapLight + GNN": [0.287, 0.005]},
+      "leaderboard_xgboost": {"XG Boost": [0.274, 0.004], "XGBoost": [0.289, 0.011]}
+    },
+    "hia_absorption": {
+      "tdc_dataset": "HIA_Hou", "slug": "02hia", "metric": "AUROC", "higher_is_better": true, "tdc_size": 578, "n_entries": 20,
+      "top": ["MiniMol", 0.993, 0.005],
+      "named": {"MapLight": [0.986, 0.000], "MapLight + GNN": [0.989, 0.001]}
+    },
+    "pgp_inhibition": {
+      "tdc_dataset": "Pgp_Broccatelli", "slug": "03pgp", "metric": "AUROC", "higher_is_better": true, "tdc_size": 1212, "n_entries": 16,
+      "top": ["MapLight + GNN", 0.938, 0.002],
+      "named": {"MapLight": [0.930, 0.002], "MapLight + GNN": [0.938, 0.002]}
+    },
+    "lipophilicity_logp": {
+      "tdc_dataset": "Lipophilicity_AstraZeneca", "slug": "05lipo", "metric": "MAE", "higher_is_better": false, "tdc_size": 4200, "n_entries": 21,
+      "top": ["MiniMol", 0.456, 0.008],
+      "named": {"MapLight": [0.539, 0.002], "MapLight + GNN": [0.525, 0.003]}
+    },
+    "solubility_logs": {
+      "tdc_dataset": "Solubility_AqSolDB", "slug": "06aqsol", "metric": "MAE", "higher_is_better": false, "tdc_size": 9982, "n_entries": 18,
+      "top": ["MiniMol", 0.741, 0.013],
+      "named": {"MapLight": [0.792, 0.002], "MapLight + GNN": [0.789, 0.003]}
+    },
+    "bbb_permeability": {
+      "tdc_dataset": "BBB_Martins", "slug": "07bbb", "metric": "AUROC", "higher_is_better": true, "tdc_size": 1975, "n_entries": 26,
+      "top": ["MiniMol", 0.924, 0.003],
+      "named": {"MapLight": [0.916, 0.001], "MapLight + GNN": [0.913, 0.001]}
+    },
+    "cyp2c9_inhibition": {
+      "tdc_dataset": "CYP2C9_Veith", "slug": "10cyp2c9i", "metric": "AUPRC", "higher_is_better": true, "tdc_size": 12092, "n_entries": 20,
+      "top": ["MapLight + GNN", 0.859, 0.001],
+      "named": {"MapLight": [0.783, 0.002], "MapLight + GNN": [0.859, 0.001]}
+    },
+    "cyp2d6_inhibition": {
+      "tdc_dataset": "CYP2D6_Veith", "slug": "11cyp2d6i", "metric": "AUPRC", "higher_is_better": true, "tdc_size": 13130, "n_entries": 19,
+      "top": ["MapLight + GNN", 0.790, 0.001],
+      "named": {"MapLight": [0.723, 0.003], "MapLight + GNN": [0.790, 0.001]}
+    },
+    "cyp3a4_inhibition": {
+      "tdc_dataset": "CYP3A4_Veith", "slug": "12cyp3a4i", "metric": "AUPRC", "higher_is_better": true, "tdc_size": 12328, "n_entries": 19,
+      "top": ["MapLight + GNN", 0.916, 0.000],
+      "named": {"MapLight": [0.881, 0.001], "MapLight + GNN": [0.916, 0.000]}
+    },
+    "clearance_microsomal": {
+      "tdc_dataset": "Clearance_Microsome_AZ", "slug": "18clmicro", "metric": "Spearman", "higher_is_better": true, "tdc_size": 1102, "n_entries": 20,
+      "top": ["MapLight + GNN", 0.630, 0.010],
+      "named": {"MapLight": [0.626, 0.008], "MapLight + GNN": [0.630, 0.010]}
+    },
+    "ames_mutagenicity": {
+      "tdc_dataset": "AMES", "slug": "21ames", "metric": "AUROC", "higher_is_better": true, "tdc_size": 7255, "n_entries": 20,
+      "top": ["ZairaChem", 0.871, 0.002],
+      "named": {"MapLight": [0.868, 0.002], "MapLight + GNN": [0.869, 0.002]}
+    },
+    "dili_liver_injury": {
+      "tdc_dataset": "DILI", "slug": "22dili", "metric": "AUROC", "higher_is_better": true, "tdc_size": 475, "n_entries": 20,
+      "top": ["MiniMol", 0.956, 0.006],
+      "named": {"MapLight": [0.887, 0.006], "MapLight + GNN": [0.917, 0.005]}
+    }
+  },
+  "not_comparable": {
+    "herg_cardiotoxicity": "MARS trains on hERG_Karim with a self-generated scaffold split; TDC's hERG leaderboard uses the 655-compound hERG benchmark set.",
+    "ppb_binding": "MARS uses a human-only PPBR_AZ subset with a self-generated scaffold split; TDC's PPBR_AZ leaderboard uses its own split."
+  }
+}
