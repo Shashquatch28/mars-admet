@@ -69,6 +69,9 @@
   border-color: transparent;
 }
 .runrow {
+  /* the endpoint popover anchors to this row, not to its own button, so it is as wide as the
+     column and is not clipped by .molbody's scroll container */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -114,15 +117,15 @@
   cursor: not-allowed;
 }
 .selwrap {
-  position: relative;
+  display: flex;
 }
 /* A true overlay: the only place an elevated surface and shadow are allowed. No entrance animation. */
 .selpop {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
+  right: 0;
   z-index: 40;
-  width: 272px;
   max-height: 360px;
   overflow-y: auto;
   padding: 8px 0 0;
@@ -177,6 +180,8 @@
   cursor: default;
 }
 .selnote {
+  flex: 1;
+  min-width: 0;
   margin-left: auto;
   color: var(--text-quiet);
   text-align: right;
@@ -292,13 +297,17 @@
   min-height: 0;
 }
 .reshd {
-  height: 34px;
+  min-height: 34px;
   flex: 0 0 auto;
   display: flex;
+  flex-wrap: wrap; /* at the 1080px floor the controls drop to a second line instead of being clipped away */
   align-items: center;
-  gap: 14px;
-  padding: 0 18px;
+  gap: 4px 14px;
+  padding: 4px 18px;
   border-bottom: 1px solid var(--line-subtle);
+}
+.reshd > * {
+  flex-shrink: 0;
 }
 .resTitle {
   font-family: var(--cond);
@@ -312,7 +321,8 @@
   font-size: 10.5px;
   color: var(--text-secondary);
   display: flex;
-  gap: 7px;
+  flex-wrap: wrap;
+  gap: 0 7px;
 }
 .recon b {
   color: var(--text-primary);
@@ -354,10 +364,20 @@
   color: var(--text-primary) !important;
 }
 
+/* The grid never squeezes the endpoint column below a readable floor: below --grid-min the list scrolls
+   sideways instead of letting ENDPOINT collide with TASK. Header and rows share one template. */
+.rowscroll {
+  --grid-cols: minmax(118px, 1fr) 34px 60px 60px 110px 46px 68px;
+  --grid-min: 594px;
+}
+.rowscroll [role="rowgroup"] {
+  min-width: var(--grid-min);
+}
 .colhead {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 62px 66px 158px 50px 76px;
-  gap: 12px;
+  grid-template-columns: var(--grid-cols);
+  min-width: var(--grid-min);
+  gap: 10px;
   align-items: center;
   height: 26px;
   padding: 0 18px 0 20px;
@@ -380,7 +400,7 @@
 }
 .rowscroll {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
   outline: none;
 }
 .grouphd {
@@ -423,8 +443,8 @@
 .erow {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 62px 66px 158px 50px 76px;
-  gap: 12px;
+  grid-template-columns: var(--grid-cols);
+  gap: 10px;
   align-items: center;
   height: var(--row-h);
   padding: 0 18px 0 20px;
