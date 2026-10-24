@@ -14,23 +14,39 @@ export interface PropertyLine {
   unit: string;
 }
 
+/** The fixed rows of the property table: label, unit and how one molecule's value is written. One list serves Predict, the report and Compare. */
+const PROPERTY_SPEC: readonly { key: string; label: string; unit: string; format: (p: MoleculeProperties) => string }[] = [
+  { key: "mol_weight", label: "Molecular weight", unit: "g/mol", format: (p) => fmtNum(p.mol_weight, 2) },
+  { key: "crippen_logp", label: "logP (Wildman-Crippen)", unit: "", format: (p) => fmtNum(p.crippen_logp, 2) },
+  { key: "h_bond_donors", label: "H-bond donors", unit: "", format: (p) => String(p.h_bond_donors) },
+  { key: "h_bond_acceptors", label: "H-bond acceptors", unit: "", format: (p) => String(p.h_bond_acceptors) },
+  { key: "tpsa", label: "Topological polar surface area", unit: "Å²", format: (p) => fmtNum(p.tpsa, 1) },
+  { key: "rotatable_bonds", label: "Rotatable bonds", unit: "", format: (p) => String(p.rotatable_bonds) },
+  { key: "qed", label: "QED", unit: "", format: (p) => (p.qed == null ? "not computed" : fmtNum(p.qed, 2)) },
+  { key: "lipinski", label: "Rule-of-five limits exceeded", unit: "", format: (p) => `${p.lipinski_criteria_exceeded} of 4` },
+];
+
 /** The property table, in a fixed order. A QED RDKit could not compute reads "not computed", never a number. */
 export function propertyLines(p: MoleculeProperties): PropertyLine[] {
-  return [
-    { key: "mol_weight", label: "Molecular weight", value: fmtNum(p.mol_weight, 2), unit: "g/mol" },
-    { key: "crippen_logp", label: "logP (Wildman-Crippen)", value: fmtNum(p.crippen_logp, 2), unit: "" },
-    { key: "h_bond_donors", label: "H-bond donors", value: String(p.h_bond_donors), unit: "" },
-    { key: "h_bond_acceptors", label: "H-bond acceptors", value: String(p.h_bond_acceptors), unit: "" },
-    { key: "tpsa", label: "Topological polar surface area", value: fmtNum(p.tpsa, 1), unit: "Å²" },
-    { key: "rotatable_bonds", label: "Rotatable bonds", value: String(p.rotatable_bonds), unit: "" },
-    { key: "qed", label: "QED", value: p.qed == null ? "not computed" : fmtNum(p.qed, 2), unit: "" },
-    {
-      key: "lipinski",
-      label: "Rule-of-five limits exceeded",
-      value: `${p.lipinski_criteria_exceeded} of 4`,
-      unit: "",
-    },
-  ];
+  return PROPERTY_SPEC.map((s) => ({ key: s.key, label: s.label, value: s.format(p), unit: s.unit }));
+}
+
+/** One row of a side-by-side property table: a label, a unit and one written value per molecule (null where the service sent no properties). */
+export interface PropertyRowAcross {
+  key: string;
+  label: string;
+  unit: string;
+  cells: (string | null)[];
+}
+
+/** The property table across several molecules, same rows and same number format as `propertyLines`, in the same order. */
+export function propertyRowsAcross(all: readonly (MoleculeProperties | null | undefined)[]): PropertyRowAcross[] {
+  return PROPERTY_SPEC.map((s) => ({
+    key: s.key,
+    label: s.label,
+    unit: s.unit,
+    cells: all.map((p) => (p ? s.format(p) : null)),
+  }));
 }
 
 export interface AlertGroup {
@@ -46,6 +62,21 @@ export function alertGroups(p: MoleculeProperties): AlertGroup[] {
       .filter((a) => a.catalog === catalog)
       .map((a) => a.name)
       .sort(),
+  }));
+}
+
+export interface AlertRowAcross {
+  catalog: StructuralAlert["catalog"];
+  /** One list of matched names per molecule: [] is "no match", null is "the service sent no properties". */
+  cells: (string[] | null)[];
+}
+
+/** The alerts across several molecules, PAINS then Brenk, names sorted within a cell. */
+export function alertRowsAcross(all: readonly (MoleculeProperties | null | undefined)[]): AlertRowAcross[] {
+  const groups = all.map((p) => (p ? alertGroups(p) : null));
+  return (["PAINS", "Brenk"] as const).map((catalog) => ({
+    catalog,
+    cells: groups.map((g) => (g ? (g.find((x) => x.catalog === catalog)?.names ?? []) : null)),
   }));
 }
 

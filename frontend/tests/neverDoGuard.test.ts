@@ -42,6 +42,25 @@ describe("#3: Compare names no winner", () => {
   });
 });
 
+describe("#3: Compare's property columns are values side by side, not a comparison the app has made", () => {
+  const code = (f: string) => read(join(SRC, f)).replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  const ws = code("workspaces/compare/CompareWorkspace.tsx");
+  const block = ws.slice(ws.indexOf("function PropertiesBlock"), ws.indexOf("function FlagLine"));
+  it("the property block and the domain that feeds it compute or name no difference, rank or favourable side", () => {
+    // the workspace's own prose says "nothing is ranked or called better", so only the block is searched there
+    expect(block.length).toBeGreaterThan(200);
+    const domain = code("domain/compare.ts");
+    const properties = code("domain/properties.ts");
+    for (const [name, text] of [["PropertiesBlock", block], ["domain/compare.ts", domain], ["domain/properties.ts", properties]]) {
+      expect(text, name).not.toMatch(/\b(diff|delta|winner|rank|better|worse|best|worst|higher|lower|favou?rable)\w*/i);
+    }
+  });
+  it("the property cells are written in the one value ink, with nothing in the block that depends on the value or a state", () => {
+    expect(block).not.toMatch(/\bstate\b|reliability|edge|hatch|tone|variant|ReliabilityTag|ModelSource/);
+    expect(block).toContain("styles.val");
+  });
+});
+
 describe("#4: no interval bar on an invented axis", () => {
   it.each(["IntervalTrack", "ADGauge"])("%s requires an explicit domain with no default", (name) => {
     const src = read(join(SRC, "components", "dataviz", `${name}.tsx`));
@@ -61,7 +80,8 @@ describe("#7: nothing counts, enters, draws itself or shimmers", () => {
     const offenders: string[] = [];
     for (const f of cssModules.filter((m) => !rel(m).startsWith("components/dataviz/"))) {
       for (const m of noComments(read(f)).matchAll(/(^|[;{\s])animation(-name)?\s*:\s*([^;]+);/g)) {
-        if (!/^\s*none\s*$/.test(m[3])) offenders.push(`${rel(f)}: animation: ${m[3].trim()}`);
+        // "none !important" is how structureEditor.module.css switches Ketcher's own motion off (ADR-035)
+        if (!/^\s*none(\s*!important)?\s*$/.test(m[3])) offenders.push(`${rel(f)}: animation: ${m[3].trim()}`);
       }
     }
     expect(offenders).toEqual([]);
@@ -100,7 +120,7 @@ describe("#9: the visual identity", () => {
     const offenders: string[] = [];
     for (const f of cssModules) {
       for (const m of noComments(read(f)).matchAll(/box-shadow\s*:\s*([^;]+);/g)) {
-        const v = m[1].trim();
+        const v = m[1].replace(/\s*!important\s*$/, "").trim(); // "none !important" removes Ketcher's shadows (ADR-035)
         if (v === "none" || /^var\(--shadow-overlay\)$/.test(v)) continue;
         // every layer must be inset or a token highlight
         const layers = v.split(/,(?![^()]*\))/).map((l) => l.trim());
@@ -158,5 +178,51 @@ describe("#9: the visual identity", () => {
     for (const f of cssModules.filter((m) => !rel(m).startsWith("components/report/"))) {
       expect(noComments(read(f)), rel(f)).not.toMatch(/var\(--report-/);
     }
+  });
+});
+
+describe("#1/#3: the Excel export marks, colours and ranks nothing (ADR-037)", () => {
+  const src = read(join(SRC, "domain", "exportXlsx.ts")).replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  it("sets no fill, colour, number format or conditional format on any cell", () => {
+    expect(src).not.toMatch(/backgroundColor|textColor|\bcolor\b|conditional|format\s*:|fill|borderColor/i);
+  });
+  it("only the header is styled, and only bold", () => {
+    expect([...src.matchAll(/fontWeight\??:\s*"?(\w+)"?/g)].map((m) => m[1]).every((v) => v === "bold")).toBe(true);
+  });
+  it("adds no column or sheet that sorts, ranks or compares", () => {
+    // the one sentence that says the file has no such column names them, so it is left out of the search
+    expect(src.replace(/export const NO_RANKING_LINE =[^\n]*/, "").replace(/NO_RANKING_LINE/g, "")).not.toMatch(/\.sort\(|rank|winner|diff|delta/i);
+  });
+  it("the spreadsheet library is imported only dynamically, so it stays out of the main bundle", () => {
+    const all = walk(SRC, ".ts").concat(walk(SRC, ".tsx")).filter((f) => !f.endsWith(".test.ts"));
+    for (const f of all) {
+      const text = read(f);
+      expect(text, rel(f)).not.toMatch(/^import[^;\n]*from\s+["']write-excel-file/m);
+    }
+    expect(read(join(SRC, "domain", "exportXlsx.ts"))).toMatch(/await import\("write-excel-file\/browser"\)/);
+  });
+});
+
+describe("#1: the structure drawing is not coloured, marked or sized by anything about a molecule (ADR-039)", () => {
+  const code = (f: string) => read(join(SRC, f)).replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  it("StructureDepiction takes a SMILES and a token name, and no prop that could carry a value, a highlight or a judgement", () => {
+    const src = code("components/StructureDepiction.tsx");
+    const props = src.slice(src.indexOf("export function StructureDepiction"), src.indexOf("const q = useDepiction"));
+    for (const banned of ["highlight", "atoms", "bonds", "value", "prediction", "endpoint", "state", "tone", "variant", "severity", "status", "score"]) {
+      expect(props, banned).not.toMatch(new RegExp(`\b${banned}\??:`));
+    }
+    expect(props).toMatch(/smiles:/);
+  });
+  it("the client never writes a colour into the drawing except through the one token-ink replacement", () => {
+    const src = code("domain/depiction.ts");
+    expect(src.match(/\.replace\(\/#/g)?.length ?? 0).toBe(1); // the one ink, nothing else is rewritten
+    expect(src).not.toMatch(/highlight|atomColou?r|bondColou?r/i);
+  });
+  it("the service-side drawing options mark nothing", () => {
+    const py = readFileSync(join(process.cwd(), "..", "ml", "serve", "depiction.py"), "utf8");
+    expect(py).toMatch(/useBWAtomPalette\(\)/);
+    expect(py).toMatch(/clearBackground = False/);
+    expect(py).not.toMatch(/highlightAtoms|highlightBonds|highlightAtomColors|setHighlight|addAtomIndices = True/);
+    expect(py).toMatch(/DrawMolecule\(mol\)/); // no highlight arguments
   });
 });

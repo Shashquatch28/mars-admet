@@ -5,6 +5,8 @@
 //   - a value cell is mono, tabular, --text-primary in every state; reliability (out of domain,
 //     stub, not returned) is a separate mark beside it and never recolours the value
 //   - every molecule has a cell on every endpoint; one the service did not return says so
+//   - the computed properties follow the roster, one column per molecule, as plain values; not predictions, so they
+//     sit outside the roster's counts and marks (ADR-036)
 //   - /compare is anonymous, so unlike Batch and Library this screen is never gated
 import { useMemo, type KeyboardEvent } from "react";
 import styles from "./compare.module.css";
@@ -17,14 +19,18 @@ import {
   compareFailure,
   repeatedSlots,
   type CompareColumn,
+  type CompareProperties,
 } from "../../domain/compare";
 import { DISPLAY_UNIT, STUB_MODEL_ID } from "../../domain/endpoints";
 import { fmtValue } from "../../domain/format";
-import type { Row } from "../../domain/reconcile";
+import { requestedMlEndpoints, type Row } from "../../domain/reconcile";
 import { ReliabilityTag } from "../../components/dataviz/ReliabilityTag";
 import { ModelSource } from "../../components/ModelSource";
+import { StructureDepiction } from "../../components/StructureDepiction";
 import { useGenerations } from "../../data/useGenerations";
 import { FALLBACK_NOTE, fallbackCountInRows } from "../../domain/modelFamily";
+import { EndpointSelector } from "../predict/EndpointSelector";
+import { ML_ENDPOINTS } from "../../domain/endpoints";
 
 const clip = (s: string, n = 28) => (s.length > n ? `${s.slice(0, n)}…` : s);
 
@@ -60,6 +66,62 @@ function Cell({ row }: { row: Row }) {
   );
 }
 
+const NO_PROPERTIES = <span className={styles.na}>not returned</span>;
+
+/**
+ * Computed properties, one column per molecule (ADR-036). They sit after the roster and outside its counts: they are RDKit
+ * calculations on the structure, not predictions, so they carry no reliability edge, no hatch and no model source. Values are
+ * in one ink; there is no difference column and nothing marks a higher or lower value.
+ */
+function PropertiesBlock({ properties }: { properties: CompareProperties }) {
+  const span = (properties.lines[0]?.cells.length ?? 0) + 2;
+  return (
+    <tbody aria-label="Computed properties">
+      <tr>
+        <th colSpan={span} scope="colgroup" className={styles.grp}>
+          Computed properties <span className={styles.grpNote}>{properties.source} · not predictions</span>
+        </th>
+      </tr>
+      {properties.lines.map((l) => (
+        <tr key={l.key}>
+          <th scope="row" className={styles.ep}>
+            {l.label}
+          </th>
+          {l.cells.map((v, i) => (
+            <td key={i} className={`${styles.cell} ${styles.propCell}`}>
+              {v === null ? NO_PROPERTIES : <span className={styles.val}>{v}</span>}
+            </td>
+          ))}
+          <td className={styles.unit}>{l.unit}</td>
+        </tr>
+      ))}
+      {properties.alerts.map((a) => (
+        <tr key={a.catalog}>
+          <th scope="row" className={styles.ep}>
+            {a.catalog} alerts
+          </th>
+          {a.cells.map((names, i) => (
+            <td key={i} className={`${styles.cell} ${styles.propCell}`}>
+              {names === null ? (
+                NO_PROPERTIES
+              ) : names.length === 0 ? (
+                <span className={styles.val}>no match</span>
+              ) : (
+                names.map((n) => (
+                  <span key={n} className={`${styles.val} ${styles.alertName}`}>
+                    {n}
+                  </span>
+                ))
+              )}
+            </td>
+          ))}
+          <td className={styles.unit} />
+        </tr>
+      ))}
+    </tbody>
+  );
+}
+
 function FlagLine({ c }: { c: CompareColumn }) {
   return (
     <span className={styles.flags}>
@@ -72,7 +134,12 @@ function FlagLine({ c }: { c: CompareColumn }) {
 export function CompareWorkspace() {
 
   const s = useCompareSession();
-  const comparison = useMemo(() => (s.result ? buildComparison(s.result) : null), [s.result]);
+  // Cells follow what the last run asked for, not the selector's current ticks (ADR-028), so editing the selector never relabels a result.
+  const comparison = useMemo(
+    () => (s.result ? buildComparison(s.result, requestedMlEndpoints(s.sent)) : null),
+    [s.result, s.sent],
+  );
+  const requestedCount = requestedMlEndpoints(s.sent).length;
   const kermtEndpoints = useGenerations()?.kermt_endpoints ?? [];
   const fellBack = comparison
     ? fallbackCountInRows(comparison.groups.flatMap((g) => g.rows.flatMap((r) => r.cells)), kermtEndpoints)
@@ -123,6 +190,7 @@ export function CompareWorkspace() {
               Remove the third
             </button>
           )}
+          <EndpointSelector selected={s.selected} onChange={s.setSelected} disabled={!USING_API || s.running} />
           <button type="button" className={styles.go} onClick={s.run} disabled={!s.canRun}>
             {s.running ? "Running…" : "Run comparison"}
           </button>
@@ -139,12 +207,14 @@ export function CompareWorkspace() {
           </>
         ) : s.running ? (
           "The service predicts each molecule in turn. A molecule it has not seen before takes longer than one it has cached."
+        ) : s.note && !s.result ? (
+          `${s.note}${s.problem ? ` ${s.problem}` : ""}`
         ) : s.problem && !s.result ? (
           s.problem
         ) : repeats.length > 0 ? (
           `Molecule ${repeats.map((i) => i + 1).join(" and ")} repeats an earlier entry.`
         ) : comparison ? (
-          `${comparison.columns.length} molecules compared.${comparison.modelVersions.length > 1 ? ` Served by different model versions: ${comparison.modelVersions.join(", ")}.` : ""}${fellBack > 0 ? ` † ${fellBack === 1 ? "1 value was" : `${fellBack} values were`} ${FALLBACK_NOTE}.` : ""}`
+          `${comparison.columns.length} molecules compared.${requestedCount < ML_ENDPOINTS.length ? ` ${requestedCount} of ${ML_ENDPOINTS.length} endpoints requested; the rest read NOT REQUESTED.` : ""}${comparison.modelVersions.length > 1 ? ` Served by different model versions: ${comparison.modelVersions.join(", ")}.` : ""}${fellBack > 0 ? ` † ${fellBack === 1 ? "1 value was" : `${fellBack} values were`} ${FALLBACK_NOTE}.` : ""}`
         ) : (
           ""
         )}
@@ -183,6 +253,28 @@ export function CompareWorkspace() {
                 </th>
               </tr>
             </thead>
+            <tbody aria-label="Structures">
+              <tr>
+                <th colSpan={comparison.columns.length + 2} scope="colgroup" className={styles.grp}>
+                  Structure <span className={styles.grpNote}>RDKit drawing · not a prediction</span>
+                </th>
+              </tr>
+              <tr>
+                <th scope="row" className={styles.ep}>
+                  2D drawing
+                </th>
+                {comparison.columns.map((c) => (
+                  <td key={c.index} className={styles.structCell}>
+                    <StructureDepiction
+                      smiles={c.smilesStandardized || c.smilesInput}
+                      label={`Molecule ${c.index + 1}`}
+                      note={false}
+                    />
+                  </td>
+                ))}
+                <td className={styles.unit} />
+              </tr>
+            </tbody>
             {comparison.groups.map((g) => (
               <tbody key={g.group}>
                 <tr>
@@ -203,7 +295,15 @@ export function CompareWorkspace() {
                 ))}
               </tbody>
             ))}
+            <PropertiesBlock properties={comparison.properties} />
           </table>
+        )}
+        {comparison && (
+          <div className={styles.propNotes}>
+            {comparison.properties.notes.map((n) => (
+              <p key={n}>{n}</p>
+            ))}
+          </div>
         )}
       </div>
     </section>

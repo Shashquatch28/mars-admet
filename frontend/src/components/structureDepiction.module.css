@@ -1,0 +1,32 @@
+/* The 2D structure drawing (ADR-039). A hairline frame on the panel surface; no card, no shadow, no motion.
+   The drawing's ink is set from a token in the component, so nothing here colours it. */
+.fig {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
+  background: var(--surface-void);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-sm);
+}
+.state {
+  margin: 0;
+  padding: 10px 8px;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.note {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-quiet);
+}

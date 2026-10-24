@@ -13,6 +13,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# RDKit's 2D drawing module (POST /depict, frontend ADR-039) links against these; python:3.11-slim has none of them, and
+# without them `from rdkit.Chem.Draw import rdMolDraw2D` fails to import, so /depict answers 501 in the built image.
+# Checked 2026-10-23: this exact set is enough (no libsm6, no libx11 beyond what libxrender1 pulls in).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libxrender1 libxext6 libexpat1 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY contracts /contracts
 COPY api/requirements.txt ./requirements.txt
 COPY ml/requirements-serving.txt ./requirements-ml-serving.txt

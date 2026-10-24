@@ -14,9 +14,11 @@ import {
   postBatch,
 } from "../data/client";
 import { settleProgress, validateUpload, type BatchPhase } from "../domain/batchJob";
+import { ML_ENDPOINTS } from "../domain/endpoints";
+import { endpointsForRequest, requestedMlEndpoints } from "../domain/reconcile";
 import { expiredResultsMessage } from "../domain/limitsCopy";
 import { useLimits } from "../data/useLimits";
-import type { BatchPredictResponse, LimitsResponse } from "../types/contracts";
+import type { BatchPredictResponse, Endpoint, LimitsResponse } from "../types/contracts";
 
 interface BatchSession {
   file: File | null;
@@ -25,6 +27,11 @@ interface BatchSession {
   chooseFile: (f: File | null) => void;
   smilesColumn: string;
   setSmilesColumn: (s: string) => void;
+  /** ML endpoints the next run will ask for (roster order). The rule-based score is not selectable. */
+  selected: Endpoint[];
+  setSelected: (e: Endpoint[]) => void;
+  /** The ML endpoints the run that produced `result` asked for. NOT REQUESTED follows this, not the selector (ADR-028). */
+  requested: Endpoint[];
   phase: BatchPhase;
   /** The last complete result; null before the first run and while a new run is in flight. */
   result: BatchPredictResponse | null;
@@ -51,6 +58,8 @@ function describeError(e: unknown, limits: LimitsResponse | undefined): string {
 export function BatchSessionProvider({ children }: { children: ReactNode }) {
   const [file, setFile] = useState<File | null>(null);
   const [smilesColumn, setSmilesColumn] = useState("");
+  const [selected, setSelectedRaw] = useState<Endpoint[]>(ML_ENDPOINTS);
+  const [sent, setSent] = useState<Endpoint[] | null>(null);
   const [phase, setPhase] = useState<BatchPhase>({ kind: "idle" });
   const [result, setResult] = useState<BatchPredictResponse | null>(null);
   const [resultId, setResultId] = useState(0);
@@ -66,6 +75,9 @@ export function BatchSessionProvider({ children }: { children: ReactNode }) {
   const busy = phase.kind === "uploading" || phase.kind === "running" || phase.kind === "fetching";
   const canRun = USING_API && !!file && !fileProblem && !busy;
 
+  // Keep roster order whatever order the boxes were ticked in.
+  const setSelected = useCallback((e: Endpoint[]) => setSelectedRaw(ML_ENDPOINTS.filter((m) => e.includes(m))), []);
+
   const chooseFile = useCallback((f: File | null) => {
     setFile(f);
     setPhase({ kind: "idle" });
@@ -77,12 +89,13 @@ export function BatchSessionProvider({ children }: { children: ReactNode }) {
     const live = () => token === runToken.current;
     const ctl = new AbortController();
     abort.current = ctl;
+    const endpoints = endpointsForRequest(selected);
     setResult(null);
     setPhase({ kind: "uploading", fileName: file.name });
 
     (async () => {
       try {
-        const first = await postBatch(file, { smilesColumn });
+        const first = await postBatch(file, { smilesColumn, endpoints });
         if (!live()) return;
         let done = first;
         if (!first.job_id) {
@@ -107,6 +120,7 @@ export function BatchSessionProvider({ children }: { children: ReactNode }) {
           if (!live()) return;
         }
         setResult(done);
+        setSent(endpoints);
         setResultId((n) => n + 1);
         setPhase({ kind: "done" });
       } catch (e) {
@@ -114,7 +128,7 @@ export function BatchSessionProvider({ children }: { children: ReactNode }) {
         setPhase({ kind: "failed", message: describeError(e, limitsRef.current) });
       }
     })();
-  }, [canRun, file, smilesColumn]);
+  }, [canRun, file, smilesColumn, selected]);
 
   const clear = useCallback(() => {
     runToken.current++; // abandons any run in flight
@@ -131,6 +145,9 @@ export function BatchSessionProvider({ children }: { children: ReactNode }) {
       chooseFile,
       smilesColumn,
       setSmilesColumn,
+      selected,
+      setSelected,
+      requested: requestedMlEndpoints(sent),
       phase,
       result,
       resultId,
@@ -139,7 +156,7 @@ export function BatchSessionProvider({ children }: { children: ReactNode }) {
       run,
       clear,
     }),
-    [file, fileProblem, chooseFile, smilesColumn, phase, result, resultId, canRun, busy, run, clear],
+    [file, fileProblem, chooseFile, smilesColumn, selected, setSelected, sent, phase, result, resultId, canRun, busy, run, clear],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -206,6 +206,7 @@
 }
 /* the <main> landmark wraps the workspace's own columns; it must not change their layout */
 .workspace {
+  position: relative; /* anchors the Predict structure editor panel (ADR-035) */
   flex: 1;
   display: flex;
   min-width: 0;

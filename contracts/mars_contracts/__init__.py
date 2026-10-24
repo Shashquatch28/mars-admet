@@ -4,6 +4,7 @@ from .api import (
     BatchRowResult,
     CompareRequest,
     CompareResponse,
+    DepictRequest,
     GenerationsResponse,
     LimitsResponse,
 )
@@ -47,7 +48,7 @@ __all__ = [
     "MoleculeProperties", "StructuralAlert",
     "ConformerResponse", "Atom", "Bond",
     "BatchPredictOptions", "BatchRowResult", "BatchPredictResponse",
-    "CompareRequest", "CompareResponse", "GenerationsResponse", "LimitsResponse",
+    "CompareRequest", "CompareResponse", "DepictRequest", "GenerationsResponse", "LimitsResponse",
     "RegisterRequest", "RegisterResponse", "LoginRequest", "LoginResponse", "MeResponse",
     "PasswordResetRequestModel", "PasswordResetConfirmRequest",
     "SaveMoleculeRequest", "SavedMoleculeResponse", "SaveReportRequest", "SavedReportResponse",

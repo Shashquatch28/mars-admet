@@ -10,6 +10,8 @@
 //   - no ranking, no score across entries; the list is newest first and filterable by text
 //   - an empty list says why it is empty and where entries come from
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useCompareSession } from "../../app/compareSession";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import styles from "./library.module.css";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
@@ -36,6 +38,7 @@ import {
   type ReportItem,
 } from "../../domain/library";
 import { reconcile } from "../../domain/reconcile";
+import { StructureDepiction } from "../../components/StructureDepiction";
 
 type Tab = "molecules" | "reports";
 const KEYS = { molecules: ["library", "molecules"], reports: ["library", "reports"] } as const;
@@ -231,10 +234,13 @@ function MoleculeDetail({
   onDelete: () => void;
 }) {
   const rows = useMemo(() => reconcile(item.response, ML_ENDPOINTS).rows, [item.response]);
+  const compare = useCompareSession();
+  const navigate = useNavigate();
   return (
     <div className={styles.detail}>
       <div className={styles.sec}>
         <p className={styles.smiles}>{item.smiles}</p>
+        <StructureDepiction smiles={item.smiles} />
         <p className={styles.prov}>{provenanceLine(item)}</p>
         {item.notes && <p className={styles.notes}>{item.notes}</p>}
         {item.tags.length > 0 && <p className={styles.itemMeta}>tags: {item.tags.join(", ")}</p>}
@@ -274,9 +280,21 @@ function MoleculeDetail({
             </button>
           </>
         ) : (
-          <button type="button" onClick={onAskDelete}>
-            Delete…
-          </button>
+          <>
+            <button
+              type="button"
+              title="Put this molecule in the first free Compare slot. Compare runs it again with the current model; it does not reuse the saved values."
+              onClick={() => {
+                compare.addMolecule(item.smiles, "Library");
+                navigate("/compare");
+              }}
+            >
+              Add to Compare
+            </button>
+            <button type="button" onClick={onAskDelete}>
+              Delete…
+            </button>
+          </>
         )}
       </div>
     </div>

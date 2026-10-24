@@ -14,6 +14,7 @@ import type {
   CompareResponse,
   ConformerResponse,
   DeleteAccountRequest,
+  DepictRequest,
   Endpoint,
   LoginResponse,
   MeResponse,
@@ -111,8 +112,8 @@ export async function fetchPrediction(
 // Two or three molecules, anonymous. A single invalid SMILES fails the whole comparison (422)
 // rather than comparing against a fabricated result. `per_endpoint_winner` comes back null and
 // is never read (ADR-007).
-export async function fetchComparison(smiles: string[]): Promise<CompareResponse> {
-  const body: CompareRequest = { smiles, endpoints: null };
+export async function fetchComparison(smiles: string[], endpoints?: Endpoint[] | null): Promise<CompareResponse> {
+  const body: CompareRequest = { smiles, endpoints: endpoints ?? null };
   const res = await request("/compare", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return (await res.json()) as CompareResponse;
 }
@@ -121,6 +122,14 @@ export async function fetchComparison(smiles: string[]): Promise<CompareResponse
 export async function fetchConformer(moleculeId: string): Promise<ConformerResponse> {
   const res = await request(`/molecule/${encodeURIComponent(moleculeId)}/3d`);
   return (await res.json()) as ConformerResponse;
+}
+
+// A plain black-line 2D drawing as SVG text (ADR-039). POST, so the SMILES is never written into a URL. 501: the API has no RDKit;
+// 422: a SMILES it cannot parse or draw. The service caches by canonical SMILES; the browser keeps the text for the session.
+export async function fetchDepiction(smiles: string): Promise<string> {
+  const body: DepictRequest = { smiles };
+  const res = await request("/depict", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return res.text();
 }
 
 const jsonBody = (body: unknown): RequestInit => ({

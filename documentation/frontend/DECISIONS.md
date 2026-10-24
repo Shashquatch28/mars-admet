@@ -789,7 +789,7 @@ mirror, drift test, `API_ROUTES.md`, one API test). It is not on `/health`, and 
 
 ## ADR-027 — Predict gets a structure sketcher: Ketcher, standalone mode (resolves Q9)
 
-**Date:** 2026-10-08 · **Status:** accepted (design; implementation pending)
+**Date:** 2026-10-08 · **Status:** accepted; built 2026-10-23, see ADR-035 (which makes the sync live instead of accept-to-write)
 
 **Decision.**
 
@@ -904,7 +904,7 @@ absence is a row; (6) stub values carry the hatch and the word STUB; (7) nothing
 words in the table, none only in a tooltip (the report has no tooltips); (9) no shadow, radius 2px, light only for the
 report as ADR-004 required.
 
-**Consequences.** Not included, and said so on the page: a 2D structure drawing (the service has no depiction route and
+**Consequences.** Not included, and said so on the page (the 2D drawing was added by ADR-039; the line now appears only when the service could not draw one): a 2D structure drawing (the service had no depiction route and
 the 3D viewer is not printable) and drug-likeness flags (the service does not compute them). Adding either is a new
 service capability first. The report cannot be previewed on screen except through the browser's print preview. The
 frontend tests cover the model (`report.test.ts`: roster completeness, no marker inside values, hatch only on stubs,
@@ -1053,7 +1053,7 @@ invented scale, no direction of good, nothing ranked) and published work. Nothin
    the value-cell grammar, no colour, no pass or fail wording; QED is labelled as a published desirability function of eight properties that is not a MARS
    prediction; each alert is shown as a substructure match with the sentence that PAINS concerns assay interference, not toxicity
    ([Capuzzi 2017](https://pmc.ncbi.nlm.nih.gov/articles/PMC5778390) found most PAINS-flagged compounds show no interference), and no alert is drawn on the
-   structure. Shown on Predict and in the printed report (which closes ADR-029's "no drug-likeness flags"); Batch, Compare and the CSV do not carry them.
+   structure. Shown on Predict and in the printed report (which closes ADR-029's "no drug-likeness flags"); Batch and the CSV do not carry them (Compare does since ADR-036).
    Shipping it adds a response field, so `MODEL_VERSION` is bumped when it lands (HANDOFF 2a item 8) and the drift test is updated in the same change.
    Alert matching lives in one module under `ml/serve` that the explainability validation (`feat/explainability`, `ml/eval/explain_validation.py`) imports
    instead of keeping its own copy.
@@ -1132,4 +1132,341 @@ null without RDKit, for an unparseable molecule, or on a response written before
 (b) `MODEL_VERSION` is not bumped. The cache key gains a `RESPONSE_SHAPE` tag (`r2`) instead: `MODEL_VERSION` names a model generation, is pinned by each environment's `.env` (the shared one would have kept the old value), and a change that is not a model change should not move the generation shown in the top bar. Entries written before `properties`
 existed are unreachable under the new key. Rule-of-five: a count of limits exceeded out of four, with the four limits stated beside it and no pass or fail wording. QED is shown as a number with its source and "not a MARS prediction". Alerts are listed by catalog and name, "no match" when empty, with the PAINS caveat and its citation in text beside them. The printed report gets the same table and notes,
 and its fixed line "drug-likeness flags are not included" is gone. Checked live: a rhodanine returned PAINS `ene_rhod_A(235)` and the Brenk alerts `Michael_acceptor_1` and `Thiocarbonyl_group`; the cached repeat kept them; the panel (one ink, nothing coloured) and the report showed them; the roster and its counts were unchanged.
+
+## ADR-035 — The structure editor: Ketcher in a non-modal panel, two-way with the SMILES field, contained rather than re-skinned
+
+**Date:** 2026-10-23 · **Status:** accepted and built (implements ADR-027; amends its item 1)
+
+**Decision.**
+
+1. **Predict has a "Draw a structure" button under the SMILES field.** It toggles a panel that lies over the results and inspector
+   columns and leaves the molecule column (the SMILES field, Run, the endpoint selector) visible and usable. It is `role="dialog"`,
+   `aria-modal="false"`, named "Structure editor". It is non-modal on purpose: a modal would hide the field it is kept in step with.
+2. **Two-way sync, not "accept".** ADR-027 item 1 had the drawing written into the field when accepted. It is now live: an edit on the
+   canvas, after 300 ms of quiet, writes Indigo's SMILES into the field; text typed into the field, after 300 ms of quiet, is drawn.
+   The user still presses Run, and `/predict`, the contract and the session are untouched (`StructureEditor` reads and writes only
+   `usePredictSession().smiles`; a guard test pins that it imports nothing from the API layer). The blueprint's "debounced re-prediction
+   on edit" is **not** adopted: it would send a request per pause while drawing against the anonymous rate limit and replace the results
+   on screen under the user's hands.
+3. **A refusal never overwrites typed text, and says so in words.** (`domain/structureEditor.ts`, unit-tested.)
+   - Empty canvas: "The canvas is empty… The SMILES field was left as it was."
+   - Not convertible (a reaction arrow, or Indigo throws): "This drawing cannot be turned into a SMILES: … The SMILES field was left as it was."
+   - Typed text that cannot be drawn: "The SMILES in the field cannot be drawn: … The canvas was left as it was."
+   - Indigo is lenient: `C(((` is drawn as methane without an error. So typed text with an unbalanced parenthesis or bracket, or a ring
+     bond opened and never closed, is refused before it is drawn (`obviousSmilesFault`), and a drawn field is described as "The canvas
+     shows the SMILES in the field. Run prediction checks that SMILES again on the server", never as a match. Anything subtler that Indigo
+     tolerates is left to the server's standardiser, which rejects with its own 422.
+   - The text that Indigo produces for the user's own typed SMILES is not written back over it (the editor remembers its rendering of
+     the last typed value and ignores a change that only echoes it).
+   - Problems are announced through the one announcer; the panel's status line is plain text, not a second live region.
+4. **Loaded on demand.** `KetcherCanvas.tsx` is the only importer of `ketcher-*` (a guard test checks this, that the panel uses
+   `lazy(() => import(...))`, and that the stylesheet is imported only there). If WebAssembly is missing, or the chunk fails to load,
+   the panel says so (`role="alert"`) and the field still works.
+5. **Contained, not re-skinned** (blueprint Module 9, item 8). See "What was overridden" below.
+6. **Hidden tools.** Reactions (arrows, plus, mapping), R-groups, shapes, text, S-groups, monomers, the 3D viewer, image recognition,
+   Ketcher's own property calculator, settings, help, about and full screen are hidden, not disabled: MARS takes one molecule's
+   SMILES, and a property box from a second toolkit would sit beside the RDKit-computed properties MARS already shows (ADR-034 item 3)
+   and could disagree with them. The macromolecule mode is switched off.
+
+**Evidence (2026-10-23, Ketcher 3.18.0, Chromium in the app's browser pane, a real API on a private port).**
+
+*Sizes* (`npm run build`, with `VITE_API_BASE=/api` so the real code paths are in; same command on `origin/main` for "before"):
+
+| | before | after | change |
+|---|---|---|---|
+| main JS | 376.07 kB (gzip 119.59) | 383.07 kB (gzip 122.12) | +7.00 kB (+2.53 gzip) |
+| main CSS | 62.35 kB (gzip 10.84) | 64.56 kB (gzip 11.18) | +2.21 kB (+0.34 gzip) |
+| lazy, on first open | – | JS 7,795.61 + 1,238.77 + 440.86 + 69.87 kB, WASM 7,527.76 kB, CSS 183.34 kB | about 17.3 MB, about 3.8 MB gzip |
+
+Without `VITE_API_BASE` the main JS went 347.25 kB to 353.46 kB (+6.21, +1.8%). The entry chunk only contains `import("./KetcherCanvas-….js")`;
+`index.html` preloads nothing of Ketcher. The 3Dmol chunk (587 kB) is unchanged. First-open weight is large and uncached: it is the price of
+running Indigo in the browser (ADR-027). Two `ketcher-standalone` builds were measured: the default entry inlines the WebAssembly as base64
+(one 28.9 MB script, 8.5 MB gzip); `dist/binaryWasmNoRender` keeps Indigo's WASM as a separate 7.5 MB file (2.0 MB gzip) and drops the image
+renderer the editor does not use. The second is built. Install and build time on this machine: adding the three packages took about 2.5 min
+(`node_modules` and the lockfile grow by about 5,400 lines); `vite build` went from about 21 s to 75-105 s. Not measured: the Docker image build.
+
+*Audit.* `npm audit` on `origin/main` already reported 3 vulnerabilities (vite 7.3.6 high; vitest and `@vitest/mocker` moderate). They were
+cleared first, in their own commit, by vite 7.3.7 and vitest 5.0.5 (vitest 4.1.12, the patched 4.x, crashes npm 10.9.3 with
+"Cannot read properties of null (reading 'edgesOut')"). With Ketcher added: 0 vulnerabilities. New direct dependencies, all pinned exactly:
+`ketcher-core`, `ketcher-react`, `ketcher-standalone` 3.18.0 (Apache-2.0; they bring `indigo-ketcher` 1.46.0, `@mui/material` and
+`@emotion/*`) and `events` 3.3.0.
+
+**What was overridden, and what could not be.**
+
+Ketcher's stylesheet (`ketcher-react/dist/index.css`, 183 kB) has no `html`, `body`, `*` or `:root` rule, no `@font-face`, and hashed class
+names, so it does not restyle the rest of the app (it is loaded only when the panel first opens). MUI/Emotion add class-hashed `<style>` tags.
+Inside the panel, `structureEditor.module.css` overrides, scoped to the box and with `!important` (Ketcher's rules are generated classes):
+
+| Rule | Ketcher's own | Override | Checked from computed styles |
+|---|---|---|---|
+| #7 no animation | 26 elements with transitions; keyframes for loading dots and a caret blink; a ripple | `animation: none; transition: none` | 0 of 318 elements |
+| #9 typeface | Inter, Roboto, FreeSans, Arimo, Helvetica (none loaded, so they fall back) | `--sans` on all HTML | 318 of 318 |
+| #9 radius ≤ 3px | 4px on 112 elements, 20px, 50% | `--radius-sm` | 317 of 318 |
+| #9 shadow outside an overlay | 32 elements | `none` | 31 of 32 |
+| focus ring | none of its own | the app's accent outline, inset | – |
+
+The leftover element, in both the radius and the shadow row, is one empty `div` inside the canvas SVG (`svg *` is excluded from the rule so
+chemistry drawing is not touched). The two guards in `neverDoGuard.test.ts` that look for `animation` and `box-shadow` now accept the value
+`none !important`; nothing else about them changed.
+
+What could **not** be overridden, and is therefore an accepted exception scoped to the panel interior:
+- **Dark theme only (#9).** The interior is Ketcher's light palette (white canvas, grey-blue toolbars). It has no theme switch; inverting it with a
+  filter would change atom colours. `color-scheme: light` is set inside the box so its inputs and scrollbars agree with it.
+- **Chemistry colours.** Atom symbols are coloured by element (red O, blue N) and the periodic-table dialog uses a multi-hue element palette. This is
+  element identity, as in the 3D viewer's palette (`--viewer-*`), and carries no value or risk meaning.
+- **No state explained only by a tooltip (#8).** Ketcher's toolbar buttons are icon-only, named by `title`, and the active tool is shown by a highlight
+  alone. That cannot be changed from outside. What MARS needs to be unambiguous, what happened to the SMILES field, is in the text status line.
+- **Atom-label typeface** in the SVG (Arial) and **icon set**: left alone.
+- **Contrast** of Ketcher's own greys (disabled icons, tool-group frames) was not measured against the AA guard, which covers MARS tokens only.
+- **JS-driven motion.** Only CSS motion was inspected. No scripted animation was seen while drawing, undoing and opening the periodic-table dialog; it was not read for exhaustively.
+
+**Accessibility (what holds, what does not).**
+- MARS's part: the panel is named; the trigger carries `aria-expanded`, `aria-controls` and `aria-haspopup="dialog"` and opens and closes with Enter or Space;
+  Esc closes the panel from its own chrome and focus returns to the trigger (also after Close). Keys 1-4 do not switch workspace while focus is in the panel
+  (`data-owns-keys`, read by `AppShell`). Close comes **after** the canvas in Tab order, because Ketcher moves focus into its own hidden, unlabelled
+  `textarea` once it has loaded; Tab from there reaches Close (verified).
+- **Esc inside the canvas is Ketcher's** (it cancels its tool or closes its dialogs), so it does not close the panel; use Tab to Close, or the trigger.
+- **Not keyboard-accessible inside Ketcher:** placing a ring or drawing a bond at a chosen point needs a pointer. Ketcher has hotkeys for tools and atoms
+  (its tooltips list them) but none that I found for choosing where something goes; I did not verify the hotkeys. The toolbars are reachable by Tab (counted in
+  the DOM, hidden macromolecule controls included: 85 buttons, 77 tab stops; 71 buttons named by `title`, 1 by `aria-label`, 3 with no name), but a
+  screen-reader user cannot draw. **The SMILES field is the keyboard-accessible route to
+  the same result**, and the editor draws what is typed there.
+- Not tested with a screen reader. Ketcher's own dialogs were not audited for focus trapping.
+
+**Build integration** (all in `vite.config.ts`, because `ketcher-core` targets a bundler that supplies Node's globals):
+- `events` and `assert` are Node built-ins that Vite externalises, which fails the build. `events` is aliased to the npm package of the same name; `assert`
+  to `src/vendor/nodeAssert.ts` (the npm package reads `process` when it loads; ketcher-core only calls `assert(cond, message)`, 51 times).
+- `global` is defined as `globalThis`.
+- `ketcher-core` has `require("raphael")` inside an ES module. Left alone the built app fails to open the editor ("require is not defined") while the dev server
+  works; `build.commonjsOptions.transformMixedEsModules` fixes it. This was found only by running the production build, not the dev server.
+- Dev server only: the optimiser moves Indigo's worker and strands its `.wasm`, so the worker never answers. In dev, `binaryWasmNoRender` is aliased to the default
+  self-contained entry. The first open in dev is slow while Vite transforms Ketcher.
+- `KetcherCanvas` renders `<Editor>` into a React root of its own. `React.StrictMode`'s dev-only mount, unmount, mount makes Ketcher's cleanup tear down the
+  instance its second mount just built ("couldn't find ketcher instance"). In production there is one mount either way.
+
+**Rejected.**
+- *Debounced re-prediction on edit* (blueprint): see decision 2.
+- *Accept-to-write, as in ADR-027 item 1*: needs a second control, and a user who types while the panel is open would see a stale drawing.
+- *A modal panel*: hides the field.
+- *Inverting Ketcher with a CSS filter to look dark*: changes the atom palette and the greys unpredictably.
+- *Another sketcher (JSME)*: no blocker was found, so ADR-027 stands.
+- *Keeping the panel mounted while closed*: its document-level hotkeys would stay live on the page.
+
+**Not verified.** The Docker image build and the cold `npm ci` time in CI. Firefox and Safari. A screen reader. Stereochemistry, charges, isotopes and large
+drawings through both directions (aspirin, ethanol, a salt string and error cases were). Panel layout below the 1080 px design width. The macromolecule DOM
+that Ketcher still renders but hides.
+
+**Consequences.** `StructureEditor` is mounted once in `PredictWorkspace`. `shell.module.css` gives `.workspace` `position: relative` so the panel can anchor to
+`<main>`. `AppShell` treats focus inside `[data-owns-keys]` like typing in a field. ADR-027's status line points here. Another session's 2D depiction component
+in `PredictWorkspace.tsx` and this panel's mount are independent lines in the same file.
+
+## ADR-036 — Compare shows the computed properties side by side, as values, with no difference column
+
+**Date:** 2026-10-23 · **Status:** accepted · implemented 2026-10-23 on `feat/compare-properties`
+
+**Decision.**
+
+1. Compare gets a "Computed properties" block after the endpoint roster, in the same table: one column per molecule (two or three), one row per
+   property in Predict's order and number format (`domain/properties.ts`: molecular weight, Wildman-Crippen logP, H-bond donors and acceptors, TPSA,
+   rotatable bonds, QED, rule-of-five limits exceeded), then one row each for the PAINS and Brenk alerts, listing the names matched in that molecule
+   ("no match" when none). The values come from `PredictionResponse.properties` of each molecule in `CompareResponse.molecules`; no API or contract
+   change.
+2. Every value is mono, tabular, `--text-primary`, in every cell. The block has no reliability edge, no hatch, no model-family line and no tag: these are
+   RDKit calculations on the structure (ADR-034 item 3), not predictions, so none of the roster's marks apply and none is borrowed. Its header says
+   `RDKit · not predictions`, and the same three notes Predict prints (what these values are, what QED and the rule-of-five count are, what a structural
+   alert is and is not) are printed under the table as text.
+3. A molecule the service sent no `properties` for (RDKit missing, an unparseable molecule, a response cached before the field existed) shows
+   `not returned` in every row of its column, in the muted word style the roster uses. The block never drops a column or a row (ADR-008 by analogy).
+4. **"Diff" is the reader's, not the app's.** The blueprint's Module 9 row reads "diff structure + properties". It is delivered as columns of plain values
+   that can be read across, and the app computes no difference: no difference column, no Δ, no arrow, no marking of the higher or lower value in a row,
+   no bolding of the column that differs. The values are not sorted or ranked either. Properties are not model output, so an equal or unequal pair carries
+   no reliability message to add.
+5. The roster, its flags (out of domain, stub-served, not returned), its counts and `per_endpoint_winner` handling (ADR-007) are unchanged. The block is outside
+   the 14-endpoint reconciliation, as it is on Predict.
+6. This amends ADR-034 item 3, which said Batch, Compare and the CSV do not carry the properties. Compare now does. Batch and the CSV still do not.
+
+**Rationale.** Properties are the one thing in Compare that is a fact about the structure with a documented meaning, so showing them next to each other
+is information the roster cannot give, and they cost no new service capability. The risk is that numbers in adjacent columns are read as a contest. Printing a
+difference would make that reading the app's own claim: a delta of +1.2 in logP or of -23 in TPSA is a sign, and a sign is read as better or worse. MARS has no
+validated direction of good for the model outputs (AGENTS.md rule 1), and although the rule-of-five limits give the properties a published reference, that
+reference is already shown as a count of limits exceeded with no verdict, which is as far as ADR-034 item 3 went. The reader who wants the difference can subtract two
+numbers that sit one cell apart.
+
+**Where I would differ from the blueprint, said plainly.** The blueprint's word for the structure half is "diff structure". A literal structural diff (a
+maximum-common-substructure alignment with the differing atoms marked) is a different thing from a property difference: it has no direction and could be shown
+without ranking. It is not built here because it needs a structure drawing first (`feat/structure-depiction`), and the brief for that feature forbids highlighting
+atoms. If a structure diff is wanted later it is its own decision, and it would have to be a plain depiction of each molecule with the shared core stated in
+text, not drawn in a colour.
+
+**Rejected.** *A difference column or per-row delta* - see Rationale. *Highlighting the cell that differs from the others* - draws the eye to one molecule and
+reads as a verdict. *Folding the properties into the roster as a sixth group* - they are not predictions, the roster's marks would not apply, and the group
+counts and reconciliation (14 ML endpoints) would have to carve them out. *Showing the properties only for a pinned reference molecule* - a reference is a
+winner by another name.
+
+**Never-do audit.** (1) every cell is one ink and mono; no value is coloured, bolded, dimmed or struck; (2) no prop is added to `EndpointRow`, which Compare
+does not use; (3) nothing is ranked, sorted by value or marked as a winner, and a source guard (`tests/neverDoGuard.test.ts`) fails if the property block or its domain code
+contains a difference, rank or favourable-side word; (4) no bar of any kind; (5) a molecule without properties has a labelled cell in every row, never a gap;
+(6) nothing here is a stub or sample value; (7) nothing animates; (8) the source and the not-a-prediction statement are text under and in the header of the
+block, not a tooltip; (9) no new radius, shadow or font.
+
+**Consequences.** `domain/properties.ts` gains `propertyRowsAcross` and `alertRowsAcross` over the same spec Predict and the report use, so a number cannot be
+written differently in two places. `domain/compare.ts` returns `Comparison.properties`. Tests cover row order and number format against `propertyLines`, the
+null cell, the roster being untouched, and the absence of any comparative word. Checked live on a private stack with real model responses and three molecules
+(aspirin, benzylidene thiazolidinedione, a rhodanine): the block showed the RDKit values, `ene_rhod_A(235)` under PAINS for the rhodanine only, and the Brenk names
+per molecule; every value computed to `rgb(233, 237, 238)` (`--text-primary`) in IBM Plex Mono with no background.
+
+## ADR-037 — Excel export of a Batch result: the same long format as the CSV, written with `write-excel-file`, loaded on click
+
+**Date:** 2026-10-23 · **Status:** accepted. The maintainer confirmed the `write-excel-file` pick on 2026-10-23; implemented the same day on `feat/batch-export-xlsx` (see the implementation note at the end).
+
+**Context.** Batch exports a CSV (`domain/exportCsv.ts`): one line per molecule x endpoint in roster order, a `state` column that says what the screen says, reliability apart from the
+value, every roster endpoint present whether or not it was returned (ADR-008), full-precision numbers, no rank or winner column. An Excel file is wanted next to it. Writing an
+`.xlsx` means writing a ZIP of XML parts, which the browser cannot do unaided, so this is a new dependency. The bar set for it: the lightest that works, loaded only when the button
+is pressed, `npm audit` at 0, and a stated reason.
+
+**Candidates**, measured on 2026-10-23 in a scratch project outside the repository (nothing was added to `frontend/package.json`). Bundle sizes are minified and gzipped, from an esbuild
+bundle of a browser entry that writes one sheet to a `Blob`.
+
+| | `write-excel-file` 4.1.1 | `exceljs` 4.4.0 | `xlsx` (SheetJS) 0.18.5 from npm | `fflate` + our own OOXML writer |
+|---|---|---|---|---|
+| Added to the bundle | 72 kB min, 20 kB gzip (includes its one dependency, `fflate`) | 947 kB min, 269 kB gzip | not built: see audit | `fflate` zip only, about 8 kB gzip, plus about 150 lines of ours |
+| Packages installed | 3 (itself, `fflate`) | 194 | 10 | 2 |
+| `npm audit` | 0 vulnerabilities | 2 moderate (`uuid`, bounds check in v3/v5/v6 with a caller-supplied buffer) | 1 high: prototype pollution and ReDoS, **no fixed version on npm** (the maintainers publish fixes only from their own CDN tarball) | 0 |
+| Install scripts | none (only `prepublishOnly`) | none, but pulls `archiver`, `unzipper` and `tmp`, which are written for Node | none | none |
+| Writes only, or reads too | writes only | reads and writes | reads and writes | writes only |
+| Licence | MIT | MIT | Apache-2.0 | MIT |
+| Maintenance | one maintainer; 4.1.1 released 2026-06-08, 107 releases, source on GitLab | last release 2024-12-20 | npm copy frozen at 0.18.5 | `fflate` is widely used, one maintainer; the writer is ours |
+
+**Pick: `write-excel-file`, pinned to an exact version, imported as `write-excel-file/browser` through a dynamic `import()` in the click handler.**
+
+- It is the only candidate that is small, audit-clean, and does exactly one job (write). Its whole closure is itself plus `fflate`, about 20 kB gzipped, and it is its own chunk that is fetched
+  only when someone presses "Excel".
+- `exceljs` is 13 times larger, brings 194 packages written for Node, and fails `npm audit` today. It also reads files, which MARS never does with a spreadsheet.
+- SheetJS from npm is the best-known name and the wrong choice: the registry copy is the one with the open high-severity advisories and no patched release there, and the patched build is
+  installed from a URL outside the registry, which sidesteps `npm audit` rather than satisfying it.
+- Writing the OOXML ourselves with `fflate` is the lightest by a few kilobytes, but it makes MARS the owner of a file format that Excel is strict about (a wrong content type or style index
+  produces a "repair this file" dialog), and there is no copy of Excel here to test it against. Twenty kB buys a library that real Excel and LibreOffice open.
+- Risk accepted: a single maintainer and frequent releases. Mitigation: the version is pinned exactly (no caret), a bump is a reviewed change, and `npm audit` is part of the branch's checks.
+  If the package ever becomes unavailable, the fallback is the `fflate`-only writer above; the export code is written so the spreadsheet writer sits behind one small function and the swap touches one file.
+- If none of these were acceptable the answer would be to stay with CSV and say so. That is not the case here.
+
+**Decision (what is built once the pick is confirmed).**
+
+1. An "Export Excel" action beside "Export results" (the CSV) in Batch, offered under the same condition as the CSV: a real result, never a sample, never after a failure. (The palette's export command exports one Predict molecule, not a batch, so it stays CSV-only.)
+2. One sheet, `Results`, with exactly the CSV's columns in the CSV's order, one line per molecule x endpoint in roster order, built from the same `ExportMolecule` list by one shared function so the two
+   files cannot drift (a `buildExportTable()` returns typed cells; the CSV and the workbook are two writers over it). The sheet carries no rank, winner, score, flag or colour column, no conditional formatting
+   and no cell fill. `state` is its own column and the `value` cell is the same cell in every state.
+3. Cells keep their types: numbers are numeric cells at full precision (the screen's rounding is not applied), text is text. A text cell is written as a string cell, which a spreadsheet does not evaluate, so the
+   CSV's leading-apostrophe guard against formula injection is not needed and is not applied (it would alter the data). A test opens the written file's XML and asserts that a SMILES or an error message beginning
+   with `=`, `+`, `-` or `@` is a string cell and that no cell in the sheet is a formula cell. Missing values are empty cells, as the CSV leaves them.
+4. A second sheet, `Read me`, in plain rows: what each column is, the list of `state` values and what each means, that the seed spread is not an interval, that `value` for a classification endpoint is a score
+   and not a probability, and that nothing in the file ranks or scores a molecule. It is the report's "How to read" block reduced to the sheet's columns, taken from the same constants so the wording is not written twice.
+5. Size: a sheet holds 1,048,576 rows, a batch is up to `batch_size_cap` molecules x 15 lines, and a browser holds the whole workbook in memory while it writes. The Excel action therefore has its own ceiling
+   (5,000 molecules, 75,000 lines, to be re-measured on a real batch before it is fixed), and above it the button is replaced by one sentence saying the CSV has no such ceiling. The ceiling is a named constant, not a
+   hidden failure.
+6. File name `mars-batch-<n>-molecules-<date>.xlsx`, the CSV's pattern with the extension changed.
+
+**Rejected.** *Writing the file in the API (openpyxl on the server)* - Batch results that are not saved live in the browser, so the rows would have to be posted back to be written, and the server would carry a second
+copy of the reconcile logic (ADR-029 rejected the same shape for the PDF). *One wide sheet with a column per endpoint* - mixes state into value columns and invites sorting a column, which is a ranking by another
+name; the long format is what ADR-008 and the CSV already chose. *Colouring out-of-domain rows in the sheet* - reliability colour in a file is still colour by a model property, and never-do #1 and #6 are about what the
+product communicates, not only about its screens. *Dropping the `Read me` sheet* - a file leaves the app and loses the on-screen explanation; the notes are the part that should travel with it.
+
+**Never-do audit (planned).** (1) numeric cells carry no format that depends on the value and no fill; (2) no prop added to `EndpointRow`; (3) no sort, rank or winner column, and the row order is the roster's; (4) no chart
+and no data bar in the sheet; (5) every roster endpoint has a line, a not-returned or not-requested one with its state and an empty value; (6) a stub value is exported with `state = stub_served` and `model_id = stub-v0`,
+as in the CSV; (7) nothing animates and the dependency is loaded without a counting spinner; (8) the states are explained in the `Read me` sheet in words; (9) no UI shadow, radius or font change.
+
+**Implementation note (2026-10-23).** Built as decided, with these particulars.
+- **Dependency.** `write-excel-file` 4.1.1 added to `frontend/package.json` as an exact version (no caret); its only dependency is `fflate`. `npm audit` for the whole project reports 0 vulnerabilities with it installed (checked after merging the `vite` and `vitest` bump that came in with the structure editor; before that merge the audit listed three advisories in those two packages, unrelated to this one).
+- **Lazy.** The library is imported only inside `writeWorkbook` in `domain/exportXlsx.ts` (`await import("write-excel-file/browser")`); a guard test fails if any other file imports it statically. The production build has it as its own chunk of 72 kB (about 20 kB gzipped) next to the 353 kB main chunk, which grew by 5 kB for our own code; the first press fetches the chunk.
+- **One table, two writers.** `buildExportRows` (in `exportCsv.ts`) returns typed cells (text, number or null) and `buildCsv` and the workbook are two writers over it; the CSV's output is unchanged (its eleven existing tests pass untouched). The Results sheet has the CSV's 20 columns in order, a bold frozen header row and column widths, and nothing else: no fill, number format or conditional format (a guard test searches the module for them).
+- **No formula cell.** Every text cell is an explicit `String` cell. The test writes a real workbook, unzips it, and asserts that no worksheet contains `<f>`, that every cell is a shared or inline string or a number, that a number is a bare `<v>` and that text beginning `=`, `+`, `-` or `@` (a SMILES and an error message in the test) is present as data.
+- **Read me sheet.** Defines each of the 20 columns and the seven `state` values, states that the file ranks nothing, and reuses the first four of the report's fixed statements word for word ("this report" read "this file"); a test pins both, and that every CSV column has a definition.
+- **Ceiling.** `XLSX_MAX_MOLECULES = 5000` (75,000 lines). Above it the button is replaced by one sentence giving the run's size and saying the CSV has no such limit; `buildXlsxBlob` also refuses above it. The 5,000 is the figure proposed above, **not re-measured on a real batch of that size** (see below). A failure while building shows its message in the header (`role="alert"`) and the CSV button is unaffected.
+- **Download.** `downloadBlob` beside `downloadText`; the file is `mars-batch-<n>-molecules-<date>.xlsx`.
+
+**Verified live (2026-10-23, private stack with real models).** A three-row batch (two molecules and a row beginning `=`) ran; "Export Excel" appeared beside "Export results", produced `mars-batch-3-molecules-2026-10-23.xlsx` (9,736 bytes, the OOXML content type, a ZIP signature); the dev server served the library as its own module file, and the production build was checked to hold it as a separate chunk (not that the chunk loads only after the press, which was not timed). **Not run:** opening the file in Excel or LibreOffice (neither is on this machine; only the XML was inspected), the 5,000-molecule ceiling on a real batch (time and memory not measured), a queued batch, a screen reader on the new button.
+
+## ADR-038 — Hand-offs into Compare from Library and Batch, and the endpoint subset for Batch and Compare
+
+**Date:** 2026-10-23 · **Status:** accepted · implemented 2026-10-23 on `feat/handoffs` (ship checklist E2)
+
+**Decision.**
+
+1. **Library to Compare and Batch to Compare.** The Library's saved-molecule detail and the Batch molecule inspector each get an "Add to Compare" button beside the existing actions (Batch already had "Open in Predict";
+   Predict already had "Compare molecule", which is unchanged). It sends the molecule's SMILES, not a result: Compare asks the service for it like any other slot. The button switches to Compare and **runs nothing**; a run stays a
+   deliberate act, as it is for "Open in Predict". In Batch it is off for a row that failed (there is no molecule to compare, and the inspector already says why in words).
+2. **Which slot.** `addToSlots` (pure, tested): the slot that already holds the same string, if any (nothing is added twice); else the first empty slot; else a third slot when only two exist; else the last slot is replaced.
+   Replacing is the only case that loses something the user typed, so it is never silent: Compare's status line says which molecule was replaced and why. The hand-off also discards a stale result (its columns would no longer match the slots)
+   and writes one sentence to the same status line naming the slot and the source. Two hand-offs in a row fill two slots.
+3. **A saved molecule is not reused.** Compare predicts the SMILES again with the current model; the saved values are a frozen copy made by an earlier model version (ADR-022) and mixing them into a table of fresh values would put two generations
+   in one row with nothing but a version string to tell them apart. The status line says "predicted again with the current model; the saved values are not reused" in words, in addition to the button's tooltip (never-do #8).
+4. **Endpoint subset in Batch and Compare.** The Predict selector (`EndpointSelector`, a popover with All / None and ticks by group) is used as it is, beside "Run batch" and "Run comparison". The choice is session state above the router, in
+   roster order, like Predict's. A run sends `endpointsForRequest(selected)` (the selection plus the always-requested rule-based score, or nothing when all 14 are ticked) and the session keeps what was sent with the result, so every cell is read
+   against **what that run asked for** (ADR-028): an endpoint left out is NOT REQUESTED in every Compare column and every Batch row, including the rows that failed, and none is NOT RETURNED. Changing the selector after a run relabels nothing.
+   `buildComparison` and `buildBatch` already took a `requested` list; no domain logic changed.
+5. **Words next to the dashes.** The dense Batch grid shows a dash for both NOT REQUESTED and NOT RETURNED (the state is in each cell's accessible name and in the inspector's words). A run that asked for a subset therefore adds one sentence to the
+   grid's footer: how many endpoints were asked for, that a dash for the others means NOT REQUESTED and nothing failed, and that the `—N` row flag counts only endpoints that were requested and not returned. Compare's status line gives the same count.
+   Coverage by endpoint already reads "requested" per endpoint and needed no change.
+6. **A server defect found on the way, fixed here.** `POST /batch/predict` declared `endpoints` as a bare list parameter, which FastAPI reads from the multipart body, so the `?endpoints=` the client sends (and `API_ROUTES.md` documents) was ignored and every endpoint
+   ran whatever was asked for: the response carried all 15 predictions for a request of 2. It is now `Query(default=None)`. Tests pin a subset being honoured (checked to fail without the fix), no subset running everything, and an unknown name being a 422.
+   The queued tier stores the same list with the job input, so it benefits identically. Confirmed on a private stack: a 3-row batch asking for two endpoints returned two ML values per row.
+
+**Rationale.** E2 in the ship checklist is the last piece of the blueprint's "pin 2-3 molecules" flow that makes Compare usable from where molecules already are, and the subset is the one place ADR-028's state was specified for Batch and Compare but could not
+occur there. Each decision above keeps a choice with the user: nothing runs by itself, nothing is replaced without being said, and a result is read against its own request.
+
+**Rejected.** *Run the comparison as soon as the second molecule arrives* - Predict and Batch's "Open in Predict" do not run on hand-off, and a run is a request the user should start. *Silently overwrite slot 1, as Predict's hand-off does* - Predict has one molecule to hand over and
+the user is looking at it; Library and Batch add to a set the user may have built. *Compare the saved values with a fresh run* - see item 3. *Move `EndpointSelector` to `components/`* - another session is editing `PredictWorkspace.tsx`, which imports it from its present path; a move adds a conflict
+for no behaviour change. *Multi-select in Batch to send several rows at once* - Batch has no multi-select yet (checklist E3); the one-row action composes with the slot rules until it does.
+
+**Not done, said plainly.** A molecule saved from a run that asked for a subset is still listed in Library against the full roster, so its left-out endpoints read NOT RETURNED there. This is not new (Predict has always been able to save a subset result) and it is wrong in the same way: the
+saved snapshot does not record what was requested, and the service cannot tell the Library. It needs a contract field on the save request (for example `requested_endpoints`) and the drift test with it; it is left for its own change rather than guessed at from which predictions happen to be present.
+
+**Never-do audit.** (1) nothing here touches a value cell; (2) no prop added to `EndpointRow`; (3) a hand-off orders nothing and Compare still has no winner; slot order is the order of arrival, which the status line states; (4) no bar of any kind; (5) every endpoint the run did not ask for is a NOT REQUESTED cell in each
+Compare column and Batch row, and every roster row still renders; (6) nothing in a stub path changes; (7) nothing animates (the popover is the existing overlay); (8) the Library hand-off's "predicted again" and the dash legend are in text, with a tooltip only as a repeat; (9) no new radius, shadow or font.
+
+**Verified live (2026-10-23, private stack, real models).** Batch with 2 of 14 endpoints on a three-row file (two molecules and one invalid): the grid had values only in the logS and hERG columns, the coverage table read "requested 2" for those and 0 elsewhere, the inspector showed NOT REQUESTED rows in words, the footer sentence
+appeared, the invalid row stayed a row. "Add to Compare" from the inspector put the SMILES in Molecule 1 and navigated with the status sentence; from the Library it did the same and added the "predicted again" sentence. A Compare run with 2 of 14 endpoints read NOT REQUESTED in both columns for the other 12 and showed the count in the status line.
+Not run: a screen reader on the new buttons, a three-molecule replace in the browser (covered by unit tests), and the queued Batch tier with a subset (the queued path stores the same list; no job above the interactive threshold was run).
+
+## ADR-039 — A 2D structure drawing: one service route, plain black line art, shown in Predict, Compare, Library and the printed report
+
+**Date:** 2026-10-23 · **Status:** accepted · implemented 2026-10-23 on `feat/structure-depiction`
+
+**Decision.**
+
+1. **One route.** `POST /depict` takes `DepictRequest {smiles}` and returns `image/svg+xml` (no account, anonymous like `/predict`). It is a POST so a user's SMILES is never written into a URL, an access log or a referrer. The response has no JSON model (like the
+   report PDF the blueprint once described), so the contract change is one request model, mirrored in `frontend/src/types/contracts.ts` and added to the drift test's field comparison. `API_ROUTES.md` has the row.
+2. **The drawing says nothing about the molecule but its shape.** `ml/serve/depiction.py` draws with RDKit's `MolDraw2DSVG` using the black-and-white atom palette, a transparent background, no atom or bond indices, no stereo annotations beyond the wedges the structure implies, and
+   **no highlight arguments**. The only colour in the output is `#000000` (a test pins that, over aromatic, charged, stereo and multi-component molecules, and that the SVG holds no `<text>`, `<script>`, `<image>`, `<foreignObject>` or link). No atom is coloured by element, let alone by a property
+   or an alert: a molecule that carries a PAINS match is drawn exactly like one that does not. Atom attribution is the explainability feature's to show, not this one's.
+3. **One molecule, one drawing.** The route canonicalises the SMILES with RDKit and draws *from the canonical form*, because RDKit's 2D layout depends on atom order; two ways of writing aspirin give byte-identical drawings (tested) and share one cache entry (checked live: the second spelling was a cache hit).
+   A SMILES that cannot be parsed, is empty, is over 1,000 characters or has over 250 heavy atoms is a 422 with the reason, never a drawing it could not make. Without RDKit the route is a 501, as the 3D route is.
+4. **Cache.** Redis, keyed `depict_cache:<DEPICTION_VERSION>:<sha256(canonical SMILES)>` (the molecule is hashed, never written into a key), seven days (`depiction_cache_ttl_seconds`; a drawing is a pure function of the molecule and the version, so the TTL is about memory, not freshness). `DEPICTION_VERSION` is part of the
+   key: changing the drawing options bumps it and older drawings become unreachable instead of being served as the new look (the same device as `RESPONSE_SHAPE`). A cache failure is a miss, never an error. The browser keeps each drawing for the session (React Query, `staleTime: Infinity`).
+5. **Its own rate limit.** Drawings are counted apart from predictions (`ratelimit:depict:<ip>`, 240 a minute by default): a Compare or Library page draws several molecules at once and must not spend the 60-a-minute prediction budget. Same fixed window, same fail-open rule.
+6. **The response is inert.** It is sent with `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox` and `nosniff`, and the client shows it through an `<img>` (where nothing in it can run), after a guard (`isDrawable`) that refuses anything with script or foreign content.
+7. **Ink from a token.** The service draws in black; the client puts that one ink in a token's colour (`--text-secondary` on screen, `--report-ink` on paper) by replacing the single literal, after checking the colour is a plain hex or `rgb()` value. Nothing else is rewritten (a source guard counts the replacements). No raw hex lives in a component.
+8. **A standalone component.** `StructureDepiction` takes a SMILES, an ink token name, a label and whether to print its caption, and nothing else: it has no prop that could carry a value, an endpoint, a state, a highlight or a judgement (a guard test lists the banned prop names). It renders nothing without a molecule, says "Drawing the structure…" in words while it waits (no counting, no shimmer) and says in words why a drawing is
+   missing (no RDKit, a SMILES it cannot draw, rate limited, API unreachable). Its caption states what the drawing is: plain line art of the standardized structure, nothing marked, nothing about any prediction.
+9. **Where it shows.** Predict: the molecule column, between Identity and the 3D viewer, once there is a result (one import and one line in `PredictWorkspace.tsx`, added last; `StructureViewer.tsx` and `EndpointDetail.tsx` are untouched). Compare: a "Structure" row under the molecule headers, one drawing per column, so the sticky header stays one line.
+   Library: the saved molecule's detail, from the saved SMILES. The printed report: a drawing beside the molecule's identity, in `--report-ink`.
+10. **The report no longer says a drawing is never included.** ADR-029's fixed line "Not included: a 2D structure drawing." is removed. A report now carries one of two statements: when a drawing is on the page, that it is plain line art of the standardized molecule drawn by RDKit with nothing marked and nothing said about any value in the report;
+    when the service could not draw one (no RDKit, a SMILES it cannot draw, a timeout), "Not included: a 2D structure drawing." with the reason, so a gap is never silent. The print action fetches the drawing first and waits at most six seconds, then prints without it and says so; a slow service never blocks the print dialog.
+    A Batch row that failed before inference has no structure and no statement about one. The report's rows, counts and values are unchanged (tested).
+11. **A packaging fix found on the way.** `python:3.11-slim` lacks the shared libraries RDKit's drawing module links against, so on the stock image `from rdkit.Chem.Draw import rdMolDraw2D` failed with `libXrender.so.1` and then `libXext.so.6` and `libexpat.so.1`, and `/depict` answered 501 although RDKit was installed. `api/Dockerfile` now installs `libxrender1 libxext6 libexpat1`
+    (no recommends, lists removed). That exact set was checked in a throwaway container from the existing image: the import and a drawing succeed with it, and `libsm6` is not needed. The full image was not rebuilt here.
+
+**Rationale.** A drawing is the one display of a molecule that makes no claim, which is why it is allowed to be useful without a validated scale. The risk is not in drawing it but in what gets attached to it later (colour by contribution, a flagged substructure, a glow for an alert), so the type and the drawer are narrow on purpose and tests, not review, hold the line.
+The route is separate from `/predict` because a drawing needs no model, no applicability domain and no row state, and it must work for a Library entry whose `molecule_id` has long left the cache, which `GET /molecule/{id}/3d` cannot.
+
+**Rejected.** *`GET /molecule/{id}/2d`* - it would need the id-to-SMILES registry, which expires with the prediction cache, so a Library entry could not be drawn. *`GET /depict?smiles=`* - the SMILES would be in URLs and logs. *Drawing in the browser (RDKit.js or another JS depictor)* - a multi-megabyte WebAssembly dependency, a second RDKit with its own version, and nothing the service does not already have.
+*Element colours or a coloured heteroatom* - colour by what an atom is is a legend the product would then have to own, and it would sit next to values coloured by nothing. *Highlighting a PAINS match or any atom* - an alert is a substructure match, not a verdict, and atom attribution belongs to the explainability feature. *Inline `<svg>` so `currentColor` could theme it* - markup from a service injected into the page for a cosmetic gain; an `<img>` is inert.
+*A depiction in the CSV* - a file of values; nothing here changes it.
+
+**Never-do audit.** (1) no value is coloured by anything; the drawing's one ink is a token and is the same for every molecule (tested at three levels: the drawer, the client replacement, a source guard on the component's props); (2) no prop on `EndpointRow`; (3) nothing is ranked, and Compare's drawings are in column order with no winner;
+(4) no bar or scale; (5) a drawing that is missing says so in words in the place it would be, and the report names the gap; (6) nothing here involves a stub value; (7) nothing animates: the loading state is text; (8) every state of the component, including each failure, is in text, and the caption is text rather than a tooltip; (9) hairline frame, radius 2px, no shadow, tokens only, dark on screen and light only in the report.
+
+**Verified live (2026-10-23, private stack with real models, own API container and Vite).** `POST /depict`: a rhodanine and two spellings of aspirin returned `image/svg+xml` (the second spelling a cache hit), a malformed SMILES and an empty one were 422s with their reasons. In the browser: Predict showed the drawing of the rhodanine in `#a8b2b5` (`--text-secondary`) with no mark on any atom and the caption;
+Compare with two molecules (a rhodanine and L-alanine) showed one drawing per column in a Structure row; the Library detail of a saved molecule showed its drawing; the report built for aspirin (with `window.print` stubbed) held the drawing in `#15191b` (`--report-ink`) and the drawing statement. Not run: the real print dialog and PDF, the 501 and 429 states in the browser (covered by unit and API tests), the Docker image rebuild,
+a screen reader on the drawings, and the run in a deployed environment.
 

@@ -69,11 +69,18 @@ approval, `[lab]` needs the GPU workstation.
 - [x] D13 `[here]` Computed molecule properties and structural alerts: `properties` on `PredictionResponse`, Predict panel, report; share the alert matcher with the explainability validation; bump `MODEL_VERSION` (about 12 h).
   Done 2026-10-22. RDKit properties and PAINS/Brenk alerts in `ml/serve/properties.py` and `ml/serve/alerts.py`; `properties` on `PredictionResponse` (contract, TS mirror, drift test); a "Computed properties" panel in the Predict molecule column and a table in the printed report. Cache safety is a `RESPONSE_SHAPE` tag in the cache key, not a `MODEL_VERSION` bump (see ADR-034 note). Checked live: a rhodanine returned PAINS `ene_rhod_A(235)` and two Brenk alerts, the cached repeat kept them, and the panel and the report showed them. Still to do on `feat/explainability`: its `ml/eval/explain_validation.py` should import `serve.alerts.alert_matches` instead of keeping its own copy (same signature).
 - [ ] D14 `[you]` Turnstile as a deploy gate: honeypot and register rate limit first, then the widget with the site key from `/limits`; only once the public deploy (C6) is approved (about 4 h).
+- [x] D15 `[here]` Compare shows the computed properties side by side (ADR-036): one column per molecule, plain values in Predict's grammar, no difference column, no highlight.
+  Done 2026-10-23 on `feat/compare-properties`. Checked live on a private stack with three real molecules (a rhodanine carried `ene_rhod_A(235)` under PAINS, the others `no match`); every value one ink. Not run: a screen reader, a print of Compare (it has no print view).
 
 ## E. Polish if time allows (not MVP-blocking)
 
+- [x] E6 `[here]` Excel export of a Batch result next to the CSV: same long format, typed cells, no formula cell, nothing coloured or ranked, a Read me sheet, lazy-loaded `write-excel-file` 4.1.1 (ADR-037).
+  Done 2026-10-23 on `feat/batch-export-xlsx`. Checked live (file produced, ZIP and content type) and by unit tests that unzip a written workbook. Not run: opening it in Excel or LibreOffice, the 5,000-molecule ceiling on a real batch.
+- [x] E5 `[here]` 2D structure depiction: `POST /depict` (RDKit SVG, black line art, nothing marked), Predict, Compare, Library and the printed report (ADR-039).
+  Done 2026-10-23 on `feat/structure-depiction`. Checked live on a private stack with real models. `api/Dockerfile` gains the three shared libraries RDKit's drawing module needs (verified in a throwaway container, image not rebuilt). Not run: the real print dialog, 501/429 in the browser, a screen reader.
 - [ ] E1 Structure sketcher (Ketcher, ADR-027). Audit never-do #7/#8 and measure the chunk on first integration.
-- [ ] E2 Hand-offs: Library or Batch to Compare, Batch "Open in Predict", endpoint subset for Batch and Compare.
+- [x] E2 Hand-offs: Library or Batch to Compare, Batch "Open in Predict", endpoint subset for Batch and Compare.
+  Done 2026-10-23 on `feat/handoffs` (ADR-038). Also fixed on the way: `POST /batch/predict` ignored `?endpoints=` and ran all 14 (now `Query()`, tested). Checked live on a private stack with real models. Not done: a saved molecule from a subset run still reads NOT RETURNED in Library (the snapshot does not record the request; needs a contract field). Not run: the queued tier with a subset, a screen reader.
 - [ ] E3 JSON export of the saved snapshot; the command palette's placeholder commands become real; Batch multi-select and reopening an earlier job after reload.
 - [ ] E4 Decide whether the seed spread stays on classification rows (ADR-024 item 4); decide the 410 on saving expired results.
 

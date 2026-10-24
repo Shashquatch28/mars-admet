@@ -296,3 +296,45 @@
   white-space: nowrap;
   border-bottom: 1px solid var(--line-hairline);
 }
+
+/* Group-header note, shared by the Computed properties (ADR-036) and Structure (ADR-039) blocks. */
+.grpNote {
+  margin-left: 8px;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-quiet);
+}
+/* Computed properties (ADR-036): plain values, the cell grammar of the roster without its marks. */
+.propCell {
+  height: 28px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  white-space: normal;
+}
+.alertName {
+  display: block;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.propNotes {
+  max-width: 96ch;
+  padding: 10px 14px 18px;
+}
+.propNotes p {
+  margin: 0 0 6px;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--text-quiet);
+}
+/* Structure row (ADR-039): the drawings sit under the molecule headers, scrolling with the table. */
+.structCell {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line-hairline);
+  vertical-align: top;
+}
+.structCell img {
+  max-height: 140px;
+}

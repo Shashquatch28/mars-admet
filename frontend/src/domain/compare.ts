@@ -3,11 +3,21 @@
 // There is no winner, no rank, no ordering by favourability and no difference column:
 // MARS has no validated direction-of-good, so "which molecule is better" is not
 // expressible here, and `CompareResponse.per_endpoint_winner` is never read. Rows follow
-// the fixed roster order. Every molecule runs through the SAME reconcile() as Predict, so
+// the fixed roster order. The computed properties (RDKit, not predictions) follow the roster as plain values, one
+// column per molecule: "diff" in the blueprint is the reader's comparison of those columns, never a computed
+// difference, because a difference invites ranking (ADR-036). Every molecule runs through the SAME reconcile() as Predict, so
 // every molecule has one cell per endpoint and an endpoint the service did not return is a
 // marked cell, never a gap (ADR-008).
 import type { CompareResponse, Endpoint } from "../types/contracts";
 import { ML_ENDPOINTS, type DisplayGroup, type EndpointMeta } from "./endpoints";
+import {
+  PROPERTY_NOTES,
+  PROPERTY_SOURCE,
+  alertRowsAcross,
+  propertyRowsAcross,
+  type AlertRowAcross,
+  type PropertyRowAcross,
+} from "./properties";
 import { reconcile, type Row } from "./reconcile";
 
 export const COMPARE_MIN = 2;
@@ -39,6 +49,41 @@ export function repeatedSlots(slots: string[]): number[] {
   return out;
 }
 
+export interface SlotAddition {
+  slots: string[];
+  /** The slot (0-based) the molecule is now in. */
+  slot: number;
+  /** `already`: it was in a slot, nothing changed. `replaced`: every slot was full, so the last one was overwritten. */
+  kind: "added" | "already" | "replaced";
+}
+
+/**
+ * Put a molecule handed over from another workspace into Compare: the molecule's own slot if it is already there, else the first
+ * empty slot, else a third slot if only two exist, else it replaces the last slot (Compare holds at most COMPARE_MAX, and a
+ * hand-off must never silently change the first molecules the user chose; the caller says what was replaced).
+ */
+export function addToSlots(slots: string[], smiles: string): SlotAddition {
+  const s = smiles.trim();
+  const existing = slots.findIndex((x) => x.trim() === s);
+  if (existing >= 0) return { slots, slot: existing, kind: "already" };
+  const empty = slots.findIndex((x) => x.trim() === "");
+  if (empty >= 0) return { slots: slots.map((x, i) => (i === empty ? s : x)), slot: empty, kind: "added" };
+  if (slots.length < COMPARE_MAX) return { slots: [...slots, s], slot: slots.length, kind: "added" };
+  const last = slots.length - 1;
+  return { slots: slots.map((x, i) => (i === last ? s : x)), slot: last, kind: "replaced" };
+}
+
+/** What a hand-off did, in words, for the status line of Compare. */
+export function handoffNote(a: Pick<SlotAddition, "slot" | "kind">, source: string): string {
+  const n = a.slot + 1;
+  // A saved molecule is a frozen copy; Compare sends only the SMILES, so what it shows is a new prediction.
+  const again = source === "Library" ? " It is predicted again with the current model; the saved values are not reused." : "";
+  if (a.kind === "already") return `The molecule you sent from ${source} is already in Compare as Molecule ${n}; nothing was added.`;
+  if (a.kind === "replaced")
+    return `Compare holds ${COMPARE_MAX} molecules and all were filled, so Molecule ${n} was replaced by the molecule you sent from ${source}. Nothing has been run.${again}`;
+  return `Molecule ${n} came from ${source}. Nothing has been run: press Run comparison.${again}`;
+}
+
 export interface CompareColumn {
   index: number;
   smilesInput: string;
@@ -62,9 +107,22 @@ export interface CompareGroup {
   rows: CompareRow[];
 }
 
+/**
+ * The computed properties of every molecule, side by side (ADR-036). Plain values in Predict's grammar: one column per
+ * molecule, the same rows in the same order as Predict, no difference column, no highlight of a lower or higher value.
+ * A molecule the service sent no properties for has a null cell in every row, never an empty one.
+ */
+export interface CompareProperties {
+  source: string;
+  lines: PropertyRowAcross[];
+  alerts: AlertRowAcross[];
+  notes: readonly string[];
+}
+
 export interface Comparison {
   columns: CompareColumn[];
   groups: CompareGroup[];
+  properties: CompareProperties;
   /** Distinct model versions across the molecules; more than one is worth saying out loud. */
   modelVersions: string[];
 }
@@ -101,7 +159,14 @@ export function buildComparison(response: CompareResponse, requested: Endpoint[]
   }));
 
   const versions = new Set(response.molecules.map((m) => m.model_version).filter(Boolean));
-  return { columns, groups, modelVersions: [...versions].sort() };
+  const props = response.molecules.map((m) => m.properties);
+  const properties: CompareProperties = {
+    source: PROPERTY_SOURCE,
+    lines: propertyRowsAcross(props),
+    alerts: alertRowsAcross(props),
+    notes: PROPERTY_NOTES,
+  };
+  return { columns, groups, properties, modelVersions: [...versions].sort() };
 }
 
 /** Why a comparison request failed, in the same words Predict uses. */

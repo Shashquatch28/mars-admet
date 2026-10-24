@@ -14,6 +14,7 @@ from app.routers import (
     auth,
     batch,
     compare,
+    depict,
     generations,
     health,
     limits,
@@ -118,6 +119,7 @@ app.include_router(generations.router, prefix=API_PREFIX)
 app.include_router(limits.router, prefix=API_PREFIX)
 app.include_router(predict.router, prefix=f"{API_PREFIX}/predict", tags=["predict"])
 app.include_router(compare.router, prefix=f"{API_PREFIX}/compare", tags=["compare"])
+app.include_router(depict.router, prefix=f"{API_PREFIX}/depict", tags=["depict"])
 app.include_router(molecule.router, prefix=f"{API_PREFIX}/molecule", tags=["molecule"])
 app.include_router(batch.router, prefix=f"{API_PREFIX}/batch", tags=["batch"])
 app.include_router(auth.router, prefix=f"{API_PREFIX}/auth", tags=["auth"])

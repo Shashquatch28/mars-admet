@@ -71,6 +71,17 @@ class CompareResponse(BaseModel):
     )
 
 
+# --- POST /depict (no account; frontend ADR-039) ----------------------------------
+class DepictRequest(BaseModel):
+    """A molecule to draw. The response is `image/svg+xml`, not JSON, so it has no response model (like the report's PDF):
+    plain black line art, one ink, nothing highlighted or labelled. POST so the SMILES stays out of URLs and logs."""
+
+    smiles: str = Field(
+        ...,
+        description="Input SMILES string; drawn from its RDKit canonical form, so every way of writing a molecule gives one drawing",
+    )
+
+
 # --- GET /limits (no account; frontend ADR-034 item 8) --------------------------
 class LimitsResponse(BaseModel):
     """The deployed service's policy numbers, so no client writes them into its own copy. Each is the

@@ -16,7 +16,7 @@ import json
 import uuid
 
 import redis.asyncio as redis
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 from mars_contracts import BatchPredictResponse, Endpoint
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,7 +59,9 @@ def _parse_csv(content: bytes, smiles_column: str | None) -> list[str]:
 async def batch_predict(
     file: UploadFile,
     smiles_column: str | None = None,
-    endpoints: list[Endpoint] | None = None,
+    # Query() is required: a bare list parameter is read from the multipart body, so `?endpoints=` was silently ignored
+    # and every endpoint ran whatever subset the client asked for.
+    endpoints: list[Endpoint] | None = Query(default=None),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     r: redis.Redis = Depends(get_redis),

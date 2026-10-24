@@ -9,3 +9,15 @@ export function downloadText(fileName: string, content: string, mime = "text/csv
   a.remove();
   URL.revokeObjectURL(url);
 }
+
+/** The same for a file already built as a Blob (the Excel workbook). */
+export function downloadBlob(fileName: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}

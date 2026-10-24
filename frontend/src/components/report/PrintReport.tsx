@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import styles from "./report.module.css";
 import { reportTitle, type ReportModel, type ReportRow } from "../../domain/report";
+import { inkSvg, svgDataUrl } from "../../domain/depiction";
 
 const EDGE: Partial<Record<ReportRow["stateKind"], string>> = {
   out_of_domain: styles.edgeOod,
@@ -30,6 +31,9 @@ function RowView({ row }: { row: ReportRow }) {
     </tr>
   );
 }
+
+// The report's ink is a token like every other colour (--report-ink); read it where it is used.
+const reportInk = () => (typeof document === "undefined" ? "" : getComputedStyle(document.documentElement).getPropertyValue("--report-ink"));
 
 export function PrintReport({ model }: { model: ReportModel }) {
   // The saved PDF's default file name is the page title; restore it afterwards.
@@ -83,6 +87,17 @@ export function PrintReport({ model }: { model: ReportModel }) {
           </>
         )}
       </dl>
+
+      {model.structure && (
+        <figure className={styles.structure}>
+          {model.structure.kind === "drawn" ? (
+            <img src={svgDataUrl(inkSvg(model.structure.svg, reportInk()))} alt="" width={320} height={220} />
+          ) : (
+            <p>Structure drawing not available: {model.structure.reason}</p>
+          )}
+          {model.structure.kind === "drawn" && <figcaption>Structure (RDKit drawing of the standardized SMILES)</figcaption>}
+        </figure>
+      )}
 
       {model.failure ? (
         <p className={styles.failure}>
