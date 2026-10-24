@@ -1,8 +1,9 @@
 /* The structure peek: a centred pane over a scrim, opened from the Structure pane in the molecule column. It is the one
-   place in MARS that eases in (ADR-042): about 200 ms, opacity and a few pixels of rise, and the same on the way out.
+   place in MARS that eases in (ADR-042): 360 ms in, 240 ms out, opacity and a short rise, on a gentler curve than the app's own so the motion is seen.
    prefers-reduced-motion switches every animation off (tokens.css), and the pane then opens and closes at once. Tokens
    only; radius within the 3px cap; the shadow is allowed because this is a true overlay. */
 .scrim {
+  --peek-ease: cubic-bezier(0.25, 0.6, 0.35, 1);
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -10,10 +11,10 @@
   place-items: center;
   padding: 24px;
   background: var(--scrim);
-  animation: peekFade var(--dur-base) var(--ease) both;
+  animation: peekFade 280ms var(--peek-ease) both;
 }
 .scrimOut {
-  animation: peekFadeOut 140ms var(--ease) both;
+  animation: peekFadeOut 240ms var(--peek-ease) both;
 }
 .panel {
   width: min(980px, 100%);
@@ -26,10 +27,10 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-overlay);
   overflow: hidden;
-  animation: peekIn var(--dur-enter) var(--ease) both;
+  animation: peekIn 360ms var(--peek-ease) both;
 }
 .panelOut {
-  animation: peekOut 140ms var(--ease) both;
+  animation: peekOut 240ms var(--peek-ease) both;
 }
 .panel:focus {
   outline: none; /* focused programmatically so the name is read; the ring belongs on controls */
@@ -53,7 +54,7 @@
 @keyframes peekIn {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.985);
+    transform: translateY(16px) scale(0.975);
   }
   to {
     opacity: 1;
@@ -67,7 +68,7 @@
   }
   to {
     opacity: 0;
-    transform: translateY(6px) scale(0.99);
+    transform: translateY(10px) scale(0.985);
   }
 }
 
@@ -131,7 +132,7 @@
   background: var(--surface-void);
 }
 .info {
-  flex: 0 0 300px;
+  flex: 0 0 340px;
   min-width: 0;
   overflow-y: auto;
   padding: 14px 16px 16px;
@@ -139,6 +140,41 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-subtle);
+}
+.facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px 12px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.facts dt {
+  color: var(--text-quiet);
+  white-space: nowrap;
+}
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+.mono {
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+.src {
+  font-family: var(--cond);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-quiet);
 }
 .infoHd {
   margin: 0;

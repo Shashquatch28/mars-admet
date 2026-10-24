@@ -3,17 +3,29 @@
 // says so; it never draws stand-in geometry. A 404 is a normal
 // state, not an error. Atom colours are the element palette tokens
 // (--viewer-*), which carry no interface meaning. Nothing animates.
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import styles from "./predict.module.css";
 import { useConformer } from "../../data/useConformer";
-import { conformerView, describeConformer } from "../../domain/conformer";
+import { conformerFacts, conformerMethodNote, conformerView, viewNotes } from "../../domain/conformer";
+import { PROPERTY_SOURCE, alertGroups, propertyLines } from "../../domain/properties";
 import peekStyles from "./structurePeek.module.css";
-import type { ConformerResponse } from "../../types/contracts";
+import type { ConformerResponse, MoleculeProperties } from "../../types/contracts";
+import { fmtNum } from "../../domain/format";
 import type { AtomHighlight } from "../../domain/explain";
 
 type Mode = "hero" | "analysis";
+
+/** What the peek says about THIS molecule, besides what it reads off the conformer. All of it comes from the prediction response. */
+export interface PeekMolecule {
+  smilesInput?: string | null;
+  smilesStandardized: string;
+  moleculeId: string;
+  properties?: MoleculeProperties | null;
+  /** A name for the molecule, shown with its source, when one exists (typed or looked up). Never inferred here. */
+  name?: { text: string; source: string } | null;
+}
 
 const cssVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
@@ -169,7 +181,15 @@ function ConformerCanvas({
   );
 }
 
-function LiveViewer({ moleculeId, highlights }: { moleculeId: string | null | undefined; highlights: AtomHighlight[] | null }) {
+function LiveViewer({
+  moleculeId,
+  highlights,
+  molecule,
+}: {
+  moleculeId: string | null | undefined;
+  highlights: AtomHighlight[] | null;
+  molecule?: PeekMolecule | null;
+}) {
   const [mode, setMode] = useState<Mode>("hero");
   const [peek, setPeek] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -205,6 +225,7 @@ function LiveViewer({ moleculeId, highlights }: { moleculeId: string | null | un
             mode={mode}
             setMode={setMode}
             highlights={highlights}
+            molecule={molecule ?? null}
             onClose={() => {
               setPeek(false);
               trigger.current?.focus();
@@ -234,35 +255,39 @@ export function StructureViewer({
   live,
   moleculeId,
   highlights = null,
+  molecule = null,
 }: {
   live: boolean;
   moleculeId?: string | null;
   highlights?: AtomHighlight[] | null; // memoize: a new array redraws the structure
+  molecule?: PeekMolecule | null; // what the enlarged pane says about this molecule
 }) {
-  return live ? <LiveViewer moleculeId={moleculeId} highlights={highlights} /> : <NoApiViewer />;
+  return live ? <LiveViewer moleculeId={moleculeId} highlights={highlights} molecule={molecule} /> : <NoApiViewer />;
 }
 
 // The peek: a larger centred pane over a scrim, opened from the small one. It holds the same conformer at size and says,
 // in text, what is being drawn. It is not a modal form: Esc, the scrim and Close all dismiss it, focus goes to it on open
 // and back to the Expand button on close, and keys 1-5 do not switch workspace while it is open (data-owns-keys).
-const CLOSE_MS = 140;
+const CLOSE_MS = 240; // matches the exit animation in structurePeek.module.css
 
 function StructurePeek({
   data,
   mode,
   setMode,
   highlights,
+  molecule,
   onClose,
 }: {
   data: ConformerResponse;
   mode: Mode;
   setMode: (m: Mode) => void;
   highlights: AtomHighlight[] | null;
+  molecule: PeekMolecule | null;
   onClose: () => void;
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const [closing, setClosing] = useState(false);
-  const info = describeConformer(data, mode, highlights !== null);
+  const facts = conformerFacts(data);
 
   const close = () => {
     if (closing) return;
@@ -325,12 +350,108 @@ function StructurePeek({
             <ConformerCanvas data={data} mode={mode} highlights={highlights} />
           </div>
           <div className={peekStyles.info}>
-            <h3 className={peekStyles.infoHd}>What is shown</h3>
-            {info.map((p) => (
-              <p key={p}>{p}</p>
-            ))}
+            <section className={peekStyles.section}>
+              <h3 className={peekStyles.infoHd}>This molecule</h3>
+              <dl className={peekStyles.facts}>
+                {molecule?.name && (
+                  <>
+                    <dt>Name</dt>
+                    <dd>
+                      {molecule.name.text} <span className={peekStyles.src}>{molecule.name.source}</span>
+                    </dd>
+                  </>
+                )}
+                {molecule && (
+                  <>
+                    <dt>SMILES</dt>
+                    <dd className={peekStyles.mono}>{molecule.smilesStandardized}</dd>
+                    {molecule.smilesInput && molecule.smilesInput !== molecule.smilesStandardized && (
+                      <>
+                        <dt>As entered</dt>
+                        <dd className={peekStyles.mono}>{molecule.smilesInput}</dd>
+                      </>
+                    )}
+                    <dt>molecule_id</dt>
+                    <dd className={peekStyles.mono}>{molecule.moleculeId}</dd>
+                  </>
+                )}
+                <dt>Formula</dt>
+                <dd className={peekStyles.mono}>{facts.formula}</dd>
+                <dt>Atoms</dt>
+                <dd>
+                  {facts.heavyAtoms} heavy, {facts.atoms} with hydrogens
+                </dd>
+                <dt>Bonds</dt>
+                <dd>{facts.bonds}</dd>
+                <dt>Rings</dt>
+                <dd>
+                  {facts.rings}
+                  {facts.aromaticBonds > 0 ? `, ${facts.aromaticBonds} aromatic bonds` : ""}
+                </dd>
+                {facts.longestDistance !== null && (
+                  <>
+                    <dt>Longest span</dt>
+                    <dd>{fmtNum(facts.longestDistance, 1)} Å between two heavy atoms in this conformer</dd>
+                  </>
+                )}
+              </dl>
+            </section>
+
+            <section className={peekStyles.section}>
+              <h3 className={peekStyles.infoHd}>Composition</h3>
+              <dl className={peekStyles.facts}>
+                <dt>Atoms</dt>
+                <dd className={peekStyles.mono}>{facts.elements.map((e) => `${e.element} ${e.count}`).join(" · ")}</dd>
+                <dt>Bonds</dt>
+                <dd className={peekStyles.mono}>{facts.bondTypes.map((t) => `${t.label} ${t.count}`).join(" · ")}</dd>
+              </dl>
+            </section>
+
+            <section className={peekStyles.section}>
+              <h3 className={peekStyles.infoHd}>
+                Computed properties <span className={peekStyles.src}>{PROPERTY_SOURCE} · not predictions</span>
+              </h3>
+              {molecule?.properties ? (
+                <>
+                  <dl className={peekStyles.facts}>
+                    {propertyLines(molecule.properties).map((l) => (
+                      <Fragment key={l.key}>
+                        <dt>{l.label}</dt>
+                        <dd>
+                          {l.value}
+                          {l.unit && <span className={peekStyles.src}> {l.unit}</span>}
+                        </dd>
+                      </Fragment>
+                    ))}
+                  </dl>
+                  <dl className={peekStyles.facts}>
+                    {alertGroups(molecule.properties).map((g) => (
+                      <Fragment key={g.catalog}>
+                        <dt>{g.catalog} alerts</dt>
+                        <dd>{g.names.length === 0 ? "no match" : g.names.join(", ")}</dd>
+                      </Fragment>
+                    ))}
+                  </dl>
+                </>
+              ) : (
+                <p>The service did not return computed properties for this molecule.</p>
+              )}
+            </section>
+
+            <section className={peekStyles.section}>
+              <h3 className={peekStyles.infoHd}>The conformer</h3>
+              <p>{conformerMethodNote(data)}</p>
+            </section>
+
+            <section className={peekStyles.section}>
+              <h3 className={peekStyles.infoHd}>This view</h3>
+              {viewNotes(mode, highlights !== null).map((p) => (
+                <p key={p}>{p}</p>
+              ))}
+            </section>
+
             <Link to="/molecule" className={peekStyles.more} onClick={close}>
-              2D drawing, computed properties and structural alerts
+              2D drawing and the full property notes
             </Link>
           </div>
         </div>

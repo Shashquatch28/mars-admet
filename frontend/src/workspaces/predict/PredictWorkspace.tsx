@@ -178,7 +178,21 @@ export function PredictWorkspace() {
               <dd className={styles.idId}>{response?.molecule_id || "—"}</dd>
             </dl>
           </div>
-          <StructureViewer live={usingApi} moleculeId={response?.molecule_id} highlights={highlights} />
+          <StructureViewer
+            live={usingApi}
+            moleculeId={response?.molecule_id}
+            highlights={highlights}
+            molecule={
+              response && !failure
+                ? {
+                    smilesInput: inputShown,
+                    smilesStandardized: response.smiles_standardized,
+                    moleculeId: response.molecule_id,
+                    properties: response.properties,
+                  }
+                : null
+            }
+          />
         </div>
       </section>
 
