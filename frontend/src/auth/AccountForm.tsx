@@ -1,8 +1,8 @@
 // Sign in / create account. The cookie is set by the API; this only sends the
-// credentials and reports what the service said. Password reset is not offered:
-// the API issues a token but no email is sent, so MARS launches without account
-// recovery and says so here (ADR-022 item 7).
+// credentials and reports what the service said. A forgotten password goes to the
+// reset flow (ADR-042, which replaces ADR-022 item 7's launch without recovery).
 import { useId, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import styles from "./auth.module.css";
 import { useAuthSession } from "../app/authSession";
 import { authErrorMessage, validateCredentials, type AuthMode } from "../domain/session";
@@ -100,10 +100,15 @@ export function AccountForm() {
       <button type="submit" className={styles.submit} disabled={busy}>
         {busy ? "Working…" : mode === "signin" ? "Sign in" : "Create account"}
       </button>
-      <p className={styles.note}>
-        MARS has no password recovery. If you forget this password, the account and its saved items cannot be
-        recovered.
-      </p>
+      {mode === "signin" ? (
+        <p className={styles.note}>
+          <Link to="/forgot-password">Forgot your password?</Link>
+        </p>
+      ) : (
+        <p className={styles.note}>
+          If you forget the password you can choose a new one from a link sent to this address, so use an address you can read.
+        </p>
+      )}
     </form>
   );
 }

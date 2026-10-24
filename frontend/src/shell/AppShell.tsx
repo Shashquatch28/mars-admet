@@ -20,6 +20,8 @@ const WS_TITLE: Record<string, string> = {
   "/compare": "Compare",
   "/library": "Library",
   "/settings": "Settings",
+  "/forgot-password": "Forgot password",
+  "/reset-password": "Reset password",
 };
 
 export function AppShell() {

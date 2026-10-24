@@ -8,6 +8,8 @@ import { AuthSessionProvider } from "./app/authSession";
 import { BatchSessionProvider } from "./app/batchSession";
 import { SavedMarksProvider } from "./app/savedMarks";
 import { Gated } from "./auth/Gated";
+import { ForgotPassword } from "./auth/ForgotPassword";
+import { ResetPassword } from "./auth/ResetPassword";
 import { SettingsWorkspace } from "./workspaces/settings/SettingsWorkspace";
 import { AppShell } from "./shell/AppShell";
 import { PredictWorkspace } from "./workspaces/predict/PredictWorkspace";
@@ -35,6 +37,8 @@ export function App() {
                   <Route path="/compare" element={<CompareWorkspace />} />
                   <Route path="/library" element={<Gated name="Library"><LibraryWorkspace /></Gated>} />
                   <Route path="/settings" element={<SettingsWorkspace />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="*" element={<Navigate to="/predict" replace />} />
                 </Route>
               </Routes>
