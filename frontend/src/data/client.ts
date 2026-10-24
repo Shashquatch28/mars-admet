@@ -25,6 +25,8 @@ import type {
   PasswordResetRequestModel,
   GenerationsResponse,
   LimitsResponse,
+  NameRequest,
+  NameResponse,
   PredictionResponse,
   RegisterResponse,
   SaveMoleculeRequest,
@@ -135,6 +137,32 @@ export async function fetchDepiction(smiles: string): Promise<string> {
   const body: DepictRequest = { smiles };
   const res = await request("/depict", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return res.text();
+}
+
+// The name of a molecule, from the name source the service asks (ADR-044). POST, so the SMILES is never written into a URL; the
+// service sends the source the InChIKey only. 200 is always an answer about a parseable molecule: found, not_found (an answer) or
+// unavailable (the source failed, with the reason). 422: not a molecule; 501: the API has no RDKit; 429: too many in a minute.
+// Several names are asked for at once on a full screen, so at most NAME_MAX_IN_FLIGHT are outstanding; the rest wait their turn.
+const NAME_MAX_IN_FLIGHT = 3;
+let nameActive = 0;
+const nameWaiting: Array<() => void> = [];
+async function inNameSlot<T>(fn: () => Promise<T>): Promise<T> {
+  if (nameActive >= NAME_MAX_IN_FLIGHT) await new Promise<void>((resolve) => nameWaiting.push(resolve));
+  else nameActive++;
+  try {
+    return await fn();
+  } finally {
+    const next = nameWaiting.shift();
+    if (next) next(); // hand the slot straight on
+    else nameActive--;
+  }
+}
+export async function fetchName(smiles: string): Promise<NameResponse> {
+  const body: NameRequest = { smiles };
+  return inNameSlot(async () => {
+    const res = await request("/name", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    return (await res.json()) as NameResponse;
+  });
 }
 
 // Explanation of the model that served `endpoint` (ADR-031, ADR-040). A tree model answers at once; a KERMT

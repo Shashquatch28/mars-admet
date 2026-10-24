@@ -12,6 +12,8 @@ Changing field names here is a breaking change and requires a re-sync.
 
 from __future__ import annotations
 
+from enum import Enum
+
 from pydantic import BaseModel, Field
 
 from .endpoints import Endpoint
@@ -79,6 +81,45 @@ class DepictRequest(BaseModel):
     smiles: str = Field(
         ...,
         description="Input SMILES string; drawn from its RDKit canonical form, so every way of writing a molecule gives one drawing",
+    )
+
+
+# --- POST /name (no account; frontend ADR-044) --------------------------------------
+class NameStatus(str, Enum):
+    FOUND = "found"
+    NOT_FOUND = "not_found"
+    UNAVAILABLE = "unavailable"
+
+
+class NameRequest(BaseModel):
+    """A molecule to name. POST so the SMILES stays out of URLs and logs. The service computes the molecule's standard InChIKey
+    with RDKit and asks the name source about the key only: the SMILES itself is never sent to the source."""
+
+    smiles: str = Field(..., description="Input SMILES string, named as written (stereochemistry and salts are part of the key)")
+
+
+class NameResponse(BaseModel):
+    """What a name source says about one structure, with the source stated. Always HTTP 200 for a molecule that could be
+    parsed: `not_found` is an answer (the source has no record under this key) and `unavailable` is a failure of the source
+    (timeout, busy, down, switched off), told apart so a client never reads a failure as "this molecule has no name". A name is
+    only ever what the source returned for the key: nothing is guessed from the structure. A name describes identity and says
+    nothing about a prediction."""
+
+    status: NameStatus
+    inchikey: str = Field(..., description="The standard InChIKey the lookup used; it is the only thing sent to the source")
+    source: str = Field(..., description="Who supplied the name, in words, e.g. 'PubChem'. Present in every status")
+    source_record: str | None = Field(
+        default=None, description="The source's own id for the record, e.g. 'CID 2244'. Only when status is found"
+    )
+    source_url: str | None = Field(default=None, description="Where the record can be read at the source. Only when found")
+    preferred_name: str | None = Field(default=None, description="The source's preferred title for the record")
+    iupac_name: str | None = Field(default=None, description="The source's computed IUPAC name, when it has one")
+    synonyms: list[str] = Field(
+        default_factory=list,
+        description="The first few other names the source lists, as it lists them; registry numbers and database ids are left out",
+    )
+    reason: str | None = Field(
+        default=None, description="Only when status is unavailable: why, in words a person can read, and what MARS will do"
     )
 
 

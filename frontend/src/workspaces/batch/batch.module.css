@@ -322,6 +322,9 @@
   border-right: 1px solid var(--line-subtle);
   cursor: pointer;
 }
+.inspName {
+  margin: 4px 0 8px;
+}
 .molIx {
   flex: none;
   width: 26px;

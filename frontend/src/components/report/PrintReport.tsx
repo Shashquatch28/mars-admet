@@ -2,7 +2,7 @@
 // in print it is the only thing shown. It reads a `ReportModel` and adds no judgement of its own: the
 // value cell is one ink in every state, reliability is its own column (words) plus an edge and, for a
 // stub, the diagonal hatch (ADR-006, ADR-007).
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import { createPortal } from "react-dom";
 import styles from "./report.module.css";
 import { reportTitle, type ReportModel, type ReportRow } from "../../domain/report";
@@ -68,6 +68,12 @@ export function PrintReport({ model }: { model: ReportModel }) {
             <dd className={styles.mono}>{model.smilesStandardized}</dd>
           </>
         )}
+        {model.name?.map((n) => (
+          <Fragment key={n.label}>
+            <dt>{n.label}</dt>
+            <dd>{n.value}</dd>
+          </Fragment>
+        ))}
         {model.moleculeId && (
           <>
             <dt>Molecule ID</dt>

@@ -36,6 +36,9 @@ from mars_contracts import (
     LoginResponse,
     MeResponse,
     MoleculeProperties,
+    NameRequest,
+    NameResponse,
+    NameStatus,
     PasswordResetConfirmRequest,
     PasswordResetRequestModel,
     PredictionRequest,
@@ -82,6 +85,7 @@ def _ts_interface_fields(name: str) -> set[str]:
         ("ExplainMethod", ExplainMethod),
         ("ExplainOutputSpace", ExplainOutputSpace),
         ("ExplainJobState", ExplainJobState),
+        ("NameStatus", NameStatus),
     ],
 )
 def test_enum_members_match(ts_name, enum):
@@ -101,6 +105,8 @@ def test_enum_members_match(ts_name, enum):
         ("CompareRequest", CompareRequest),
         ("CompareResponse", CompareResponse),
         ("DepictRequest", DepictRequest),
+        ("NameRequest", NameRequest),
+        ("NameResponse", NameResponse),
         ("GenerationsResponse", GenerationsResponse),
         ("LimitsResponse", LimitsResponse),
         ("MeResponse", MeResponse),

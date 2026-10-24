@@ -7,6 +7,7 @@
 // magnitude or calls a value good, safe or favourable: the value is printed the same way in every state and
 // reliability is its own column (ADR-006).
 import { STRUCTURE_STATEMENT, structureMissingStatement, type ReportStructure } from "./depiction";
+import type { NameView } from "./moleculeName";
 import { DISPLAY_UNIT, STUB_MODEL_ID, type DisplayGroup } from "./endpoints";
 import { FALLBACK_NOTE, familyLabel, fallbackCountInRows, servedByFallback } from "./modelFamily";
 import type { ExportMolecule } from "./exportCsv";
@@ -63,6 +64,29 @@ export interface ReportProperties {
   notes: string[];
 }
 
+export interface ReportNameRow {
+  label: string;
+  value: string;
+}
+
+/** Printed when a name row is on the page: what the name is, and what it is not. */
+export const NAME_STATEMENT =
+  "A name is what the named source returned for this structure's InChIKey, or nothing: MARS never builds a name from the structure. " +
+  "It identifies the molecule and says nothing about any value in this report.";
+
+/** The report's name rows from the lookup's outcome. A name is always printed with its source; "none found" and "not included" say which they are. */
+export function reportNameRows(view: NameView | null): ReportNameRow[] | null {
+  if (!view || view.kind === "idle" || view.kind === "looking") return null;
+  if (view.kind === "none") return [{ label: "Name", value: `No name found (${view.source} has no record of this structure)` }];
+  if (view.kind === "unavailable") return [{ label: "Name", value: `Not included: ${view.reason.replace(/\.$/, "")}.` }];
+  const rows: ReportNameRow[] = [
+    { label: "Name", value: view.name ? `${view.name} (${view.source})` : `none listed (${view.source})` },
+  ];
+  if (view.iupac) rows.push({ label: "IUPAC name", value: `${view.iupac} (${view.source})` });
+  if (view.synonyms.length > 0) rows.push({ label: "Also listed as", value: `${view.synonyms.join("; ")} (${view.source})` });
+  return rows;
+}
+
 export interface ReportModel {
   generatedAt: string;
   smilesInput: string;
@@ -78,6 +102,8 @@ export interface ReportModel {
   properties: ReportProperties | null;
   /** The 2D drawing, or why there is none. Null when none was attempted (a Batch row that failed before inference). */
   structure: ReportStructure | null;
+  /** The molecule's looked-up name as label / value rows, each with its source; null when no lookup was attempted or finished. */
+  name: ReportNameRow[] | null;
   /** Rows routed to KERMT that XGBoost answered for this request. */
   fallbackCount: number;
   groups: ReportGroup[];
@@ -169,6 +195,7 @@ export function buildReport(
   now: Date = new Date(),
   kermtEndpoints: readonly string[] = [],
   structure: ReportStructure | null = null,
+  name: NameView | null = null,
 ): ReportModel {
   const r = m.response;
   const failed = !!m.error || !r;
@@ -192,11 +219,13 @@ export function buildReport(
     counts: failed ? reportCounts([]) : reportCounts(m.cells),
     properties: !failed && r?.properties ? reportProperties(r.properties) : null,
     structure: failed ? null : structure,
+    name: failed ? null : reportNameRows(name),
     fallbackCount,
     groups,
     statements: [
       ...REPORT_STATEMENTS,
       ...(!failed && structure ? [structure.kind === "drawn" ? STRUCTURE_STATEMENT : structureMissingStatement(structure.reason)] : []),
+      ...(!failed && reportNameRows(name) ? [NAME_STATEMENT] : []),
       ...(fallbackCount > 0 ? [FALLBACK_STATEMENT] : []),
     ],
   };
