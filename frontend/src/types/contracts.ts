@@ -97,7 +97,7 @@ export interface PredictionResponse {
   properties?: MoleculeProperties | null;
 }
 
-// --- name (api.py, ADR-043) ---
+// --- name (api.py, ADR-044) ---
 // POST /name: what a name source says about one structure, with the source stated. `not_found` is an answer; `unavailable`
 // is a failure of the source and is told apart from it. A name is never guessed and says nothing about a prediction.
 export type NameStatus = "found" | "not_found" | "unavailable";

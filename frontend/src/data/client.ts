@@ -137,7 +137,7 @@ export async function fetchDepiction(smiles: string): Promise<string> {
   return res.text();
 }
 
-// The name of a molecule, from the name source the service asks (ADR-043). POST, so the SMILES is never written into a URL; the
+// The name of a molecule, from the name source the service asks (ADR-044). POST, so the SMILES is never written into a URL; the
 // service sends the source the InChIKey only. 200 is always an answer about a parseable molecule: found, not_found (an answer) or
 // unavailable (the source failed, with the reason). 422: not a molecule; 501: the API has no RDKit; 429: too many in a minute.
 // Several names are asked for at once on a full screen, so at most NAME_MAX_IN_FLIGHT are outstanding; the rest wait their turn.

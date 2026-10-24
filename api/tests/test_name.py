@@ -1,4 +1,4 @@
-"""`POST /name` (frontend ADR-043): the name of a molecule from PubChem, looked up by InChIKey.
+"""`POST /name` (frontend ADR-044): the name of a molecule from PubChem, looked up by InChIKey.
 
 The InChIKey itself is `ml/serve/inchikey.py` (tested in `ml/tests/test_inchikey.py`, where rdkit is installed). The root `.venv`
 has no rdkit and must not reach the real PubChem, so here the key function is a fake and PubChem is an `httpx.MockTransport`.

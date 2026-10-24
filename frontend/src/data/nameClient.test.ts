@@ -1,4 +1,4 @@
-// The name call of data/client.ts against a stubbed fetch (ADR-043): POST with the SMILES in the body and never in the URL, the
+// The name call of data/client.ts against a stubbed fetch (ADR-044): POST with the SMILES in the body and never in the URL, the
 // three answers passed through as they are, and at most three requests outstanding.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type * as ClientModule from "./client";

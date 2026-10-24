@@ -1,4 +1,4 @@
-"""InChIKey for the name lookup (ml/serve/inchikey.py, frontend ADR-043).
+"""InChIKey for the name lookup (ml/serve/inchikey.py, frontend ADR-044).
 
 The key is the only thing about a molecule that leaves the server for a name source, so what matters is that it is the standard
 key for the molecule as written, that it keeps stereochemistry, and that something that is not a molecule is an error and never a

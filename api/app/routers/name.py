@@ -1,4 +1,4 @@
-"""`POST /name` (frontend ADR-043) - the name of a molecule as a name source gives it, no account needed.
+"""`POST /name` (frontend ADR-044) - the name of a molecule as a name source gives it, no account needed.
 
 The SMILES stays out of the URL (POST) and out of the source: the service computes the molecule's InChIKey with RDKit and asks
 the source about the key only. The answer is `found` (a name, with its source and record id), `not_found` (the source has no

@@ -1,4 +1,4 @@
-/* A looked-up molecule name (ADR-043). Plain text in the interface's own inks: a name is identity, so it carries no hue, no
+/* A looked-up molecule name (ADR-044). Plain text in the interface's own inks: a name is identity, so it carries no hue, no
    weight beyond the name itself, and nothing here varies with a prediction. "No name found" and "unavailable" are words in the
    quiet ink, not a warning colour: neither says anything is wrong with the molecule. */
 .line {

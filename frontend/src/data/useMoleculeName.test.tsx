@@ -1,5 +1,5 @@
 // The hook's states, rendered on the server so no effect runs: a held answer is shown at once, and nothing is asked for a
-// structure that has only just appeared (ADR-043). The visible words for each state are what a person reads.
+// structure that has only just appeared (ADR-044). The visible words for each state are what a person reads.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

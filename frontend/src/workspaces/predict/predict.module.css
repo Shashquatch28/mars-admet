@@ -228,7 +228,7 @@
   white-space: nowrap;
   min-width: 0;
 }
-/* A looked-up name wraps: it is prose with its source beside it (ADR-043), not a clipped identifier. */
+/* A looked-up name wraps: it is prose with its source beside it (ADR-044), not a clipped identifier. */
 .idgrid dd.idWrap {
   font-family: var(--sans);
   white-space: normal;

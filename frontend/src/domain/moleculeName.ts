@@ -1,4 +1,4 @@
-// A molecule's name as MARS shows it (ADR-043). Pure and tested.
+// A molecule's name as MARS shows it (ADR-044). Pure and tested.
 //
 // A name is only ever what a name source returned for the structure's InChIKey, shown with that source, or what the user typed.
 // It is never made up from a SMILES, and it says nothing about a prediction: it is not an endpoint, a value or a judgement, so

@@ -1,4 +1,4 @@
-// The name of one molecule, looked up from its structure (ADR-043). A name is a pure function of the structure, so it is asked
+// The name of one molecule, looked up from its structure (ADR-044). A name is a pure function of the structure, so it is asked
 // for once per SMILES and kept for the session; the service caches it too. Nothing is asked without a SMILES or without an API.
 //
 // Two rules keep the lookup polite. A structure must stay on screen for SETTLE_MS before it is asked about, so scrolling past a

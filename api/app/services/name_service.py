@@ -1,4 +1,4 @@
-"""`POST /name` (frontend ADR-043) - the name of a molecule, from PubChem, looked up by InChIKey.
+"""`POST /name` (frontend ADR-044) - the name of a molecule, from PubChem, looked up by InChIKey.
 
 What leaves the server is the molecule's standard InChIKey and nothing else (never the SMILES, never anything about the user):
 `ml/serve/inchikey.py` computes it with RDKit. What comes back is only what PubChem says for that key - its title, its computed

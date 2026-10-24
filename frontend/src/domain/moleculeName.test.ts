@@ -1,4 +1,4 @@
-// A molecule's name as MARS shows it (ADR-043): the five states, the precedence of names, and what the copy may say.
+// A molecule's name as MARS shows it (ADR-044): the five states, the precedence of names, and what the copy may say.
 import { describe, expect, it } from "vitest";
 import { NAME_DISCLOSURE, NAME_DISCLOSURE_SHORT, headlineName, nameFailure, nameView, shouldAsk, sourceLine } from "./moleculeName";
 import { NAME_STATEMENT, buildReport, reportNameRows } from "./report";

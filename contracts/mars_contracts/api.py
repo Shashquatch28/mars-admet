@@ -84,7 +84,7 @@ class DepictRequest(BaseModel):
     )
 
 
-# --- POST /name (no account; frontend ADR-043) --------------------------------------
+# --- POST /name (no account; frontend ADR-044) --------------------------------------
 class NameStatus(str, Enum):
     FOUND = "found"
     NOT_FOUND = "not_found"

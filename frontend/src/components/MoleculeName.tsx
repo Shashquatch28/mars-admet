@@ -1,4 +1,4 @@
-// A molecule's looked-up name, with its source, in words (ADR-043). It takes a SMILES, asks the name hook and shows one of five
+// A molecule's looked-up name, with its source, in words (ADR-044). It takes a SMILES, asks the name hook and shows one of five
 // states: nothing to name, looking, found, no name found, unavailable and why. It knows nothing about predictions, endpoints or
 // values, so nothing it shows can depend on one, and it never colours or marks a name: a name is identity, not a verdict.
 //

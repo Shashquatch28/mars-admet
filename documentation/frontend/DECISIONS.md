@@ -1560,7 +1560,7 @@ a screen reader on the drawings, and the run in a deployed environment.
 
 ---
 
-## ADR-043 — Molecule names: looked up from PubChem by InChIKey, shown with their source, wherever a structure is shown
+## ADR-044 — Molecule names: looked up from PubChem by InChIKey, shown with their source, wherever a structure is shown
 
 **Date:** 2026-10-24 · **Status:** accepted and built (amends ADR-042 item 5, which left automatic naming open)
 

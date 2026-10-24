@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     )
     rate_limit_name_per_minute: int = Field(
         default=120,
-        description="Name lookups per minute per IP (`POST /name`, frontend ADR-043), counted whether or not the cache answers. "
+        description="Name lookups per minute per IP (`POST /name`, frontend ADR-044), counted whether or not the cache answers. "
         "Its own counter, so naming a page of molecules never spends the prediction budget.",
     )
     name_lookup_enabled: bool = Field(

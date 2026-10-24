@@ -1,4 +1,4 @@
-"""The InChIKey of a molecule for the serving layer (frontend ADR-043).
+"""The InChIKey of a molecule for the serving layer (frontend ADR-044).
 
 `POST /name` looks a molecule's name up by its standard InChIKey and never sends the SMILES to the name source. The key is a
 fixed 27-character hash of the structure: it identifies the structure to whoever receives it, which is why the interface says
