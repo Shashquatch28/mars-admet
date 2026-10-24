@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import warnings
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -25,6 +24,7 @@ from app.routers import (
     worker,
 )
 from app.services import prediction_service
+from app.services.email_sender import email_config_problem
 from app.spa import mount_spa
 
 logger = logging.getLogger("mars.startup")
@@ -35,10 +35,9 @@ init_sentry(get_settings())
 
 def _warn_on_insecure_config() -> None:
     """Module 10 "production-safe containerization": catch the specific,
-    concrete mistake of a dev default silently riding into a real deployment
-    — not a general secrets-scanner, just the one default this codebase
-    itself ships (`Settings.secret_key`) that would quietly make every
-    password-reset token forgeable if left unchanged."""
+    concrete mistakes of a dev default silently riding into a real deployment
+    — not a general secrets-scanner. A half-configured email backend is the one
+    that stops the service starting (frontend ADR-042)."""
     settings = get_settings()
     if prediction_service.ml_import_error is not None:
         # Falling back to stubs is deliberate for local dev (no rdkit), but an image that
@@ -48,13 +47,15 @@ def _warn_on_insecure_config() -> None:
             "Real ML stack unavailable (%s) — every endpoint is served by the stub.",
             prediction_service.ml_import_error,
         )
-    if settings.secret_key == "mars-dev-secret-change-me":
-        warnings.warn(
-            "SECRET_KEY is at its insecure development default — password-reset "
-            "tokens are forgeable. Set a real SECRET_KEY before deploying.",
-            stacklevel=1,
+    problem = email_config_problem(settings)
+    if problem:
+        # A deployment that selected Resend and forgot the key or the From address would otherwise answer 202 and send nothing.
+        raise RuntimeError(problem)
+    if settings.email_backend == "log" and settings.session_cookie_secure:
+        logger.warning(
+            "EMAIL_BACKEND=log in a deployment with a secure cookie: password-reset emails are written to the log, not sent. "
+            "Set EMAIL_BACKEND=resend with RESEND_API_KEY and RESEND_FROM_EMAIL."
         )
-        logger.warning("SECRET_KEY is at its insecure development default.")
     if settings.static_dir and not settings.session_cookie_secure:
         logger.warning(
             "The frontend is served from this container (STATIC_DIR is set) but SESSION_COOKIE_SECURE is "

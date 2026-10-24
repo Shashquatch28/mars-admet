@@ -97,6 +97,7 @@ class LimitsResponse(BaseModel):
         ..., description="how long the results of a queued batch job are kept; smaller batches are never stored"
     )
     anon_predict_rate_per_minute: int = Field(..., description="single-molecule predictions per minute per IP without an account")
+    password_reset_ttl_minutes: int = Field(..., description="how long a password-reset link works (it also works only once)")
 
 
 # --- GET /generations (no account; ADR-026 parts 1-2) ---------------------------

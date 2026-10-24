@@ -81,8 +81,8 @@ container); 501 in an environment without it.
 | `/auth/login` | POST | none | `LoginRequest` | `LoginResponse` (200) + `Set-Cookie: mars_session=<token>` |
 | `/auth/me` | GET | session cookie | — | `MeResponse` (200), 401 without a valid session (ADR-022) |
 | `/auth/logout` | POST | session cookie | — | 204 |
-| `/auth/password-reset/request` | POST | none | `PasswordResetRequestModel` | 202 (always, whether or not the email exists — no account enumeration) |
-| `/auth/password-reset/confirm` | POST | none | `PasswordResetConfirmRequest` | 204 |
+| `/auth/password-reset/request` | POST | none (limited per address and per IP, silently) | `PasswordResetRequestModel` | 202 with an empty body, always, at the same speed, whether or not the email has an account and whether or not a limit was hit; the email (a link `<APP_BASE_URL>/reset-password#token=...`, single use, `PASSWORD_RESET_TTL_MINUTES`) is sent from a background task; frontend ADR-042 |
+| `/auth/password-reset/confirm` | POST | none (limited per IP) | `PasswordResetConfirmRequest` | 204 and every session of the account is ended; no cookie is set (a reset does not sign anyone in). 400 `Invalid or expired reset token` for an unknown, used or expired token, 422 for a password that cannot be stored, 429 past the per-IP limit |
 | `/molecules/save` | POST | session cookie | `SaveMoleculeRequest` | `SavedMoleculeResponse` (201) |
 | `/molecules` | GET | session cookie | — | `list[SavedMoleculeResponse]` |
 | `/molecules/{id}` | DELETE | session cookie, owner only | — | 204 |

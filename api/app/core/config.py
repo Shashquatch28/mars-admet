@@ -18,10 +18,24 @@ class Settings(BaseSettings):
     # engine needs the +asyncpg suffix explicitly or it tries to import
     # psycopg2 (not installed, and wrong API for `AsyncSession` regardless).
     redis_url: str = Field(default="redis://localhost:6379/0")
-    secret_key: str = Field(
-        default="mars-dev-secret-change-me",
-        description="Signs password-reset tokens (itsdangerous). MUST be overridden in prod via env var.",
+    app_base_url: str = Field(
+        default="http://localhost:5173",
+        description="Where the SPA is served, as a browser reaches it. The password-reset email links to "
+        "`<APP_BASE_URL>/reset-password#token=...`. Set the deployed origin in prod.",
     )
+    email_backend: Literal["log", "resend"] = Field(
+        default="log",
+        description="'log' writes outgoing email to the server log instead of sending it (development). 'resend' sends "
+        "through Resend and needs RESEND_API_KEY and RESEND_FROM_EMAIL; the service refuses to start without both.",
+    )
+    resend_from_email: str = Field(
+        default="",
+        description="The From address Resend sends as, e.g. 'MARS <no-reply@your-domain>'. Must be on a domain verified in Resend.",
+    )
+    password_reset_ttl_minutes: int = Field(default=30, description="How long a reset link works. It also works only once.")
+    password_reset_per_email_per_hour: int = Field(default=3, ge=1)
+    password_reset_per_ip_per_hour: int = Field(default=10, ge=1)
+    password_reset_confirm_per_ip_per_hour: int = Field(default=20, ge=1)
 
     cors_allow_origins: str = Field(
         default="http://localhost:5173,http://127.0.0.1:5173",

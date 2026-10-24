@@ -29,6 +29,8 @@ from mars_contracts import (
     LoginResponse,
     MeResponse,
     MoleculeProperties,
+    PasswordResetConfirmRequest,
+    PasswordResetRequestModel,
     PredictionRequest,
     PredictionResponse,
     RegisterRequest,
@@ -94,6 +96,8 @@ def test_enum_members_match(ts_name, enum):
         ("SavedMoleculeResponse", SavedMoleculeResponse),
         ("SavedReportResponse", SavedReportResponse),
         ("DeleteAccountRequest", DeleteAccountRequest),
+        ("PasswordResetRequestModel", PasswordResetRequestModel),
+        ("PasswordResetConfirmRequest", PasswordResetConfirmRequest),
     ],
 )
 def test_interface_fields_match(ts_name, model):
