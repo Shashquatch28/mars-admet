@@ -109,7 +109,7 @@ export function EndpointList({
             </>
           )}
         </span>
-        <span style={{ flex: 1 }} />
+        <div className={styles.resActions}>
         <button className={styles.exp} onClick={onExport} disabled={!onExport} title="Download this result as CSV">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M8 2v8M5 7l3 3 3-3M3 13h10" />
@@ -139,6 +139,7 @@ export function EndpointList({
           >
             Comfortable
           </button>
+        </div>
         </div>
       </div>
 

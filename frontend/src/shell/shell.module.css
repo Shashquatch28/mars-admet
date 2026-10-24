@@ -62,10 +62,23 @@
 .spacer {
   flex: 1;
 }
+/* At the 1080px floor the bar is tight: the search box gives way, never the readouts beside it.
+   Without this "v0.2.0-dev", "API READY" and "SIGN IN" each broke onto two lines. */
+.crumb,
+.serving,
+.apistat,
+.signin,
+.signout,
+.acct {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 .kbar {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 0 1 auto;
+  min-width: 140px;
   width: min(360px, 34vw);
   height: 28px;
   padding: 0 10px;

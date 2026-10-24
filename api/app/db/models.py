@@ -37,7 +37,7 @@ class User(Base):
 
 
 class PasswordResetToken(Base):
-    """A password-reset link's token, stored hashed (frontend ADR-042). Single use (`used_at`), short lived (`expires_at`)."""
+    """A password-reset link's token, stored hashed (frontend ADR-043). Single use (`used_at`), short lived (`expires_at`)."""
 
     __tablename__ = "password_reset_tokens"
 

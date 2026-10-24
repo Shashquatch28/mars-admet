@@ -1,4 +1,4 @@
-"""Password reset (frontend ADR-042): single-use, short-lived tokens, stored hashed.
+"""Password reset (frontend ADR-043): single-use, short-lived tokens, stored hashed.
 
 * The raw token is 32 random bytes (`secrets.token_urlsafe`). Only its SHA-256 is stored, so a copy of the database cannot
   be turned into a working reset link. The raw token exists in the email and nowhere else.

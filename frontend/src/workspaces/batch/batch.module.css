@@ -14,12 +14,16 @@
 
 .bhd {
   flex: none;
-  height: 34px;
+  min-height: 34px;
   display: flex;
+  flex-wrap: wrap; /* at the 1080px floor the tally and Export drop to a second line rather than squeezing the view switch */
   align-items: center;
-  gap: 12px;
-  padding: 0 14px;
+  gap: 4px 12px;
+  padding: 4px 14px;
   border-bottom: 1px solid var(--line-subtle);
+}
+.bhd > * {
+  flex-shrink: 0;
 }
 .bTitle {
   font-family: var(--cond);
@@ -50,16 +54,18 @@
 
 .filterbar {
   flex: none;
-  height: 32px;
+  min-height: 32px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 0 14px;
+  gap: 4px 8px;
+  padding: 3px 14px;
   border-bottom: 1px solid var(--line-default);
   background: var(--surface-chrome);
 }
 .search {
-  width: 210px;
+  flex: 0 1 210px;
+  min-width: 140px;
   height: 26px; /* 24px of input inside the 1px borders */
   display: flex;
   align-items: center;
@@ -98,6 +104,8 @@
   background: none;
   color: var(--text-secondary);
   font-size: 10.5px;
+  white-space: nowrap;
+  flex: none;
   cursor: pointer;
 }
 .chip:hover {
@@ -131,6 +139,7 @@
 }
 
 .exportBtn {
+  white-space: nowrap;
   font-size: 10.5px;
   color: var(--text-tertiary);
   background: none;
@@ -200,7 +209,7 @@
   font-family: var(--cond);
   font-size: 9px;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em; /* a one-column group ("Excretion", "Rule-based") is ~57px wide */
   text-transform: uppercase;
   color: var(--text-quiet);
   border-left: 1px solid var(--line-subtle);
@@ -769,7 +778,9 @@
   border-top: 1px solid var(--line-subtle);
 }
 .inspfoot button {
-  flex: 1;
+  flex: 1 0 auto;
+  padding: 0 10px;
+  white-space: nowrap;
   height: 26px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
@@ -921,6 +932,7 @@
   min-height: 0;
   overflow: auto;
   padding: 0 14px 14px;
+  container-type: inline-size;
 }
 .cov {
   width: 100%;
@@ -929,6 +941,10 @@
 }
 .covCap {
   caption-side: top;
+  /* the table can be wider than the pane and scroll; the caption wraps to the pane, not to the table */
+  width: calc(100cqw - 28px);
+  position: sticky;
+  left: 0;
   text-align: left;
   padding: 10px 0 8px;
   font-size: 10.5px;

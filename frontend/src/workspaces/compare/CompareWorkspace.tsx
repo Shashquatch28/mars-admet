@@ -167,8 +167,20 @@ export function CompareWorkspace() {
 
       <div className={styles.inputs}>
         {s.slots.map((value, i) => (
-          <label key={i} className={styles.slot}>
-            <span className={styles.slotLabel}>Molecule {i + 1}</span>
+          <div key={i} className={styles.slot}>
+            <div className={styles.slotHead}>
+              <span className={styles.slotLabel}>Molecule {i + 1}</span>
+              <input
+                className={styles.slotName}
+                value={s.names[i] ?? ""}
+                disabled={s.running}
+                onChange={(e) => s.setName(i, e.target.value)}
+                onKeyDown={onKey}
+                spellCheck={false}
+                placeholder="Name (optional)"
+                aria-label={`Molecule ${i + 1} name`}
+              />
+            </div>
             <input
               value={value}
               disabled={s.running}
@@ -178,7 +190,7 @@ export function CompareWorkspace() {
               placeholder="SMILES"
               aria-label={`Molecule ${i + 1} SMILES`}
             />
-          </label>
+          </div>
         ))}
         <div className={styles.actions}>
           {s.slots.length < COMPARE_MAX ? (
@@ -241,7 +253,13 @@ export function CompareWorkspace() {
                 </th>
                 {comparison.columns.map((c) => (
                   <th key={c.index} scope="col" className={styles.molhd}>
-                    <span className={styles.molName}>Molecule {c.index + 1}</span>
+                    {s.sentNames[c.index] ? (
+                      <span className={styles.molTitle} title={s.sentNames[c.index]}>
+                        {s.sentNames[c.index]}
+                      </span>
+                    ) : (
+                      <span className={styles.molName}>Molecule {c.index + 1}</span>
+                    )}
                     <span className={styles.molSmiles} title={c.smilesStandardized || c.smilesInput}>
                       {clip(c.smilesStandardized || c.smilesInput)}
                     </span>
@@ -267,7 +285,7 @@ export function CompareWorkspace() {
                   <td key={c.index} className={styles.structCell}>
                     <StructureDepiction
                       smiles={c.smilesStandardized || c.smilesInput}
-                      label={`Molecule ${c.index + 1}`}
+                      label={s.sentNames[c.index] || `Molecule ${c.index + 1}`}
                       note={false}
                     />
                   </td>
@@ -297,13 +315,6 @@ export function CompareWorkspace() {
             ))}
             <PropertiesBlock properties={comparison.properties} />
           </table>
-        )}
-        {comparison && (
-          <div className={styles.propNotes}>
-            {comparison.properties.notes.map((n) => (
-              <p key={n}>{n}</p>
-            ))}
-          </div>
         )}
       </div>
     </section>

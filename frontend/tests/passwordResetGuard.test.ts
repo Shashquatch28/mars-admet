@@ -1,4 +1,4 @@
-// Source guards for the password-reset flow (ADR-042): the properties a later edit could break without touching a test.
+// Source guards for the password-reset flow (ADR-043): the properties a later edit could break without touching a test.
 // Lives in tests/ because it reads the filesystem (see cssGuard.test.ts).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

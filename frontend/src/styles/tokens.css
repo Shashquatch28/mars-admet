@@ -53,6 +53,15 @@
   --viewer-hetero: #c19a5b;
   --viewer-atom-focus: var(--accent);
 
+  /* attribution sign (ADR-031). Used ONLY for the sign of a model attribution: "pushed the
+     model's output up / down". Neither is good or bad, and neither is the accent, caution, error
+     or success. Sign is always also a glyph and a signed number, never hue alone. Provisional
+     hues (ADR-031 item 3); 7:1 or better on every surface. */
+  --attr-up: #8c9ef2;
+  --attr-down: #d79bbf;
+  --attr-up-wash: rgba(140, 158, 242, 0.14);
+  --attr-down-wash: rgba(215, 155, 191, 0.14);
+
   /* textures / effects */
   --hatch-unreal: repeating-linear-gradient(
     135deg,
@@ -144,6 +153,44 @@ a {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+/* Scrollbars: a quiet 10px gutter with a 6px inset thumb, drawn from tokens so it reads as part of the
+   chrome rather than the OS widget. Thumb is --text-disabled (visible on every panel surface), lifts to
+   --text-tertiary on hover and --accent while dragged. No arrows, no track fill, radius within the 3px cap. */
+@supports selector(::-webkit-scrollbar) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--text-disabled);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+    min-height: 32px;
+    min-width: 32px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-tertiary);
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background-color: var(--accent);
+  }
+  ::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-disabled) transparent;
+  }
 }
 @media (max-width: 1079px) {
   body {

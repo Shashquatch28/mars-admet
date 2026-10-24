@@ -186,7 +186,9 @@ which ADR-008's stub detection depends on. Not fixed here, because this pass
 was scoped to design only and the file is frontend source. Want it fixed as a
 standalone change, with the CI check from ADR-009?
 
-### Q11 — Reserved space for explainability
+### Q11 — Reserved space for explainability — **RESOLVED 2026-10-20 (ADR-031)**
+
+Resolved: the inspector has an `Explanation` section between the AD gauge and Provenance, computed on request. Original question kept below.
 
 `/molecule/{id}/explain` is M4/Post-MVP (integrated gradients, fragment-level
 attributions). The inspector has no attribution section. Reserve a slot in the

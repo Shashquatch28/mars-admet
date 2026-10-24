@@ -1,6 +1,6 @@
 // Sign in / create account. The cookie is set by the API; this only sends the
 // credentials and reports what the service said. A forgotten password goes to the
-// reset flow (ADR-042, which replaces ADR-022 item 7's launch without recovery).
+// reset flow (ADR-043, which replaces ADR-022 item 7's launch without recovery).
 import { useId, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import styles from "./auth.module.css";

@@ -210,7 +210,7 @@
   accent-color: var(--accent);
 }
 
-/* Password reset (ADR-042): links read as links, a link styled as the secondary button, and the address-bar fragment noted in code. */
+/* Password reset (ADR-043): links read as links, a link styled as the secondary button, and the address-bar fragment noted in code. */
 .note a,
 .error a {
   color: var(--accent);

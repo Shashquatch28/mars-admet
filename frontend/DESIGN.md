@@ -76,6 +76,15 @@ accent ring: `inset 0 0 0 1px var(--accent), var(--highlight-selected)`
 These colour atoms and bonds in the 3D view and never carry interface meaning.
 The AD-gauge covered zone has its own token, `--ad-covered` (`#4A5558`).
 
+### Attribution sign (ADR-031)
+```
+--attr-up   #8C9EF2   the model's output was pushed UP from its reference    NEVER good, bad, risky or favourable
+--attr-down #D79BBF   the model's output was pushed DOWN from its reference  NEVER good, bad, risky or favourable
+--attr-up-wash / --attr-down-wash   rgba(…, 0.14)
+```
+Used only for the sign of a model attribution, and never alone: every use is also a glyph (▲ ▼) and a signed
+number. Neither is the accent, caution, error or success hue. 7:1 or better on every surface. The hues are provisional.
+
 ### Radius / spacing
 Radius: `--radius-sm 2px` (tags, inputs, buttons), `--radius 3px` (overlays).
 Nothing exceeds 3px; nothing is pill-shaped. The only circles are the 6px
@@ -118,7 +127,7 @@ Q14) — no text smaller, anywhere.
 --ease       cubic-bezier(0.23, 1, 0.32, 1)   every enter/settle; NEVER ease-in
 ```
 Asymmetric by design: 200ms in, ≤140ms out. **Zero animation** for workspace
-switching (keys 1–4, rail) and cache-hit results — the highest-frequency paths.
+switching (keys 1–5, rail) and cache-hit results — the highest-frequency paths.
 Never animate: counting numbers, rows entering, charts drawing themselves,
 skeleton shimmer, decoration. One bounded exception: AD-gauge marker (ADR-013) —
 track/zone/threshold instant, one marker eases once on first render, placed (not

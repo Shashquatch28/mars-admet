@@ -37,6 +37,12 @@ const archive = (
     <path d="M3.5 6.5v9L11 19l7.5-3.5v-9M11 10v9" />
   </svg>
 );
+const ring = (
+  <svg width="19" height="19" viewBox="0 0 22 22">
+    <path d="M11 3 17.8 7v8L11 19l-6.8-4V7z" />
+    <path d="M11 7.2 14.4 9.2v3.6L11 14.8l-3.4-2V9.2z" />
+  </svg>
+);
 const gear = (
   <svg width="19" height="19" viewBox="0 0 22 22">
     <circle cx="11" cy="11" r="3" />
@@ -49,6 +55,7 @@ const DESTS: Dest[] = [
   { to: "/batch", label: "Batch", icon: grid },
   { to: "/compare", label: "Compare", icon: panels },
   { to: "/library", label: "Library", icon: archive },
+  { to: "/molecule", label: "Molecule", icon: ring },
 ];
 
 // Shown on a destination that needs an account while the user is anonymous (ADR-022).

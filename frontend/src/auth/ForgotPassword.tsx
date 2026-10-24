@@ -1,4 +1,4 @@
-// Ask for a password-reset link (ADR-042). Reachable without a session. The answer is the same for every address, and the screen
+// Ask for a password-reset link (ADR-043). Reachable without a session. The answer is the same for every address, and the screen
 // says so in words: it never claims an email was sent, because the service never says whether the account exists.
 import { useId, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";

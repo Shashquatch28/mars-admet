@@ -8,6 +8,7 @@
 // Cookies are SameSite=Lax, so the SPA and API must be same-site; one origin is.
 // A split deployment would need the API's explicit CORS origin list (CORS_ALLOW_ORIGINS).
 import { parseProgressEvents, type JobProgress } from "../domain/batchJob";
+import type { ExplainAnswer } from "../domain/explain";
 import type {
   BatchPredictResponse,
   CompareRequest,
@@ -16,6 +17,8 @@ import type {
   DeleteAccountRequest,
   DepictRequest,
   Endpoint,
+  ExplainJobStatus,
+  ExplainResponse,
   LoginResponse,
   MeResponse,
   PasswordResetConfirmRequest,
@@ -134,6 +137,23 @@ export async function fetchDepiction(smiles: string): Promise<string> {
   return res.text();
 }
 
+// Explanation of the model that served `endpoint` (ADR-031, ADR-040). A tree model answers at once; a KERMT
+// explanation is a background job that takes minutes, so the URL has three verbs: GET reads (no side effect),
+// POST starts or joins, DELETE cancels. 200 is a result (or, from DELETE, the cancelled job), 202 a job that is
+// queued or running, 204 nothing started. 404 expired molecule, 409 nothing to explain, 422 cannot be explained,
+// 429 limit, 501 no ml stack, 503 cannot explain now: each is an answer with its own state, not a crash.
+async function explainCall(method: "GET" | "POST" | "DELETE", moleculeId: string, endpoint: Endpoint): Promise<ExplainAnswer> {
+  const q = new URLSearchParams({ endpoint });
+  const res = await request(`/molecule/${encodeURIComponent(moleculeId)}/explain?${q}`, { method });
+  if (res.status === 204) return { kind: "none" };
+  const body = (await res.json()) as ExplainResponse | ExplainJobStatus;
+  return "job_id" in body ? { kind: "job", job: body } : { kind: "result", data: body };
+}
+
+export const readExplanation = (moleculeId: string, endpoint: Endpoint) => explainCall("GET", moleculeId, endpoint);
+export const startExplanation = (moleculeId: string, endpoint: Endpoint) => explainCall("POST", moleculeId, endpoint);
+export const cancelExplanation = (moleculeId: string, endpoint: Endpoint) => explainCall("DELETE", moleculeId, endpoint);
+
 const jsonBody = (body: unknown): RequestInit => ({
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(body),
@@ -167,7 +187,7 @@ export async function register(email: string, password: string): Promise<Registe
   return (await (await request("/auth/register", jsonPost(body))).json()) as RegisterResponse;
 }
 
-// Always 202 with no body, whether or not the address has an account (ADR-042): there is nothing here to learn from.
+// Always 202 with no body, whether or not the address has an account (ADR-043): there is nothing here to learn from.
 export async function requestPasswordReset(email: string): Promise<void> {
   const body: PasswordResetRequestModel = { email };
   await request("/auth/password-reset/request", jsonPost(body));

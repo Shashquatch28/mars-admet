@@ -1,4 +1,4 @@
-// Password reset, as the screens say it (ADR-042). Pure and tested.
+// Password reset, as the screens say it (ADR-043). Pure and tested.
 //
 // What the service guarantees, and the words must not claim more or less: asking for a link answers the same whether or not the
 // address has an account, so the screen can never say an email "was sent"; it says what happens if an account exists. A link

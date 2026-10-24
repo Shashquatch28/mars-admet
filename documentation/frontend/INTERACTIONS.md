@@ -2,7 +2,7 @@
 
 > **Implemented vs specified (verified against `frontend/src` 2026-10-14).**
 > Built: ⌘K/Ctrl+K palette; ⌘⏎ run; ↑ ↓ Home End ⏎ on the endpoint list; ↑ ↓ ← →
-> Home End ⏎ on the batch grid (single Tab stop); 1–4 workspace switch; Esc in
+> Home End ⏎ on the batch grid (single Tab stop); 1–5 workspace switch; Esc in
 > the palette and the subset popover; the instant, zero-animation workspace switch;
 > reduced-motion zeroing in `tokens.css`; rows hold their height while loading
 > (placeholder cells, no shimmer). **Not built yet**: Esc to close the
@@ -38,7 +38,7 @@ everywhere.
 | Esc | inspector, overlay | close and return focus to the originating row |
 | Tab | anywhere | move between regions, never cell-by-cell |
 | Home / End | list or grid | first / last row |
-| 1–4 | global | switch workspace |
+| 1–5 | global | switch workspace |
 
 The dense grids use the WCAG grid pattern: `role="grid"`, roving `tabindex`, a
 single Tab stop for the whole grid, arrow keys for spatial movement, Enter to
@@ -108,7 +108,7 @@ ease-in. Overlays are asymmetric — 200ms in, ≤140ms out. Springs
 (`duration 0.5, bounce 0.15`) apply to three things only: inspector travel, the
 selection lift, and the AD-gauge marker settling on first render.
 
-Workspace switching (keys 1–4, rail clicks) and cache-hit results have **zero**
+Workspace switching (keys 1–5, rail clicks) and cache-hit results have **zero**
 animation. These are the highest-frequency paths in the product.
 
 Forbidden: counting numbers, rows entering, charts drawing themselves, skeleton

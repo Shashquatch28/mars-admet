@@ -227,7 +227,7 @@ arrow key retargets rather than restarting — see §8.
 - rows entering, staggering or fading into a table
 - a chart or interval drawing itself
 - skeleton shimmer
-- workspace switching (keys 1–4, rail clicks) — the highest-frequency action in
+- workspace switching (keys 1–5, rail clicks) — the highest-frequency action in
   the product; animating it would tax every use to decorate the first
 
 ### The gauge-tick exception

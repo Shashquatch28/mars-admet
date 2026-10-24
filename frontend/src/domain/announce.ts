@@ -23,6 +23,23 @@ export function predictionAnnouncement(c: PredictionCounts): string {
   return `Prediction complete. ${parts.join(", ")}.`;
 }
 
+const EXPLAIN_FAILED = new Set(["busy", "limited", "unexplainable", "error", "expired", "no_model", "unsupported"]);
+
+/**
+ * An explanation can run for minutes (ADR-040), so its start and its end are announced, and nothing in between:
+ * the panel polls every few seconds and a live region that spoke each time would be noise. `prev` is the view kind
+ * before this one for the same molecule and endpoint, or null. Reading a result that was already cached is silent.
+ */
+export function explainAnnouncement(prev: string | null, next: { kind: string }): string | null {
+  if (prev === "starting" && next.kind === "job")
+    return "Explanation started. It runs in the background and can take several minutes.";
+  if ((prev === "starting" || prev === "job") && next.kind === "ready") return "Explanation ready.";
+  if (prev === "job" && next.kind === "idle") return "Explanation cancelled.";
+  if ((prev === "starting" || prev === "job") && EXPLAIN_FAILED.has(next.kind))
+    return "Explanation could not be completed. The reason is in the Explanation section.";
+  return null;
+}
+
 /** Progress is announced at each quarter, not on every event: the service reports every half second. */
 const STEP = 25;
 

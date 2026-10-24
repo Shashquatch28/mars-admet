@@ -37,7 +37,7 @@ def _warn_on_insecure_config() -> None:
     """Module 10 "production-safe containerization": catch the specific,
     concrete mistakes of a dev default silently riding into a real deployment
     — not a general secrets-scanner. A half-configured email backend is the one
-    that stops the service starting (frontend ADR-042)."""
+    that stops the service starting (frontend ADR-043)."""
     settings = get_settings()
     if prediction_service.ml_import_error is not None:
         # Falling back to stubs is deliberate for local dev (no rdkit), but an image that

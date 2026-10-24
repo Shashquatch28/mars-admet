@@ -3,20 +3,36 @@
 // says so; it never draws stand-in geometry. A 404 is a normal
 // state, not an error. Atom colours are the element palette tokens
 // (--viewer-*), which carry no interface meaning. Nothing animates.
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import styles from "./predict.module.css";
 import { useConformer } from "../../data/useConformer";
-import { conformerView } from "../../domain/conformer";
-import type { ConformerResponse } from "../../types/contracts";
+import { conformerFacts, conformerMethodNote, conformerView, viewNotes } from "../../domain/conformer";
+import { PROPERTY_SOURCE, alertGroups, propertyLines } from "../../domain/properties";
+import peekStyles from "./structurePeek.module.css";
+import type { ConformerResponse, MoleculeProperties } from "../../types/contracts";
+import { fmtNum } from "../../domain/format";
+import type { AtomHighlight } from "../../domain/explain";
 
 type Mode = "hero" | "analysis";
+
+/** What the peek says about THIS molecule, besides what it reads off the conformer. All of it comes from the prediction response. */
+export interface PeekMolecule {
+  smilesInput?: string | null;
+  smilesStandardized: string;
+  moleculeId: string;
+  properties?: MoleculeProperties | null;
+  /** A name for the molecule, shown with its source, when one exists (typed or looked up). Never inferred here. */
+  name?: { text: string; source: string } | null;
+}
 
 const cssVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 // Hero: ball-and-stick, heavy atoms only. Analysis: every atom as sticks, hydrogens
 // included, and no labels (atom numbering would be a claim nothing cites yet; labels
 // can return with Q11, when something refers to them).
-async function drawConformer(host: HTMLElement, c: ConformerResponse, mode: Mode) {
+async function drawConformer(host: HTMLElement, c: ConformerResponse, mode: Mode, highlights: AtomHighlight[] | null) {
   const $3Dmol = await import("3dmol");
   const viewer = $3Dmol.createViewer(host, { backgroundAlpha: 0 });
   const carbon = cssVar("--viewer-atom");
@@ -32,9 +48,33 @@ async function drawConformer(host: HTMLElement, c: ConformerResponse, mode: Mode
     viewer.setStyle({}, stick(0.1, carbon));
     viewer.setStyle({ not: { elem: ["C", "H"] as unknown as string } }, stick(0.1, hetero));
   }
-  viewer.zoomTo();
-  viewer.render();
+  // Explanation (ADR-031). Heavy atoms come first in the SDF, in RDKit order, so an attribution index is
+  // the viewer's atom index. Colour is the SIGN of the attribution (--attr-up / --attr-down, nothing
+  // else), size and opacity are its strength; atoms with no direction keep the element palette.
+  if (highlights) {
+    const up = cssVar("--attr-up");
+    const down = cssVar("--attr-down");
+    for (const h of highlights) {
+      if (h.sign === "none" || h.strength === 0) continue;
+      const color = h.sign === "up" ? up : down;
+      viewer.setStyle(
+        { index: h.index },
+        {
+          stick: { radius: 0.1 + 0.06 * h.strength, color },
+          sphere: { scale: 0.16 + 0.44 * h.strength, color, opacity: 0.35 + 0.65 * h.strength },
+        },
+      );
+    }
+  }
+  fit(viewer);
   return viewer;
+}
+
+// Centre the molecule in the canvas with a margin, so the fit survives a resize and nothing touches the edge.
+function fit(viewer: { zoomTo: () => void; zoom: (f: number) => void; render: () => void }) {
+  viewer.zoomTo();
+  viewer.zoom(0.85);
+  viewer.render();
 }
 
 const NOTES = {
@@ -44,39 +84,51 @@ const NOTES = {
   unsupported: "This API environment cannot generate conformers (RDKit is not installed there).",
 } as const;
 
-function Frame({ mode, setMode, children, caption }: { mode?: Mode; setMode?: (m: Mode) => void; children: React.ReactNode; caption?: string }) {
+function Frame({ children, tools }: { children: React.ReactNode; tools?: React.ReactNode }) {
   return (
     <div className={styles.viewer}>
       <div className={styles.vhd}>
         <span className={styles.panelTitle}>Structure</span>
-        {mode && setMode && (
-          <div className={styles.seg}>
-            <button className={mode === "hero" ? styles.segOn : ""} aria-pressed={mode === "hero"} onClick={() => setMode("hero")}>
-              Hero
-            </button>
-            <button className={mode === "analysis" ? styles.segOn : ""} aria-pressed={mode === "analysis"} onClick={() => setMode("analysis")}>
-              Analysis
-            </button>
-          </div>
-        )}
+        {tools}
       </div>
       <div className={styles.vstage}>{children}</div>
-      {caption && <div className={styles.vcap}>{caption}</div>}
     </div>
   );
 }
 
-function LiveViewer({ moleculeId }: { moleculeId: string | null | undefined }) {
-  const [mode, setMode] = useState<Mode>("hero");
-  const q = useConformer(moleculeId);
-  const view = conformerView({ moleculeId, isPending: q.isPending, data: q.data, error: q.error });
+function ModeSwitch({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void }) {
+  return (
+    <div className={styles.seg}>
+      <button className={mode === "hero" ? styles.segOn : ""} aria-pressed={mode === "hero"} onClick={() => setMode("hero")}>
+        Hero
+      </button>
+      <button className={mode === "analysis" ? styles.segOn : ""} aria-pressed={mode === "analysis"} onClick={() => setMode("analysis")}>
+        Analysis
+      </button>
+    </div>
+  );
+}
+
+// One 3Dmol canvas. The small pane and the peek each own one, drawn from the same cached conformer. 3Dmol sizes its
+// canvas after the layout settles, so every resize re-fits the molecule: without that the first fit, made while the
+// box was still being measured, leaves it off-centre and cropped.
+function ConformerCanvas({
+  data,
+  mode,
+  highlights,
+  onClick,
+}: {
+  data: ConformerResponse;
+  mode: Mode;
+  highlights: AtomHighlight[] | null;
+  /** A press-and-release that did not move: the stage was clicked, not dragged to rotate. */
+  onClick?: () => void;
+}) {
   const host = useRef<HTMLDivElement>(null);
   const [drawError, setDrawError] = useState<string | null>(null);
-
-  const data = view.kind === "ready" ? q.data : undefined;
   useEffect(() => {
     const el = host.current;
-    if (!el || !data) return;
+    if (!el) return;
     // Each run draws into its own node: 3Dmol appends its canvas asynchronously
     // (after the dynamic import), so a run that was cleaned up mid-flight must be
     // able to discard exactly its own canvas — never a newer run's.
@@ -86,14 +138,18 @@ function LiveViewer({ moleculeId }: { moleculeId: string | null | undefined }) {
     let viewer: Awaited<ReturnType<typeof drawConformer>> | null = null;
     let disposed = false;
     setDrawError(null);
-    drawConformer(mount, data, mode).then(
+    drawConformer(mount, data, mode, highlights).then(
       (v) => {
         if (disposed) v.clear();
         else viewer = v;
       },
       (e: unknown) => !disposed && setDrawError(e instanceof Error ? e.message : "3D rendering failed (WebGL unavailable?)"),
     );
-    const ro = new ResizeObserver(() => viewer?.resize());
+    const ro = new ResizeObserver(() => {
+      if (!viewer) return;
+      viewer.resize();
+      fit(viewer);
+    });
     ro.observe(mount);
     return () => {
       disposed = true;
@@ -101,20 +157,85 @@ function LiveViewer({ moleculeId }: { moleculeId: string | null | undefined }) {
       viewer?.clear();
       mount.remove();
     };
-  }, [data, mode]);
+  }, [data, mode, highlights]);
 
-  if (view.kind === "ready") {
+  const down = useRef<{ x: number; y: number } | null>(null);
+  if (drawError) return <p className={styles.nostate}>Could not draw the structure: {drawError}</p>;
+  return (
+    <div
+      ref={host}
+      style={{ position: "relative", width: "100%", height: "100%" }}
+      aria-label="3D structure"
+      role="img"
+      onPointerDown={onClick ? (e) => (down.current = { x: e.clientX, y: e.clientY }) : undefined}
+      onPointerUp={
+        onClick
+          ? (e) => {
+              const d = down.current;
+              down.current = null;
+              if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 4) onClick();
+            }
+          : undefined
+      }
+    />
+  );
+}
+
+function LiveViewer({
+  moleculeId,
+  highlights,
+  molecule,
+}: {
+  moleculeId: string | null | undefined;
+  highlights: AtomHighlight[] | null;
+  molecule?: PeekMolecule | null;
+}) {
+  const [mode, setMode] = useState<Mode>("hero");
+  const [peek, setPeek] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const q = useConformer(moleculeId);
+  const view = conformerView({ moleculeId, isPending: q.isPending, data: q.data, error: q.error });
+
+  if (view.kind === "ready" && q.data) {
+    const data = q.data;
     return (
-      <Frame mode={mode} setMode={setMode} caption={drawError ? undefined : view.caption}>
-        {drawError ? (
-          <p className={styles.nostate}>Could not draw the structure: {drawError}</p>
-        ) : (
-          <div ref={host} style={{ position: "relative", width: "100%", height: "100%" }} aria-label="3D structure" role="img" />
+      <>
+        <Frame
+          tools={
+            <div className={styles.vtools}>
+              <button
+                ref={trigger}
+                type="button"
+                className={styles.expand}
+                aria-haspopup="dialog"
+                aria-expanded={peek}
+                onClick={() => setPeek(true)}
+              >
+                Expand
+              </button>
+              <ModeSwitch mode={mode} setMode={setMode} />
+            </div>
+          }
+        >
+          <ConformerCanvas data={data} mode={mode} highlights={highlights} onClick={() => setPeek(true)} />
+        </Frame>
+        {peek && (
+          <StructurePeek
+            data={data}
+            mode={mode}
+            setMode={setMode}
+            highlights={highlights}
+            molecule={molecule ?? null}
+            onClose={() => {
+              setPeek(false);
+              trigger.current?.focus();
+            }}
+          />
         )}
-      </Frame>
+      </>
     );
   }
-  const note = view.kind === "error" ? `Conformer request failed: ${view.message}` : NOTES[view.kind];
+  const note = view.kind === "error" ? `Conformer request failed: ${view.message}` : view.kind === "ready" ? NOTES.loading : NOTES[view.kind];
   return (
     <Frame>
       <p className={styles.nostate}>{note}</p>
@@ -130,6 +251,212 @@ function NoApiViewer() {
   );
 }
 
-export function StructureViewer({ live, moleculeId }: { live: boolean; moleculeId?: string | null }) {
-  return live ? <LiveViewer moleculeId={moleculeId} /> : <NoApiViewer />;
+export function StructureViewer({
+  live,
+  moleculeId,
+  highlights = null,
+  molecule = null,
+}: {
+  live: boolean;
+  moleculeId?: string | null;
+  highlights?: AtomHighlight[] | null; // memoize: a new array redraws the structure
+  molecule?: PeekMolecule | null; // what the enlarged pane says about this molecule
+}) {
+  return live ? <LiveViewer moleculeId={moleculeId} highlights={highlights} molecule={molecule} /> : <NoApiViewer />;
+}
+
+// The peek: a larger centred pane over a scrim, opened from the small one. It holds the same conformer at size and says,
+// in text, what is being drawn. It is not a modal form: Esc, the scrim and Close all dismiss it, focus goes to it on open
+// and back to the Expand button on close, and keys 1-5 do not switch workspace while it is open (data-owns-keys).
+const CLOSE_MS = 240; // matches the exit animation in structurePeek.module.css
+
+function StructurePeek({
+  data,
+  mode,
+  setMode,
+  highlights,
+  molecule,
+  onClose,
+}: {
+  data: ConformerResponse;
+  mode: Mode;
+  setMode: (m: Mode) => void;
+  highlights: AtomHighlight[] | null;
+  molecule: PeekMolecule | null;
+  onClose: () => void;
+}) {
+  const panel = useRef<HTMLDivElement>(null);
+  const [closing, setClosing] = useState(false);
+  const facts = conformerFacts(data);
+
+  const close = () => {
+    if (closing) return;
+    const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return onClose();
+    setClosing(true);
+    window.setTimeout(onClose, CLOSE_MS);
+  };
+
+  useEffect(() => {
+    panel.current?.focus();
+  }, []);
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      close();
+      return;
+    }
+    if (e.key !== "Tab" || !panel.current) return;
+    // keep Tab inside the pane while it is open
+    const items = [...panel.current.querySelectorAll<HTMLElement>("button, a[href]")].filter((n) => !n.hasAttribute("disabled"));
+    if (items.length === 0) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && (document.activeElement === first || document.activeElement === panel.current)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  return createPortal(
+    <div className={`${peekStyles.scrim} ${closing ? peekStyles.scrimOut : ""}`} onMouseDown={(e) => e.target === e.currentTarget && close()}>
+      <div
+        ref={panel}
+        className={`${peekStyles.panel} ${closing ? peekStyles.panelOut : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="structure-peek-title"
+        tabIndex={-1}
+        data-owns-keys=""
+        onKeyDown={onKeyDown}
+      >
+        <div className={peekStyles.head}>
+          <h2 id="structure-peek-title" className={peekStyles.title}>
+            Structure
+          </h2>
+          <div className={peekStyles.headTools}>
+            <ModeSwitch mode={mode} setMode={setMode} />
+            <button type="button" className={peekStyles.close} onClick={close}>
+              Close
+            </button>
+          </div>
+        </div>
+        <div className={peekStyles.body}>
+          <div className={peekStyles.stage}>
+            <ConformerCanvas data={data} mode={mode} highlights={highlights} />
+          </div>
+          <div className={peekStyles.info}>
+            <section className={peekStyles.section}>
+              <h3 className={peekStyles.infoHd}>This molecule</h3>
+              <dl className={peekStyles.facts}>
+                {molecule?.name && (
+                  <>
+                    <dt>Name</dt>
+                    <dd>
+                      {molecule.name.text} <span className={peekStyles.src}>{molecule.name.source}</span>
+                    </dd>
+                  </>
+                )}
+                {molecule && (
+                  <>
+                    <dt>SMILES</dt>
+                    <dd className={peekStyles.mono}>{molecule.smilesStandardized}</dd>
+                    {molecule.smilesInput && molecule.smilesInput !== molecule.smilesStandardized && (
+                      <>
+                        <dt>As entered</dt>
+                        <dd className={peekStyles.mono}>{molecule.smilesInput}</dd>
+                      </>
+                    )}
+                    <dt>molecule_id</dt>
+                    <dd className={peekStyles.mono}>{molecule.moleculeId}</dd>
+                  </>
+                )}
+                <dt>Formula</dt>
+                <dd className={peekStyles.mono}>{facts.formula}</dd>
+                <dt>Atoms</dt>
+                <dd>
+                  {facts.heavyAtoms} heavy, {facts.atoms} with hydrogens
+                </dd>
+                <dt>Bonds</dt>
+                <dd>{facts.bonds}</dd>
+                <dt>Rings</dt>
+                <dd>
+                  {facts.rings}
+                  {facts.aromaticBonds > 0 ? `, ${facts.aromaticBonds} aromatic bonds` : ""}
+                </dd>
+                {facts.longestDistance !== null && (
+                  <>
+                    <dt>Longest span</dt>
+                    <dd>{fmtNum(facts.longestDistance, 1)} Å between two heavy atoms in this conformer</dd>
+                  </>
+                )}
+              </dl>
+            </section>
+
+            <section className={peekStyles.section}>
+              <h3 className={peekStyles.infoHd}>Composition</h3>
+              <dl className={peekStyles.facts}>
+                <dt>Atoms</dt>
+                <dd className={peekStyles.mono}>{facts.elements.map((e) => `${e.element} ${e.count}`).join(" · ")}</dd>
+                <dt>Bonds</dt>
+                <dd className={peekStyles.mono}>{facts.bondTypes.map((t) => `${t.label} ${t.count}`).join(" · ")}</dd>
+              </dl>
+            </section>
+
+            <section className={peekStyles.section}>
+              <h3 className={peekStyles.infoHd}>
+                Computed properties <span className={peekStyles.src}>{PROPERTY_SOURCE} · not predictions</span>
+              </h3>
+              {molecule?.properties ? (
+                <>
+                  <dl className={peekStyles.facts}>
+                    {propertyLines(molecule.properties).map((l) => (
+                      <Fragment key={l.key}>
+                        <dt>{l.label}</dt>
+                        <dd>
+                          {l.value}
+                          {l.unit && <span className={peekStyles.src}> {l.unit}</span>}
+                        </dd>
+                      </Fragment>
+                    ))}
+                  </dl>
+                  <dl className={peekStyles.facts}>
+                    {alertGroups(molecule.properties).map((g) => (
+                      <Fragment key={g.catalog}>
+                        <dt>{g.catalog} alerts</dt>
+                        <dd>{g.names.length === 0 ? "no match" : g.names.join(", ")}</dd>
+                      </Fragment>
+                    ))}
+                  </dl>
+                </>
+              ) : (
+                <p>The service did not return computed properties for this molecule.</p>
+              )}
+            </section>
+
+            <section className={peekStyles.section}>
+              <h3 className={peekStyles.infoHd}>The conformer</h3>
+              <p>{conformerMethodNote(data)}</p>
+            </section>
+
+            <section className={peekStyles.section}>
+              <h3 className={peekStyles.infoHd}>This view</h3>
+              {viewNotes(mode, highlights !== null).map((p) => (
+                <p key={p}>{p}</p>
+              ))}
+            </section>
+
+            <Link to="/molecule" className={peekStyles.more} onClick={close}>
+              2D drawing and the full property notes
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
 }

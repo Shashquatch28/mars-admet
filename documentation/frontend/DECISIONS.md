@@ -593,7 +593,7 @@ ever added, allowlist `.dot`.
    `CLOUDFLARE_TURNSTILE_SECRET_KEY` is unset, and the register request sends a placeholder token. If the app is
    ever deployed publicly: honeypot field and a register rate limit first, then Turnstile (free). Confirmed and
    scheduled as a deploy gate by ADR-034 item 9.
-7. (Superseded by ADR-042, 2026-10-24: password reset is built.) MARS launches without account recovery (decided 2026-10-19). `/auth/password-reset/request` issues a token but
+7. (Superseded by ADR-043, 2026-10-24: password reset is built.) MARS launches without account recovery (decided 2026-10-19). `/auth/password-reset/request` issues a token but
    Resend delivery is not wired, so a reset form would promise an email that is never sent. The sign-in form says
    in plain text that there is no password recovery and that a forgotten password loses the account. The two
    `/auth/password-reset/*` routes stay in the API, unused by the client, until an email provider exists.
@@ -949,6 +949,34 @@ refusing to run, which means small screens get an unrefined layout rather than a
 `aria-rowindex` any more (not virtualized, and the old values did not match the group rows between them). Not done:
 screen-reader testing, the Ketcher panel, the Batch grid's keyboard model (see ACCESSIBILITY.md, "Not built or not checked").
 
+## ADR-031 — Explanations come from the model that served the value, are signed but never good or bad, and say what they cannot cover
+
+**Date:** 2026-10-20 · **Status:** proposed (maintainer chose the hybrid method, "the model which serves explains", 2026-10-20; the scale hues and the open parameters below are for review)
+
+**Decision.**
+1. **The serving model explains.** `GET /molecule/{id}/explain?endpoint=X` explains the artifact that `/predict` serves for X, as `ml/serve/routing.json` resolves it. An XGBoost-served endpoint is explained by exact TreeSHAP (`pred_contribs`, averaged over the promoted seeds); a KERMT-served endpoint by Integrated Gradients (`method: "integrated_gradients"`, averaged over the loaded seeds). The response carries `method` and `model_id`; the inspector compares `model_id` with the prediction's and says so in words if they differ (a KERMT endpoint answered by the XGBoost fallback). A stub-served row and the rule-based SA score have no model to explain and show `NO EXPLANATION` with the reason in the inspector (never-do #8, #5 by analogy). No endpoint is ever explained by a model that did not produce its value.
+2. **Attribution is signed, and the sign is not a judgement.** Positive means "this part pushed the model's output up from its reference", negative "down". The words *risk*, *safe*, *toxic*, *favourable* never appear in the UI or the contract: MARS has no validated direction-of-good, and a regression value such as logS is not a hazard. The blueprint's "risk-red vs teal" scale (Module 9, component 3) and the contract sketch's "+ increases predicted risk" are retired for that reason (AGENTS.md rule 1). Sign is carried by a glyph and a signed number first, hue second, so it survives greyscale and colour-blindness.
+3. **Two new neutral tokens, used only for attribution:** `--attr-up` and `--attr-down`, plus a wash of each. They are neither the accent (interaction), caution (reliability), error nor success, and they appear nowhere else. The hues are provisional and are the one aesthetic choice here (as Q12 was): a periwinkle and a mauve, chosen to stay away from those four.
+4. **Honest about what an atom heatmap can show.** Both models take whole-molecule descriptors as well as structure (XGBoost: 217 RDKit descriptors beside a 2048-bit Morgan fingerprint; KERMT: the normalised RDKit 2D descriptors from descriptastorus beside the molecular graph). Descriptor contributions cannot be placed on atoms. On the promoted XGBoost seeds, 81-91% of the absolute TreeSHAP mass sat on descriptors for the two endpoints probed (hERG, solubility; one molecule, 2026-10-19). So the response reports three separate parts that sum to `output_value - base_value`: **structure** (atom attributions), **whole-molecule** (named descriptors, with their values), and **unmapped** (for XGBoost, the contribution of fingerprint bits that are absent from this molecule or that RDKit cannot place; for IG, any completeness residual). The inspector prints the three totals in words before showing any heatmap, and the 3D view highlights only the structure part.
+5. **Fragments are a view over atoms, not additional evidence.** `fragment_attributions` sums atom attributions over RDKit's named functional groups (`rdkit.Chem.Fragments`) plus each ring system. Fragments can overlap, so fragment scores do not add up; atoms do. Atoms that fall in no group are not hidden: the atom list is always available.
+6. **An explanation is computed on request, not with every prediction** (Module 8: lazy). The inspector has an `Explain this prediction` action; nothing explains itself on selection. Result caching follows the prediction cache (48 h, keyed on the serving version). Degraded or failed explanations are not cached and are never replaced by a made-up result.
+7. **No validation claim is made until it is measured.** The perturbation check and the PAINS/Brenk cross-check (blueprint Module 6, dual validation) are run and reported in `documentation/status/`; until their result is written there, the inspector note says only that attributions describe the model, not the chemistry.
+
+**Rationale.** The blueprint assumed one GNN behind every endpoint and named Integrated Gradients. Tier 0 is now served per endpoint: KERMT on six, XGBoost on eight. Explaining a KERMT model for an XGBoost-served value would describe a model that did not produce the number on screen, which is the capability misrepresentation AGENTS.md exists to prevent. TreeSHAP is exact for the served trees (additivity held to 1e-6 on the real artifacts) and costs about 40-60 ms for five seeds; Integrated Gradients is the blueprint's choice for the GNN and one of the two best-performing families (with CAM) in the benchmark it cites. Signed attribution is intrinsic to both methods; what is a choice is the vocabulary and the colour, and those were the part of the blueprint that conflicted with the rule that outranks the others.
+
+**Rejected.** *IG on KERMT for all 14 endpoints* — explains a model other than the one serving the value on eight of them. *TreeSHAP only* — leaves the six KERMT endpoints, including hERG, unexplained although the blueprint's validation targets toxicity. *Risk-red / safe-teal* — imposes a direction-of-good. *Auto-explain on selection* — IG costs seconds, and a surprise cost on every row click breaks the speed the workstation promises. *Atom heatmap only, descriptors hidden* — would present a minority of the explanation as the whole.
+
+**Open parameters (not fixed in advance; each is echoed in the response so no number is silent).**
+- IG baseline: zero atom and bond feature tensors (an empty graph); the descriptor baseline is a constant, currently 0.0 (candidate: the normalised median 0.5). To be settled by measuring `f(baseline)` on the real checkpoints. `baseline` states the choice in words.
+- IG quadrature and step count: midpoint rule after the substitution alpha = u^3, because a uniform grid did not converge (measured on a randomly initialised KERMT: erratic 5-100% completeness error at 16-256 steps; the cubic substitution 0.1-2% by 128). Steps are raised through (64, 128, 256) until `|sum(attributions) - (f(x) - f(baseline))|` is within max(5% of the change, 0.001); the 5% / 0.001 and the cap are for the maintainer. The achieved error is returned as `completeness_error`. The toy-model measurement must be repeated on the real checkpoints.
+- Fragment catalogue: RDKit `Chem.Fragments` plus ring systems. Swappable without a contract change (each fragment carries its own SMARTS).
+
+**Consequences.**
+- New contract `ExplainResponse` (+ `FragmentAttribution`, `DescriptorAttribution`, `ExplainMethod`, `ExplainOutputSpace`) in `mars_contracts`; frontend mirror and the drift test move with it (ADR-009).
+- `output_space` is part of the meaning of every number: `log_odds` (XGBoost classification: TreeSHAP on the margin), `score` (KERMT classification: the 0-1 value shown, the mean of the two heads' sigmoids), `native_unit` (regression). The inspector prints it beside the totals, and a classification attribution is never presented as a change in probability (ADR-023).
+- The KERMT service gains an explain route and must not block `/predict`: explanation runs in its own queue.
+- Docs changed with it: blueprint Module 6 (per-endpoint coverage, retired scale), `API_ROUTES.md` (`ExplainResponse`), COMPONENTS and DESIGN_SYSTEM (tokens, `ExplanationPanel`), `AIMS/decisions.md`.
+
 ## ADR-032 — Nothing on screen is invented: the no-API prototype mode and the palette's sample molecules are removed
 
 **Date:** 2026-10-20 · **Status:** accepted · implemented 2026-10-20 (demo-readiness pass)
@@ -1126,7 +1154,7 @@ regression endpoints the minimum, median and maximum returned in this batch (stu
 counted nowhere. The rule-based score is not in the table. `COVERAGE_NOTES` is printed with it and a test fails if it uses ranking or flagging words. Not built, by decision: a chart and an outlier flag.
 
 **Implementation note (2026-10-22), item 3.** Done and checked live. `ml/serve/properties.py` computes molecular weight, Wildman-Crippen logP, donors, acceptors, TPSA, rotatable bonds, QED, the rule-of-five count and the distinct PAINS and Brenk alerts;
-`ml/serve/alerts.py` is the one alert matcher (same `alert_matches(mol, catalogs)` signature and catalog labels as `feat/explainability`'s `explain_validation.py`, which should import it instead of keeping its own copy; the catalog is now built once). `PredictionResponse.properties` is optional and
+`ml/serve/alerts.py` is the one alert matcher (same `alert_matches(mol, catalogs)` signature and catalog labels as `feat/explainability`'s `explain_validation.py`, which now imports it instead of keeping its own copy; the catalog is now built once). `PredictionResponse.properties` is optional and
 null without RDKit, for an unparseable molecule, or on a response written before it existed; Batch and Compare responses carry it too but do not show it, as decided. Two refinements to the decision above, both recorded here instead of left implicit:
 (a) the panel is in the molecule column under Identity, not beside the RULE-BASED group: the group is part of a role="grid" roster whose semantics a second table would break, and these are facts about the molecule rather than about an endpoint; it is still outside the roster and its counts.
 (b) `MODEL_VERSION` is not bumped. The cache key gains a `RESPONSE_SHAPE` tag (`r2`) instead: `MODEL_VERSION` names a model generation, is pinned by each environment's `.env` (the shared one would have kept the old value), and a change that is not a model change should not move the generation shown in the top bar. Entries written before `properties`
@@ -1470,10 +1498,67 @@ The route is separate from `/predict` because a drawing needs no model, no appli
 Compare with two molecules (a rhodanine and L-alanine) showed one drawing per column in a Structure row; the Library detail of a saved molecule showed its drawing; the report built for aspirin (with `window.print` stubbed) held the drawing in `#15191b` (`--report-ink`) and the drawing statement. Not run: the real print dialog and PDF, the 501 and 429 states in the browser (covered by unit and API tests), the Docker image rebuild,
 a screen reader on the drawings, and the run in a deployed environment.
 
+## ADR-040 — A KERMT explanation is a background job: started, polled, cancellable, cached
 
-## ADR-042 — Password reset: single-use hashed tokens, one answer for every address, email behind an interface
+**Date:** 2026-10-23 · **Status:** accepted (the maintainer approved the design and its decisions in chat, 2026-10-23); implementation in progress on `feat/explainability`
 
-**Date:** 2026-10-24 · **Status:** accepted · implemented 2026-10-24 on `feat/password-reset`. Supersedes ADR-022 item 7 (launch without account recovery). The number is 042 because 040 and 041 are taken on the unmerged `fix/demo-ready-no-hardcoded`.
+**Decision.**
+1. **KERMT-served explanations run as jobs inside the KERMT service**, the one long-lived component that holds the model. The API submits, polls, finalises and caches; it never holds a request open for minutes. XGBoost-served explanations stay instant and synchronous through the same URL.
+2. **Three verbs on one URL**, `/molecule/{id}/explain?endpoint=X`: `POST` starts or joins the job (idempotent), `GET` reads it, `DELETE` cancels it. `GET` has no side effect, which the old compute-on-GET did. Codes: 200 `ExplainResponse`; 202 `ExplainJobStatus` while queued or running (with `Retry-After`); 204 nothing started and nothing cached; 404 unknown or expired molecule; 409, 422, 501, 503 as in ADR-031. A job that failed answers with its error, not a status.
+3. **The browser polls** (about every 3 s) while a job is queued or running. Polling `GET` is not rate limited; starting a job is, with the `/predict` per-IP bucket, one concurrent job per IP and a bounded queue (8). A full queue is a 503 with a message.
+4. **Anonymous access stays**, under those limits. Minutes of shared CPU per request is an abuse surface; if it is abused, requiring an account (as Batch does) is the next step.
+5. **Progress is honest.** `ExplainJobStatus` carries `seeds_done` of `seeds_total` and a `stage` in words ("seed 2 of 3, 128 steps"), plus the queue position and elapsed time. There is no percentage and no estimate: the step count escalates 64, 128, 256 until the residual meets the tolerance, so the total is unknown, and measured time for one molecule varied 3x between runs.
+6. **`completeness_error` now means the method's own identity.** Integrated Gradients: the integration residual `|sum of attributions - (output - base)|`, which `unmapped_total` carries, so the parts still sum exactly to the output. TreeSHAP: the additivity error against the model's own margin (about 1e-6). Before this it was about 0 for IG by construction and told the reader nothing. Two additive fields: `converged` (IG: met the tolerance after the final step count; a result that did not is returned and flagged, never hidden) and `seed_agreement` (median pairwise cosine of the per-seed atom attributions).
+7. **Job state is in memory in the service for v1.** A restart loses queued and running jobs; the API reports that as a failed job and the user starts it again. Finished results live in Redis for 48 h (the key gains a digest of the IG parameters and loaded seeds, so changing the baseline, schedule, tolerance or seed count cannot serve a stale explanation).
+8. **The memory knob moves to 4 copies per chunk** (`DEFAULT_CHUNK`). Measured on one real checkpoint: working memory 790 MiB against 1353 MiB at 16, for about 9% more time. Numerics are unchanged.
+
+**Rationale.** On the real checkpoints (2026-10-23, 24 molecules, three arms) a warm explanation took a median 93-193 s and up to 18 minutes, and the synchronous client timed out at 120 s, so a large share of KERMT-served explanations would fail outright. More CPUs were slower, not faster (4 CPUs 150 ms per step, 8 CPUs 194 ms, 12 CPUs 386 ms), so speed cannot be bought. A job also needs a place to live that outlasts a request; on Cloud Run a background task in the API loses its CPU when the request ends, which is why Batch uses Cloud Tasks. An IG run cannot be sliced as Batch is, so the job belongs where the model is.
+
+**Rejected.** *Raise the timeout* - a request held for 20 minutes is not an interface. *An API-side background task* - dies with the instance and is starved of CPU on Cloud Run. *SSE for progress* - holds connections for minutes and adds proxy and reconnection cases for a few numbers that change every few seconds. *A percentage or ETA* - not knowable (item 5). *Failing a result that did not converge* - the attribution is still informative and the flag says what it is. *Requiring an account now* - kept as the next step, not the first.
+
+**Consequences.**
+- New contract `ExplainJobStatus` and `ExplainJobState`; `ExplainResponse` gains `converged` and `seed_agreement` and a new meaning for `completeness_error`; frontend mirror and drift test move with it.
+- The panel gains `queued`, `running`, `failed` and `lost` states, a Cancel button and resumption: the server is asked, so reloading or returning to an endpoint continues the job or shows the cached result. No spinner and no animation (never-do #7); updates are text, announced through the existing live region.
+- The KERMT service gains `POST /explain/jobs`, `GET /explain/jobs/{id}`, `DELETE /explain/jobs/{id}` and `GET /explain/config`; the synchronous `/explain` stays for diagnostics.
+- Open parameters, still the maintainer's: the 5% / 0.001 tolerance and the 64, 128, 256 schedule (provisional since ADR-031), the descriptor baseline (0.0 today; 0.5 recommended with low confidence, 2026-10-23), the queue size and per-IP limit above.
+
+---
+
+## ADR-041 — A Molecule page: the structure drawing and the computed properties leave the Predict column
+
+**Date:** 2026-10-24 · **Status:** accepted and built (amends ADR-034 item 3 and ADR-039 on where the pieces are shown)
+
+**Decision.**
+1. **A fifth workspace, Molecule (`/molecule`, key 5, last in the rail).** It shows, for the molecule Predict last ran: identity (input, standardized, `molecule_id`), the 2D drawing (ADR-039) and the computed properties and structural alerts (ADR-034 item 3), with their existing notes. It reads the response Predict already holds above the router; it calls nothing new, carries no endpoint, value or roster, and says "No molecule yet" with a link to Predict when there is none.
+2. **Predict keeps what belongs to a prediction**: the SMILES field, Draw a structure (ADR-035), Run, identity and the 3D conformer, because the explanation highlights (ADR-031) are drawn on the conformer and must stay beside the inspector that asks for them. A link under the conformer, "2D drawing, computed properties and structural alerts", leads to the Molecule page.
+3. **Compare, Library and the printed report keep their own 2D drawings and property rows** (ADR-036, ADR-039); only Predict's column changed.
+
+**Rationale.** After ADR-034 item 3, ADR-039 and ADR-031 each added a block to the Predict molecule column, it held seven sections and scrolled 1.7 screens at 1280×800 (1154 px of content in a 694 px column), so the SMILES field and Run sat above a long read-only stack. Moving the two blocks that are not predictions leaves the column at one screen (668 px of content, no scroll) and gives the drawing and the property table room to be read at size.
+
+**Rejected.** *Tabs inside the column* - a hidden state for the thing that has to be seen next to the result. *Moving the 3D conformer too* - it would separate the attribution highlights from the Explain control. *A modal or drawer* - the page is a place to stay and read, not an interruption.
+
+**Consequences.** Keys are 1-5 (Settings text, shortcuts docs and AGENTS.md updated). `data-owns-keys` and the typing guard are unchanged. The rail order is Predict, Batch, Compare, Library, Molecule so that keys 1-4 do not move. Two Predict-only layout additions came with the audit: the results header wraps its tally and its Export, Report and density controls as one group, and below the 1080 px floor the Predict endpoint grid keeps a 118 px endpoint column and scrolls sideways.
+
+---
+
+## ADR-042 — The structure peek, and Compare's names, scrolling header and endpoint popover
+
+**Date:** 2026-10-24 · **Status:** accepted and built (amends ADR-013's animation exception, ADR-036 and ADR-041)
+
+**Decision.**
+1. **The Structure pane in Predict opens a peek.** An Expand button (and a click on the stage that did not move, so a drag still rotates) opens a centred pane, up to 980 x 660, over a scrim: the same cached conformer at size with its own Hero / Analysis switch, and a "What is shown" column. Nothing is printed under the small pane any more; the conformer note, the force-field caption and the link to the Molecule page all moved into the peek. The column is about THIS molecule, in five sections: *This molecule* (a name with its source when one exists, standardized and entered SMILES, `molecule_id`, Hill formula, heavy and total atoms, bonds, rings, aromatic bonds, longest heavy-atom span), *Composition* (the list of elements and of bond types with counts), *Computed properties* (the RDKit table and structural alerts, labelled not predictions), *The conformer* (method and its own energy) and *This view* (what is drawn, the element palette, direction and strength when attribution is on, how to rotate and zoom, that the conformer expires with the prediction cache). `conformerFacts` reads the counts off the conformer, so each can be checked against the drawing. None of it says anything about a prediction, and the name row stays empty until a name exists (typed in Compare, or looked up once a source is chosen).
+2. **The peek eases in and out** (360 ms in, 240 ms out on a gentler curve than the app's own, opacity and a short rise; the scrim fades; first built at 200 ms and lengthened at the maintainer's request so the motion is seen without making anyone wait). This is a second bounded exception to never-do #7, alongside the AD-gauge marker (ADR-013), asked for by the maintainer. It is the only overlay that animates; workspace switching, the command palette and every number remain instant. `prefers-reduced-motion` turns it off and the pane then opens and closes at once.
+3. **Focus and keys:** the peek takes focus on open and returns it to Expand on close; Esc, the scrim and Close dismiss it; Tab stays inside; keys 1-5 do not switch workspace while it is open (`data-owns-keys`).
+4. **The molecule is centred.** 3Dmol made its first fit while the box was still being measured, which left the molecule off-centre and cropped; every resize now re-fits it with a margin.
+5. **Compare: a name for each molecule.** Each slot has an optional name field, typed by the user. A result column shows that name in the primary ink above the SMILES, or "Molecule N" when none was given. Names are never looked up or inferred; a molecule sent from Library or Batch arrives without one. (Automatic naming from a structure needs an external service or a name database; that is a decision on where a molecule may be sent, and is open.)
+6. **Compare: the column header scrolls with the table** instead of staying pinned, and the property-source footer under the table is gone (the group heading already says "RDKit · not predictions", and the full notes are on the Molecule page).
+7. **The endpoint popover anchors to its button in Compare and Batch** (right edges aligned) and to the Run row in Predict. ADR-041's change anchored it to the nearest positioned ancestor everywhere, which in Compare drew it across the whole window.
+
+**Rejected.** *A tooltip for the notes* - never-do #8. *Animating the palette and other overlays too* - the exception is one pane, not a theme. *Guessing a name from the SMILES* - an invented name is a claim MARS cannot back.
+
+## ADR-043 — Password reset: single-use hashed tokens, one answer for every address, email behind an interface
+
+**Date:** 2026-10-24 · **Status:** accepted · implemented 2026-10-24 on `feat/password-reset`. Supersedes ADR-022 item 7 (launch without account recovery). The number is 043 because 040, 041 and 042 were taken on `main` by other work while this was built.
 
 **Decision.**
 
@@ -1506,3 +1591,4 @@ access logs, a Referer header and any proxy. *Sending inside the request* - a sl
 which is fine at this scale and would need a per-user index at a larger one. Emails are plain text; there is no HTML template.
 
 **Never-do audit.** (1) to (6) and (9): no predicted value, roster row, interval, stub or token of the visual system is touched; the new screens use existing auth classes, hairlines and tokens only, radius 2px, no shadow. (7) Nothing animates and no state counts; the busy state is the word "Working…". (8) Every state (done, invalid link, incomplete link, rate limited, unreachable) is in text beside the form.
+

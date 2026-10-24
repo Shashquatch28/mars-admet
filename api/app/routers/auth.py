@@ -108,7 +108,7 @@ async def password_reset_request(
     r: redis.Redis = Depends(get_redis),
 ) -> None:
     """Always 202 with an empty body, at the same speed, whether or not the address has an account, and whether or not a limit
-    was hit (frontend ADR-042). Everything that differs (the lookup, the token, the email) happens in a background task after
+    was hit (frontend ADR-043). Everything that differs (the lookup, the token, the email) happens in a background task after
     the response has gone, so neither the body nor the timing can be used to find out which addresses have accounts."""
     if await allow_request(r, req.email, client_ip(request)):
         background.add_task(send_reset_if_account, req.email)

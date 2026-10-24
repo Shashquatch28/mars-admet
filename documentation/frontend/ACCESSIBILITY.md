@@ -133,7 +133,7 @@ Two-dimensional content (the grids) is the WCAG 1.4.10 exception for content tha
 
 ## Keyboard shortcuts
 
-The 1-4 workspace keys are single-character shortcuts (WCAG 2.1.4), so they can be turned off: Settings, Keyboard,
+The 1-5 workspace keys are single-character shortcuts (WCAG 2.1.4), so they can be turned off: Settings, Keyboard,
 "Single-key shortcuts". On by default, remembered in this browser. They already ignore keystrokes while a text field
 has focus. Ctrl or Command + K (command palette) is a modifier shortcut and is not affected.
 

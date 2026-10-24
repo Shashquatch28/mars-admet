@@ -13,12 +13,60 @@ See the 2026-08-30 "documentation stays untracked" entry.
 
 ---
 
+## 2026-10-23 — Integrated Gradients on the real KERMT checkpoints: measured, and served as background jobs (frontend ADR-040)
+
+**Measured (24 fixed molecules: 6 held-out test molecules + 18 edge cases; hERG, BBB, logP; 3 seeds; 4 CPUs; baseline 0.0 and 0.5).** Converged within
+max(5% of the change, 0.001) by 256 steps for 68-73% (hERG), 77-86% (BBB), 95% (logP); misses are mostly molecules whose output barely moves (absolute residual
+<= 0.03). Per-seed residuals are much worse than the seed average. Warm latency median 93-193 s, p95 385-1094 s; about 150 ms per step per checkpoint; more CPUs
+were slower. Peak memory 2.3-2.8 GiB (chunk 4). Atom attributions are baseline-stable (cosine 0.96-0.99), descriptor-part attributions are not (0.15-0.21).
+Atoms carry 75-88% of the IG attribution mass (TreeSHAP: descriptors 81-91%). Five engine/build bugs found and fixed (ml/explain missing from the Docker
+allowlist, backward() computing 70M weight gradients, methane, descriptor names, selenium NaN).
+
+**Decision (maintainer, 2026-10-23).** Serve it as a polled background job inside the KERMT service, cached 48 h; anonymous with tight limits; redefine
+`completeness_error` and add `converged` and `seed_agreement`; chunk 4; job state in memory for v1. Recorded as frontend ADR-040. Descriptor baseline,
+tolerance and schedule remain provisional (recommended baseline 0.5, low confidence).
+
+---
+
 ## 2026-10-22 — The per-upload retraining opt-in is removed; MARS never trains on submitted molecules
 
 **Decision (maintainer, 2026-10-22).** `BatchPredictOptions.retrain_opt_in` is deleted from the contract and the blueprint's opt-in paragraph (Module 8) now says there is none. Nothing in the API read the field, no UI offered it, and no separate storage path for opted-in data exists, so it described a promise the system could not keep. The stated posture becomes: molecules are not retained beyond serving, except what the user saves to their Library, and are never used to train or improve models. A future opt-in would need its own consent flow, storage and retention terms. Recorded with the other frontend scope decisions in `documentation/frontend/DECISIONS.md` ADR-034.
 
 ---
 
+## 2026-10-20 — Explainability (Module 6): the serving model explains; TreeSHAP for XGBoost-served endpoints, Integrated Gradients for KERMT-served ones
+
+**Decision (maintainer, 2026-10-20: "the hybrid, the model which serves explains").** `GET /molecule/{id}/explain?endpoint=X` explains the artifact
+that `ml/serve/routing.json` says serves X. XGBoost-served (8 endpoints today): exact TreeSHAP over the promoted seeds (`ml/explain/tree_shap.py`;
+additivity to 1e-6 on the real artifacts, 40-60 ms for five seeds). KERMT-served (6 endpoints): Integrated Gradients on the KERMT service
+(blueprint Module 6's named method). No fallback between the two; a KERMT outage is a 503, not another model's explanation. Rule-based and
+stub-served rows have nothing to explain and say so. Frontend ADR-031 records the vocabulary (signed, never good or bad), the two new neutral
+attribution tokens, and the "computed on request" behaviour.
+
+**Why the blueprint changed.** Module 6 assumed one GNN behind every endpoint. Tier 0 is served per endpoint (2026-10-19 entry below), so
+"IG on the GNN" explains six endpoints and describes a non-serving model on eight. The blueprint's risk-red / safe-teal scale and the contract
+sketch's "+ increases predicted risk" imply a direction-of-good MARS cannot support (AGENTS.md rule 1); both are retired in favour of
+"pushed the output up / down".
+
+**What an explanation can and cannot show (measured 2026-10-19/20 on the promoted XGBoost seeds).** 81-91% of the absolute TreeSHAP mass sat on
+the 217 whole-molecule descriptors for the two endpoints probed, so an atom heatmap is a minority of the explanation. The response therefore splits
+into structure / whole-molecule / unplaced parts that sum to the output, and the UI prints the split before any heatmap. Fragment scores are sums
+over overlapping groups and are not additive.
+
+**Validation (blueprint "dual validation", `ml/eval/explain_validation.py`, report `documentation/status/explain_validation.md`).** Perturbation
+check and PAINS/Brenk cross-check on held-out test molecules, each against a size-matched random control. The UI claims no validation beyond what
+that report shows.
+
+**Open parameters, not fixed in advance.** IG baseline (descriptor part), IG step count / completeness tolerance, fragment catalogue
+(RDKit `Chem.Fragments` + ring systems). Each is echoed in the response (`baseline`, `n_steps`, `completeness_error`).
+
+**State at the end of the session.** Built and tested: the contract, TreeSHAP, the API route and cache, the inspector panel and 3D highlight, the validation harness
+(AMES shows a signal, DILI/solubility/Caco-2 do not: `status/explain_validation.md`). The KERMT Integrated Gradients engine (`ml/serve/kermt_service/explain_ig.py`,
+`POST /explain`) is written and tested only on KERMT's own model class with random weights (forward parity 1e-5, completeness 0.1-2% at 128-256 steps with the cubic
+quadrature; the uniform grid failed to converge). It has NOT been run on a real checkpoint, in the Docker image, or through the API, because Docker was not available.
+
+**Follow-ups.** (1) Build the KERMT image, run `explain` on the real checkpoints: confirm completeness, measure latency and memory, settle the descriptor baseline,
+and run the validation harness on the six KERMT-served endpoints. (2) Land `feat/explainability` on main; it is based on `feat/kermt-serving`, which is itself not on main.
 ## 2026-10-19 — KERMT Tier 0 is wired into serving: per-endpoint routing, separate CPU service, XGBoost as the fallback
 
 **Decision (maintainer delegated the configuration: "as per the blueprint, or whatever is most optimal and production practice").**

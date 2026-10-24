@@ -36,9 +36,9 @@ it.
    never a gap. The full roster renders every time, reconciled client-side.
 6. Show a stub / sample value without the diagonal hatch.
 7. Animate a number counting, a row entering, a chart drawing itself, or a
-   skeleton shimmer. Workspace switching (keys 1–4, rail) is instant — zero
-   animation. (One bounded exception: the AD-gauge marker settles once on first
-   render — ADR-013.)
+   skeleton shimmer. Workspace switching (keys 1–5, rail) is instant — zero
+   animation. (Two bounded exceptions: the AD-gauge marker settles once on first
+   render — ADR-013; the structure peek eases in over 360 ms and out over 240 ms — ADR-042.)
 8. Use a tooltip as the only place a state is explained.
 9. Introduce Inter / Roboto / system-ui, purple-violet gradients, rounded-xl,
    bento grids, one-card-per-row, or any shadow outside a true overlay. Radius

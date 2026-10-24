@@ -1,4 +1,4 @@
-"""Outgoing email, behind one small interface (frontend ADR-042).
+"""Outgoing email, behind one small interface (frontend ADR-043).
 
 Two backends, chosen by `EMAIL_BACKEND`:
 

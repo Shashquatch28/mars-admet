@@ -26,6 +26,98 @@ class KermtUnavailable(RuntimeError):
     """The KERMT service could not provide predictions right now."""
 
 
+class KermtBusy(KermtUnavailable):
+    """The service is up but its explanation queue is full."""
+
+
+class KermtJobNotFound(Exception):
+    """The service has no such explanation job: it never had it, or it restarted and lost it."""
+
+
+@dataclass(frozen=True)
+class RawExplanation:
+    """What the service computes for one (molecule, endpoint): Integrated Gradients, seed-averaged.
+
+    Raw on purpose: fragments and totals are derived API-side by `explain.result.assemble`, so both
+    explainers share one definition of them. Atom order is RDKit's for the SMILES that was sent.
+    """
+
+    arm: str
+    model_id: str
+    output_space: str
+    n_seeds: int
+    n_steps: int
+    base_value: float
+    output_value: float
+    baseline: str
+    atom_scores: list[float]
+    descriptor_names: list[str]
+    descriptor_values: list[float | None]
+    descriptor_scores: list[float]
+    unmapped_total: float
+    completeness_error: float
+    converged: bool
+    seed_agreement: float | None
+
+
+@dataclass(frozen=True)
+class JobSnapshot:
+    """One explanation job as the service reports it (ADR-040)."""
+
+    job_id: str
+    state: str  # queued | running | done | failed | cancelled
+    queue_position: int | None
+    seeds_done: int
+    seeds_total: int
+    stage: str | None
+    elapsed_seconds: float
+    error: str | None
+    error_kind: str | None  # unexplainable | internal | None
+    result: RawExplanation | None
+
+
+def parse_raw_explanation(b: dict) -> RawExplanation:
+    """A service explain body -> RawExplanation. Raises KeyError / TypeError / ValueError when malformed."""
+    names = [str(n) for n in b["descriptor_names"]]
+    out = RawExplanation(
+        arm=str(b["arm"]),
+        model_id=str(b["model_id"]),
+        output_space=str(b["output_space"]),
+        n_seeds=int(b["n_seeds"]),
+        n_steps=int(b["n_steps"]),
+        base_value=float(b["base_value"]),
+        output_value=float(b["output_value"]),
+        baseline=str(b["baseline"]),
+        atom_scores=[float(v) for v in b["atom_scores"]],
+        descriptor_names=names,
+        descriptor_values=[None if v is None else float(v) for v in b["descriptor_values"]],
+        descriptor_scores=[float(v) for v in b["descriptor_scores"]],
+        unmapped_total=float(b["unmapped_total"]),
+        completeness_error=float(b["completeness_error"]),
+        converged=bool(b["converged"]),
+        seed_agreement=None if b.get("seed_agreement") is None else float(b["seed_agreement"]),
+    )
+    if not (len(out.descriptor_values) == len(out.descriptor_scores) == len(names)) or not out.atom_scores:
+        raise ValueError("inconsistent lengths")
+    return out
+
+
+def _snapshot(b: dict) -> JobSnapshot:
+    result = b.get("result")
+    return JobSnapshot(
+        job_id=str(b["job_id"]),
+        state=str(b["state"]),
+        queue_position=None if b.get("queue_position") is None else int(b["queue_position"]),
+        seeds_done=int(b["seeds_done"]),
+        seeds_total=int(b["seeds_total"]),
+        stage=b.get("stage"),
+        elapsed_seconds=float(b["elapsed_seconds"]),
+        error=b.get("error"),
+        error_kind=b.get("error_kind"),
+        result=parse_raw_explanation(result) if result else None,
+    )
+
+
 @dataclass(frozen=True)
 class ArmValues:
     arm: str
@@ -94,6 +186,95 @@ class KermtClient:
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise self._trip(f"malformed reply: {exc!r}") from exc
         return out
+
+    def explain(self, smiles: str, arm: str, endpoint: str, *, timeout_seconds: float = 120.0) -> RawExplanation:
+        """Integrated Gradients for one endpoint of one arm (ADR-031). Slow: seconds, not milliseconds.
+
+        Shares the prediction breaker as a gate (a dead service is dead for both) but a slow or
+        failed explanation never opens it: explanations are optional and must not stop predictions.
+        """
+        with self._lock:
+            blocked = time.monotonic() < self._down_until
+        if blocked:
+            raise KermtUnavailable("circuit open after a recent failure")
+        try:
+            resp = self._http.post(
+                "/explain", json={"smiles": smiles, "arm": arm, "endpoint": endpoint}, timeout=timeout_seconds
+            )
+        except httpx.HTTPError as exc:
+            raise KermtUnavailable(f"{type(exc).__name__}: {exc}") from exc
+        if resp.status_code != 200:
+            raise KermtUnavailable(f"HTTP {resp.status_code}: {resp.text[:200]}")
+        try:
+            out = parse_raw_explanation(resp.json())
+        except (KeyError, TypeError, ValueError) as exc:
+            raise KermtUnavailable(f"malformed explain reply: {exc!r}") from exc
+        return out
+
+    # ---- background explanation jobs (ADR-040). Short calls: the work happens in the service. ----
+
+    _SHORT_TIMEOUT = 15.0
+
+    def _gate(self) -> None:
+        with self._lock:
+            blocked = time.monotonic() < self._down_until
+        if blocked:
+            raise KermtUnavailable("circuit open after a recent failure")
+
+    def _job_call(self, method: str, path: str, **kw) -> httpx.Response:
+        self._gate()
+        try:
+            return self._http.request(method, path, timeout=self._SHORT_TIMEOUT, **kw)
+        except httpx.HTTPError as exc:
+            raise KermtUnavailable(f"{type(exc).__name__}: {exc}") from exc
+
+    def submit_explain_job(self, smiles: str, arm: str, endpoint: str) -> JobSnapshot:
+        """Start (or join) the job for this molecule and endpoint. KermtBusy when the queue is full."""
+        resp = self._job_call("POST", "/explain/jobs", json={"smiles": smiles, "arm": arm, "endpoint": endpoint})
+        if resp.status_code == 429:
+            raise KermtBusy(resp.json().get("detail", "the explanation queue is full") if resp.content else "the explanation queue is full")
+        if resp.status_code == 422:
+            raise ValueError(resp.json().get("detail", "KERMT cannot explain this molecule"))
+        return self._read_snapshot(resp)
+
+    def explain_job(self, job_id: str) -> JobSnapshot:
+        resp = self._job_call("GET", f"/explain/jobs/{job_id}")
+        if resp.status_code == 404:
+            raise KermtJobNotFound(job_id)
+        return self._read_snapshot(resp)
+
+    def cancel_explain_job(self, job_id: str) -> JobSnapshot:
+        resp = self._job_call("DELETE", f"/explain/jobs/{job_id}")
+        if resp.status_code == 404:
+            raise KermtJobNotFound(job_id)
+        return self._read_snapshot(resp)
+
+    def _read_snapshot(self, resp: httpx.Response) -> JobSnapshot:
+        if resp.status_code != 200:
+            raise KermtUnavailable(f"HTTP {resp.status_code}: {resp.text[:200]}")
+        try:
+            return _snapshot(resp.json())
+        except (KeyError, TypeError, ValueError) as exc:
+            raise KermtUnavailable(f"malformed job reply: {exc!r}") from exc
+
+    def explain_config(self) -> dict:
+        """The service's explanation parameters and a digest of them (cache-key material), cached for 60 s."""
+        now = time.monotonic()
+        with self._lock:
+            hit = getattr(self, "_config_cache", None)
+            if hit is not None and now - hit[0] < 60.0:
+                return hit[1]
+        resp = self._job_call("GET", "/explain/config")
+        if resp.status_code != 200:
+            raise KermtUnavailable(f"HTTP {resp.status_code} from /explain/config")
+        try:
+            cfg = dict(resp.json())
+            str(cfg["digest"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise KermtUnavailable(f"malformed config reply: {exc!r}") from exc
+        with self._lock:
+            self._config_cache = (now, cfg)
+        return cfg
 
     def ready(self) -> bool:
         try:

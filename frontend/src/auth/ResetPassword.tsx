@@ -1,4 +1,4 @@
-// Choose a new password from an emailed link (ADR-042). The link carries its token in the URL fragment, which a browser never
+// Choose a new password from an emailed link (ADR-043). The link carries its token in the URL fragment, which a browser never
 // sends to a server; it is read once, kept in memory and removed from the address bar. A reset ends every session of the
 // account and does not sign anyone in: the done state says so and points to sign-in.
 import { useEffect, useId, useState, type FormEvent } from "react";

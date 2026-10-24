@@ -163,7 +163,7 @@ export function BatchGrid({
           {GROUP_SPANS.map((g) => (
             <span key={g.group} style={{ gridColumn: `span ${g.span}` }}>
               {g.label}
-              <span className={styles.groupbarCt}>{g.span}</span>
+              {g.span > 1 && <span className={styles.groupbarCt}>{g.span}</span>}
             </span>
           ))}
         </div>

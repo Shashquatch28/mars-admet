@@ -1,4 +1,4 @@
-"""Password reset (frontend ADR-042): single-use, short-lived, hashed tokens; the same answer whether or not an address has an
+"""Password reset (frontend ADR-043): single-use, short-lived, hashed tokens; the same answer whether or not an address has an
 account; rate limits; every session ended on success; the email behind an interface with a log backend and a Resend backend.
 
 The infra tests need the live Postgres and Redis (and the `password_reset_tokens` table: `alembic upgrade head`). The email

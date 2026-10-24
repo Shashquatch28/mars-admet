@@ -19,6 +19,7 @@
 !frontend/tsconfig.node.json
 !frontend/vite.config.ts
 !frontend/src
+!ml/explain
 
 **/__pycache__
 **/*.pyc
