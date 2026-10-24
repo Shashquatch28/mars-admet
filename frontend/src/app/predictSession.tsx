@@ -22,6 +22,8 @@ interface PredictSession {
   error: Error | null;
   canRun: boolean;
   run: () => void;
+  /** Put a molecule in the input and run it in one step, for a hand-off from another page (the landing page). */
+  runWith: (smiles: string) => void;
   clear: () => void;
 }
 
@@ -48,6 +50,16 @@ export function PredictSessionProvider({ children }: { children: ReactNode }) {
     mutate({ s: smiles.trim(), endpoints: endpointsForRequest(selected) });
   }, [canRun, mutate, smiles, selected]);
 
+  // `run` reads the input from state, which a same-tick setSmiles has not reached yet, so a hand-off sends its own string.
+  const runWith = useCallback(
+    (s: string) => {
+      setSmiles(s);
+      if (!USING_API || s.trim().length === 0 || selected.length === 0 || mutation.isPending) return;
+      mutate({ s: s.trim(), endpoints: endpointsForRequest(selected) });
+    },
+    [mutate, selected, mutation.isPending],
+  );
+
   const clear = useCallback(() => {
     reset();
     setSmiles("");
@@ -64,9 +76,10 @@ export function PredictSessionProvider({ children }: { children: ReactNode }) {
       error: mutation.error,
       canRun,
       run,
+      runWith,
       clear,
     }),
-    [smiles, selected, setSelected, mutation.data, mutation.isPending, mutation.error, canRun, run, clear],
+    [smiles, selected, setSelected, mutation.data, mutation.isPending, mutation.error, canRun, run, runWith, clear],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

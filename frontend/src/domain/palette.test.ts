@@ -5,8 +5,8 @@ const base: PaletteState = { usingApi: true, smiles: "CCO", endpointsSelected: 1
 const byId = (s: PaletteState) => Object.fromEntries(paletteCommands(s).map((c) => [c.id, c.disabledReason]));
 
 describe("paletteCommands", () => {
-  it("lists the four real commands in a fixed order", () => {
-    expect(paletteCommands(base).map((c) => c.id)).toEqual(["run", "copy_id", "export", "density"]);
+  it("lists the five real commands in a fixed order", () => {
+    expect(paletteCommands(base).map((c) => c.id)).toEqual(["run", "copy_id", "export", "density", "overview"]);
   });
   it("Run is available with an API, a SMILES and endpoints", () => {
     expect(byId(base).run).toBeNull();
@@ -23,8 +23,9 @@ describe("paletteCommands", () => {
     expect(byId({ ...base, hasResult: true }).copy_id).toBeNull();
     expect(byId({ ...base, hasResult: true }).export).toBeNull();
   });
-  it("density is always available", () => {
+  it("density and the overview page are always available", () => {
     expect(byId({ ...base, usingApi: false }).density).toBeNull();
+    expect(byId({ ...base, usingApi: false }).overview).toBeNull();
   });
 });
 

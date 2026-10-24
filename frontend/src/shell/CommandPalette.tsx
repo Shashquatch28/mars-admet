@@ -106,6 +106,8 @@ export function CommandPalette() {
   function runCommand(id: PaletteCommandId) {
     if (id === "density") {
       setDensity(density === "compact" ? "comfortable" : "compact");
+    } else if (id === "overview") {
+      navigate("/welcome");
     } else if (id === "run") {
       navigate("/predict");
       run();
