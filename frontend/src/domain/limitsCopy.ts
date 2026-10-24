@@ -32,3 +32,10 @@ export function expiredResultsMessage(limits: LimitsResponse | undefined): strin
     : "Queued batch results are kept for a limited time";
   return `The results have expired. ${kept}; run the batch again.`;
 }
+
+/** What the "check your email" screen promises about the link. The lifetime is the service's own number; before it answers the
+ *  sentence says the link expires without naming a time, never a guess. The link works once whatever the lifetime is. */
+export function resetLinkLifetime(limits: LimitsResponse | undefined): string {
+  const when = limits ? `expires in ${n(limits.password_reset_ttl_minutes)} ${limits.password_reset_ttl_minutes === 1 ? "minute" : "minutes"}` : "expires after a short time";
+  return `The link works once and ${when}.`;
+}

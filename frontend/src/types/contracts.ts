@@ -212,6 +212,15 @@ export interface SavedReportResponse {
   tags: string[];
   created_at: string;
 }
+// Password reset (auth.py, ADR-042). Asking always answers 202 with no body, whether or not the address has an account;
+// confirming answers 204 on success and 400 for any bad, used or expired token. Neither signs anyone in.
+export interface PasswordResetRequestModel {
+  email: string;
+}
+export interface PasswordResetConfirmRequest {
+  token: string; // from the emailed link's fragment; single use
+  new_password: string; // min 8 characters, at most 72 bytes
+}
 export interface DeleteAccountRequest {
   password: string; // re-confirmation before a cascading, irreversible delete
 }
@@ -224,6 +233,7 @@ export interface LimitsResponse {
   batch_interactive_threshold: number;
   batch_result_retention_hours: number;
   anon_predict_rate_per_minute: number;
+  password_reset_ttl_minutes: number;
 }
 
 // --- generations (api.py) ---
