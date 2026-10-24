@@ -117,14 +117,21 @@
   cursor: not-allowed;
 }
 .selwrap {
+  position: relative;
   display: flex;
+}
+/* In Predict the popover spans the Run row (the molecule column scrolls, so a button-anchored popover would be clipped);
+   everywhere else (Compare, Batch) it hangs from the button, right edges aligned. */
+.runrow .selwrap {
+  position: static;
 }
 /* A true overlay: the only place an elevated surface and shadow are allowed. No entrance animation. */
 .selpop {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
   right: 0;
+  width: 272px;
+  max-width: calc(100vw - 24px);
   z-index: 40;
   max-height: 360px;
   overflow-y: auto;
@@ -133,6 +140,10 @@
   border: 1px solid var(--line-default);
   border-radius: var(--radius);
   box-shadow: var(--shadow-overlay);
+}
+.runrow .selpop {
+  left: 0;
+  width: auto;
 }
 .selgroup {
   border: 0;
@@ -247,6 +258,26 @@
   justify-content: space-between;
   padding: 8px 10px;
   border-bottom: 1px solid var(--line-subtle);
+}
+.vtools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.expand {
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.expand:hover {
+  border-color: var(--text-tertiary);
+  color: var(--text-secondary);
+}
+.vstage {
+  cursor: zoom-in;
 }
 .seg {
   display: flex;

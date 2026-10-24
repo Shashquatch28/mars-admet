@@ -4,7 +4,7 @@
 // (ADR-032). The roster, state derivation and reconciliation always come from
 // ENDPOINT_METADATA, never the response (ADR-008).
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useCompareSession } from "../../app/compareSession";
 import styles from "./predict.module.css";
 import { useUiState } from "../../app/uiState";
@@ -179,15 +179,6 @@ export function PredictWorkspace() {
             </dl>
           </div>
           <StructureViewer live={usingApi} moleculeId={response?.molecule_id} highlights={highlights} />
-          <p className={styles.vnote}>
-            Conformer is generated on demand and expires with the prediction cache. A 404 here is a normal
-            state, not an error.
-          </p>
-          {response && !failure && (
-            <Link to="/molecule" className={styles.molLink}>
-              2D drawing, computed properties and structural alerts
-            </Link>
-          )}
         </div>
       </section>
 

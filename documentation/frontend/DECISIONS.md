@@ -1540,3 +1540,20 @@ a screen reader on the drawings, and the run in a deployed environment.
 **Rejected.** *Tabs inside the column* - a hidden state for the thing that has to be seen next to the result. *Moving the 3D conformer too* - it would separate the attribution highlights from the Explain control. *A modal or drawer* - the page is a place to stay and read, not an interruption.
 
 **Consequences.** Keys are 1-5 (Settings text, shortcuts docs and AGENTS.md updated). `data-owns-keys` and the typing guard are unchanged. The rail order is Predict, Batch, Compare, Library, Molecule so that keys 1-4 do not move. Two Predict-only layout additions came with the audit: the results header wraps its tally and its Export, Report and density controls as one group, and below the 1080 px floor the Predict endpoint grid keeps a 118 px endpoint column and scrolls sideways.
+
+---
+
+## ADR-042 — The structure peek, and Compare's names, scrolling header and endpoint popover
+
+**Date:** 2026-10-24 · **Status:** accepted and built (amends ADR-013's animation exception, ADR-036 and ADR-041)
+
+**Decision.**
+1. **The Structure pane in Predict opens a peek.** An Expand button (and a click on the stage that did not move, so a drag still rotates) opens a centred pane, up to 980 x 660, over a scrim: the same cached conformer at size with its own Hero / Analysis switch, and a "What is shown" column. Nothing is printed under the small pane any more; the conformer note, the force-field caption and the link to the Molecule page all moved into the peek. `describeConformer` writes the column from the conformer itself (atom, bond and heavy-atom counts, the ETKDG and MMFF94 method and the conformer's own energy, what the current view draws, that the colours are the element palette, how to rotate and zoom, that the conformer expires with the prediction cache) and says that attribution colouring, when present, is direction and strength and not a judgement. It never says anything about a prediction.
+2. **The peek eases in and out** (about 200 ms in, 140 ms out: opacity and a few pixels of rise; the scrim fades). This is a second bounded exception to never-do #7, alongside the AD-gauge marker (ADR-013), asked for by the maintainer. It is the only overlay that animates; workspace switching, the command palette and every number remain instant. `prefers-reduced-motion` turns it off and the pane then opens and closes at once.
+3. **Focus and keys:** the peek takes focus on open and returns it to Expand on close; Esc, the scrim and Close dismiss it; Tab stays inside; keys 1-5 do not switch workspace while it is open (`data-owns-keys`).
+4. **The molecule is centred.** 3Dmol made its first fit while the box was still being measured, which left the molecule off-centre and cropped; every resize now re-fits it with a margin.
+5. **Compare: a name for each molecule.** Each slot has an optional name field, typed by the user. A result column shows that name in the primary ink above the SMILES, or "Molecule N" when none was given. Names are never looked up or inferred; a molecule sent from Library or Batch arrives without one. (Automatic naming from a structure needs an external service or a name database; that is a decision on where a molecule may be sent, and is open.)
+6. **Compare: the column header scrolls with the table** instead of staying pinned, and the property-source footer under the table is gone (the group heading already says "RDKit · not predictions", and the full notes are on the Molecule page).
+7. **The endpoint popover anchors to its button in Compare and Batch** (right edges aligned) and to the Run row in Predict. ADR-041's change anchored it to the nearest positioned ancestor everywhere, which in Compare drew it across the whole window.
+
+**Rejected.** *A tooltip for the notes* - never-do #8. *Animating the palette and other overlays too* - the exception is one pane, not a theme. *Guessing a name from the SMILES* - an invented name is a claim MARS cannot back.

@@ -71,14 +71,28 @@ describe("#4: no interval bar on an invented axis", () => {
 });
 
 describe("#7: nothing counts, enters, draws itself or shimmers", () => {
-  it("the only @keyframes in the app belong to the AD-gauge marker settle (ADR-013)", () => {
+  // The two sanctioned motions: the AD-gauge marker settle (ADR-013, components/dataviz/) and the structure peek easing in
+  // and out (ADR-042). The peek's keyframes may change opacity and transform and nothing else, so no number counts and no row
+  // or chart draws itself inside it.
+  const PEEK = "workspaces/predict/structurePeek.module.css";
+  it("the only @keyframes in the app belong to the AD-gauge marker settle (ADR-013) and the structure peek (ADR-042)", () => {
     const withKeyframes = cssModules.filter((f) => /@keyframes/.test(noComments(read(f)))).map(rel);
-    expect(withKeyframes.filter((f) => !f.startsWith("components/dataviz/"))).toEqual([]);
+    expect(withKeyframes.filter((f) => !f.startsWith("components/dataviz/") && f !== PEEK)).toEqual([]);
   });
 
-  it("no animation property outside the dataviz components", () => {
+  it("the peek's keyframes change opacity and transform only", () => {
+    const css = noComments(read(cssModules.find((f) => rel(f) === PEEK) as string));
+    const bodies = [...css.matchAll(/@keyframes\s+[\w-]+\s*\{((?:[^{}]*\{[^{}]*\})+)\s*\}/g)].map((m) => m[1]);
+    expect(bodies.length).toBeGreaterThan(0);
+    for (const body of bodies) {
+      const props = [...body.matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
+      expect(props.filter((p) => p !== "opacity" && p !== "transform")).toEqual([]);
+    }
+  });
+
+  it("no animation property outside the dataviz components and the structure peek", () => {
     const offenders: string[] = [];
-    for (const f of cssModules.filter((m) => !rel(m).startsWith("components/dataviz/"))) {
+    for (const f of cssModules.filter((m) => !rel(m).startsWith("components/dataviz/") && rel(m) !== PEEK)) {
       for (const m of noComments(read(f)).matchAll(/(^|[;{\s])animation(-name)?\s*:\s*([^;]+);/g)) {
         // "none !important" is how structureEditor.module.css switches Ketcher's own motion off (ADR-035)
         if (!/^\s*none(\s*!important)?\s*$/.test(m[3])) offenders.push(`${rel(f)}: animation: ${m[3].trim()}`);

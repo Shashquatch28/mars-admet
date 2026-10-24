@@ -48,9 +48,29 @@
   flex: 1 1 260px;
   min-width: 0;
 }
+.slotHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .slotLabel {
+  flex: none;
   font-size: 10px;
   color: var(--text-tertiary);
+}
+.slot input.slotName {
+  flex: 1;
+  height: 18px;
+  padding: 0 2px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line-subtle);
+  border-radius: 0;
+  font-family: var(--sans);
+  font-size: 11px;
+}
+.slot input.slotName:focus-visible {
+  border-bottom-color: var(--accent);
 }
 .slot input {
   height: 26px;
@@ -165,8 +185,6 @@
   color: var(--text-tertiary);
   background: var(--surface-chrome);
   border-bottom: 1px solid var(--line-default);
-  position: sticky;
-  top: 0;
 }
 .unithd {
   width: 96px;
@@ -177,9 +195,17 @@
   font-weight: 400;
   background: var(--surface-chrome);
   border-bottom: 1px solid var(--line-default);
-  position: sticky;
-  top: 0;
   vertical-align: bottom;
+}
+/* A name the user gave the molecule: plain text in the primary ink, above its SMILES. */
+.molTitle {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .molName {
   display: block;
