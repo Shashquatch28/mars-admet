@@ -2,7 +2,7 @@
 // why not, and nothing is listed that the app cannot do. The palette holds no sample molecules and
 // no history: the only molecule it knows is the one Predict last returned (ADR-032).
 
-export type PaletteCommandId = "run" | "copy_id" | "export" | "density";
+export type PaletteCommandId = "run" | "copy_id" | "export" | "density" | "overview";
 
 export interface PaletteCommand {
   id: PaletteCommandId;
@@ -35,6 +35,7 @@ export function paletteCommands(s: PaletteState): PaletteCommand[] {
     { id: "copy_id", label: "Copy molecule_id", disabledReason: noResult },
     { id: "export", label: "Export Predict result (CSV)", disabledReason: noResult },
     { id: "density", label: "Toggle density", disabledReason: null },
+    { id: "overview", label: "Go to Overview", disabledReason: null },
   ];
 }
 

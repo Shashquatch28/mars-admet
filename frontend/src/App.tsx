@@ -18,6 +18,8 @@ import { LibraryWorkspace } from "./workspaces/library/LibraryWorkspace";
 import { CompareWorkspace } from "./workspaces/compare/CompareWorkspace";
 import { MoleculeWorkspace } from "./workspaces/molecule/MoleculeWorkspace";
 import { CompareSessionProvider } from "./app/compareSession";
+import { EntryRoute } from "./landing/EntryRoute";
+import { LandingPage } from "./landing/LandingPage";
 
 export function App() {
   return (
@@ -31,8 +33,10 @@ export function App() {
               <BatchSessionProvider>
               <CompareSessionProvider>
               <Routes>
+                {/* The front door sits outside the shell: no rail, no status bar (ADR-046). */}
+                <Route path="/" element={<EntryRoute />} />
+                <Route path="/welcome" element={<LandingPage />} />
                 <Route element={<AppShell />}>
-                  <Route index element={<Navigate to="/predict" replace />} />
                   <Route path="/predict" element={<PredictWorkspace />} />
                   <Route path="/batch" element={<Gated name="Batch"><BatchWorkspace /></Gated>} />
                   <Route path="/compare" element={<CompareWorkspace />} />
