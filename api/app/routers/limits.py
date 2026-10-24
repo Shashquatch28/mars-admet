@@ -20,4 +20,5 @@ def limits() -> LimitsResponse:
         batch_interactive_threshold=s.batch_interactive_threshold,
         batch_result_retention_hours=s.batch_upload_retention_hours,
         anon_predict_rate_per_minute=s.rate_limit_anon_per_minute,
+        password_reset_ttl_minutes=s.password_reset_ttl_minutes,
     )

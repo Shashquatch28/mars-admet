@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import uuid
-
 import redis.asyncio as redis
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from mars_contracts import (
     LoginRequest,
     LoginResponse,
@@ -20,14 +18,16 @@ from app.core.config import get_settings
 from app.db.models import User
 from app.db.session import get_db
 from app.deps import _session_token_from_request, get_current_user
-from app.services.redis_client import get_redis
-from app.services.security import (
-    hash_password,
-    make_password_reset_token,
-    verify_password,
-    verify_password_reset_token,
+from app.services.password_reset import (
+    allow_confirm,
+    allow_request,
+    redeem_token,
+    send_reset_if_account,
 )
-from app.services.sessions import create_session, delete_session
+from app.services.rate_limit import client_ip
+from app.services.redis_client import get_redis
+from app.services.security import hash_password, verify_password
+from app.services.sessions import create_session, delete_all_sessions_for_user, delete_session
 from app.services.turnstile import verify_turnstile
 
 router = APIRouter()
@@ -103,32 +103,41 @@ async def logout(
 @router.post("/password-reset/request", status_code=202)
 async def password_reset_request(
     req: PasswordResetRequestModel,
-    db: AsyncSession = Depends(get_db),
+    request: Request,
+    background: BackgroundTasks,
+    r: redis.Redis = Depends(get_redis),
 ) -> None:
-    """Always 202, whether or not the email exists — no account enumeration.
-    Real Resend delivery is not wired here (see next_steps.md); this issues
-    and would email the signed token."""
-    result = await db.execute(select(User).where(User.email == req.email))
-    user = result.scalar_one_or_none()
-    if user is not None:
-        make_password_reset_token(str(user.id))  # would be emailed via Resend
+    """Always 202 with an empty body, at the same speed, whether or not the address has an account, and whether or not a limit
+    was hit (frontend ADR-042). Everything that differs (the lookup, the token, the email) happens in a background task after
+    the response has gone, so neither the body nor the timing can be used to find out which addresses have accounts."""
+    if await allow_request(r, req.email, client_ip(request)):
+        background.add_task(send_reset_if_account, req.email)
     return None
+
+
+_BAD_RESET_TOKEN = "Invalid or expired reset token"
 
 
 @router.post("/password-reset/confirm", status_code=204)
 async def password_reset_confirm(
     req: PasswordResetConfirmRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
+    r: redis.Redis = Depends(get_redis),
 ) -> None:
-    user_id = verify_password_reset_token(req.token)
-    if user_id is None:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    """Set a new password with a single-use link token. Every way the token can be wrong (unknown, used, expired) answers the same
+    400, so nothing says which. On success all of the account's sessions are ended; the caller is NOT signed in."""
+    if not await allow_confirm(r, client_ip(request)):
+        raise HTTPException(status_code=429, detail="Too many attempts. Try again later.")
+    try:
+        new_hash = hash_password(req.new_password)  # before the token is used: a password that cannot be stored must not burn the link
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
-    user = result.scalar_one_or_none()
+    user = await redeem_token(db, req.token)
     if user is None:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
-
-    user.password_hash = hash_password(req.new_password)
-    await db.commit()
+        raise HTTPException(status_code=400, detail=_BAD_RESET_TOKEN)
+    user.password_hash = new_hash
+    await db.commit()  # the password and the used token commit together
+    await delete_all_sessions_for_user(r, str(user.id))
     return None

@@ -25,6 +25,7 @@ def test_limits_reports_the_deployed_settings_without_a_session(monkeypatch):
             "batch_interactive_threshold": 20,
             "batch_result_retention_hours": 12,
             "anon_predict_rate_per_minute": 30,
+            "password_reset_ttl_minutes": 30,
         }
     finally:
         get_settings.cache_clear()
@@ -38,6 +39,7 @@ def test_limits_defaults_match_the_settings_defaults():
         "batch_interactive_threshold": s.batch_interactive_threshold,
         "batch_result_retention_hours": s.batch_upload_retention_hours,
         "anon_predict_rate_per_minute": s.rate_limit_anon_per_minute,
+        "password_reset_ttl_minutes": s.password_reset_ttl_minutes,
     }
 
 

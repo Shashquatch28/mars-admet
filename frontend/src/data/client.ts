@@ -18,6 +18,8 @@ import type {
   Endpoint,
   LoginResponse,
   MeResponse,
+  PasswordResetConfirmRequest,
+  PasswordResetRequestModel,
   GenerationsResponse,
   LimitsResponse,
   PredictionResponse,
@@ -163,6 +165,18 @@ export async function login(email: string, password: string): Promise<LoginRespo
 export async function register(email: string, password: string): Promise<RegisterResponse> {
   const body = { email, password, turnstile_token: "unset" };
   return (await (await request("/auth/register", jsonPost(body))).json()) as RegisterResponse;
+}
+
+// Always 202 with no body, whether or not the address has an account (ADR-042): there is nothing here to learn from.
+export async function requestPasswordReset(email: string): Promise<void> {
+  const body: PasswordResetRequestModel = { email };
+  await request("/auth/password-reset/request", jsonPost(body));
+}
+
+// 204 on success (no session is started). 400 is the one answer for an unknown, used or expired link; 429 is the per-IP limit.
+export async function confirmPasswordReset(token: string, newPassword: string): Promise<void> {
+  const body: PasswordResetConfirmRequest = { token, new_password: newPassword };
+  await request("/auth/password-reset/confirm", jsonPost(body));
 }
 
 export async function logout(): Promise<void> {

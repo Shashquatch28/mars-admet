@@ -1,4 +1,4 @@
-"""Module 13 — password hashing, opaque session tokens, signed reset tokens.
+"""Module 13 — password hashing and opaque session tokens (reset tokens: services/password_reset.py).
 
 Session strategy is server-side Redis sessions, NOT JWT (blueprint-locked,
 `documentation/AIMS/decisions.md` 2026-08-30): an opaque `secrets.token_urlsafe`
@@ -12,16 +12,10 @@ Password hashing uses the `bcrypt` library directly, NOT passlib — passlib
 from __future__ import annotations
 
 import secrets
-from datetime import UTC, datetime
 
 import bcrypt
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
-
-from app.core.config import get_settings
 
 _BCRYPT_MAX_BYTES = 72  # bcrypt hard limit; longer inputs are silently truncated by the C lib
-_RESET_TOKEN_SALT = "mars-password-reset"
-_RESET_TOKEN_MAX_AGE_SECONDS = 60 * 60  # 1 hour
 
 
 def hash_password(password: str) -> str:
@@ -43,20 +37,3 @@ def new_session_token() -> str:
 
 def session_redis_key(token: str) -> str:
     return f"session:{token}"
-
-
-def _serializer() -> URLSafeTimedSerializer:
-    return URLSafeTimedSerializer(get_settings().secret_key, salt=_RESET_TOKEN_SALT)
-
-
-def make_password_reset_token(user_id: str) -> str:
-    return _serializer().dumps({"user_id": user_id, "issued_at": datetime.now(UTC).isoformat()})
-
-
-def verify_password_reset_token(token: str) -> str | None:
-    """Return the user_id if the token is valid and unexpired, else None."""
-    try:
-        data = _serializer().loads(token, max_age=_RESET_TOKEN_MAX_AGE_SECONDS)
-    except (BadSignature, SignatureExpired):
-        return None
-    return data.get("user_id")

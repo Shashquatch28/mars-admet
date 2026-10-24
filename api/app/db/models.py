@@ -36,6 +36,19 @@ class User(Base):
     )
 
 
+class PasswordResetToken(Base):
+    """A password-reset link's token, stored hashed (frontend ADR-042). Single use (`used_at`), short lived (`expires_at`)."""
+
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
+
+
 class SavedMolecule(Base):
     __tablename__ = "saved_molecules"
 

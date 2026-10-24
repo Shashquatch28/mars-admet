@@ -7,6 +7,7 @@ const limits: LimitsResponse = {
   batch_interactive_threshold: 20,
   batch_result_retention_hours: 12,
   anon_predict_rate_per_minute: 30,
+  password_reset_ttl_minutes: 45,
 };
 
 describe("limits copy", () => {
