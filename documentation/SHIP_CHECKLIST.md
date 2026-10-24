@@ -36,6 +36,7 @@ approval, `[lab]` needs the GPU workstation.
 - [x] C3 `[here]` Cap concurrent predictions to the container's CPUs (default thread pool is 40; each prediction is single-threaded).
 - [x] C4 `[here]` Interactive Batch tier (up to 1,000 rows) still holds one request open with no progress; add progress or lower the threshold.
 - [x] C5 `[here]` Decide password reset: build it (API issues a token, no email is sent) or launch without account recovery and say so (ADR-022 item 7).
+  Reversed 2026-10-24: built (ADR-042, `feat/password-reset`). Single-use hashed tokens (migration `a7c3e1f20b94`), the same 202 for every address, silent rate limits, every session ended on a reset (no sign-in), email behind an interface with a log backend and a Resend backend read from `RESEND_API_KEY` and `RESEND_FROM_EMAIL`, `/forgot-password` and `/reset-password` screens. Checked live on a private stack with the log backend. **Not run:** a real Resend send (no key was supplied, nothing was ever sent), a deployed `APP_BASE_URL`, a screen reader. To go live: set `EMAIL_BACKEND=resend`, the key, a verified From address and `APP_BASE_URL`, and run `alembic upgrade head`.
 - [ ] C6 `[you]` Approve the cloud deploy and supply GCP credentials.
 - [ ] C7 `[you]` Deploy: Cloud Run, Neon, Upstash, R2. Rebuild the held-out error bands on the deploy machine (`build_error_bands.py`, about 6 min) or regression rows carry no band.
 - [x] C8 `[here]` Cloud Tasks batch worker (needs a deployed worker)
