@@ -8,6 +8,7 @@ import styles from "./landing.module.css";
 import { MoleculeArt } from "./MoleculeArt";
 import { Specimen } from "./Specimen";
 import { EXAMPLE_SMILES, markLandingSeen } from "./entry";
+import { useAnnounce } from "../app/announce";
 import { usePredictSession } from "../app/predictSession";
 import { useAuthSession } from "../app/authSession";
 import { USING_API } from "../data/client";
@@ -44,16 +45,22 @@ const SCOPE = [
   },
 ] as const;
 
+// Which of the two input bars a message belongs to: it is shown under that bar, where the person is looking.
+type BarId = "hero" | "closing";
+
 function InputBar({
   id,
   large,
   smiles,
+  note,
   onChange,
   onPredict,
 }: {
   id: string;
   large?: boolean;
   smiles: string;
+  /** What to say under the bar; it is also the bar's description, so focusing the input reads it. */
+  note: string;
   onChange: (s: string) => void;
   onPredict: () => void;
 }) {
@@ -64,24 +71,30 @@ function InputBar({
     }
   };
   return (
-    <div className={styles.bar}>
-      <input
-        id={id}
-        className={styles.barInput}
-        type="text"
-        value={smiles}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={onKey}
-        placeholder="Paste a SMILES string"
-        aria-label={large ? undefined : "SMILES"}
-        aria-labelledby={large ? `${id}-label` : undefined}
-        spellCheck={false}
-        autoComplete="off"
-      />
-      <button className={styles.barGo} type="button" onClick={onPredict}>
-        Predict
-      </button>
-    </div>
+    <>
+      <div className={styles.bar}>
+        <input
+          id={id}
+          className={styles.barInput}
+          type="text"
+          value={smiles}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={onKey}
+          placeholder="Paste a SMILES string"
+          aria-label={large ? undefined : "SMILES"}
+          aria-labelledby={large ? `${id}-label` : undefined}
+          aria-describedby={`${id}-note`}
+          spellCheck={false}
+          autoComplete="off"
+        />
+        <button className={styles.barGo} type="button" onClick={onPredict}>
+          Predict
+        </button>
+      </div>
+      <div id={`${id}-note`} className={styles.note}>
+        {note}
+      </div>
+    </>
   );
 }
 
@@ -92,7 +105,8 @@ export function LandingPage() {
   const health = useApiHealth();
   const generations = useGenerations();
   const [smiles, setSmiles] = useState("");
-  const [note, setNote] = useState("");
+  const announce = useAnnounce();
+  const [said, setSaid] = useState<{ bar: BarId; text: string } | null>(null);
 
   useEffect(() => {
     document.title = "MARS · ADMET Rapid Screening";
@@ -109,13 +123,20 @@ export function LandingPage() {
     markLandingSeen();
     navigate(to);
   }
-  function predict() {
+  // Said under the bar it came from and through the app's one live region, so it is seen and heard where it happened.
+  function say(bar: BarId, text: string) {
+    setSaid({ bar, text });
+    announce(text);
+  }
+  // What is written under a bar: its own latest message, else the standing reason Predict cannot run.
+  const noteFor = (bar: BarId) => (said?.bar === bar ? said.text : "") || apiNote;
+  function predict(bar: BarId) {
     if (!smiles.trim()) {
-      setNote("Enter a SMILES string, or use the example.");
+      say(bar, "Enter a SMILES string, or use the example.");
       return;
     }
     if (apiNote) {
-      setNote(apiNote);
+      say(bar, apiNote);
       return;
     }
     runWith(smiles);
@@ -185,11 +206,12 @@ export function LandingPage() {
                 id="landing-smiles"
                 large
                 smiles={smiles}
+                note={noteFor("hero")}
                 onChange={(s) => {
                   setSmiles(s);
-                  setNote("");
+                  setSaid(null);
                 }}
-                onPredict={predict}
+                onPredict={() => predict("hero")}
               />
               <div className={styles.chips}>
                 <button
@@ -197,7 +219,7 @@ export function LandingPage() {
                   type="button"
                   onClick={() => {
                     setSmiles(EXAMPLE_SMILES);
-                    setNote("Example loaded. Press Predict to run it.");
+                    say("hero", "Example loaded. Press Predict to run it.");
                   }}
                 >
                   Use example
@@ -210,7 +232,6 @@ export function LandingPage() {
                 </button>
                 <span className={styles.chipNote}>Predict and Compare need no account.</span>
               </div>
-              <div className={styles.note}>{note || apiNote}</div>
             </div>
           </div>
         </section>
@@ -313,7 +334,17 @@ export function LandingPage() {
           <div className={styles.closingEcho} aria-hidden="true">MARS</div>
           <div className={styles.closingIn}>
             <h2 id="landing-smiles2-label" className={styles.h2}>Try a molecule.</h2>
-            <InputBar id="landing-smiles2" large smiles={smiles} onChange={setSmiles} onPredict={predict} />
+            <InputBar
+              id="landing-smiles2"
+              large
+              smiles={smiles}
+              note={noteFor("closing")}
+              onChange={(s) => {
+                setSmiles(s);
+                setSaid(null);
+              }}
+              onPredict={() => predict("closing")}
+            />
           </div>
         </section>
       </main>

@@ -51,6 +51,17 @@ describe("the landing page shows only what the service returned", () => {
       expect(stripTs(read(f)), rel(f)).not.toMatch(/(solubility_logs|herg_cardiotoxicity|bbb_permeability)[^\n]{0,40}\d\.\d/);
     }
   });
+  it("says why Predict did not run under the bar that was used, and through the app's one live region", () => {
+    const page = stripTs(read(join(SRC, "landing", "LandingPage.tsx")));
+    // each bar renders its own note and describes the input with it
+    expect(page.match(/<InputBar\b/g)?.length).toBe(2);
+    expect(page.match(/\bnote=\{noteFor\(/g)?.length).toBe(2);
+    expect(page).toMatch(/aria-describedby=\{`\$\{id\}-note`\}/);
+    // a message is announced, not given a live region of its own (a11yGuard.test.ts allows exactly one)
+    expect(page).toMatch(/useAnnounce\(\)/);
+    expect(page).toMatch(/announce\(text\)/);
+    expect(page).not.toMatch(/aria-live=|role="status"/);
+  });
   it("hands off through the Predict session, not a second copy of the input", () => {
     const page = stripTs(read(join(SRC, "landing", "LandingPage.tsx")));
     expect(page).toMatch(/usePredictSession\(\)/);
