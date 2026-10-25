@@ -15,8 +15,9 @@ import { USING_API } from "../data/client";
 import { useApiHealth } from "../data/useApiHealth";
 import { useGenerations } from "../data/useGenerations";
 import { ADMET } from "./admet";
+import { landingAccount, workspaceAccess } from "./account";
 import { ML_ENDPOINTS } from "../domain/endpoints";
-import { isGatedPath } from "../domain/session";
+import { accountInitial, isGatedPath } from "../domain/session";
 
 const WORKSPACES = [
   { key: "1", path: "/predict", name: "Predict", text: "One molecule, every endpoint, with a 3D view and an explanation." },
@@ -101,7 +102,7 @@ function InputBar({
 export function LandingPage() {
   const navigate = useNavigate();
   const { runWith } = usePredictSession();
-  const { status } = useAuthSession();
+  const { status, user, busy, signOut } = useAuthSession();
   const health = useApiHealth();
   const generations = useGenerations();
   const [smiles, setSmiles] = useState("");
@@ -111,6 +112,8 @@ export function LandingPage() {
   useEffect(() => {
     document.title = "MARS · ADMET Rapid Screening";
   }, []);
+
+  const account = landingAccount({ usingApi: USING_API, status });
 
   const apiNote = !USING_API
     ? "No API is configured, so Predict cannot run."
@@ -172,10 +175,28 @@ export function LandingPage() {
         <button className={styles.ghost} type="button" onClick={() => enter("/predict")}>
           Open workspace
         </button>
-        {USING_API && status === "anonymous" && (
+        {account === "sign_in" && (
           <button className={styles.signin} type="button" onClick={() => enter("/settings")}>
             Sign in
           </button>
+        )}
+        {account === "signed_in" && user && (
+          <>
+            <button className={styles.acct} type="button" aria-label={`Account: ${user.email}`} onClick={() => enter("/settings")}>
+              {accountInitial(user.email)}
+            </button>
+            <button
+              className={styles.signout}
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                await signOut();
+                announce("Signed out.");
+              }}
+            >
+              Sign out
+            </button>
+          </>
         )}
       </header>
 
@@ -312,7 +333,9 @@ export function LandingPage() {
                   <div className={styles.wsKey} aria-hidden="true">{w.key}</div>
                   <div className={styles.wsName}>{w.name}</div>
                   <p className={styles.wsText}>{w.text}</p>
-                  <div className={styles.wsAcct}>{isGatedPath(w.path) ? "Account" : "No account"}</div>
+                  <div className={styles.wsAcct}>
+                    {workspaceAccess({ gated: isGatedPath(w.path), usingApi: USING_API, status })}
+                  </div>
                 </Link>
               ))}
             </div>
