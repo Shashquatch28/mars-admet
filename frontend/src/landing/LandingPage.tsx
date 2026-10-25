@@ -195,8 +195,8 @@ export function LandingPage() {
                 <div className={styles.wordSub}>ADMET Rapid Screening</div>
               </div>
             </div>
-            <h1 className={styles.tagline}>Know what the model knows.</h1>
-            <p className={styles.taglineSub}>ADMET prediction that shows its working.</p>
+            <h1 className={styles.tagline}>Screen faster. Trust it further.</h1>
+            <p className={styles.taglineSub}>ADMET prediction for the bench.</p>
 
             <div className={styles.entry}>
               <label id="landing-smiles-label" htmlFor="landing-smiles" className={styles.label}>
@@ -230,7 +230,6 @@ export function LandingPage() {
                 <button className={styles.chip} type="button" onClick={() => enter("/batch")}>
                   Upload CSV
                 </button>
-                <span className={styles.chipNote}>Predict and Compare need no account.</span>
               </div>
             </div>
           </div>
@@ -264,10 +263,6 @@ export function LandingPage() {
                 </div>
               ))}
             </div>
-            <p className={styles.fine}>
-              Synthetic accessibility is shown separately as a rule-based score. It is computed by rule and is not one of the{" "}
-              {ML_ENDPOINTS.length}.
-            </p>
           </section>
 
           <section id="specimen" className={`${styles.sec} ${styles.secRule}`}>
@@ -280,12 +275,6 @@ export function LandingPage() {
               </p>
             </div>
             <Specimen />
-            <ul className={styles.legend}>
-              <li>Every value is mono and the same colour, whatever its size.</li>
-              <li>Amber marks out-of-domain; grey marks not returned. Neither recolours the value.</li>
-              <li>Hatch means the value did not come from a promoted model.</li>
-              <li>The range is the spread across 5 seeds, not a confidence interval.</li>
-            </ul>
           </section>
 
           <section id="scope" className={`${styles.sec} ${styles.secRule}`}>
