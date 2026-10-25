@@ -62,6 +62,13 @@ describe("the landing page shows only what the service returned", () => {
     expect(page).toMatch(/announce\(text\)/);
     expect(page).not.toMatch(/aria-live=|role="status"/);
   });
+  it("shows the account state from the session the app uses, never a placeholder identity", () => {
+    const page = stripTs(read(join(SRC, "landing", "LandingPage.tsx")));
+    expect(page).toMatch(/useAuthSession\(\)/);
+    expect(page).toMatch(/landingAccount\(/);
+    expect(page).toMatch(/Account: \$\{user\.email\}/); // the address is the button's accessible name
+    expect(page).toMatch(/workspaceAccess\(/);
+  });
   it("hands off through the Predict session, not a second copy of the input", () => {
     const page = stripTs(read(join(SRC, "landing", "LandingPage.tsx")));
     expect(page).toMatch(/usePredictSession\(\)/);
